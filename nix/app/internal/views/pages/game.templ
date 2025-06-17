@@ -1,0 +1,70 @@
+package pages
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+	"treacherest/internal/views/layouts"
+)
+
+templ GamePage(room *game.Room, currentPlayer *game.Player) {
+	@layouts.Base("Game") {
+		@GameBody(room, currentPlayer)
+	}
+}
+
+templ GameBody(room *game.Room, currentPlayer *game.Player) {
+	<body
+		id="game"
+		data-signals={ fmt.Sprintf("{countdown: %d}", room.CountdownRemaining) }
+		data-on-load={ "@get('/sse/game/" + room.Code + "')" }
+	>
+		<div class="container">
+			if room.State == game.StateCountdown {
+				<div class="countdown">
+					<h1>Revealing roles in { fmt.Sprint(room.CountdownRemaining) }...</h1>
+				</div>
+			} else {
+				<div class="role-view">
+					if currentPlayer.Role != nil {
+						<div class={ "role-card", getRoleClass(currentPlayer.Role.Type) }>
+							<h2>Your Role: { currentPlayer.Role.Name }</h2>
+							<p>{ currentPlayer.Role.Description }</p>
+							<p><strong>Win Condition:</strong> { currentPlayer.Role.WinCondition }</p>
+						</div>
+					}
+					if leader := room.GetLeader(); leader != nil && (currentPlayer.Role.Type == game.RoleLeader || room.LeaderRevealed) {
+						<div class="leader-info">
+							<h3>Leader: { leader.Name }</h3>
+						</div>
+					}
+					<div class="player-list">
+						<h2>Players</h2>
+						for _, player := range room.GetPlayers() {
+							<div class="player">
+								<span>{ player.Name }</span>
+								if player.RoleRevealed {
+									<span class="role">{ player.Role.Name }</span>
+								}
+							</div>
+						}
+					</div>
+				</div>
+			}
+		</div>
+	</body>
+}
+
+func getRoleClass(roleType game.RoleType) string {
+	switch roleType {
+	case game.RoleLeader:
+		return "leader"
+	case game.RoleGuardian:
+		return "guardian"
+	case game.RoleAssassin:
+		return "assassin"
+	case game.RoleTraitor:
+		return "traitor"
+	default:
+		return ""
+	}
+}
