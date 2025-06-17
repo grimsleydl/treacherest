@@ -1,3 +1,5 @@
+*_templ.go
+
 *.exe
 *.exe~
 *.dll
