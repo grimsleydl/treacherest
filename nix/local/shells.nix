@@ -112,7 +112,7 @@ in {
         '';
       }
       {
-        name = "test";
+        name = "test-all";
         help = "Run all tests";
         command = ''
           cd $PRJ_ROOT/nix/app
@@ -120,7 +120,7 @@ in {
         '';
       }
       {
-        name = "test-all";
+        name = "test-coverage";
         help = "Run all tests with coverage";
         command = ''
           cd $PRJ_ROOT/nix/app
@@ -162,8 +162,8 @@ in {
       echo "  dev         - Start development server with hot reload"
       echo "  run         - Run the server (builds templates first)"
       echo "  build       - Build the application"
-      echo "  test        - Run all tests"
-      echo "  test-all    - Run tests with coverage report"
+      echo "  test-all    - Run all tests"
+      echo "  test-coverage - Run tests with coverage report"
       echo "  fmt         - Format Go and templ code"
       echo "  build-templ - Generate Go code from templ templates"
       echo "  update-deps - Update Go dependencies"
