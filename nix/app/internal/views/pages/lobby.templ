@@ -12,28 +12,26 @@ templ LobbyPage(room *game.Room, currentPlayer *game.Player) {
 }
 
 templ LobbyBody(room *game.Room, currentPlayer *game.Player) {
-	<body id="lobby" data-on-load={ "@get('/sse/lobby/" + room.Code + "')" }>
-		<div class="container">
-			<h1>Game Lobby</h1>
-			<div class="room-code">{ room.Code }</div>
-			<div class="player-list">
-				<h2>Players ({ len(room.Players) }/{ room.MaxPlayers })</h2>
-				for _, player := range room.GetPlayers() {
-					<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
-						{ player.Name }
-					</div>
-				}
-			</div>
-			if len(room.Players) >= 4 {
-				<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
-					Start Game
-				</button>
-			} else {
-				<p>Need at least 4 players to start</p>
+	<div id="lobby-container" data-on-load={ "@get('/sse/lobby/" + room.Code + "')" } class="container">
+		<h1>Game Lobby</h1>
+		<div class="room-code">{ room.Code }</div>
+		<div class="player-list">
+			<h2>Players ({ len(room.Players) }/{ room.MaxPlayers })</h2>
+			for _, player := range room.GetPlayers() {
+				<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
+					{ player.Name }
+				</div>
 			}
-			<button data-on-click={ "@post('/room/" + room.Code + "/leave')" } style="margin-top: 1rem;">
-				Leave Room
-			</button>
 		</div>
-	</body>
+		if len(room.Players) >= 4 {
+			<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
+				Start Game
+			</button>
+		} else {
+			<p>Need at least 4 players to start</p>
+		}
+		<button data-on-click={ "@post('/room/" + room.Code + "/leave')" } style="margin-top: 1rem;">
+			Leave Room
+		</button>
+	</div>
 }

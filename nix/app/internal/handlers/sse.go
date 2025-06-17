@@ -117,8 +117,10 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	// Render to string
 	html := renderToString(component)
 
-	// Send as fragment with morph mode
-	sse.MergeFragments(html, datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	// Send as fragment with morph mode and explicit selector
+	sse.MergeFragments(html, 
+		datastar.WithSelector("#lobby-container"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 }
 
 // renderGame renders the game body
@@ -128,8 +130,10 @@ func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.
 	// Render to string
 	html := renderToString(component)
 
-	// Send as fragment with morph mode
-	sse.MergeFragments(html, datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	// Send as fragment with morph mode and explicit selector
+	sse.MergeFragments(html,
+		datastar.WithSelector("#game-container"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 }
 
 // renderToString renders a templ component to string
