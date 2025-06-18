@@ -22,6 +22,11 @@ func New(store *store.MemoryStore) *Handler {
 	}
 }
 
+// Store returns the handler's store (for testing)
+func (h *Handler) Store() *store.MemoryStore {
+	return h.store
+}
+
 // Event represents a game event
 type Event struct {
 	Type     string
