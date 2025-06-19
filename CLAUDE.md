@@ -32,6 +32,12 @@ This file provides guidance to Claude Code when working with this repository.
 
 - **CRITICAL**: Only commit files directly related to the specific task you just completed. NEVER commit all unstaged changes at once. Be selective and intentional about what goes into each commit.
 
+- **CRITICAL**: Always run commits from the project root directory:
+  ```bash
+  cd $PRJ_ROOT  # or cd /workspace
+  jj commit path/to/files -m "commit message"
+  ```
+
 - Every time you finish one or more items on your TODO list that involved changing files, make a commit. Use `jj` if it is enabled in the repository.
 
 - Don't add comments about generated with Claude or Co-Authored-By Claude when writing commit messages
@@ -111,16 +117,19 @@ When implementing features:
    - Run `jj status` frequently to see changes
    - Make incremental commits as you complete subtasks
    - Use descriptive commit messages for each logical change
+   - **ALWAYS commit from project root**: `cd $PRJ_ROOT` before committing
 
 2. **After Task Completion**:
-   - Review all changes with `jj status`
+   - Review all changes with `jj status` from project root
    - Ensure all files are committed
    - Create a final summary commit if needed
+   - Verify no files left uncommitted
 
 3. **Never**:
    - Work for extended periods without committing
    - Leave uncommitted changes after completing a task
    - Commit test coverage files (use `build/coverage/` which is git-ignored)
+   - Commit from subdirectories - always use `cd $PRJ_ROOT` first
 
 ## Compliance & Security
 
