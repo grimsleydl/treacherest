@@ -1,0 +1,47 @@
+Paramount is to emulate the functionality of https://mtgtreachery.net/treacherer/ -- please browse this site and learn how it works, then update the PRD accordingly.
+
+     "1. Role Clarification: The PRD mentions specific role abilities but doesn't clearly define all special abilities for each role. Should expand on:
+       - Guardian's special abilities beyond "hidden identity"
+       - Leader's investigation powers
+       - Specific win condition priorities when multiple factions achieve goals simultaneously"
+
+Answer: Win conditions are defined in the https://mtgtreachery.net rules and may be unique per-role. Keep this open to extension at this point.
+
+     "2. Game State Transitions: Add clear state machine definition for game phases:
+       - Pre-game (lobby)
+       - Role distribution
+       - Active play
+       - End game conditions
+       - Post-game"
+
+Let's get this added into the PRD.
+
+     "3. Persistence Strategy: The PRD mentions "In-memory game state (future: Redis)" but should define:
+       - Game expiration policies
+       - Reconnection grace periods
+       - State recovery mechanisms"
+
+         Don't worry about this for now
+
+     "4. Security Considerations: Add more detail on:
+       - Room code collision handling
+       - Rate limiting for game creation
+       - Maximum concurrent connections per game"
+
+         Don't worry about this for now.
+
+
+1. Role Distribution: Should we allow custom role configurations in Phase 1, or stick to preset distributions?
+- Preset distribution based on default https://mtgtreachery.net/treacherer/ role distribution
+
+2. Persistence: For Phase 0/1, is in-memory storage sufficient, or should we plan for Redis from the start?
+   In-memory storage is sufficient
+
+3. Authentication: The PRD mentions "no password/account system" - should we still track player statistics across sessions using browser fingerprinting or optional accounts?
+   Just set a JWT, but this will come much later anyway.
+
+4. Game History: Should games be archived after completion for replay/review?
+   Games should be archived.
+
+5. Concurrent Games: What's the expected load? Should we design for horizontal scaling from the start?
+Concurrent games will be extremely low. Don't plan for this yet.
