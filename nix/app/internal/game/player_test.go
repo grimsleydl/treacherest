@@ -7,10 +7,10 @@ import (
 
 func TestNewPlayer(t *testing.T) {
 	tests := []struct {
-		name      string
-		id        string
+		name       string
+		id         string
 		playerName string
-		sessionID string
+		sessionID  string
 	}{
 		{
 			name:       "creates player with all fields",
@@ -152,7 +152,7 @@ func TestPlayer_ZeroValues(t *testing.T) {
 	if player.SessionID != "" {
 		t.Errorf("SessionID with empty string = %v, want empty", player.SessionID)
 	}
-	
+
 	// Even with zero values, JoinedAt should be set
 	if player.JoinedAt.IsZero() {
 		t.Errorf("JoinedAt should not be zero even with empty inputs")
