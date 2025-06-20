@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+	datastar "github.com/starfederation/datastar/sdk/go"
+	"log"
 	"net/http"
 	"time"
 	"treacherest/internal/game"
@@ -10,9 +12,11 @@ import (
 // StartGame starts a game
 func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
+	log.Printf("🚀 StartGame called for room: %s", roomCode)
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
 	}
@@ -20,18 +24,23 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	// Verify player is in room
 	playerCookie, err := r.Cookie("player_" + roomCode)
 	if err != nil {
+		log.Printf("❌ No player cookie for room: %s", roomCode)
 		http.Error(w, "Not in room", http.StatusUnauthorized)
 		return
 	}
 
 	player := room.GetPlayer(playerCookie.Value)
 	if player == nil {
+		log.Printf("❌ Player not found in room: %s, cookie: %s", roomCode, playerCookie.Value)
 		http.Error(w, "Not in room", http.StatusUnauthorized)
 		return
 	}
 
+	log.Printf("✅ Player %s attempting to start game in room %s", player.Name, roomCode)
+
 	// Check if game can start
 	if !room.CanStart() {
+		log.Printf("❌ Room cannot start: state=%s, players=%d", room.State, len(room.Players))
 		http.Error(w, "Cannot start game", http.StatusBadRequest)
 		return
 	}
@@ -56,7 +65,11 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	log.Printf("✅ Game started successfully for room %s", roomCode)
+	
+	// Use datastar to redirect directly in the POST response
+	sse := datastar.NewSSE(w, r)
+	sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
 }
 
 // LeaveRoom removes a player from a room

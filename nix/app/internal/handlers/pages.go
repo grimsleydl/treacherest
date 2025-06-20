@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"treacherest/internal/game"
 	"treacherest/internal/views/pages"
@@ -94,7 +95,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Create player and add to room
 	sessionID := getOrCreateSession(w, r)
-	
+
 	// Check if we have an existing player ID in the cookie (for reconnection)
 	var playerID string
 	if playerCookie != nil {
@@ -102,7 +103,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	} else {
 		playerID = generatePlayerID()
 	}
-	
+
 	player := game.NewPlayer(playerID, playerName, sessionID)
 
 	err = room.AddPlayer(player)
@@ -131,8 +132,15 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Show lobby
+	log.Printf("🏠 Rendering lobby page for room %s with %d players", room.Code, len(room.Players))
 	component := pages.LobbyPage(room, player)
-	component.Render(r.Context(), w)
+	err = component.Render(r.Context(), w)
+	if err != nil {
+		log.Printf("❌ Error rendering lobby page: %v", err)
+		http.Error(w, "Failed to render lobby", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("✅ Successfully rendered lobby page for room %s", room.Code)
 }
 
 // GamePage shows the active game page

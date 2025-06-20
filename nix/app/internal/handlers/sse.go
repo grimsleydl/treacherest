@@ -6,7 +6,9 @@ import (
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"log"
 	"net/http"
+	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/views/pages"
 )
@@ -14,9 +16,11 @@ import (
 // StreamLobby streams lobby updates
 func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
+	log.Printf("📡 SSE connection established for lobby %s", roomCode)
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
+		log.Printf("📡 SSE requested for non-existent room: %s", roomCode)
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
 	}
@@ -41,23 +45,64 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	events := h.eventBus.Subscribe(roomCode)
 	defer h.eventBus.Unsubscribe(roomCode, events)
 
-	// Send initial render
-	h.renderLobby(sse, room, player)
+	// Don't send initial render - page already has correct content
+	// SSE will only send updates when events occur
+	log.Printf("📡 SSE connection ready for room %s, waiting for events", roomCode)
+
+	// Set up a heartbeat to detect stale connections
+	heartbeat := time.NewTicker(30 * time.Second)
+	defer heartbeat.Stop()
 
 	// Stream updates
 	for {
 		select {
 		case <-r.Context().Done():
+			log.Printf("📡 Lobby SSE context cancelled for room %s", roomCode)
 			return
+		case <-heartbeat.C:
+			// Check if room still exists and is in lobby state
+			currentRoom, err := h.store.GetRoom(roomCode)
+			if err != nil {
+				log.Printf("📡 Heartbeat: Room %s no longer exists, closing SSE", roomCode)
+				return
+			}
+			if currentRoom.State != game.StateLobby {
+				log.Printf("📡 Heartbeat: Room %s no longer in lobby state (%s), closing SSE", roomCode, currentRoom.State)
+				return
+			}
+			// Send a small heartbeat to keep connection alive
+			sse.MergeFragments("", datastar.WithSelector("body"))
 		case event := <-events:
+			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
+			
+			// Check room state first - if game started, close immediately
+			currentRoom, err := h.store.GetRoom(roomCode)
+			if err == nil && (currentRoom.State == game.StateCountdown || currentRoom.State == game.StatePlaying) {
+				log.Printf("🎮 Room %s is in game state, closing lobby SSE", roomCode)
+				return
+			}
+			
 			switch event.Type {
 			case "player_joined", "player_left":
-				// Re-render lobby
+				// Re-render lobby only if still in lobby state
 				room, _ = h.store.GetRoom(roomCode)
-				h.renderLobby(sse, room, player)
+				if room.State == game.StateLobby {
+					h.renderLobby(sse, room, player)
+				} else {
+					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
+					return
+				}
 			case "game_started":
-				// Redirect to game page
+				// Redirect to game page and close lobby connection
+				log.Printf("🎮 Redirecting to game page for room %s", roomCode)
 				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
+				return // Close the lobby SSE connection
+			case "countdown_update", "game_playing":
+				// Game events should not be handled by lobby SSE - close connection
+				log.Printf("🎮 Game event received in lobby SSE for room %s, closing connection", roomCode)
+				return
+			default:
+				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
 		}
 	}
@@ -110,18 +155,40 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// renderLobby renders the lobby body
+// renderLobby renders the lobby content (without SSE trigger)
 func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
-	component := pages.LobbyBody(room, player)
+	// Only render lobby if room is in lobby state
+	if room.State != game.StateLobby {
+		log.Printf("🚫 Attempted to render lobby for room %s in state %s", room.Code, room.State)
+		return
+	}
+	
+	log.Printf("🎨 Rendering lobby content for room %s with %d players", room.Code, len(room.Players))
+	component := pages.LobbyContent(room, player)
 
 	// Render to string
 	html := renderToString(component)
+	
+	// Wrap in lobby-content div to ensure structure exists
+	wrappedHTML := `<div id="lobby-content">` + html + `</div>`
+	
+	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
+	
+	// Debug: show first 200 chars of rendered HTML
+	if len(wrappedHTML) > 200 {
+		log.Printf("📝 HTML preview: %s...", wrappedHTML[:200])
+	} else {
+		log.Printf("📝 Full HTML: %s", wrappedHTML)
+	}
 
-	// Send as fragment with morph mode and explicit selector
-	sse.MergeFragments(html, 
+	// Send as fragment to replace inner content of lobby-container
+	// This ensures #lobby-content always exists
+	sse.MergeFragments(wrappedHTML,
 		datastar.WithSelector("#lobby-container"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	log.Printf("✅ Sent lobby fragment update for room %s", room.Code)
 }
+
 
 // renderGame renders the game body
 func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
