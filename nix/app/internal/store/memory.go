@@ -40,7 +40,7 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 		State:      game.StateLobby,
 		Players:    make(map[string]*game.Player),
 		CreatedAt:  time.Now(),
-		MaxPlayers: 8,
+		MaxPlayers: 4,
 	}
 
 	s.rooms[code] = room

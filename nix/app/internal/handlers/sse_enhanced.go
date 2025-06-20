@@ -45,12 +45,12 @@ func (es *EventStore) AddEvent(roomCode string, event SSEEvent) {
 
 	events := es.events[roomCode]
 	events = append(events, event)
-	
+
 	// Keep only the most recent events
 	if len(events) > es.maxEvents {
 		events = events[len(events)-es.maxEvents:]
 	}
-	
+
 	es.events[roomCode] = events
 }
 
@@ -95,7 +95,7 @@ func (es *EventStore) GetEventsSince(roomCode string, lastEventID string) []SSEE
 type ConnectionTracker struct {
 	mu          sync.RWMutex
 	connections map[string]int64 // roomCode -> connection count
-	totalActive int64           // Total active connections (atomic)
+	totalActive int64            // Total active connections (atomic)
 }
 
 // NewConnectionTracker creates a new connection tracker
@@ -109,11 +109,11 @@ func NewConnectionTracker() *ConnectionTracker {
 func (ct *ConnectionTracker) AddConnection(roomCode string) {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()
-	
+
 	ct.connections[roomCode]++
 	atomic.AddInt64(&ct.totalActive, 1)
-	
-	log.Printf("SSE: Connection established for room %s (room total: %d, global total: %d)", 
+
+	log.Printf("SSE: Connection established for room %s (room total: %d, global total: %d)",
 		roomCode, ct.connections[roomCode], atomic.LoadInt64(&ct.totalActive))
 }
 
@@ -121,17 +121,17 @@ func (ct *ConnectionTracker) AddConnection(roomCode string) {
 func (ct *ConnectionTracker) RemoveConnection(roomCode string) {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()
-	
+
 	if count, exists := ct.connections[roomCode]; exists && count > 0 {
 		ct.connections[roomCode]--
 		atomic.AddInt64(&ct.totalActive, -1)
-		
+
 		if ct.connections[roomCode] == 0 {
 			delete(ct.connections, roomCode)
 		}
 	}
-	
-	log.Printf("SSE: Connection closed for room %s (room total: %d, global total: %d)", 
+
+	log.Printf("SSE: Connection closed for room %s (room total: %d, global total: %d)",
 		roomCode, ct.connections[roomCode], atomic.LoadInt64(&ct.totalActive))
 }
 
@@ -150,8 +150,8 @@ func (ct *ConnectionTracker) GetTotalConnections() int64 {
 // EnhancedHandler extends Handler with SSE improvements
 type EnhancedHandler struct {
 	*Handler
-	eventStore *EventStore
-	connTracker *ConnectionTracker
+	eventStore   *EventStore
+	connTracker  *ConnectionTracker
 	eventCounter int64 // Atomic counter for event IDs
 }
 
@@ -200,7 +200,7 @@ func (h *EnhancedHandler) StreamLobbyEnhanced(w http.ResponseWriter, r *http.Req
 
 	// Check for Last-Event-ID header
 	lastEventID := r.Header.Get("Last-Event-ID")
-	
+
 	// Create SSE connection
 	sse := datastar.NewSSE(w, r)
 
@@ -250,21 +250,21 @@ func (h *EnhancedHandler) StreamLobbyEnhanced(w http.ResponseWriter, r *http.Req
 		case <-ctx.Done():
 			log.Printf("SSE: Context cancelled for room %s", roomCode)
 			return
-			
+
 		case <-done:
 			log.Printf("SSE: Done channel closed for room %s", roomCode)
 			return
 
 		case <-heartbeatTicker.C:
 			// Send heartbeat as a script execution
-			heartbeatScript := fmt.Sprintf(`console.log('Heartbeat: %s, connections: %d');`, 
-				time.Now().Format(time.RFC3339), 
+			heartbeatScript := fmt.Sprintf(`console.log('Heartbeat: %s, connections: %d');`,
+				time.Now().Format(time.RFC3339),
 				h.connTracker.GetConnectionCount(roomCode))
 			sse.ExecuteScript(heartbeatScript)
-			
+
 			// Store heartbeat event for replay
 			eventID := h.generateEventID()
-			
+
 			// Store heartbeat event
 			h.eventStore.AddEvent(roomCode, SSEEvent{
 				ID:        eventID,
@@ -272,7 +272,7 @@ func (h *EnhancedHandler) StreamLobbyEnhanced(w http.ResponseWriter, r *http.Req
 				Data:      "ping",
 				Timestamp: time.Now(),
 			})
-			
+
 			log.Printf("SSE: Sent heartbeat for room %s", roomCode)
 
 		case event := <-events:
@@ -282,7 +282,7 @@ func (h *EnhancedHandler) StreamLobbyEnhanced(w http.ResponseWriter, r *http.Req
 				room, _ = h.store.GetRoom(roomCode)
 				eventID := h.generateEventID()
 				h.renderLobbyWithID(sse, room, player, eventID)
-				
+
 				// Store update event
 				h.eventStore.AddEvent(roomCode, SSEEvent{
 					ID:        eventID,
@@ -290,13 +290,12 @@ func (h *EnhancedHandler) StreamLobbyEnhanced(w http.ResponseWriter, r *http.Req
 					Data:      event.Type,
 					Timestamp: time.Now(),
 				})
-				
+
 			case "game_started":
 				// Redirect to game page
 				eventID := h.generateEventID()
-				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'", 
-				)
-				
+				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
+
 				// Store game started event
 				h.eventStore.AddEvent(roomCode, SSEEvent{
 					ID:        eventID,
@@ -338,7 +337,7 @@ func (h *EnhancedHandler) StreamGameEnhanced(w http.ResponseWriter, r *http.Requ
 
 	// Check for Last-Event-ID header
 	lastEventID := r.Header.Get("Last-Event-ID")
-	
+
 	// Create SSE connection
 	sse := datastar.NewSSE(w, r)
 
@@ -388,22 +387,22 @@ func (h *EnhancedHandler) StreamGameEnhanced(w http.ResponseWriter, r *http.Requ
 		case <-ctx.Done():
 			log.Printf("SSE: Game context cancelled for room %s", roomCode)
 			return
-			
+
 		case <-done:
 			log.Printf("SSE: Game done channel closed for room %s", roomCode)
 			return
 
 		case <-heartbeatTicker.C:
 			// Send heartbeat as a script execution
-			heartbeatScript := fmt.Sprintf(`console.log('Game heartbeat: %s, connections: %d, state: %s');`, 
-				time.Now().Format(time.RFC3339), 
+			heartbeatScript := fmt.Sprintf(`console.log('Game heartbeat: %s, connections: %d, state: %s');`,
+				time.Now().Format(time.RFC3339),
 				h.connTracker.GetConnectionCount(roomCode),
 				room.State)
 			sse.ExecuteScript(heartbeatScript)
-			
+
 			// Store heartbeat event for replay
 			eventID := h.generateEventID()
-			
+
 			// Store heartbeat event
 			h.eventStore.AddEvent(roomCode, SSEEvent{
 				ID:        eventID,
@@ -411,17 +410,17 @@ func (h *EnhancedHandler) StreamGameEnhanced(w http.ResponseWriter, r *http.Requ
 				Data:      "ping",
 				Timestamp: time.Now(),
 			})
-			
+
 			log.Printf("SSE: Sent game heartbeat for room %s", roomCode)
 
 		case <-events:
 			// Re-render on any event
 			room, _ = h.store.GetRoom(roomCode)
 			player = room.GetPlayer(player.ID) // Refresh player data
-			
+
 			eventID := h.generateEventID()
 			h.renderGameWithID(sse, room, player, eventID)
-			
+
 			// Store game update event
 			h.eventStore.AddEvent(roomCode, SSEEvent{
 				ID:        eventID,
@@ -441,7 +440,7 @@ func (h *EnhancedHandler) renderLobbyWithID(sse *datastar.ServerSentEventGenerat
 	html := renderToString(component)
 
 	// Send as fragment with morph mode and explicit selector
-	sse.MergeFragments(html, 
+	sse.MergeFragments(html,
 		datastar.WithSelector("#lobby-container"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 }

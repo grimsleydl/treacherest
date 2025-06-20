@@ -66,7 +66,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("✅ Game started successfully for room %s", roomCode)
-	
+
 	// Use datastar to redirect directly in the POST response
 	sse := datastar.NewSSE(w, r)
 	sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
