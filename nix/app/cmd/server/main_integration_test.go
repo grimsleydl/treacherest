@@ -160,4 +160,3 @@ func TestMainFunctionErrors(t *testing.T) {
 		}
 	})
 }
-
