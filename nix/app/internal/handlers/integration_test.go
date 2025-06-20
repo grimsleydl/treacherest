@@ -213,14 +213,15 @@ func (w *sseResponseWriter) Write(data []byte) (int, error) {
 	// Capture the data
 	n, err := w.ResponseRecorder.Write(data)
 	
-	// Parse SSE events
+	// Parse SSE events - looking specifically for HTML fragments
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
-		if strings.HasPrefix(line, "data: ") {
-			eventData := strings.TrimPrefix(line, "data: ")
-			if eventData != "" {
+		if strings.HasPrefix(line, "data: fragments ") {
+			// Extract the HTML fragment
+			htmlFragment := strings.TrimPrefix(line, "data: fragments ")
+			if htmlFragment != "" {
 				select {
-				case w.client.events <- eventData:
+				case w.client.events <- htmlFragment:
 				default:
 					// Buffer full, skip
 				}

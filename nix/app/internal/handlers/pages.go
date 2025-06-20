@@ -94,7 +94,16 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Create player and add to room
 	sessionID := getOrCreateSession(w, r)
-	player := game.NewPlayer(generatePlayerID(), playerName, sessionID)
+	
+	// Check if we have an existing player ID in the cookie (for reconnection)
+	var playerID string
+	if playerCookie != nil {
+		playerID = playerCookie.Value
+	} else {
+		playerID = generatePlayerID()
+	}
+	
+	player := game.NewPlayer(playerID, playerName, sessionID)
 
 	err = room.AddPlayer(player)
 	if err != nil {
