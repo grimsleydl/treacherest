@@ -37,17 +37,21 @@ This document tracks the current implementation status of the Treacherest projec
 - All packages now have comprehensive test coverage
 - Template testing helpers created for future use
 
-### Phase 1: Critical Bug Fixes 🟡 READY TO START
-**Status**: Ready to start (Phase 0 complete)
+### Phase 1: Critical Bug Fixes 🟢 IN PROGRESS
+**Status**: In Progress (Phase 0 complete)
 
 #### Known Issues
 - SSE updates throwing "NoTargetsFound" errors
-- Join flow using hardcoded HTML instead of Templ templates
+- ~~Join flow using hardcoded HTML instead of Templ templates~~ ✅ FIXED
 - Direct URL room joining not working properly
+
+#### Completed Fixes ✅
+- [x] Replaced hardcoded HTML join form with proper Templ template
+- [x] Added test coverage for join flow template
 
 #### Requirements
 - All fixes must have tests written FIRST (TDD)
-- Cannot proceed until Phase 0 testing is complete
+- Cannot proceed until Phase 0 testing is complete ✅
 
 ### Phase 2: Core Game Mechanics 🚫 NOT STARTED
 **Status**: Blocked on Phase 0 and 1
@@ -64,10 +68,10 @@ This document tracks the current implementation status of the Treacherest projec
 |---------------------|----------|-----------------------------|
 | `internal/game`     | 97.8%    | ✅ Excellent                |
 | `internal/store`    | 100%     | ✅ Excellent                |
-| `internal/handlers` | 66%      | ⚠️ Good progress            |
-| `cmd/server`        | 0%       | ❌ No tests                 |
-| `internal/views`    | 0%       | ❌ No tests                 |
-| **Total**           | 28.8%    | ❌ Below requirement (>80%) |
+| `internal/handlers` | 94%      | ✅ Excellent                |
+| `cmd/server`        | 95.8%    | ✅ Excellent                |
+| `internal/views`    | 72.6-77.1% | ✅ Good                 |
+| **Total**           | 80.9%    | ✅ Meets requirement (>80%) |
 
 ## Architectural Decisions
 
