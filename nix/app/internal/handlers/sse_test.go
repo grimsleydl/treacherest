@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"treacherest/internal/store"
 
 	"github.com/go-chi/chi/v5"
+	datastar "github.com/starfederation/datastar/sdk/go"
 )
 
 func TestHandler_StreamLobby(t *testing.T) {
@@ -327,20 +329,85 @@ func TestHandler_StreamGame(t *testing.T) {
 }
 
 func TestRenderToString(t *testing.T) {
-	// This test would require a real Templ component
-	// Since renderToString is a simple wrapper, we'll skip for now
-	t.Skip("Requires real Templ component - covered by integration tests")
+	// Test with a simple templ component
+	// We'll create a minimal component that implements templ.Component
+	component := templTestComponent{content: "<div>Test Content</div>"}
+	
+	result := renderToString(component)
+	
+	if result != "<div>Test Content</div>" {
+		t.Errorf("expected '<div>Test Content</div>', got %s", result)
+	}
+}
+
+// templTestComponent is a test implementation of templ.Component
+type templTestComponent struct {
+	content string
+}
+
+func (t templTestComponent) Render(ctx context.Context, w io.Writer) error {
+	_, err := w.Write([]byte(t.content))
+	return err
 }
 
 func TestSSEHelpers(t *testing.T) {
 	t.Run("renderLobby sends correct selector", func(t *testing.T) {
-		// This test would require mocking datastar.ServerSentEventGenerator
-		// which is complex. Will be covered in integration tests.
-		t.Skip("Requires datastar SSE mock - covered in integration tests")
+		h := New(store.NewMemoryStore())
+		
+		// Create test data
+		room, _ := h.store.CreateRoom()
+		player := game.NewPlayer("p1", "Player 1", "session1")
+		room.AddPlayer(player)
+		
+		// Create a test writer and request
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Accept", "text/event-stream")
+		
+		// Create SSE generator
+		sse := datastar.NewSSE(w, req)
+		
+		// Call renderLobby
+		h.renderLobby(sse, room, player)
+		
+		// Verify response contains expected data
+		body := w.Body.String()
+		if !strings.Contains(body, "data:") {
+			t.Error("expected SSE data in response")
+		}
+		if !strings.Contains(body, "lobby-container") {
+			t.Error("expected lobby-container selector in response")
+		}
 	})
 	
 	t.Run("renderGame sends correct selector", func(t *testing.T) {
-		// Similar to above
-		t.Skip("Requires datastar SSE mock - covered in integration tests")
+		h := New(store.NewMemoryStore())
+		
+		// Create test data
+		room, _ := h.store.CreateRoom()
+		player := game.NewPlayer("p1", "Player 1", "session1")
+		player.Role = &game.Role{Name: "Villager"}
+		room.AddPlayer(player)
+		room.State = game.StatePlaying
+		
+		// Create a test writer and request
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Accept", "text/event-stream")
+		
+		// Create SSE generator
+		sse := datastar.NewSSE(w, req)
+		
+		// Call renderGame
+		h.renderGame(sse, room, player)
+		
+		// Verify response contains expected data
+		body := w.Body.String()
+		if !strings.Contains(body, "data:") {
+			t.Error("expected SSE data in response")
+		}
+		if !strings.Contains(body, "game-container") {
+			t.Error("expected game-container selector in response")
+		}
 	})
 }
