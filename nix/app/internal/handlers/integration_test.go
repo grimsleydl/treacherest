@@ -28,7 +28,7 @@ type IntegrationTestHelper struct {
 func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
 	gameStore := store.NewMemoryStore()
 	h := New(gameStore)
-	
+
 	// Set up router with all routes
 	r := chi.NewRouter()
 	r.Get("/", h.Home)
@@ -39,7 +39,7 @@ func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
 	r.Get("/game/{code}", h.GamePage)
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
 	r.Get("/sse/game/{code}", h.StreamGame)
-	
+
 	return &IntegrationTestHelper{
 		t:       t,
 		handler: h,
@@ -54,20 +54,20 @@ func (h *IntegrationTestHelper) CreateRoom(playerName string) (string, *http.Coo
 	req := httptest.NewRequest("POST", "/room/new", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
-	
+
 	h.router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusSeeOther {
 		h.t.Fatalf("Expected redirect, got %d", w.Code)
 	}
-	
+
 	location := w.Header().Get("Location")
 	if !strings.HasPrefix(location, "/room/") {
 		h.t.Fatalf("Expected redirect to room, got %s", location)
 	}
-	
+
 	roomCode := strings.TrimPrefix(location, "/room/")
-	
+
 	// Get player cookie
 	var playerCookie *http.Cookie
 	for _, cookie := range w.Result().Cookies() {
@@ -76,11 +76,11 @@ func (h *IntegrationTestHelper) CreateRoom(playerName string) (string, *http.Coo
 			break
 		}
 	}
-	
+
 	if playerCookie == nil {
 		h.t.Fatal("No player cookie set")
 	}
-	
+
 	return roomCode, playerCookie
 }
 
@@ -88,13 +88,13 @@ func (h *IntegrationTestHelper) CreateRoom(playerName string) (string, *http.Coo
 func (h *IntegrationTestHelper) JoinRoom(roomCode, playerName string) *http.Cookie {
 	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+url.QueryEscape(playerName), nil)
 	w := httptest.NewRecorder()
-	
+
 	h.router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		h.t.Fatalf("Expected OK, got %d", w.Code)
 	}
-	
+
 	// Get player cookie
 	var playerCookie *http.Cookie
 	for _, cookie := range w.Result().Cookies() {
@@ -103,11 +103,11 @@ func (h *IntegrationTestHelper) JoinRoom(roomCode, playerName string) *http.Cook
 			break
 		}
 	}
-	
+
 	if playerCookie == nil {
 		h.t.Fatal("No player cookie set")
 	}
-	
+
 	return playerCookie
 }
 
@@ -116,9 +116,9 @@ func (h *IntegrationTestHelper) StartGame(roomCode string, playerCookie *http.Co
 	req := httptest.NewRequest("POST", "/room/"+roomCode+"/start", nil)
 	req.AddCookie(playerCookie)
 	w := httptest.NewRecorder()
-	
+
 	h.router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		h.t.Fatalf("Expected OK, got %d", w.Code)
 	}
@@ -129,9 +129,9 @@ func (h *IntegrationTestHelper) LeaveRoom(roomCode string, playerCookie *http.Co
 	req := httptest.NewRequest("POST", "/room/"+roomCode+"/leave", nil)
 	req.AddCookie(playerCookie)
 	w := httptest.NewRecorder()
-	
+
 	h.router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusSeeOther {
 		h.t.Fatalf("Expected redirect, got %d", w.Code)
 	}
@@ -157,28 +157,28 @@ func (h *IntegrationTestHelper) NewSSEClient(path string, playerCookie *http.Coo
 		events: make(chan string, 10),
 		errors: make(chan error, 1),
 	}
-	
+
 	// Create request with context
 	req := httptest.NewRequest("GET", path, nil).WithContext(ctx)
 	req.Header.Set("Accept", "text/event-stream")
 	if playerCookie != nil {
 		req.AddCookie(playerCookie)
 	}
-	
+
 	// Create a custom response writer that captures SSE data
 	w := &sseResponseWriter{
 		ResponseRecorder: httptest.NewRecorder(),
-		client:          client,
+		client:           client,
 	}
-	
+
 	// Start the SSE handler in a goroutine
 	go func() {
 		h.router.ServeHTTP(w, req)
 	}()
-	
+
 	// Give the connection time to establish
 	time.Sleep(100 * time.Millisecond)
-	
+
 	return client
 }
 
@@ -209,10 +209,10 @@ type sseResponseWriter struct {
 func (w *sseResponseWriter) Write(data []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	// Capture the data
 	n, err := w.ResponseRecorder.Write(data)
-	
+
 	// Parse SSE events - looking specifically for HTML fragments
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
@@ -228,7 +228,7 @@ func (w *sseResponseWriter) Write(data []byte) (int, error) {
 			}
 		}
 	}
-	
+
 	return n, err
 }
 
@@ -248,14 +248,14 @@ func (h *IntegrationTestHelper) GetRoom(code string) *game.Room {
 // TestFullGameFlow tests a complete game flow
 func TestFullGameFlow(t *testing.T) {
 	helper := NewIntegrationTestHelper(t)
-	
+
 	// Create room
 	roomCode, hostCookie := helper.CreateRoom("Host Player")
-	
+
 	// Start SSE connection for host
 	hostSSE := helper.NewSSEClient("/sse/lobby/"+roomCode, hostCookie)
 	defer hostSSE.Close()
-	
+
 	// Wait for initial lobby state
 	event, err := hostSSE.WaitForEvent(2 * time.Second)
 	if err != nil {
@@ -264,14 +264,14 @@ func TestFullGameFlow(t *testing.T) {
 	if !strings.Contains(event, "Host Player") {
 		t.Error("Expected host player in lobby")
 	}
-	
+
 	// Join 3 more players
 	var playerCookies []*http.Cookie
 	for i := 2; i <= 4; i++ {
 		playerName := fmt.Sprintf("Player %d", i)
 		cookie := helper.JoinRoom(roomCode, playerName)
 		playerCookies = append(playerCookies, cookie)
-		
+
 		// Wait for join event
 		event, err = hostSSE.WaitForEvent(2 * time.Second)
 		if err != nil {
@@ -281,19 +281,19 @@ func TestFullGameFlow(t *testing.T) {
 			t.Errorf("Expected %s in lobby update", playerName)
 		}
 	}
-	
+
 	// Verify room has 4 players
 	room := helper.GetRoom(roomCode)
 	if len(room.Players) != 4 {
 		t.Errorf("Expected 4 players, got %d", len(room.Players))
 	}
-	
+
 	// Start game
 	helper.StartGame(roomCode, hostCookie)
-	
+
 	// Wait for countdown
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Verify game state changed
 	room = helper.GetRoom(roomCode)
 	if room.State != game.StateCountdown {
@@ -304,39 +304,39 @@ func TestFullGameFlow(t *testing.T) {
 // TestConcurrentJoins tests multiple players joining simultaneously
 func TestConcurrentJoins(t *testing.T) {
 	helper := NewIntegrationTestHelper(t)
-	
+
 	// Create room
 	roomCode, _ := helper.CreateRoom("Host")
-	
+
 	// Join 7 players concurrently
 	var wg sync.WaitGroup
 	errors := make(chan error, 7)
-	
+
 	for i := 2; i <= 8; i++ {
 		wg.Add(1)
 		go func(playerNum int) {
 			defer wg.Done()
-			
+
 			playerName := fmt.Sprintf("Player %d", playerNum)
 			req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+url.QueryEscape(playerName), nil)
 			w := httptest.NewRecorder()
-			
+
 			helper.router.ServeHTTP(w, req)
-			
+
 			if w.Code != http.StatusOK {
 				errors <- fmt.Errorf("player %d got status %d", playerNum, w.Code)
 			}
 		}(i)
 	}
-	
+
 	wg.Wait()
 	close(errors)
-	
+
 	// Check for errors
 	for err := range errors {
 		t.Error(err)
 	}
-	
+
 	// Verify room has exactly 8 players (max capacity)
 	room := helper.GetRoom(roomCode)
 	if len(room.Players) != 8 {
@@ -347,10 +347,10 @@ func TestConcurrentJoins(t *testing.T) {
 // TestPlayerReconnection tests player reconnection with same session
 func TestPlayerReconnection(t *testing.T) {
 	helper := NewIntegrationTestHelper(t)
-	
+
 	// Create room and join
 	roomCode, hostCookie := helper.CreateRoom("Host")
-	
+
 	// Get player ID from room
 	room := helper.GetRoom(roomCode)
 	var playerID string
@@ -358,33 +358,33 @@ func TestPlayerReconnection(t *testing.T) {
 		playerID = id
 		break
 	}
-	
+
 	// Simulate disconnect by leaving
 	helper.LeaveRoom(roomCode, hostCookie)
-	
+
 	// Verify player removed
 	room = helper.GetRoom(roomCode)
 	if len(room.Players) != 0 {
 		t.Error("Expected player to be removed")
 	}
-	
+
 	// Rejoin with same session cookie
 	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Host", nil)
 	req.AddCookie(hostCookie)
 	w := httptest.NewRecorder()
-	
+
 	helper.router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected OK on rejoin, got %d", w.Code)
 	}
-	
+
 	// Verify player restored with same ID
 	room = helper.GetRoom(roomCode)
 	if len(room.Players) != 1 {
 		t.Error("Expected player to rejoin")
 	}
-	
+
 	// Should have same player ID
 	for id := range room.Players {
 		if id != playerID {
@@ -396,32 +396,32 @@ func TestPlayerReconnection(t *testing.T) {
 // TestSSEReconnection tests SSE reconnection behavior
 func TestSSEReconnection(t *testing.T) {
 	helper := NewIntegrationTestHelper(t)
-	
+
 	// Create room
 	roomCode, hostCookie := helper.CreateRoom("Host")
-	
+
 	// Start first SSE connection
 	sse1 := helper.NewSSEClient("/sse/lobby/"+roomCode, hostCookie)
-	
+
 	// Wait for initial event
 	_, err := sse1.WaitForEvent(2 * time.Second)
 	if err != nil {
 		t.Fatalf("Failed to get initial event: %v", err)
 	}
-	
+
 	// Close first connection
 	sse1.Close()
-	
+
 	// Start second SSE connection (reconnection)
 	sse2 := helper.NewSSEClient("/sse/lobby/"+roomCode, hostCookie)
 	defer sse2.Close()
-	
+
 	// Should receive current state immediately
 	event, err := sse2.WaitForEvent(2 * time.Second)
 	if err != nil {
 		t.Fatalf("Failed to get reconnection event: %v", err)
 	}
-	
+
 	if !strings.Contains(event, "Host") {
 		t.Error("Expected current state on reconnection")
 	}
