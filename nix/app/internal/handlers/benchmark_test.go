@@ -13,6 +13,8 @@ import (
 	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
+	
+	"github.com/go-chi/chi/v5"
 )
 
 // BenchmarkRoomCreation benchmarks the time to create a new room
@@ -49,6 +51,10 @@ func BenchmarkJoinRoom(b *testing.B) {
 	room, _ := s.CreateRoom()
 	roomCode := room.Code
 
+	// Set up chi router
+	router := chi.NewRouter()
+	router.Get("/room/{code}", h.JoinRoom)
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Create a unique player name for each iteration
@@ -57,11 +63,7 @@ func BenchmarkJoinRoom(b *testing.B) {
 		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
 		w := httptest.NewRecorder()
 
-		// Mock chi URL param
-		ctx := context.WithValue(req.Context(), chiURLParamKey{}, map[string]string{"code": roomCode})
-		req = req.WithContext(ctx)
-
-		h.JoinRoom(w, req)
+		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			b.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
@@ -265,8 +267,6 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 	}
 }
 
-// Helper type for chi URL params in tests
-type chiURLParamKey struct{}
 
 // Additional benchmarks for specific operations
 
