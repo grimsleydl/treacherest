@@ -38,29 +38,29 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		// Track redirect events
 		redirectCount := atomic.Int32{}
 		sseCloseCount := atomic.Int32{}
-		
+
 		// All browsers connect to lobby SSE
 		var wg sync.WaitGroup
-		
+
 		for idx, browser := range browsers {
 			wg.Add(1)
 			go func(b *browserClient, browserIdx int) {
 				defer wg.Done()
-				
+
 				// Use custom writer to capture SSE data
 				captureWriter := &sseCaptureWriter{
 					ResponseRecorder: httptest.NewRecorder(),
 					data:             &bytes.Buffer{},
 				}
-				
+
 				// Connect to SSE
 				req := httptest.NewRequest("GET", "/sse/lobby/"+roomCode, nil)
 				req.AddCookie(b.playerCookie)
-				
+
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
 				req = req.WithContext(ctx)
-				
+
 				// Start SSE handler
 				done := make(chan bool)
 				go func() {
@@ -68,11 +68,11 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 					sseCloseCount.Add(1)
 					done <- true
 				}()
-				
+
 				// Monitor captured data
 				ticker := time.NewTicker(50 * time.Millisecond)
 				defer ticker.Stop()
-				
+
 				for {
 					select {
 					case <-done:
@@ -82,14 +82,14 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 						if len(data) > 0 {
 							t.Logf("Browser %d SSE data sample: %.200s", browserIdx, data)
 						}
-						
+
 						// Check for redirect in SSE data format
 						if strings.Contains(data, "executeScript") || strings.Contains(data, "window.location") {
 							redirectCount.Add(1)
 							t.Logf("Browser %d found redirect in SSE data", browserIdx)
 						}
 						return
-						
+
 					case <-ticker.C:
 						// Check periodically
 						data := captureWriter.data.String()
@@ -99,7 +99,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 							cancel()
 							return
 						}
-						
+
 					case <-ctx.Done():
 						t.Logf("Browser %d SSE timeout", browserIdx)
 						return
@@ -159,32 +159,32 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		// All browsers connect to game SSE
 		var wg sync.WaitGroup
 		countdownEvents := make([][]string, 3)
-		
+
 		for idx, browser := range browsers {
 			wg.Add(1)
 			go func(b *browserClient, browserIdx int) {
 				defer wg.Done()
-				
+
 				// Connect to game SSE
 				req := httptest.NewRequest("GET", "/sse/game/"+roomCode, nil)
 				req.AddCookie(b.playerCookie)
 				w := httptest.NewRecorder()
-				
+
 				ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
 				defer cancel()
 				req = req.WithContext(ctx)
-				
+
 				// Start SSE in goroutine
 				done := make(chan bool)
 				go func() {
 					router.ServeHTTP(w, req)
 					done <- true
 				}()
-				
+
 				// Monitor for countdown updates
 				ticker := time.NewTicker(100 * time.Millisecond)
 				defer ticker.Stop()
-				
+
 				for {
 					select {
 					case <-done:
@@ -291,11 +291,11 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		req1 := httptest.NewRequest("GET", "/sse/game/"+roomCode, nil)
 		req1.AddCookie(browser1.playerCookie)
 		w1 := httptest.NewRecorder()
-		
+
 		ctx1, cancel1 := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel1()
 		req1 = req1.WithContext(ctx1)
-		
+
 		// Start first connection
 		done1 := make(chan bool)
 		go func() {
@@ -305,22 +305,22 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 		// Wait for initial connection
 		time.Sleep(500 * time.Millisecond)
-		
+
 		// Disconnect (simulate network interruption)
 		cancel1()
 		<-done1
 
 		// Reconnect after 1 second
 		time.Sleep(1 * time.Second)
-		
+
 		req2 := httptest.NewRequest("GET", "/sse/game/"+roomCode, nil)
 		req2.AddCookie(browser1.playerCookie)
 		w2 := httptest.NewRecorder()
-		
+
 		ctx2, cancel2 := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel2()
 		req2 = req2.WithContext(ctx2)
-		
+
 		done2 := make(chan bool)
 		go func() {
 			router.ServeHTTP(w2, req2)
@@ -359,26 +359,26 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		// All browsers connect to SSE simultaneously
 		var wg sync.WaitGroup
 		successCount := atomic.Int32{}
-		
+
 		for _, browser := range browsers {
 			wg.Add(1)
 			go func(b *browserClient) {
 				defer wg.Done()
-				
+
 				req := httptest.NewRequest("GET", "/sse/lobby/"+roomCode, nil)
 				req.AddCookie(b.playerCookie)
 				w := httptest.NewRecorder()
-				
+
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
 				req = req.WithContext(ctx)
-				
+
 				done := make(chan bool)
 				go func() {
 					router.ServeHTTP(w, req)
 					done <- true
 				}()
-				
+
 				select {
 				case <-done:
 					// Check if we got valid SSE response
@@ -423,20 +423,20 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 			req := httptest.NewRequest("GET", "/sse/lobby/"+roomCode, nil)
 			req.AddCookie(browser1.playerCookie)
 			w := httptest.NewRecorder()
-			
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			req = req.WithContext(ctx)
-			
+
 			done := make(chan bool)
 			go func() {
 				router.ServeHTTP(w, req)
 				done <- true
 			}()
-			
+
 			ticker := time.NewTicker(50 * time.Millisecond)
 			defer ticker.Stop()
-			
+
 			lastLen := 0
 			for {
 				select {
@@ -467,20 +467,20 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 			req := httptest.NewRequest("GET", "/sse/lobby/"+roomCode, nil)
 			req.AddCookie(browser2.playerCookie)
 			w := httptest.NewRecorder()
-			
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			req = req.WithContext(ctx)
-			
+
 			done := make(chan bool)
 			go func() {
 				router.ServeHTTP(w, req)
 				done <- true
 			}()
-			
+
 			ticker := time.NewTicker(50 * time.Millisecond)
 			defer ticker.Stop()
-			
+
 			lastLen := 0
 			for {
 				select {
@@ -524,7 +524,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		timeout := time.After(3 * time.Second)
 		browser1Events := []string{}
 		browser2Events := []string{}
-		
+
 		collecting := true
 		for collecting {
 			select {
@@ -566,15 +566,15 @@ func (b *browserClient) close() {
 func joinRoomAsPlayer(t *testing.T, router *chi.Mux, roomCode, playerName string) *browserClient {
 	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
 	w := httptest.NewRecorder()
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Fatalf("Failed to join room as %s: status %d", playerName, w.Code)
 	}
-	
+
 	client := &browserClient{roomCode: roomCode}
-	
+
 	for _, cookie := range w.Result().Cookies() {
 		if cookie.Name == "session" {
 			client.sessionCookie = cookie
@@ -582,30 +582,30 @@ func joinRoomAsPlayer(t *testing.T, router *chi.Mux, roomCode, playerName string
 			client.playerCookie = cookie
 		}
 	}
-	
+
 	if client.playerCookie == nil {
 		t.Fatalf("No player cookie received for %s", playerName)
 	}
-	
+
 	return client
 }
 
 // setupSSETestRouter creates a test router with SSE routes
 func setupSSETestRouter(h *Handler) *chi.Mux {
 	router := chi.NewRouter()
-	
+
 	// Page routes
 	router.Get("/room/{code}", h.JoinRoom)
 	router.Get("/game/{code}", h.GamePage)
-	
+
 	// SSE routes
 	router.Get("/sse/lobby/{code}", h.StreamLobby)
 	router.Get("/sse/game/{code}", h.StreamGame)
-	
+
 	// Action routes
 	router.Post("/action/start/{code}", h.StartGame)
 	router.Post("/action/leave/{code}", h.LeaveRoom)
-	
+
 	return router
 }
 
@@ -619,10 +619,10 @@ type sseCaptureWriter struct {
 func (w *sseCaptureWriter) Write(b []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	
+
 	// Capture to our buffer
 	w.data.Write(b)
-	
+
 	// Also write to ResponseRecorder
 	return w.ResponseRecorder.Write(b)
 }
