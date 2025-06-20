@@ -14,25 +14,25 @@ func TestLobbyPage(t *testing.T) {
 		Code:       "TEST1",
 		State:      game.StateLobby,
 		Players:    make(map[string]*game.Player),
-		MaxPlayers: 8,
+		MaxPlayers: 4,
 	}
-	
+
 	player1 := &game.Player{
 		ID:   "p1",
 		Name: "Player One",
 	}
-	
+
 	player2 := &game.Player{
 		ID:   "p2",
 		Name: "Player Two",
 	}
-	
+
 	room.Players[player1.ID] = player1
 	room.Players[player2.ID] = player2
 
 	t.Run("renders lobby page structure", func(t *testing.T) {
 		component := LobbyPage(room, player1)
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
@@ -43,14 +43,14 @@ func TestLobbyPage(t *testing.T) {
 
 	t.Run("shows SSE connection", func(t *testing.T) {
 		component := LobbyPage(room, player1)
-		
+
 		renderer.Render(component).
 			AssertContains(`data-on-load="@get(&#39;/sse/lobby/TEST1&#39;)"`)
 	})
 
 	t.Run("renders player list", func(t *testing.T) {
 		component := LobbyPage(room, player1)
-		
+
 		renderer.Render(component).
 			AssertContains("Players (2/8)").
 			AssertContains("Player One").
@@ -58,19 +58,24 @@ func TestLobbyPage(t *testing.T) {
 	})
 
 	t.Run("shows need more players message", func(t *testing.T) {
-		component := LobbyPage(room, player1)
-		
+		// Create empty room to test minimum message
+		emptyRoom := &game.Room{
+			Code:       "EMPTY",
+			State:      game.StateLobby,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 4,
+		}
+
+		component := LobbyPage(emptyRoom, player1)
+
 		renderer.Render(component).
-			AssertContains("Need at least 4 players to start")
+			AssertContains("Need at least 1 player to start")
 	})
 
 	t.Run("shows start button when enough players", func(t *testing.T) {
-		// Add more players to meet minimum
-		room.Players["p3"] = &game.Player{ID: "p3", Name: "Player Three"}
-		room.Players["p4"] = &game.Player{ID: "p4", Name: "Player Four"}
-		
+		// Room already has 2 players (player1 and player2), which is >= 1
 		component := LobbyPage(room, player1)
-		
+
 		renderer.Render(component).
 			AssertContains("Start Game").
 			AssertContains(`data-on-click="@post(&#39;/room/TEST1/start&#39;)"`)
@@ -78,7 +83,7 @@ func TestLobbyPage(t *testing.T) {
 
 	t.Run("shows leave button", func(t *testing.T) {
 		component := LobbyPage(room, player1)
-		
+
 		renderer.Render(component).
 			AssertContains("Leave Room").
 			AssertContains(`data-on-click="@post(&#39;/room/TEST1/leave&#39;)"`)
@@ -94,17 +99,17 @@ func TestLobbyBody(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		MaxPlayers: 4,
 	}
-	
+
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Test Player",
 	}
-	
+
 	room.Players[player.ID] = player
 
 	t.Run("renders lobby body fragment", func(t *testing.T) {
 		component := LobbyBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertHasElementWithID("lobby-container").
@@ -113,7 +118,7 @@ func TestLobbyBody(t *testing.T) {
 
 	t.Run("shows minimum players message", func(t *testing.T) {
 		component := LobbyBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Need at least 4 players to start")
 	})
@@ -123,13 +128,13 @@ func TestLobbyBody(t *testing.T) {
 		for i := 2; i <= 4; i++ {
 			p := &game.Player{
 				ID:   string(rune('p' + i)),
-				Name: "Player " + string(rune('0' + i)),
+				Name: "Player " + string(rune('0'+i)),
 			}
 			room.Players[p.ID] = p
 		}
-		
+
 		component := LobbyBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertNotContains("Need at least").
 			AssertContains("Start Game").

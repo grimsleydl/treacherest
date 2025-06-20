@@ -12,7 +12,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "ABC12"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
@@ -24,7 +24,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "XYZ99"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertHasElement("form").
 			AssertContains(`method="GET"`).
@@ -38,7 +38,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "ABC12"
 		errorMsg := "Room is full"
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertContains(errorMsg).
 			AssertHasClass("error-message")
@@ -48,7 +48,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "ABC12"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertNotContains("error-message")
 	})
@@ -57,7 +57,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "TEST1"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertHasElement("button").
 			AssertContains(`type="submit"`).
@@ -68,7 +68,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "ROOM1"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertContains(`type="text"`).
 			AssertContains(`autofocus`)
@@ -78,7 +78,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "LIVE1"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertContains(`data-store="{}"`)
 	})
@@ -87,7 +87,7 @@ func TestJoinPage(t *testing.T) {
 		roomCode := "GAME7"
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
-		
+
 		renderer.Render(component).
 			AssertContains("<h1>Join Room " + roomCode + "</h1>")
 	})
