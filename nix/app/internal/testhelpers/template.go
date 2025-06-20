@@ -114,7 +114,7 @@ func (r *TemplateRenderer) AssertHasClass(className string) *TemplateRenderer {
 		`class="[^"]*\b` + regexp.QuoteMeta(className) + `\b[^"]*"`,
 		`class='[^']*\b` + regexp.QuoteMeta(className) + `\b[^']*'`,
 	}
-	
+
 	found := false
 	for _, pattern := range patterns {
 		matched, _ := regexp.MatchString(pattern, r.html)
@@ -123,7 +123,7 @@ func (r *TemplateRenderer) AssertHasClass(className string) *TemplateRenderer {
 			break
 		}
 	}
-	
+
 	if !found {
 		r.t.Errorf("Expected to find element with class %q, but didn't find it.\nHTML: %s", className, r.html)
 	}
@@ -191,10 +191,10 @@ func (r *TemplateRenderer) AssertValid() *TemplateRenderer {
 	// Check for basic HTML structure issues
 	openTags := regexp.MustCompile(`<(\w+)(?:\s[^>]*)?>`)
 	closeTags := regexp.MustCompile(`</(\w+)>`)
-	
+
 	openMatches := openTags.FindAllStringSubmatch(r.html, -1)
 	closeMatches := closeTags.FindAllStringSubmatch(r.html, -1)
-	
+
 	// Count tags (basic check, not a full parser)
 	tagCounts := make(map[string]int)
 	for _, match := range openMatches {
@@ -206,21 +206,21 @@ func (r *TemplateRenderer) AssertValid() *TemplateRenderer {
 			}
 		}
 	}
-	
+
 	for _, match := range closeMatches {
 		if len(match) > 1 {
 			tag := match[1]
 			tagCounts[tag]--
 		}
 	}
-	
+
 	// Check for mismatched tags
 	for tag, count := range tagCounts {
 		if count != 0 {
 			r.t.Errorf("Mismatched tags: <%s> opened %d more times than closed", tag, count)
 		}
 	}
-	
+
 	return r
 }
 
