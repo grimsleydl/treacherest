@@ -13,7 +13,7 @@ import (
 	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
-	
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -59,7 +59,7 @@ func BenchmarkJoinRoom(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Create a unique player name for each iteration
 		playerName := fmt.Sprintf("Player%d", i)
-		
+
 		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
 		w := httptest.NewRecorder()
 
@@ -114,7 +114,7 @@ func BenchmarkSSEBroadcast(b *testing.B) {
 					RoomCode: room.Code,
 					Data:     room,
 				})
-				
+
 				// Wait for all subscribers to receive
 				for j := 0; j < numClients; j++ {
 					select {
@@ -124,7 +124,7 @@ func BenchmarkSSEBroadcast(b *testing.B) {
 						b.Fatalf("subscriber %d timeout", j)
 					}
 				}
-				
+
 				elapsed := time.Since(start)
 				b.ReportMetric(float64(elapsed.Microseconds()), "μs/broadcast")
 			}
@@ -163,7 +163,7 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 			}
 
 			b.ResetTimer()
-			
+
 			// Run concurrent SSE connections
 			var wg sync.WaitGroup
 			connectionsPerIteration := numClients
@@ -174,18 +174,18 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 					wg.Add(1)
 					go func(clientID int) {
 						defer wg.Done()
-						
+
 						// Select a room
 						room := rooms[clientID%numRooms]
-						
+
 						// Subscribe
 						ch := h.eventBus.Subscribe(room.Code)
 						defer h.eventBus.Unsubscribe(room.Code, ch)
-						
+
 						// Simulate SSE connection lifetime
 						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 						defer cancel()
-						
+
 						select {
 						case <-ctx.Done():
 							// Connection closed
@@ -194,7 +194,7 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 						}
 					}(j)
 				}
-				
+
 				wg.Wait()
 			}
 
@@ -212,7 +212,7 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 			// Force GC before measurement
 			runtime.GC()
 			runtime.GC()
-			
+
 			var m1 runtime.MemStats
 			runtime.ReadMemStats(&m1)
 
@@ -220,13 +220,13 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 			h := New(s)
 
 			rooms := make([]*game.Room, b.N)
-			
+
 			b.ResetTimer()
-			
+
 			// Create b.N rooms with numPlayers each
 			for i := 0; i < b.N; i++ {
 				room, _ := s.CreateRoom()
-				
+
 				// Add players
 				for j := 0; j < numPlayers; j++ {
 					player := game.NewPlayer(
@@ -235,7 +235,7 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 						fmt.Sprintf("session_%d_%d", i, j),
 					)
 					room.AddPlayer(player)
-					
+
 					// Subscribe to SSE (simulating real connections)
 					ch := h.eventBus.Subscribe(room.Code)
 					// Keep channel alive but drain events
@@ -245,7 +245,7 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 						}
 					}(ch)
 				}
-				
+
 				s.UpdateRoom(room)
 				rooms[i] = room
 			}
@@ -253,31 +253,30 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 			// Force GC and read memory stats
 			runtime.GC()
 			runtime.GC()
-			
+
 			var m2 runtime.MemStats
 			runtime.ReadMemStats(&m2)
 
 			// Calculate memory per room
 			totalMemory := m2.Alloc - m1.Alloc
 			memoryPerRoom := float64(totalMemory) / float64(b.N)
-			
+
 			b.ReportMetric(memoryPerRoom/1024, "KB/room")
 			b.ReportMetric(memoryPerRoom/1024/float64(numPlayers), "KB/player")
 		})
 	}
 }
 
-
 // Additional benchmarks for specific operations
 
 // BenchmarkEventBusPublish measures raw event bus performance
 func BenchmarkEventBusPublish(b *testing.B) {
 	eb := NewEventBus()
-	
+
 	// Create subscribers
 	numSubscribers := 100
 	roomCode := "TEST1"
-	
+
 	for i := 0; i < numSubscribers; i++ {
 		ch := eb.Subscribe(roomCode)
 		// Drain events in background
@@ -305,7 +304,7 @@ func BenchmarkEventBusPublish(b *testing.B) {
 func BenchmarkStoreOperations(b *testing.B) {
 	b.Run("CreateRoom", func(b *testing.B) {
 		s := store.NewMemoryStore()
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := s.CreateRoom()
@@ -319,7 +318,7 @@ func BenchmarkStoreOperations(b *testing.B) {
 		s := store.NewMemoryStore()
 		room, _ := s.CreateRoom()
 		code := room.Code
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			_, err := s.GetRoom(code)
@@ -332,7 +331,7 @@ func BenchmarkStoreOperations(b *testing.B) {
 	b.Run("UpdateRoom", func(b *testing.B) {
 		s := store.NewMemoryStore()
 		room, _ := s.CreateRoom()
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			err := s.UpdateRoom(room)
@@ -346,30 +345,30 @@ func BenchmarkStoreOperations(b *testing.B) {
 // Helper function to simulate realistic room state
 func createRealisticRoom(s *store.MemoryStore, numPlayers int) *game.Room {
 	room, _ := s.CreateRoom()
-	
+
 	for i := 0; i < numPlayers; i++ {
 		player := game.NewPlayer(
 			fmt.Sprintf("player%d", i),
 			fmt.Sprintf("Player %d", i),
 			fmt.Sprintf("session%d", i),
 		)
-		
+
 		// Assign roles if enough players
 		if i == 0 && numPlayers >= 3 {
 			player.Role = game.LeaderRole
 		} else {
 			player.Role = game.GuardianRole
 		}
-		
+
 		room.AddPlayer(player)
 	}
-	
+
 	// Set game state
 	if numPlayers >= 3 {
 		room.State = game.StatePlaying
 		room.StartedAt = time.Now()
 	}
-	
+
 	s.UpdateRoom(room)
 	return room
 }
