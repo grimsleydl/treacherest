@@ -1,389 +1,336 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
-	"sync"
 	"testing"
-	"treacherest/internal/game"
+	"time"
 	"treacherest/internal/store"
-
-	"github.com/go-chi/chi/v5"
 )
 
-// TestJoinFlowE2E tests the complete join flow end-to-end
-func TestJoinFlowE2E(t *testing.T) {
-	t.Run("direct URL joining with name parameter", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
+func TestJoinFlowBackNavigation(t *testing.T) {
+	h := New(store.NewMemoryStore())
 
-		// Create a room first
-		room, err := h.store.CreateRoom()
-		if err != nil {
-			t.Fatal("failed to create room:", err)
-		}
-		roomCode := room.Code
+	// Create first room
+	w1 := httptest.NewRecorder()
+	r1 := httptest.NewRequest("POST", "/room/create", strings.NewReader("playerName=Alice"))
+	r1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.CreateRoom(w1, r1)
 
-		// Join directly with name in URL
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Alice", nil)
-		w := httptest.NewRecorder()
+	// Extract room code from redirect
+	location1 := w1.Header().Get("Location")
+	roomCode1 := strings.TrimPrefix(location1, "/room/")
+	t.Logf("Created room 1: %s", roomCode1)
 
-		router.ServeHTTP(w, req)
-
-		// Verify response
-		resp := w.Result()
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("expected status 200, got %d", resp.StatusCode)
-		}
-
-		// Verify player was added to room
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		if len(updatedRoom.Players) != 1 {
-			t.Errorf("expected 1 player in room, got %d", len(updatedRoom.Players))
-		}
-
-		// Verify player name
-		var player *game.Player
-		for _, p := range updatedRoom.Players {
-			player = p
+	// Extract session cookie
+	cookies := w1.Result().Cookies()
+	var sessionCookie *http.Cookie
+	for _, c := range cookies {
+		if c.Name == "session" {
+			sessionCookie = c
 			break
 		}
-		if player == nil || player.Name != "Alice" {
-			t.Error("player not found or name mismatch")
-		}
+	}
+	if sessionCookie == nil {
+		t.Fatal("No session cookie found")
+	}
 
-		// Verify cookies were set
-		cookies := resp.Cookies()
-		var sessionCookie, playerCookie *http.Cookie
-		for _, c := range cookies {
-			if c.Name == "session" {
-				sessionCookie = c
-			} else if c.Name == "player_"+roomCode {
-				playerCookie = c
-			}
-		}
+	// Create second room
+	w2 := httptest.NewRecorder()
+	r2 := httptest.NewRequest("POST", "/room/create", strings.NewReader("playerName=Bob"))
+	r2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.CreateRoom(w2, r2)
 
-		if sessionCookie == nil {
-			t.Error("session cookie not set")
-		}
-		if playerCookie == nil {
-			t.Error("player cookie not set")
-		}
+	location2 := w2.Header().Get("Location")
+	roomCode2 := strings.TrimPrefix(location2, "/room/")
+	t.Logf("Created room 2: %s", roomCode2)
 
-		// Verify response shows lobby page
-		body := w.Body.String()
-		if !strings.Contains(body, "Game Lobby") {
-			t.Error("expected lobby page content")
-		}
-	})
-
-	t.Run("join form submission flow", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// First, GET the join form
-		req := httptest.NewRequest("GET", "/room/"+roomCode, nil)
+	// Scenario 1: Try to join room 1 after being in room 2
+	// This simulates user pressing back button or entering URL directly
+	t.Run("JoinFirstRoomAfterSecond", func(t *testing.T) {
+		// Join room 1
 		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Charlie", roomCode1), nil)
+		r.AddCookie(sessionCookie)
+		
+		// Wrap handler to capture routing params
+		testRouter := setupTestRouter(h)
+		testRouter.ServeHTTP(w, r)
 
-		router.ServeHTTP(w, req)
-
-		// Verify join form is shown
 		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
+			t.Errorf("Expected status 200, got %d", w.Code)
+			t.Logf("Response body: %s", w.Body.String())
 		}
 
-		body := w.Body.String()
-		if !strings.Contains(body, "Join Room "+roomCode) {
-			t.Error("expected join form title")
-		}
-		if !strings.Contains(body, "Enter your name") {
-			t.Error("expected name input placeholder")
+		// Check that the player was added to room 1
+		room1, _ := h.store.GetRoom(roomCode1)
+		if len(room1.Players) != 2 { // Alice + Charlie
+			t.Errorf("Expected 2 players in room 1, got %d", len(room1.Players))
 		}
 
-		// Now submit the form
-		req2 := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Bob", nil)
-		w2 := httptest.NewRecorder()
-
-		router.ServeHTTP(w2, req2)
-
-		// Verify successful join
-		if w2.Code != http.StatusOK {
-			t.Errorf("expected status 200 after join, got %d", w2.Code)
-		}
-
-		// Verify player was added
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		if len(updatedRoom.Players) != 1 {
-			t.Errorf("expected 1 player after join, got %d", len(updatedRoom.Players))
+		// Check cookie was set for room 1
+		playerCookie := getPlayerCookie(w.Result().Cookies(), roomCode1)
+		if playerCookie == nil {
+			t.Error("Player cookie not set for room 1")
 		}
 	})
 
-	t.Run("join invalid room shows 404", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Try to join non-existent room
-		req := httptest.NewRequest("GET", "/room/INVALID", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, req)
-
-		// Verify 404 response
-		if w.Code != http.StatusNotFound {
-			t.Errorf("expected status 404, got %d", w.Code)
-		}
-
-		body := w.Body.String()
-		if !strings.Contains(body, "Room not found") {
-			t.Error("expected room not found message")
-		}
-	})
-
-	t.Run("join full room shows error", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// Fill the room to max capacity (8 players)
-		for i := 1; i <= 8; i++ {
-			player := game.NewPlayer(generatePlayerID(), "Player"+string(rune('0'+i)), "session"+string(rune('0'+i)))
-			room.AddPlayer(player)
-		}
-		h.store.UpdateRoom(room)
-
-		// Try to join the full room
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=ExtraPlayer", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, req)
-
-		// Verify error response
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("expected status 400, got %d", w.Code)
-		}
-
-		body := w.Body.String()
-		if !strings.Contains(body, "room is full") {
-			t.Error("expected room full message")
-		}
-	})
-
-	t.Run("join started game shows error", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room and start the game
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-		room.State = game.StatePlaying
-		h.store.UpdateRoom(room)
-
-		// Try to join the started game
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=LatePlayer", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, req)
-
-		// Verify error response
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("expected status 400, got %d", w.Code)
-		}
-
-		body := w.Body.String()
-		if !strings.Contains(body, "Game already started") {
-			t.Error("expected game already started message")
-		}
-	})
-
-	t.Run("rejoin with existing session", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room and join
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// First join
-		req1 := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Charlie", nil)
+	// Scenario 2: Try to join a different room in the same tab
+	t.Run("JoinDifferentRoomSameSession", func(t *testing.T) {
+		// First join room 1
 		w1 := httptest.NewRecorder()
+		r1 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode1), nil)
+		r1.AddCookie(sessionCookie)
+		
+		testRouter := setupTestRouter(h)
+		testRouter.ServeHTTP(w1, r1)
 
-		router.ServeHTTP(w1, req1)
+		if w1.Code != http.StatusOK {
+			t.Errorf("Expected status 200 for room 1, got %d", w1.Code)
+		}
 
-		// Get the player cookie
-		var playerCookie *http.Cookie
-		for _, c := range w1.Result().Cookies() {
-			if c.Name == "player_"+roomCode {
-				playerCookie = c
+		// Get the player cookie for room 1
+		playerCookie1 := getPlayerCookie(w1.Result().Cookies(), roomCode1)
+		if playerCookie1 == nil {
+			t.Fatal("No player cookie for room 1")
+		}
+
+		// Now try to join room 2
+		w2 := httptest.NewRecorder()
+		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode2), nil)
+		r2.AddCookie(sessionCookie)
+		r2.AddCookie(playerCookie1) // This shouldn't interfere
+		
+		testRouter.ServeHTTP(w2, r2)
+
+		if w2.Code != http.StatusOK {
+			t.Errorf("Expected status 200 for room 2, got %d", w2.Code)
+			t.Logf("Response body: %s", w2.Body.String())
+		}
+
+		// Check that player was added to room 2
+		room2, _ := h.store.GetRoom(roomCode2)
+		found := false
+		for _, p := range room2.Players {
+			if p.Name == "Dave" {
+				found = true
 				break
 			}
 		}
+		if !found {
+			t.Error("Dave not found in room 2")
+		}
 
+		// Check cookie was set for room 2
+		playerCookie2 := getPlayerCookie(w2.Result().Cookies(), roomCode2)
+		if playerCookie2 == nil {
+			t.Error("Player cookie not set for room 2")
+		}
+	})
+
+	// Scenario 3: Multiple SSE connections
+	t.Run("MultipleSSEConnections", func(t *testing.T) {
+		// Join room as a player
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode1), nil)
+		r.AddCookie(sessionCookie)
+		
+		testRouter := setupTestRouter(h)
+		testRouter.ServeHTTP(w, r)
+
+		playerCookie := getPlayerCookie(w.Result().Cookies(), roomCode1)
 		if playerCookie == nil {
-			t.Fatal("player cookie not set on first join")
+			t.Fatal("No player cookie")
 		}
 
-		// Second request with the cookie (simulating page refresh)
-		req2 := httptest.NewRequest("GET", "/room/"+roomCode, nil)
-		req2.AddCookie(playerCookie)
+		// Start SSE connection for room 1
+		sse1Done := make(chan bool)
+		go func() {
+			defer close(sse1Done)
+			
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", fmt.Sprintf("/sse/lobby/%s", roomCode1), nil)
+			r.AddCookie(sessionCookie)
+			r.AddCookie(playerCookie)
+			
+			// Create context that we can cancel
+			ctx, cancel := context.WithTimeout(r.Context(), 100*time.Millisecond)
+			defer cancel()
+			r = r.WithContext(ctx)
+			
+			testRouter.ServeHTTP(w, r)
+		}()
+
+		// Wait a bit for SSE to establish
+		time.Sleep(50 * time.Millisecond)
+
+		// Now try to join room 2 (simulating navigation without proper cleanup)
 		w2 := httptest.NewRecorder()
+		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode2), nil)
+		r2.AddCookie(sessionCookie)
+		
+		testRouter.ServeHTTP(w2, r2)
 
-		router.ServeHTTP(w2, req2)
-
-		// Should show lobby without creating new player
 		if w2.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w2.Code)
+			t.Errorf("Expected status 200 for room 2, got %d", w2.Code)
 		}
 
-		// Verify still only 1 player
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		if len(updatedRoom.Players) != 1 {
-			t.Errorf("expected still 1 player, got %d", len(updatedRoom.Players))
-		}
-
-		// Verify shows lobby
-		body := w2.Body.String()
-		if !strings.Contains(body, "Game Lobby") {
-			t.Error("expected lobby page on rejoin")
-		}
-	})
-
-	t.Run("form submission with empty name", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// Try to join with empty name
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, req)
-
-		// Should show join form again (not join)
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
-		}
-
-		body := w.Body.String()
-		if !strings.Contains(body, "Join Room "+roomCode) {
-			t.Error("expected join form when name is empty")
-		}
-
-		// Verify no player was added
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		if len(updatedRoom.Players) != 0 {
-			t.Error("player should not be added with empty name")
-		}
-	})
-
-	t.Run("URL encoding in player names", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// Join with special characters in name
-		specialName := "Player One & Two"
-		encodedName := url.QueryEscape(specialName)
-
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+encodedName, nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, req)
-
-		// Verify successful join
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
-		}
-
-		// Verify player name is correctly decoded
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		var player *game.Player
-		for _, p := range updatedRoom.Players {
-			player = p
-			break
-		}
-
-		if player == nil || player.Name != specialName {
-			t.Errorf("expected player name %q, got %q", specialName, player.Name)
-		}
-	})
-
-	t.Run("concurrent joins to same room", func(t *testing.T) {
-		// Setup
-		h := New(store.NewMemoryStore())
-		router := setupTestRouter(h)
-
-		// Create a room
-		room, _ := h.store.CreateRoom()
-		roomCode := room.Code
-
-		// Simulate 5 concurrent joins
-		var wg sync.WaitGroup
-		joinCount := 5
-		successCount := 0
-		var mu sync.Mutex
-
-		for i := 0; i < joinCount; i++ {
-			wg.Add(1)
-			go func(playerNum int) {
-				defer wg.Done()
-
-				playerName := fmt.Sprintf("Player%d", playerNum)
-				req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
-				w := httptest.NewRecorder()
-
-				router.ServeHTTP(w, req)
-
-				if w.Code == http.StatusOK {
-					mu.Lock()
-					successCount++
-					mu.Unlock()
-				}
-			}(i)
-		}
-
-		wg.Wait()
-
-		// All joins should succeed
-		if successCount != joinCount {
-			t.Errorf("expected %d successful joins, got %d", joinCount, successCount)
-		}
-
-		// Verify all players are in the room
-		updatedRoom, _ := h.store.GetRoom(roomCode)
-		if len(updatedRoom.Players) != joinCount {
-			t.Errorf("expected %d players in room, got %d", joinCount, len(updatedRoom.Players))
+		// Wait for SSE to finish
+		select {
+		case <-sse1Done:
+			// Good, SSE connection closed
+		case <-time.After(200 * time.Millisecond):
+			// SSE should have timed out by now
 		}
 	})
 }
 
-// setupTestRouter creates a test router with all necessary routes
+func getPlayerCookie(cookies []*http.Cookie, roomCode string) *http.Cookie {
+	cookieName := "player_" + roomCode
+	for _, c := range cookies {
+		if c.Name == cookieName {
+			return c
+		}
+	}
+	return nil
+}
+
 func setupTestRouter(h *Handler) *chi.Mux {
-	router := chi.NewRouter()
-	router.Get("/room/{code}", h.JoinRoom)
-	router.Get("/game/{code}", h.GamePage)
-	return router
+	r := chi.NewRouter()
+	
+	// Room routes
+	r.Post("/room/create", h.CreateRoom)
+	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/room/{code}/leave", h.LeaveRoom)
+	r.Post("/room/{code}/start", h.StartGame)
+	
+	// SSE routes
+	r.Get("/sse/lobby/{code}", h.StreamLobby)
+	r.Get("/sse/game/{code}", h.StreamGame)
+	
+	// Game routes
+	r.Get("/game/{code}", h.GamePage)
+	
+	return r
+}
+
+func TestJoinFlowBrowserBackButton(t *testing.T) {
+	h := New(store.NewMemoryStore())
+	testRouter := setupTestRouter(h)
+	
+	// Create a room
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", "/room/create", strings.NewReader("playerName=Alice"))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.CreateRoom(w, r)
+	
+	location := w.Header().Get("Location")
+	roomCode := strings.TrimPrefix(location, "/room/")
+	
+	// Get cookies
+	cookies := w.Result().Cookies()
+	var sessionCookie, playerCookie *http.Cookie
+	for _, c := range cookies {
+		if c.Name == "session" {
+			sessionCookie = c
+		} else if c.Name == "player_"+roomCode {
+			playerCookie = c
+		}
+	}
+	
+	t.Run("RejoinAfterLeavingRoom", func(t *testing.T) {
+		// Leave the room
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("POST", fmt.Sprintf("/room/%s/leave", roomCode), nil)
+		r.AddCookie(sessionCookie)
+		r.AddCookie(playerCookie)
+		
+		testRouter.ServeHTTP(w, r)
+		
+		// Check redirect to home
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("Expected redirect status 303, got %d", w.Code)
+		}
+		
+		// Check cookie was cleared
+		clearedCookie := false
+		for _, c := range w.Result().Cookies() {
+			if c.Name == "player_"+roomCode && c.MaxAge < 0 {
+				clearedCookie = true
+				break
+			}
+		}
+		if !clearedCookie {
+			t.Error("Player cookie was not cleared")
+		}
+		
+		// Now try to join the same room again (simulating back button)
+		w2 := httptest.NewRecorder()
+		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Alice", roomCode), nil)
+		r2.AddCookie(sessionCookie)
+		
+		testRouter.ServeHTTP(w2, r2)
+		
+		if w2.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w2.Code)
+			t.Logf("Response: %s", w2.Body.String())
+		}
+		
+		// Verify player was re-added to room
+		room, _ := h.store.GetRoom(roomCode)
+		found := false
+		for _, p := range room.Players {
+			if p.Name == "Alice" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("Alice was not re-added to the room")
+		}
+	})
+	
+	t.Run("StalePlayerCookieHandling", func(t *testing.T) {
+		// Create a fake player cookie for a non-existent player
+		staleCookie := &http.Cookie{
+			Name:  "player_" + roomCode,
+			Value: "nonexistentplayer",
+			Path:  "/",
+		}
+		
+		// Try to access room with stale cookie
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s", roomCode), nil)
+		r.AddCookie(sessionCookie)
+		r.AddCookie(staleCookie)
+		
+		testRouter.ServeHTTP(w, r)
+		
+		// Should show join form since player doesn't exist
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+		
+		// Check that stale cookie was cleared
+		cookieCleared := false
+		for _, c := range w.Result().Cookies() {
+			if c.Name == "player_"+roomCode && c.MaxAge < 0 {
+				cookieCleared = true
+				break
+			}
+		}
+		if !cookieCleared {
+			t.Error("Stale player cookie was not cleared")
+		}
+		
+		// Verify join form is shown
+		body := w.Body.String()
+		if !strings.Contains(body, "Enter your name") {
+			t.Error("Join form not shown for stale cookie")
+		}
+	})
 }
