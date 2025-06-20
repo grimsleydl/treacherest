@@ -89,6 +89,11 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				if room.State == game.StateLobby {
 					// Refresh player reference in case it was updated
 					player = room.GetPlayer(player.ID)
+					if player == nil {
+						// Player was removed, close SSE connection gracefully
+						log.Printf("📡 Player no longer in room %s, closing SSE", roomCode)
+						return
+					}
 					h.renderLobby(sse, room, player)
 				} else {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
@@ -198,7 +203,7 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	// Render to string
 	html := renderToString(component)
 
-	// Wrap in lobby-content div to ensure structure exists
+	// Wrap content in lobby-content div to preserve DOM structure during morph
 	wrappedHTML := `<div id="lobby-content">` + html + `</div>`
 
 	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
@@ -210,8 +215,8 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		log.Printf("📝 Full HTML: %s", wrappedHTML)
 	}
 
-	// Send as fragment to replace inner content of lobby-container
-	// This ensures #lobby-content always exists
+	// Send fragment with wrapper to preserve DOM structure
+	// Target the parent container so the morph preserves #lobby-content
 	sse.MergeFragments(wrappedHTML,
 		datastar.WithSelector("#lobby-container"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
