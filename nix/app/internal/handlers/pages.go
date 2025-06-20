@@ -67,6 +67,20 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		// Player already in room
 		player := room.GetPlayer(playerCookie.Value)
 		if player != nil {
+			// If a new name is provided, update the player's name
+			newName := r.URL.Query().Get("name")
+			if newName != "" && newName != player.Name {
+				player.Name = newName
+				h.store.UpdateRoom(room)
+				
+				// Notify other players of the name change
+				h.eventBus.Publish(Event{
+					Type:     "player_updated",
+					RoomCode: room.Code,
+					Data:     room,
+				})
+			}
+			
 			// Show appropriate page based on game state
 			if room.State == game.StateLobby {
 				component := pages.LobbyPage(room, player)
@@ -75,6 +89,14 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/game/"+roomCode, http.StatusSeeOther)
 			}
 			return
+		} else {
+			// Cookie exists but player not in room - clear the stale cookie
+			http.SetCookie(w, &http.Cookie{
+				Name:     "player_" + room.Code,
+				Value:    "",
+				Path:     "/",
+				MaxAge:   -1,
+			})
 		}
 	}
 
