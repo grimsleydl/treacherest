@@ -83,10 +83,12 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			}
 
 			switch event.Type {
-			case "player_joined", "player_left":
+			case "player_joined", "player_left", "player_updated":
 				// Re-render lobby only if still in lobby state
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
+					// Refresh player reference in case it was updated
+					player = room.GetPlayer(player.ID)
 					h.renderLobby(sse, room, player)
 				} else {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
