@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Morph Issue</title>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-beta.11/bundles/datastar.js"></script>
+</head>
+<body>
+    <h1>Test Morphing with data-on-load</h1>
+    
+    <!-- This simulates our lobby structure -->
+    <div id="wrapper" data-on-load="console.log('data-on-load triggered!')">
+        <div id="lobby-container" class="container">
+            <div id="lobby-content">
+                <h2>Initial Content</h2>
+                <p>Player 1</p>
+            </div>
+        </div>
+    </div>
+    
+    <button onclick="simulateSSEUpdate()">Simulate SSE Update</button>
+    
+    <script>
+        // Monitor for errors
+        window.addEventListener('error', (e) => {
+            console.error('ERROR:', e.message);
+        });
+        
+        // Monitor DOM mutations
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                console.log('Mutation:', mutation.type, mutation.target.id || mutation.target.tagName);
+            });
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+        
+        function simulateSSEUpdate() {
+            console.log('=== Simulating SSE Update ===');
+            
+            // This simulates what our SSE handler sends
+            const fragment = `<div id="lobby-content">
+                <h2>Updated Content</h2>
+                <p>Player 1</p>
+                <p>Player 2</p>
+            </div>`;
+            
+            // Create a fake SSE event
+            const event = new MessageEvent('message', {
+                data: `event: datastar-merge-fragments
+data: selector #lobby-container
+data: mergeMode morph
+data: fragment ${fragment}`
+            });
+            
+            // Dispatch to see what happens
+            window.dispatchEvent(event);
+        }
+    </script>
+</body>
+</html>
