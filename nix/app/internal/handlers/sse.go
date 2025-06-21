@@ -3,11 +3,13 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/views/pages"
@@ -70,8 +72,12 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer in lobby state (%s), closing SSE", roomCode, currentRoom.State)
 				return
 			}
-			// Send a small heartbeat to keep connection alive
-			sse.MergeFragments("", datastar.WithSelector("body"))
+			// Send SSE comment heartbeat to keep connection alive
+			// Comments don't trigger any client-side processing
+			fmt.Fprintf(w, ": heartbeat\n\n")
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
 
@@ -203,10 +209,15 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	// Render to string
 	html := renderToString(component)
 
-	// Wrap content in lobby-content div to preserve DOM structure during morph
-	wrappedHTML := `<div id="lobby-content">` + html + `</div>`
+	// Wrap content in the full container structure to preserve DOM hierarchy during morph
+	wrappedHTML := `<div id="lobby-container" class="container"><div id="lobby-content">` + html + `</div></div>`
 
 	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
+	
+	// Enhanced debug logging to understand the exact HTML being sent
+	log.Printf("🔍 Raw LobbyContent HTML (first 150 chars): %.150s...", html)
+	log.Printf("🔍 Wrapped HTML structure check - has lobby-container: %v", strings.Contains(wrappedHTML, `id="lobby-container"`))
+	log.Printf("🔍 Wrapped HTML structure check - has lobby-content: %v", strings.Contains(wrappedHTML, `id="lobby-content"`))
 
 	// Debug: show first 200 chars of rendered HTML
 	if len(wrappedHTML) > 200 {
@@ -215,8 +226,8 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		log.Printf("📝 Full HTML: %s", wrappedHTML)
 	}
 
-	// Send fragment with wrapper to preserve DOM structure
-	// Target the parent container so the morph preserves #lobby-content
+	// Send fragment with full container structure
+	// Target the container and morph will preserve the entire DOM hierarchy
 	sse.MergeFragments(wrappedHTML,
 		datastar.WithSelector("#lobby-container"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
