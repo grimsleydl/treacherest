@@ -221,14 +221,15 @@ func TestHandler_LeaveRoom(t *testing.T) {
 		h.LeaveRoom(w, req)
 
 		resp := w.Result()
-		if resp.StatusCode != http.StatusSeeOther {
-			t.Errorf("expected status 303, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 
-		// Verify redirect to home
-		location := resp.Header.Get("Location")
-		if location != "/" {
-			t.Errorf("expected redirect to /, got %s", location)
+		// Verify Datastar redirect script
+		body := w.Body.String()
+		expectedScript := "window.location.href = '/'"
+		if !strings.Contains(body, expectedScript) {
+			t.Errorf("expected response to contain redirect script %q, got: %s", expectedScript, body)
 		}
 
 		// Verify player was removed from room
@@ -309,8 +310,15 @@ func TestHandler_LeaveRoom(t *testing.T) {
 
 		// Should still redirect even if player wasn't in room
 		resp := w.Result()
-		if resp.StatusCode != http.StatusSeeOther {
-			t.Errorf("expected status 303, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		// Verify Datastar redirect script
+		body := w.Body.String()
+		expectedScript := "window.location.href = '/'"
+		if !strings.Contains(body, expectedScript) {
+			t.Errorf("expected response to contain redirect script %q, got: %s", expectedScript, body)
 		}
 	})
 }

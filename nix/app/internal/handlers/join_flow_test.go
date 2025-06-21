@@ -251,9 +251,16 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 		
 		testRouter.ServeHTTP(w, r)
 		
-		// Check redirect to home
-		if w.Code != http.StatusSeeOther {
-			t.Errorf("Expected redirect status 303, got %d", w.Code)
+		// Check for Datastar redirect script
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+		
+		// Verify Datastar redirect script
+		body := w.Body.String()
+		expectedScript := "window.location.href = '/'"
+		if !strings.Contains(body, expectedScript) {
+			t.Errorf("Expected response to contain redirect script %q, got: %s", expectedScript, body)
 		}
 		
 		// Check cookie was cleared
