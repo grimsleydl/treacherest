@@ -549,6 +549,157 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 			t.Errorf("Browser2 missing events, got %v", browser2Events)
 		}
 	})
+
+	t.Run("TestMultipleBrowsersReceiveGameStartRedirect", func(t *testing.T) {
+		// Setup
+		h := New(store.NewMemoryStore())
+		router := setupSSETestRouter(h)
+
+		// Create room
+		room, _ := h.store.CreateRoom()
+		roomCode := room.Code
+
+		// Simulate 3 browsers joining
+		browsers := make([]*browserClient, 3)
+		for i := 0; i < 3; i++ {
+			playerName := fmt.Sprintf("Player%d", i+1)
+			browsers[i] = joinRoomAsPlayer(t, router, roomCode, playerName)
+			defer browsers[i].close()
+		}
+
+		// Track results for each browser
+		type browserResult struct {
+			gotRedirect bool
+			redirectData string
+			connectionClosed bool
+			eventsBeforeClose []string
+		}
+		results := make([]browserResult, 3)
+		var wg sync.WaitGroup
+
+		// All browsers connect to lobby SSE
+		for idx, browser := range browsers {
+			wg.Add(1)
+			go func(b *browserClient, browserIdx int) {
+				defer wg.Done()
+
+				// Use custom writer to capture SSE data
+				captureWriter := &sseCaptureWriter{
+					ResponseRecorder: httptest.NewRecorder(),
+					data:             &bytes.Buffer{},
+				}
+
+				// Connect to SSE
+				req := httptest.NewRequest("GET", "/sse/lobby/"+roomCode, nil)
+				req.AddCookie(b.playerCookie)
+
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				req = req.WithContext(ctx)
+
+				// Start SSE handler
+				done := make(chan bool)
+				go func() {
+					router.ServeHTTP(captureWriter, req)
+					results[browserIdx].connectionClosed = true
+					done <- true
+				}()
+
+				// Monitor captured data
+				ticker := time.NewTicker(10 * time.Millisecond)
+				defer ticker.Stop()
+
+				for {
+					select {
+					case <-done:
+						// SSE handler finished - capture final data
+						captureWriter.mu.Lock()
+						data := captureWriter.data.String()
+						captureWriter.mu.Unlock()
+
+						// Check for redirect
+						if strings.Contains(data, "datastar-execute-script") && strings.Contains(data, "window.location.href") {
+							results[browserIdx].gotRedirect = true
+							results[browserIdx].redirectData = data
+						}
+
+						// Log all data for debugging
+						t.Logf("Browser %d SSE closed. Got redirect: %v, Total data length: %d", 
+							browserIdx, results[browserIdx].gotRedirect, len(data))
+						
+						// Log the actual data for debugging
+						if len(data) > 0 {
+							t.Logf("Browser %d raw SSE data: %q", browserIdx, data)
+						}
+						return
+
+					case <-ticker.C:
+						// Check periodically for events
+						captureWriter.mu.Lock()
+						data := captureWriter.data.String()
+						captureWriter.mu.Unlock()
+
+						// Track any game events we see
+						if strings.Contains(data, "game_started") {
+							results[browserIdx].eventsBeforeClose = append(results[browserIdx].eventsBeforeClose, "game_started")
+						}
+						if strings.Contains(data, "countdown_update") {
+							results[browserIdx].eventsBeforeClose = append(results[browserIdx].eventsBeforeClose, "countdown_update")
+						}
+
+					case <-ctx.Done():
+						t.Errorf("Browser %d SSE timed out without closing", browserIdx)
+						return
+					}
+				}
+			}(browser, idx)
+		}
+
+		// Wait for SSE connections to establish
+		time.Sleep(100 * time.Millisecond)
+
+		// Start the game from browser 0
+		startReq := httptest.NewRequest("POST", "/action/start/"+roomCode, nil)
+		startReq.AddCookie(browsers[0].playerCookie)
+		startW := httptest.NewRecorder()
+		router.ServeHTTP(startW, startReq)
+
+		// Wait for all SSE handlers to complete
+		wg.Wait()
+
+		// Verify results
+		for i, result := range results {
+			t.Logf("Browser %d results: gotRedirect=%v, connectionClosed=%v, events=%v",
+				i, result.gotRedirect, result.connectionClosed, result.eventsBeforeClose)
+
+			// All browsers must receive redirect
+			if !result.gotRedirect {
+				t.Errorf("Browser %d did not receive redirect script", i)
+			}
+
+			// All connections must close after redirect
+			if !result.connectionClosed {
+				t.Errorf("Browser %d SSE connection did not close", i)
+			}
+
+			// Verify redirect contains correct URL
+			if result.gotRedirect && !strings.Contains(result.redirectData, "/game/"+roomCode) {
+				t.Errorf("Browser %d redirect URL incorrect: %s", i, result.redirectData)
+			}
+		}
+
+		// Additional verification: All browsers should have gotten redirects
+		redirectCount := 0
+		for _, result := range results {
+			if result.gotRedirect {
+				redirectCount++
+			}
+		}
+
+		if redirectCount != 3 {
+			t.Errorf("Expected all 3 browsers to receive redirects, but only %d did", redirectCount)
+		}
+	})
 }
 
 // browserClient simulates a browser with cookies
@@ -621,10 +772,12 @@ func (w *sseCaptureWriter) Write(b []byte) (int, error) {
 	defer w.mu.Unlock()
 
 	// Capture to our buffer
-	w.data.Write(b)
-
+	n, err := w.data.Write(b)
+	
 	// Also write to ResponseRecorder
-	return w.ResponseRecorder.Write(b)
+	w.ResponseRecorder.Write(b)
+	
+	return n, err
 }
 
 func (w *sseCaptureWriter) Flush() {

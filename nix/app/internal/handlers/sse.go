@@ -62,14 +62,10 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			log.Printf("📡 Lobby SSE context cancelled for room %s", roomCode)
 			return
 		case <-heartbeat.C:
-			// Check if room still exists and is in lobby state
-			currentRoom, err := h.store.GetRoom(roomCode)
+			// Check if room still exists
+			_, err := h.store.GetRoom(roomCode)
 			if err != nil {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing SSE", roomCode)
-				return
-			}
-			if currentRoom.State != game.StateLobby {
-				log.Printf("📡 Heartbeat: Room %s no longer in lobby state (%s), closing SSE", roomCode, currentRoom.State)
 				return
 			}
 			// Send SSE comment heartbeat to keep connection alive
@@ -80,13 +76,6 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
-
-			// Check room state first - if game started, close immediately
-			currentRoom, err := h.store.GetRoom(roomCode)
-			if err == nil && (currentRoom.State == game.StateCountdown || currentRoom.State == game.StatePlaying) {
-				log.Printf("🎮 Room %s is in game state, closing lobby SSE", roomCode)
-				return
-			}
 
 			switch event.Type {
 			case "player_joined", "player_left", "player_updated":
@@ -105,19 +94,15 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
 					return
 				}
-			case "game_started":
-				// Redirect to game page
-				log.Printf("🎮 Redirecting to game page for room %s", roomCode)
+			case "game_started", "countdown_update", "game_playing":
+				// Redirect to game page for all game transition events
+				log.Printf("🎮 Game transition event '%s' - redirecting to game page for room %s", event.Type, roomCode)
 				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
-				// Flush the SSE buffer to ensure redirect is sent immediately
+				// Flush immediately to ensure redirect is sent
 				if flusher, ok := w.(http.Flusher); ok {
 					flusher.Flush()
 				}
 				return // Close the lobby SSE connection
-			case "countdown_update", "game_playing":
-				// Game events should not be handled by lobby SSE - close connection
-				log.Printf("🎮 Game event received in lobby SSE for room %s, closing connection", roomCode)
-				return
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
