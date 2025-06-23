@@ -45,10 +45,7 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 
 	// Subscribe to events
 	events := h.eventBus.Subscribe(roomCode)
-	defer func() {
-		h.eventBus.Unsubscribe(events)
-		close(events) // SSE handler manages channel lifecycle
-	}()
+	defer h.eventBus.Unsubscribe(roomCode, events)
 
 	// Don't send initial render - page already has correct content
 	// SSE will only send updates when events occur
@@ -146,10 +143,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 	// Subscribe to events
 	events := h.eventBus.Subscribe(roomCode)
-	defer func() {
-		h.eventBus.Unsubscribe(events)
-		close(events) // SSE handler manages channel lifecycle
-	}()
+	defer h.eventBus.Unsubscribe(roomCode, events)
 
 	// Send initial render
 	h.renderGame(sse, room, player)
