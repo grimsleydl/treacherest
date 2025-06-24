@@ -3,12 +3,16 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/sdk/go"
+	"github.com/yeqown/go-qrcode/v2"
+	"github.com/yeqown/go-qrcode/writer/standard"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 	"treacherest/internal/game"
@@ -203,7 +207,7 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	wrappedHTML := `<div id="lobby-container" class="container"><div id="lobby-content">` + html + `</div></div>`
 
 	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
-	
+
 	// Enhanced debug logging to understand the exact HTML being sent
 	log.Printf("🔍 Raw LobbyContent HTML (first 150 chars): %.150s...", html)
 	log.Printf("🔍 Wrapped HTML structure check - has lobby-container: %v", strings.Contains(wrappedHTML, `id="lobby-container"`))
@@ -242,4 +246,229 @@ func renderToString(component templ.Component) string {
 	buf := &bytes.Buffer{}
 	component.Render(context.Background(), buf)
 	return buf.String()
+}
+
+// StreamHost streams host dashboard updates
+func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	log.Printf("📡 SSE connection established for host dashboard %s", roomCode)
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("📡 SSE requested for non-existent room: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the user is the host
+	hostCookie, err := r.Cookie("host_" + roomCode)
+	if err != nil || hostCookie.Value != "true" {
+		log.Printf("📡 Unauthorized host SSE attempt for room: %s", roomCode)
+		http.Error(w, "Unauthorized - Host access only", http.StatusUnauthorized)
+		return
+	}
+
+	// Get host player from cookie
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Host player not found", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Host player not found in room", http.StatusUnauthorized)
+		return
+	}
+
+	// Create SSE connection
+	sse := datastar.NewSSE(w, r)
+
+	// Generate and send QR code once
+	baseURL := getBaseURL(r)
+	qrURL := fmt.Sprintf("%s/room/%s", baseURL, roomCode)
+	
+	qrCode, err := generateQRCode(qrURL)
+	if err != nil {
+		log.Printf("❌ Failed to generate QR code for room %s: %v", roomCode, err)
+	} else if qrCode != "" {
+		// Send QR code as a signal
+		qrDataURI := fmt.Sprintf("data:image/png;base64,%s", qrCode)
+		signals := map[string]string{
+			"qrCode": qrDataURI,
+		}
+		if err := sse.MarshalAndMergeSignals(signals); err != nil {
+			log.Printf("❌ Failed to send QR code signal for room %s: %v", roomCode, err)
+		} else {
+			log.Printf("📱 Sent QR code for room %s", roomCode)
+		}
+	}
+
+	// Send initial player list
+	h.renderHostDashboard(sse, room, player)
+
+	// Subscribe to events
+	events := h.eventBus.Subscribe(roomCode)
+	defer h.eventBus.Unsubscribe(roomCode, events)
+
+	log.Printf("📡 Host SSE connection ready for room %s, waiting for events", roomCode)
+
+	// Set up a heartbeat to detect stale connections
+	heartbeat := time.NewTicker(30 * time.Second)
+	defer heartbeat.Stop()
+
+	// Stream updates
+	for {
+		select {
+		case <-r.Context().Done():
+			log.Printf("📡 Host SSE context cancelled for room %s", roomCode)
+			return
+		case <-heartbeat.C:
+			// Check if room still exists
+			_, err := h.store.GetRoom(roomCode)
+			if err != nil {
+				log.Printf("📡 Heartbeat: Room %s no longer exists, closing host SSE", roomCode)
+				return
+			}
+			// Send SSE comment heartbeat to keep connection alive
+			fmt.Fprintf(w, ": heartbeat\n\n")
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+		case event := <-events:
+			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
+
+			switch event.Type {
+			case "player_joined", "player_left", "player_updated":
+				// Re-render host dashboard for player changes
+				room, _ = h.store.GetRoom(roomCode)
+				if room.State == game.StateLobby {
+					// Refresh player reference in case it was updated
+					player = room.GetPlayer(player.ID)
+					if player == nil {
+						// Host was removed, close SSE connection gracefully
+						log.Printf("📡 Host no longer in room %s, closing SSE", roomCode)
+						return
+					}
+					h.renderHostDashboard(sse, room, player)
+				}
+			case "game_started":
+				// Update dashboard to show countdown state
+				room, _ = h.store.GetRoom(roomCode)
+				h.renderHostDashboard(sse, room, player)
+			case "countdown_update":
+				// Update countdown display
+				room, _ = h.store.GetRoom(roomCode)
+				h.renderHostDashboard(sse, room, player)
+			case "game_playing":
+				// Update dashboard to show game state
+				room, _ = h.store.GetRoom(roomCode)
+				h.renderHostDashboard(sse, room, player)
+			case "game_ended":
+				// Update dashboard to show ended state
+				room, _ = h.store.GetRoom(roomCode)
+				h.renderHostDashboard(sse, room, player)
+			default:
+				log.Printf("📡 Unknown event type %s for room %s in host SSE", event.Type, roomCode)
+			}
+		}
+	}
+}
+
+// renderHostDashboard renders the host dashboard content based on game state
+func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
+	var component templ.Component
+
+	// Choose the appropriate template based on game state
+	switch room.State {
+	case game.StateLobby:
+		component = pages.HostDashboardContent(room, player)
+	case game.StateCountdown:
+		component = pages.HostDashboardCountdown(room, player)
+	case game.StatePlaying:
+		component = pages.HostDashboardPlaying(room, player)
+	case game.StateEnded:
+		component = pages.HostDashboardEnded(room, player)
+	default:
+		component = pages.HostDashboardContent(room, player)
+	}
+
+	// Render to string
+	html := renderToString(component)
+
+	// Wrap content in the dashboard container structure to preserve DOM hierarchy during morph
+	wrappedHTML := fmt.Sprintf(`<div id="host-dashboard-container" class="host-dashboard"><div id="host-dashboard-content">%s</div></div>`, html)
+
+	log.Printf("🎨 Rendering host dashboard for room %s in state %s", room.Code, room.State)
+
+	// Send fragment with full container structure
+	sse.MergeFragments(wrappedHTML,
+		datastar.WithSelector("#host-dashboard-container"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+
+	log.Printf("✅ Sent host dashboard update for room %s", room.Code)
+}
+
+// generateQRCode generates a QR code for the given URL and returns it as base64 encoded PNG
+func generateQRCode(url string) (string, error) {
+	// Create QR code with medium error correction level
+	qrc, err := qrcode.NewWith(url, 
+		qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionMedium),
+		qrcode.WithEncodingMode(qrcode.EncModeByte),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create QR code: %w", err)
+	}
+
+	// Create a temporary file
+	tmpFile := fmt.Sprintf("/tmp/qr_%d.png", time.Now().UnixNano())
+	
+	// Create a writer with appropriate options
+	w, err := standard.New(tmpFile,
+		standard.WithBuiltinImageEncoder(standard.PNG_FORMAT),
+		standard.WithQRWidth(8), // 8 pixels per module
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create writer: %w", err)
+	}
+
+	// Save the QR code to the file
+	if err := qrc.Save(w); err != nil {
+		return "", fmt.Errorf("failed to save QR code: %w", err)
+	}
+
+	// Read the file back
+	data, err := os.ReadFile(tmpFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read QR code file: %w", err)
+	}
+
+	// Clean up the temporary file
+	os.Remove(tmpFile)
+
+	// Encode the PNG data as base64
+	encoded := base64.StdEncoding.EncodeToString(data)
+	
+	return encoded, nil
+}
+
+// getBaseURL constructs the base URL from the request
+func getBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	// Check for X-Forwarded-Proto header (common in reverse proxy setups)
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+
+	// Get host from request
+	host := r.Host
+	if forwardedHost := r.Header.Get("X-Forwarded-Host"); forwardedHost != "" {
+		host = forwardedHost
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, host)
 }
