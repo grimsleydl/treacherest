@@ -196,6 +196,54 @@ func TestHandler_JoinRoom(t *testing.T) {
 			t.Error("expected datastar attributes")
 		}
 	})
+
+	t.Run("preserves host status when joining with host cookie", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+
+		// Create a room first
+		room, _ := h.store.CreateRoom()
+		roomCode := room.Code
+
+		// Create a router to properly handle URL params
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		// Join with a name and host cookie
+		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Host+Player", nil)
+		// Add the host cookie
+		req.AddCookie(&http.Cookie{
+			Name:  "host_" + roomCode,
+			Value: "true",
+		})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		// Verify the player was added as a host
+		room, _ = h.store.GetRoom(roomCode)
+		var foundHost bool
+		for _, player := range room.Players {
+			if player.Name == "Host Player" && player.IsHost {
+				foundHost = true
+				break
+			}
+		}
+
+		if !foundHost {
+			t.Error("expected player to be marked as host when joining with host cookie")
+		}
+
+		// Verify host doesn't count toward player limit
+		activeCount := room.GetActivePlayerCount()
+		if activeCount != 0 {
+			t.Errorf("expected 0 active players (host shouldn't count), got %d", activeCount)
+		}
+	})
 }
 
 func TestHandler_GamePage(t *testing.T) {

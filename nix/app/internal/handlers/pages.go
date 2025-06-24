@@ -167,6 +167,12 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	player := game.NewPlayer(playerID, playerName, sessionID)
 
+	// Check if this player should be marked as a host
+	// This happens when they previously created the room as host-only
+	if hostCookie, err := r.Cookie("host_" + roomCode); err == nil && hostCookie.Value == "true" {
+		player.IsHost = true
+	}
+
 	err = room.AddPlayer(player)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
