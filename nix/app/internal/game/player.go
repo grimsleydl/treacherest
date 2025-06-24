@@ -12,6 +12,7 @@ type Player struct {
 	RoleRevealed bool
 	JoinedAt     time.Time
 	SessionID    string // Used for reconnection
+	IsHost       bool   // Indicates if the player is the host who created the room but doesn't participate
 }
 
 // NewPlayer creates a new player
@@ -21,5 +22,6 @@ func NewPlayer(id, name, sessionID string) *Player {
 		Name:      name,
 		SessionID: sessionID,
 		JoinedAt:  time.Now(),
+		IsHost:    false, // Default to false, must be explicitly set for hosts
 	}
 }
