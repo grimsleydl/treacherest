@@ -23,7 +23,7 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 
 	// Create handler with in-memory store
 	h := New(store.NewMemoryStore())
-	
+
 	// Create test server
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
@@ -43,71 +43,71 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 		// Player 1 creates room
 		page1 := browser.MustPage()
 		defer page1.MustClose()
-		
+
 		page1.MustNavigate(ts.URL)
-		
+
 		// Create room
 		page1.MustElement("input[name='name']").MustInput("Player1")
 		page1.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for lobby page
 		page1.MustWaitLoad()
 		assert.Contains(t, page1.MustInfo().URL, "/room/")
-		
+
 		// Extract room code from URL
 		roomCode := page1.MustInfo().URL[len(ts.URL+"/room/"):]
-		
+
 		// Verify initial DOM structure
 		lobbyContainer := page1.MustElement("#lobby-container")
 		assert.NotNil(t, lobbyContainer)
-		
+
 		lobbyContent := page1.MustElement("#lobby-content")
 		assert.NotNil(t, lobbyContent)
-		
+
 		// Verify Player 1 is shown
 		playerList := page1.MustElement(".player-list")
 		assert.Contains(t, playerList.MustText(), "Player1")
-		
+
 		// Player 2 joins
 		page2 := browser.MustPage()
 		defer page2.MustClose()
-		
+
 		page2.MustNavigate(ts.URL + "/room/" + roomCode)
 		page2.MustElement("input[name='name']").MustInput("Player2")
 		page2.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for SSE update
 		time.Sleep(500 * time.Millisecond)
-		
+
 		// Check Player 1's page still has correct DOM structure
 		lobbyContent1 := page1.MustElement("#lobby-content")
 		assert.NotNil(t, lobbyContent1, "Player 1 should still have #lobby-content after Player 2 joins")
-		
+
 		// Both players should see both names
 		playerList1 := page1.MustElement(".player-list")
 		assert.Contains(t, playerList1.MustText(), "Player1")
 		assert.Contains(t, playerList1.MustText(), "Player2")
-		
+
 		playerList2 := page2.MustElement(".player-list")
 		assert.Contains(t, playerList2.MustText(), "Player1")
 		assert.Contains(t, playerList2.MustText(), "Player2")
-		
+
 		// Player 3 joins
 		page3 := browser.MustPage()
 		defer page3.MustClose()
-		
+
 		page3.MustNavigate(ts.URL + "/room/" + roomCode)
 		page3.MustElement("input[name='name']").MustInput("Player3")
 		page3.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for SSE update
 		time.Sleep(500 * time.Millisecond)
-		
+
 		// Check all pages still have correct DOM structure
 		for i, page := range []*rod.Page{page1, page2, page3} {
 			lobbyContent := page.MustElement("#lobby-content")
 			assert.NotNil(t, lobbyContent, fmt.Sprintf("Player %d should still have #lobby-content after Player 3 joins", i+1))
-			
+
 			// All players should see all three names
 			playerList := page.MustElement(".player-list")
 			text := playerList.MustText()
@@ -115,7 +115,7 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 			assert.Contains(t, text, "Player2")
 			assert.Contains(t, text, "Player3")
 		}
-		
+
 		// Check browser console for errors
 		for i, page := range []*rod.Page{page1, page2, page3} {
 			// Inject error detection script
@@ -141,7 +141,7 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 
 	// Create handler with in-memory store
 	h := New(store.NewMemoryStore())
-	
+
 	// Create test server
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
@@ -167,14 +167,14 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	// Capture initial DOM structure
 	initialHTML, err := page.MustElement("#lobby-container").HTML()
 	require.NoError(t, err)
-	
+
 	// Verify initial structure has both container and content
 	assert.Contains(t, initialHTML, `id="lobby-content"`)
 	assert.Contains(t, initialHTML, `data-on-load=`)
 
 	// Trigger an SSE update by having another player join via API
 	roomCode := page.MustInfo().URL[len(ts.URL+"/room/"):]
-	
+
 	// Create a second player directly via handler (simulating another browser)
 	room, _ := h.store.GetRoom(roomCode)
 	room.AddPlayer(&game.Player{ID: "player2", Name: "Player2"})
@@ -191,7 +191,7 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	// Verify DOM structure is still intact
 	updatedHTML, err := page.MustElement("#lobby-container").HTML()
 	require.NoError(t, err)
-	
+
 	// Should still have lobby-content div
 	assert.Contains(t, updatedHTML, `id="lobby-content"`)
 	// Should still have SSE trigger

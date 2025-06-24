@@ -22,9 +22,14 @@ func TestTemplateRendering(t *testing.T) {
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Test Player",
-		Role: &game.Role{
-			Name:        "Villager",
-			Description: "A regular villager",
+		Role: &game.Card{
+			ID:   1,
+			Name: "Villager",
+			Text: "A regular villager",
+			Types: game.CardTypes{
+				Supertype: "Creature",
+				Subtype:   "Guardian",
+			},
 		},
 	}
 

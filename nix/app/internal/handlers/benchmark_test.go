@@ -355,9 +355,9 @@ func createRealisticRoom(s *store.MemoryStore, numPlayers int) *game.Room {
 
 		// Assign roles if enough players
 		if i == 0 && numPlayers >= 3 {
-			player.Role = game.LeaderRole
+			player.Role = mockLeaderCard()
 		} else {
-			player.Role = game.GuardianRole
+			player.Role = mockGuardianCard()
 		}
 
 		room.AddPlayer(player)

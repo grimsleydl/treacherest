@@ -56,7 +56,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Charlie", roomCode1), nil)
 		r.AddCookie(sessionCookie)
-		
+
 		// Wrap handler to capture routing params
 		testRouter := setupTestRouter(h)
 		testRouter.ServeHTTP(w, r)
@@ -85,7 +85,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		w1 := httptest.NewRecorder()
 		r1 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode1), nil)
 		r1.AddCookie(sessionCookie)
-		
+
 		testRouter := setupTestRouter(h)
 		testRouter.ServeHTTP(w1, r1)
 
@@ -104,7 +104,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode2), nil)
 		r2.AddCookie(sessionCookie)
 		r2.AddCookie(playerCookie1) // This shouldn't interfere
-		
+
 		testRouter.ServeHTTP(w2, r2)
 
 		if w2.Code != http.StatusOK {
@@ -138,7 +138,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode1), nil)
 		r.AddCookie(sessionCookie)
-		
+
 		testRouter := setupTestRouter(h)
 		testRouter.ServeHTTP(w, r)
 
@@ -151,17 +151,17 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		sse1Done := make(chan bool)
 		go func() {
 			defer close(sse1Done)
-			
+
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", fmt.Sprintf("/sse/lobby/%s", roomCode1), nil)
 			r.AddCookie(sessionCookie)
 			r.AddCookie(playerCookie)
-			
+
 			// Create context that we can cancel
 			ctx, cancel := context.WithTimeout(r.Context(), 100*time.Millisecond)
 			defer cancel()
 			r = r.WithContext(ctx)
-			
+
 			testRouter.ServeHTTP(w, r)
 		}()
 
@@ -172,7 +172,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		w2 := httptest.NewRecorder()
 		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode2), nil)
 		r2.AddCookie(sessionCookie)
-		
+
 		testRouter.ServeHTTP(w2, r2)
 
 		if w2.Code != http.StatusOK {
@@ -201,36 +201,36 @@ func getPlayerCookie(cookies []*http.Cookie, roomCode string) *http.Cookie {
 
 func setupTestRouter(h *Handler) *chi.Mux {
 	r := chi.NewRouter()
-	
+
 	// Room routes
 	r.Post("/room/create", h.CreateRoom)
 	r.Get("/room/{code}", h.JoinRoom)
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Post("/room/{code}/start", h.StartGame)
-	
+
 	// SSE routes
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
 	r.Get("/sse/game/{code}", h.StreamGame)
-	
+
 	// Game routes
 	r.Get("/game/{code}", h.GamePage)
-	
+
 	return r
 }
 
 func TestJoinFlowBrowserBackButton(t *testing.T) {
 	h := New(store.NewMemoryStore())
 	testRouter := setupTestRouter(h)
-	
+
 	// Create a room
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/room/create", strings.NewReader("playerName=Alice"))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	h.CreateRoom(w, r)
-	
+
 	location := w.Header().Get("Location")
 	roomCode := strings.TrimPrefix(location, "/room/")
-	
+
 	// Get cookies
 	cookies := w.Result().Cookies()
 	var sessionCookie, playerCookie *http.Cookie
@@ -241,28 +241,28 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 			playerCookie = c
 		}
 	}
-	
+
 	t.Run("RejoinAfterLeavingRoom", func(t *testing.T) {
 		// Leave the room
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", fmt.Sprintf("/room/%s/leave", roomCode), nil)
 		r.AddCookie(sessionCookie)
 		r.AddCookie(playerCookie)
-		
+
 		testRouter.ServeHTTP(w, r)
-		
+
 		// Check for Datastar redirect script
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d", w.Code)
 		}
-		
+
 		// Verify Datastar redirect script
 		body := w.Body.String()
 		expectedScript := "window.location.href = '/'"
 		if !strings.Contains(body, expectedScript) {
 			t.Errorf("Expected response to contain redirect script %q, got: %s", expectedScript, body)
 		}
-		
+
 		// Check cookie was cleared
 		clearedCookie := false
 		for _, c := range w.Result().Cookies() {
@@ -274,19 +274,19 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 		if !clearedCookie {
 			t.Error("Player cookie was not cleared")
 		}
-		
+
 		// Now try to join the same room again (simulating back button)
 		w2 := httptest.NewRecorder()
 		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Alice", roomCode), nil)
 		r2.AddCookie(sessionCookie)
-		
+
 		testRouter.ServeHTTP(w2, r2)
-		
+
 		if w2.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d", w2.Code)
 			t.Logf("Response: %s", w2.Body.String())
 		}
-		
+
 		// Verify player was re-added to room
 		room, _ := h.store.GetRoom(roomCode)
 		found := false
@@ -300,7 +300,7 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 			t.Error("Alice was not re-added to the room")
 		}
 	})
-	
+
 	t.Run("StalePlayerCookieHandling", func(t *testing.T) {
 		// Create a fake player cookie for a non-existent player
 		staleCookie := &http.Cookie{
@@ -308,20 +308,20 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 			Value: "nonexistentplayer",
 			Path:  "/",
 		}
-		
+
 		// Try to access room with stale cookie
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s", roomCode), nil)
 		r.AddCookie(sessionCookie)
 		r.AddCookie(staleCookie)
-		
+
 		testRouter.ServeHTTP(w, r)
-		
+
 		// Should show join form since player doesn't exist
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d", w.Code)
 		}
-		
+
 		// Check that stale cookie was cleared
 		cookieCleared := false
 		for _, c := range w.Result().Cookies() {
@@ -333,7 +333,7 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 		if !cookieCleared {
 			t.Error("Stale player cookie was not cleared")
 		}
-		
+
 		// Verify join form is shown
 		body := w.Body.String()
 		if !strings.Contains(body, "Enter your name") {

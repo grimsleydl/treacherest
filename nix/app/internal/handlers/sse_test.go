@@ -211,7 +211,7 @@ func TestHandler_StreamGame(t *testing.T) {
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
 		player := game.NewPlayer("p1", "Player 1", "session1")
-		player.Role = &game.Role{Name: "Villager"}
+		player.Role = mockGuardianCard()
 		room.AddPlayer(player)
 		room.State = game.StatePlaying
 		h.store.UpdateRoom(room)
@@ -383,7 +383,7 @@ func TestSSEHelpers(t *testing.T) {
 		// Create test data
 		room, _ := h.store.CreateRoom()
 		player := game.NewPlayer("p1", "Player 1", "session1")
-		player.Role = &game.Role{Name: "Villager"}
+		player.Role = mockGuardianCard()
 		room.AddPlayer(player)
 		room.State = game.StatePlaying
 
