@@ -4,45 +4,82 @@ import "treacherest/internal/views/layouts"
 
 templ Home() {
 	@layouts.Base("Welcome") {
+		<style>
+			.mode-toggle {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				margin: 1rem 0;
+				cursor: pointer;
+			}
+			.mode-toggle input[type="checkbox"] {
+				width: 20px;
+				height: 20px;
+				cursor: pointer;
+			}
+			.mode-description {
+				font-size: 0.9rem;
+				color: #999;
+				margin-top: 0.5rem;
+			}
+		</style>
 		<body>
 			<div class="container">
 				<h1>MTG Treacherest</h1>
 				<p>A game of deception and hidden roles</p>
 				<div style="display: flex; flex-direction: column; gap: 2rem; margin-top: 3rem;">
-					<div style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px;">
-						<h2>Host a Game</h2>
-						<p style="margin: 0.5rem 0; color: #666;">As a host, you can manage the game and observe all players</p>
-						<form action="/host" method="GET">
-							<button type="submit" style="margin-top: 1rem; background-color: #28a745;">Host New Game</button>
+					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+						<h2>Create New Game</h2>
+						<form action="/room/new" method="POST">
+							<input 
+								type="text" 
+								name="playerName" 
+								placeholder="Enter your name" 
+								required 
+								style="width: 100%; padding: 0.8rem; font-size: 1.1rem;"
+							/>
+							
+							<label class="mode-toggle">
+								<input type="checkbox" name="hostOnly" value="true" data-on-change="
+									const desc = document.getElementById('mode-description');
+									if (this.checked) {
+										desc.textContent = 'You will manage the game and display it on this device for others to join';
+									} else {
+										desc.textContent = 'You will join as a player and participate in the game';
+									}
+								"/>
+								<span>Host mode (don't play, just manage)</span>
+							</label>
+							<div id="mode-description" class="mode-description">
+								You will join as a player and participate in the game
+							</div>
+							
+							<button type="submit" style="margin-top: 1.5rem; width: 100%; padding: 1rem; font-size: 1.2rem;">
+								Create Room
+							</button>
 						</form>
 					</div>
-					<div style="border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px;">
-						<h2>Join as Player</h2>
-						<p style="margin: 0.5rem 0; color: #666;">Create a new room or join an existing game</p>
-						<div style="display: flex; gap: 2rem; margin-top: 1rem;">
-							<div style="flex: 1;">
-								<h3 style="font-size: 1.1rem;">Create Room</h3>
-								<form action="/room/new" method="POST">
-									<input type="text" name="playerName" placeholder="Enter your name" required style="width: 100%;"/>
-									<button type="submit" style="margin-top: 0.5rem;">Create Room</button>
-								</form>
-							</div>
-							<div style="flex: 1;">
-								<h3 style="font-size: 1.1rem;">Join Room</h3>
-								<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()">
-									<input
-										type="text"
-										id="roomCode"
-										placeholder="Room code (e.g., ABC12)"
-										pattern="[A-Za-z0-9]{5}"
-										maxlength="5"
-										required
-										style="text-transform: uppercase; width: 100%;"
-									/>
-									<button type="submit" style="margin-top: 0.5rem;">Join Room</button>
-								</form>
-							</div>
-						</div>
+					
+					<div style="text-align: center;">
+						<span style="color: #666;">— OR —</span>
+					</div>
+					
+					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+						<h2>Join Existing Game</h2>
+						<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()">
+							<input
+								type="text"
+								id="roomCode"
+								placeholder="Enter room code (e.g., ABC12)"
+								pattern="[A-Za-z0-9]{5}"
+								maxlength="5"
+								required
+								style="text-transform: uppercase; width: 100%; padding: 0.8rem; font-size: 1.1rem;"
+							/>
+							<button type="submit" style="margin-top: 1rem; width: 100%; padding: 1rem; font-size: 1.2rem;">
+								Join Room
+							</button>
+						</form>
 					</div>
 				</div>
 			</div>

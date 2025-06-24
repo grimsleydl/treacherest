@@ -170,7 +170,7 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 		</div>
 		<div class="start-button-container">
 			if room.GetActivePlayerCount() >= 1 {
-				<button data-on-click={ "@post('/host/" + room.Code + "/start')" }>
+				<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
 					Start Game
 				</button>
 			} else {

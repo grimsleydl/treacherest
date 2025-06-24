@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
@@ -22,6 +23,9 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if creating as host only
+	hostOnly := r.FormValue("hostOnly") == "true"
+
 	// Create room
 	room, err := h.store.CreateRoom()
 	if err != nil {
@@ -32,6 +36,11 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	// Create player
 	sessionID := getOrCreateSession(w, r)
 	player := game.NewPlayer(generatePlayerID(), playerName, sessionID)
+	
+	// Set host flag if requested
+	if hostOnly {
+		player.IsHost = true
+	}
 
 	// Add player to room
 	room.AddPlayer(player)
@@ -46,6 +55,18 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400, // 1 day
 	})
+
+	// If host only, also set a host cookie
+	if hostOnly {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "host_" + room.Code,
+			Value:    "true",
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   86400, // 1 day
+		})
+	}
 
 	// Redirect to room
 	http.Redirect(w, r, "/room/"+room.Code, http.StatusSeeOther)
@@ -81,11 +102,29 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 			
-			// Show appropriate page based on game state
-			if room.State == game.StateLobby {
+			// Show appropriate page based on player type and game state
+			if player.IsHost {
+				// Host sees dashboard view
+				var component templ.Component
+				switch room.State {
+				case game.StateLobby:
+					component = pages.HostDashboardLobby(room, player)
+				case game.StateCountdown:
+					component = pages.HostDashboardCountdown(room, player)
+				case game.StatePlaying:
+					component = pages.HostDashboardPlaying(room, player)
+				case game.StateEnded:
+					component = pages.HostDashboardEnded(room, player)
+				default:
+					component = pages.HostDashboardLobby(room, player)
+				}
+				component.Render(r.Context(), w)
+			} else if room.State == game.StateLobby {
+				// Regular player sees lobby
 				component := pages.LobbyPage(room, player)
 				component.Render(r.Context(), w)
 			} else {
+				// Regular player in active game
 				http.Redirect(w, r, "/game/"+roomCode, http.StatusSeeOther)
 			}
 			return
@@ -188,6 +227,23 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	component := pages.GamePage(room, player)
-	component.Render(r.Context(), w)
+	// Show appropriate view based on player type
+	if player.IsHost {
+		var component templ.Component
+		switch room.State {
+		case game.StateCountdown:
+			component = pages.HostDashboardCountdown(room, player)
+		case game.StatePlaying:
+			component = pages.HostDashboardPlaying(room, player)
+		case game.StateEnded:
+			component = pages.HostDashboardEnded(room, player)
+		default:
+			// Shouldn't happen, but fallback to playing view
+			component = pages.HostDashboardPlaying(room, player)
+		}
+		component.Render(r.Context(), w)
+	} else {
+		component := pages.GamePage(room, player)
+		component.Render(r.Context(), w)
+	}
 }

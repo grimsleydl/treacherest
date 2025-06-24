@@ -37,11 +37,6 @@ func SetupServer() http.Handler {
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Get("/game/{code}", h.GamePage)
 
-	// Host routes
-	r.Get("/host", h.HostLanding)
-	r.Post("/host/create", h.CreateRoomAsHost)
-	r.Get("/host/dashboard/{code}", h.HostDashboard)
-
 	// SSE endpoints
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
 	r.Get("/sse/game/{code}", h.StreamGame)
