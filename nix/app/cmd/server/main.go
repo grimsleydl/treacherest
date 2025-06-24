@@ -4,11 +4,34 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"treacherest/internal/handlers"
+	"treacherest/internal/store"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-	// Set up server
-	handler := SetupServer()
+	// Create store and handler
+	s := store.NewMemoryStore()
+	h := handlers.New(s)
+	
+	// Set up routes
+	r := chi.NewRouter()
+	
+	// Pages
+	r.Get("/", h.Home)
+	r.Post("/room/new", h.CreateRoom)  // Changed from /room/create to match form action
+	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/room/{code}/leave", h.LeaveRoom)
+	r.Post("/room/{code}/start", h.StartGame)
+	r.Get("/game/{code}", h.GamePage)
+	
+	// SSE routes
+	r.Get("/sse/lobby/{code}", h.StreamLobby)
+	r.Get("/sse/game/{code}", h.StreamGame)
+	r.Get("/sse/host/{code}", h.StreamHost)
+	
+	// Static files
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	// Start server
 	port := os.Getenv("PORT")
@@ -20,7 +43,7 @@ func main() {
 	// Create custom server with no idle timeout for SSE connections
 	server := &http.Server{
 		Addr:        addr,
-		Handler:     handler,
+		Handler:     r,
 		IdleTimeout: 0, // Disable idle timeout to keep SSE connections alive
 	}
 
