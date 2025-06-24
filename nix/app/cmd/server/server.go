@@ -45,6 +45,7 @@ func SetupServer() http.Handler {
 	// SSE endpoints
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
 	r.Get("/sse/game/{code}", h.StreamGame)
+	r.Get("/sse/host/{code}", h.StreamHost)
 
 	return r
 }
