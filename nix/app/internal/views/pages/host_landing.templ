@@ -1,0 +1,45 @@
+package pages
+
+import "treacherest/internal/views/layouts"
+
+templ HostLanding() {
+	@layouts.Base("Host Mode") {
+		<body>
+			<div class="container">
+				<h1>Host Mode</h1>
+				<p style="font-size: 1.2rem; margin-bottom: 2rem;">
+					Host mode allows you to display the game on a larger screen (like a tablet or TV) 
+					while players join using their phones.
+				</p>
+				
+				<div style="background: #16213e; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+					<h3>What is Host Mode?</h3>
+					<ul style="line-height: 1.8;">
+						<li>Display a QR code for easy room joining</li>
+						<li>Show all connected players in real-time</li>
+						<li>Control when the game starts</li>
+						<li>Perfect for party settings or group play</li>
+					</ul>
+				</div>
+
+				<div style="display: flex; flex-direction: column; gap: 2rem;">
+					<div>
+						<h2>Create Host Room</h2>
+						<form action="/host/create" method="POST">
+							<input type="text" name="hostName" placeholder="Your name" required style="width: 100%; padding: 0.8rem; margin-bottom: 1rem; font-size: 1.1rem;">
+							<button type="submit" style="width: 100%; padding: 1rem;">
+								Create Room as Host
+							</button>
+						</form>
+					</div>
+					
+					<div style="text-align: center;">
+						<a href="/" style="color: #e94560; text-decoration: none; font-size: 1.1rem;">
+							← Back to Player Mode
+						</a>
+					</div>
+				</div>
+			</div>
+		</body>
+	}
+}
