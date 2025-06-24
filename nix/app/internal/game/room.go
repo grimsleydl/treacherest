@@ -38,7 +38,17 @@ func (r *Room) AddPlayer(player *Player) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if len(r.Players) >= r.MaxPlayers {
+	// Count non-host players only for capacity check
+	activePlayerCount := 0
+	for _, p := range r.Players {
+		if !p.IsHost {
+			activePlayerCount++
+		}
+	}
+
+	// Check capacity against non-host players only
+	// Allow hosts to join without counting against the player limit
+	if !player.IsHost && activePlayerCount >= r.MaxPlayers {
 		return ErrRoomFull
 	}
 
