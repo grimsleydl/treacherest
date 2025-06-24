@@ -65,12 +65,24 @@ func TestHomePage(t *testing.T) {
 			AssertContains(`evt.preventDefault()`)
 	})
 
-	t.Run("has two forms", func(t *testing.T) {
+	t.Run("has three forms", func(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
-			AssertElementCount("form", 2).
+			AssertElementCount("form", 3).
+			AssertContains("Host New Game").
 			AssertContains("Create Room").
 			AssertContains("Join Room")
+	})
+
+	t.Run("has host game section", func(t *testing.T) {
+		component := Home()
+
+		renderer.Render(component).
+			AssertContains("Host a Game").
+			AssertContains("As a host, you can manage the game and observe all players").
+			AssertFormAction("/host").
+			AssertContains(`method="GET"`).
+			AssertContains("Host New Game")
 	})
 }
