@@ -238,14 +238,14 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		var component templ.Component
 		switch room.State {
 		case game.StateCountdown:
-			component = pages.HostDashboardCountdown(room, player)
+			component = pages.HostDashboardCountdownPage(room, player)
 		case game.StatePlaying:
-			component = pages.HostDashboardPlaying(room, player)
+			component = pages.HostDashboardPlayingPage(room, player)
 		case game.StateEnded:
-			component = pages.HostDashboardEnded(room, player)
+			component = pages.HostDashboardEndedPage(room, player)
 		default:
 			// Shouldn't happen, but fallback to playing view
-			component = pages.HostDashboardPlaying(room, player)
+			component = pages.HostDashboardPlayingPage(room, player)
 		}
 		component.Render(r.Context(), w)
 	} else {

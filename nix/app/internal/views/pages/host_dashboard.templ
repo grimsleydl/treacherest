@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"treacherest/internal/game"
 	"treacherest/internal/views/layouts"
 )
@@ -182,44 +183,57 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 	</div>
 }
 
-// Placeholder for countdown state
+// Countdown state content for SSE updates
 templ HostDashboardCountdown(room *game.Room, player *game.Player) {
-	@layouts.Base("Host Dashboard - Starting") {
-		<div class="container" style="text-align: center; padding-top: 4rem;">
-			<h1>Game Starting...</h1>
-			<div class="countdown">5</div>
-			<p>Get ready!</p>
-		</div>
-	}
+	<div class="container" style="text-align: center; padding-top: 4rem;">
+		<h1>Game Starting...</h1>
+		<div class="countdown" style="font-size: 5rem; font-weight: bold; color: #e94560; margin: 2rem 0;">{ fmt.Sprint(room.CountdownRemaining) }</div>
+		<p>Get ready!</p>
+	</div>
 }
 
-// Placeholder for playing state
+// Playing state content for SSE updates
 templ HostDashboardPlaying(room *game.Room, player *game.Player) {
-	@layouts.Base("Host Dashboard - Game") {
-		<div class="container">
-			<h1>Game in Progress</h1>
-			<div class="room-code">{ room.Code }</div>
-			<div class="player-list">
-				<h2>Players</h2>
-				for _, p := range room.GetActivePlayers() {
-					<div class="player">
-						{ p.Name }
-					</div>
-				}
-			</div>
+	<div class="container">
+		<h1>Game in Progress</h1>
+		<div class="room-code">{ room.Code }</div>
+		<div class="player-list">
+			<h2>Players</h2>
+			for _, p := range room.GetActivePlayers() {
+				<div class="player">
+					{ p.Name }
+				</div>
+			}
 		</div>
+	</div>
+}
+
+// Ended state content for SSE updates
+templ HostDashboardEnded(room *game.Room, player *game.Player) {
+	<div class="container" style="text-align: center;">
+		<h1>Game Over</h1>
+		<div class="room-code">{ room.Code }</div>
+		<button data-on-click="@post('/room/new')" style="margin-top: 2rem;">
+			Start New Game
+		</button>
+	</div>
+}
+
+// Full page versions for direct navigation (not SSE updates)
+templ HostDashboardCountdownPage(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard - Starting") {
+		@HostDashboardBody(room, player)
 	}
 }
 
-// Placeholder for ended state
-templ HostDashboardEnded(room *game.Room, player *game.Player) {
+templ HostDashboardPlayingPage(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard - Game") {
+		@HostDashboardBody(room, player)
+	}
+}
+
+templ HostDashboardEndedPage(room *game.Room, player *game.Player) {
 	@layouts.Base("Host Dashboard - Game Over") {
-		<div class="container" style="text-align: center;">
-			<h1>Game Over</h1>
-			<div class="room-code">{ room.Code }</div>
-			<button data-on-click="@post('/room/new')" style="margin-top: 2rem;">
-				Start New Game
-			</button>
-		</div>
+		@HostDashboardBody(room, player)
 	}
 }
