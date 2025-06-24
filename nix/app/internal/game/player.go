@@ -8,7 +8,7 @@ import (
 type Player struct {
 	ID           string
 	Name         string
-	Role         *Role
+	Role         *Card
 	RoleRevealed bool
 	JoinedAt     time.Time
 	SessionID    string // Used for reconnection

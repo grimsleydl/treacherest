@@ -88,17 +88,25 @@ func TestPlayer_RoleAssignment(t *testing.T) {
 		t.Errorf("Initial RoleRevealed = %v, want false", player.RoleRevealed)
 	}
 
-	// Assign a role
-	guardianRole := &Role{
-		Type:         RoleGuardian,
-		Name:         "Guardian",
-		Description:  "Test Guardian",
-		WinCondition: "Test Win Condition",
+	// Create a mock guardian card for testing
+	guardianCard := &Card{
+		ID:   1,
+		Name: "Test Guardian",
+		Types: CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Guardian",
+		},
+		Text: "Test Guardian Card",
 	}
-	player.Role = guardianRole
+	player.Role = guardianCard
 
-	if player.Role != guardianRole {
-		t.Errorf("Role after assignment = %v, want %v", player.Role, guardianRole)
+	if player.Role != guardianCard {
+		t.Errorf("Role after assignment = %v, want %v", player.Role, guardianCard)
+	}
+
+	// Verify the role type is correct
+	if player.Role.GetRoleType() != RoleGuardian {
+		t.Errorf("Role type = %v, want %v", player.Role.GetRoleType(), RoleGuardian)
 	}
 
 	// Test role reveal
