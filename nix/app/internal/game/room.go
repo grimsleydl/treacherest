@@ -74,12 +74,48 @@ func (r *Room) GetPlayers() []*Player {
 	return players
 }
 
+// GetActivePlayers returns a copy of all non-host players
+func (r *Room) GetActivePlayers() []*Player {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	players := make([]*Player, 0, len(r.Players))
+	for _, p := range r.Players {
+		if !p.IsHost {
+			players = append(players, p)
+		}
+	}
+	return players
+}
+
+// GetActivePlayerCount returns the number of non-host players
+func (r *Room) GetActivePlayerCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	count := 0
+	for _, p := range r.Players {
+		if !p.IsHost {
+			count++
+		}
+	}
+	return count
+}
+
 // CanStart checks if the game can start
 func (r *Room) CanStart() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	return len(r.Players) >= 1 && r.State == StateLobby
+	// Count only active (non-host) players
+	activePlayerCount := 0
+	for _, p := range r.Players {
+		if !p.IsHost {
+			activePlayerCount++
+		}
+	}
+
+	return activePlayerCount >= 1 && r.State == StateLobby
 }
 
 // GetLeader returns the player with the Leader role

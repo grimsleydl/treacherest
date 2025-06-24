@@ -16,11 +16,22 @@ const (
 
 // AssignRoles assigns roles to players based on player count using cards from CardService
 func AssignRoles(players []*Player, cardService *CardService) {
-	count := len(players)
+	// Filter out hosts from role assignment
+	activePlayers := make([]*Player, 0, len(players))
+	for _, p := range players {
+		if !p.IsHost {
+			activePlayers = append(activePlayers, p)
+		}
+	}
+
+	count := len(activePlayers)
+	if count == 0 {
+		return // No active players to assign roles to
+	}
 
 	// Shuffle players first
 	shuffled := make([]*Player, count)
-	copy(shuffled, players)
+	copy(shuffled, activePlayers)
 	rand.Shuffle(count, func(i, j int) {
 		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 	})
