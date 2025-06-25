@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"treacherest"
 	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
@@ -11,8 +12,8 @@ import (
 )
 
 func main() {
-	// Create CardService with fail-fast initialization
-	cardService, err := game.NewCardService()
+	// Create CardService with fail-fast initialization using embedded resources
+	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
