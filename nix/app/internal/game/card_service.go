@@ -1,9 +1,11 @@
 package game
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -56,9 +58,47 @@ func NewCardService() (*CardService, error) {
 		allCards:  collection.Cards,
 	}
 
-	// Categorize cards by subtype
+	// Find the base path for images
+	var basePath string
+	imagePaths := []string{
+		"static/images/cards",
+		"../../static/images/cards",
+		filepath.Join(os.Getenv("PRJ_ROOT"), "nix/app/static/images/cards"),
+		"/workspace/nix/app/static/images/cards",
+	}
+	
+	for _, path := range imagePaths {
+		if _, err := os.Stat(filepath.Join(path, "1.jpg")); err == nil {
+			basePath = path
+			break
+		}
+	}
+	
+	if basePath == "" {
+		return nil, fmt.Errorf("failed to find card images directory")
+	}
+
+	// Categorize cards by subtype and load images
 	for i := range collection.Cards {
 		card := &collection.Cards[i]
+		
+		// Load and encode the image
+		imagePath := filepath.Join(basePath, fmt.Sprintf("%d.jpg", card.ID))
+		imageData, err := os.ReadFile(imagePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read image for card %d (%s): %w", card.ID, card.Name, err)
+		}
+		
+		// Detect MIME type
+		mimeType := http.DetectContentType(imageData)
+		
+		// Create base64 data URI
+		base64Data := base64.StdEncoding.EncodeToString(imageData)
+		card.Base64Image = fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data)
+		
+		// Keep image path for backward compatibility
+		card.ImagePath = fmt.Sprintf("/static/images/cards/%d.jpg", card.ID)
+		
 		switch card.Types.Subtype {
 		case "Leader":
 			service.Leaders = append(service.Leaders, card)
