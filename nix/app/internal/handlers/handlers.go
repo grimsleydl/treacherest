@@ -17,15 +17,7 @@ type Handler struct {
 }
 
 // New creates a new handler
-func New(store *store.MemoryStore) *Handler {
-	// Create CardService
-	cardService, err := game.NewCardService()
-	if err != nil {
-		// Log error but continue with nil cardService for now
-		// In production, this should probably return an error
-		cardService = nil
-	}
-
+func New(store *store.MemoryStore, cardService *game.CardService) *Handler {
 	return &Handler{
 		store:       store,
 		eventBus:    NewEventBus(),

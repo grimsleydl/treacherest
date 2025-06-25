@@ -156,9 +156,9 @@ type EnhancedHandler struct {
 }
 
 // NewEnhanced creates a new enhanced handler
-func NewEnhanced(s *store.MemoryStore) *EnhancedHandler {
+func NewEnhanced(s *store.MemoryStore, cardService *game.CardService) *EnhancedHandler {
 	return &EnhancedHandler{
-		Handler:      New(s),
+		Handler:      New(s, cardService),
 		eventStore:   NewEventStore(100), // Keep last 100 events per room
 		connTracker:  NewConnectionTracker(),
 		eventCounter: 0,

@@ -1,22 +1,30 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
 )
 
 // SetupServer creates and configures the server
 func SetupServer() http.Handler {
+	// Create CardService with fail-fast initialization
+	cardService, err := game.NewCardService()
+	if err != nil {
+		log.Fatal("Failed to initialize card service: ", err)
+	}
+	
 	// Initialize in-memory store
 	gameStore := store.NewMemoryStore()
 
 	// Initialize handlers
-	h := handlers.New(gameStore)
+	h := handlers.New(gameStore, cardService)
 
 	// Set up router
 	r := chi.NewRouter()
