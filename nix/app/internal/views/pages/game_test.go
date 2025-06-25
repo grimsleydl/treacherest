@@ -15,7 +15,11 @@ func mockLeaderCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Leader",
 		},
-		Text: "Test Leader Card",
+		Text:        "Test Leader Card",
+		Type:        "Creature — Leader",
+		Rarity:      "Rare",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -27,7 +31,11 @@ func mockGuardianCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Guardian",
 		},
-		Text: "Test Guardian Card",
+		Text:        "Test Guardian Card",
+		Type:        "Creature — Guardian",
+		Rarity:      "Common",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -39,7 +47,11 @@ func mockAssassinCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Assassin",
 		},
-		Text: "Test Assassin Card",
+		Text:        "Test Assassin Card",
+		Type:        "Creature — Assassin",
+		Rarity:      "Uncommon",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -68,7 +80,7 @@ func TestGamePage(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
-			AssertContains("Your Role: Villager").
+			AssertContains("Test Guardian").
 			AssertHasElementWithID("game-container").
 			AssertContains(`data-on-load="@get(&#39;/sse/game/GAME1&#39;)"`)
 	})
@@ -77,8 +89,8 @@ func TestGamePage(t *testing.T) {
 		component := GamePage(room, player)
 
 		renderer.Render(component).
-			AssertContains("Your Role: Villager").
-			AssertContains("A regular villager trying to survive")
+			AssertContains("Test Guardian").
+			AssertContains("Win or lose with the Leader")
 	})
 
 	t.Run("shows countdown state", func(t *testing.T) {
@@ -137,7 +149,7 @@ func TestGameBody(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertHasElementWithID("game-container").
-			AssertContains("Your Role: Assassin")
+			AssertContains("Test Assassin")
 	})
 
 	t.Run("shows win condition", func(t *testing.T) {
