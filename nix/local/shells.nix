@@ -171,6 +171,30 @@ in {
           playwright test --debug
         '';
       }
+      {
+        name = "download-cards";
+        help = "Download all MTG Treachery card images";
+        command = ''
+          cd $PRJ_ROOT/nix/app/scripts/download
+          go run download_cards.go
+        '';
+      }
+      {
+        name = "download-cards-sample";
+        help = "Download sample MTG Treachery card images for testing";
+        command = ''
+          cd $PRJ_ROOT/nix/app/scripts/sample
+          go run download_sample.go
+        '';
+      }
+      {
+        name = "download-cards-info";
+        help = "Show information about downloading card images";
+        command = ''
+          cd $PRJ_ROOT/nix/app/scripts/info
+          go run download_cards_info.go
+        '';
+      }
     ];
 
     env = [
@@ -218,6 +242,8 @@ in {
       echo "  fmt              - Format Go and templ code"
       echo "  build-templ      - Generate Go code from templ templates"
       echo "  update-deps      - Update Go dependencies"
+      echo "  download-cards   - Download all MTG Treachery card images"
+      echo "  download-cards-sample - Download sample card images for testing"
       echo ""
       echo "Playwright environment configured:"
       echo "  PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
