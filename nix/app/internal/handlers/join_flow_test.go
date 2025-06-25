@@ -13,7 +13,7 @@ import (
 )
 
 func TestJoinFlowBackNavigation(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create first room
 	w1 := httptest.NewRecorder()
@@ -219,7 +219,7 @@ func setupTestRouter(h *Handler) *chi.Mux {
 }
 
 func TestJoinFlowBrowserBackButton(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	testRouter := setupTestRouter(h)
 
 	// Create a room

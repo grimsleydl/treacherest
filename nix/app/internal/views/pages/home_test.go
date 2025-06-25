@@ -65,24 +65,22 @@ func TestHomePage(t *testing.T) {
 			AssertContains(`evt.preventDefault()`)
 	})
 
-	t.Run("has three forms", func(t *testing.T) {
+	t.Run("has two forms", func(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
-			AssertElementCount("form", 3).
-			AssertContains("Host New Game").
-			AssertContains("Create Room").
-			AssertContains("Join Room")
+			AssertElementCount("form", 2).
+			AssertContains("Create New Game").
+			AssertContains("Join Existing Game")
 	})
 
-	t.Run("has host game section", func(t *testing.T) {
+	t.Run("has host mode checkbox", func(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
-			AssertContains("Host a Game").
-			AssertContains("As a host, you can manage the game and observe all players").
-			AssertFormAction("/host").
-			AssertContains(`method="GET"`).
-			AssertContains("Host New Game")
+			AssertContains("Host mode").
+			AssertContains(`name="hostOnly"`).
+			AssertContains(`type="checkbox"`).
+			AssertContains("don't play, just manage")
 	})
 }
