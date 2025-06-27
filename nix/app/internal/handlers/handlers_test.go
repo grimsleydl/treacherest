@@ -6,12 +6,14 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/store"
 )
 
 func TestNew(t *testing.T) {
-	memStore := store.NewMemoryStore()
-	handler := New(memStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	memStore := store.NewMemoryStore(cfg)
+	handler := New(memStore, createMockCardService(), cfg)
 
 	if handler == nil {
 		t.Fatal("New returned nil handler")

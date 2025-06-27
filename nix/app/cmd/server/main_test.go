@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
@@ -36,11 +37,14 @@ func createMockCardService() *game.CardService {
 
 // setupTestRouter creates a test router with all routes configured
 func setupTestRouter() (*chi.Mux, *handlers.Handler) {
+	// Get default configuration
+	cfg := config.DefaultConfig()
+
 	// Initialize in-memory store
-	gameStore := store.NewMemoryStore()
+	gameStore := store.NewMemoryStore(cfg)
 
 	// Initialize handlers
-	h := handlers.New(gameStore, createMockCardService())
+	h := handlers.New(gameStore, createMockCardService(), cfg)
 
 	// Set up router
 	r := chi.NewRouter()
@@ -331,12 +335,13 @@ func TestMainFunction(t *testing.T) {
 	// Instead, we ensure all the components it uses work correctly
 	t.Run("server components initialize without error", func(t *testing.T) {
 		// This effectively tests the initialization logic in main()
-		gameStore := store.NewMemoryStore()
+		cfg := config.DefaultConfig()
+		gameStore := store.NewMemoryStore(cfg)
 		if gameStore == nil {
 			t.Fatal("failed to create store")
 		}
 
-		h := handlers.New(gameStore, createMockCardService())
+		h := handlers.New(gameStore, createMockCardService(), cfg)
 		if h == nil {
 			t.Fatal("failed to create handlers")
 		}

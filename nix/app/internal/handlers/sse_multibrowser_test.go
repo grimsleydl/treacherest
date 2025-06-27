@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-	"treacherest/internal/store"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -20,7 +19,7 @@ import (
 func TestMultiBrowserSSEScenarios(t *testing.T) {
 	t.Run("multiple browsers receive game start redirect", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create a room and add players
@@ -135,7 +134,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("all browsers receive countdown updates after redirect", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room and add players
@@ -229,7 +228,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("late-joining browser during countdown", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room and add initial players
@@ -269,7 +268,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("browser reconnection during game", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room and join players
@@ -341,7 +340,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("concurrent SSE connections stress test", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room
@@ -401,7 +400,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("event ordering across multiple browsers", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room
@@ -552,7 +551,7 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 	t.Run("TestMultipleBrowsersReceiveGameStartRedirect", func(t *testing.T) {
 		// Setup
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 		router := setupSSETestRouter(h)
 
 		// Create room

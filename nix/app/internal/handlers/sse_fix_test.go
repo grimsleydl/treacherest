@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"treacherest/internal/store"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -21,7 +20,7 @@ func TestSSEConnectionPersistence(t *testing.T) {
 	}
 
 	// Create handler and server
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -129,7 +128,7 @@ func TestSSEConnectionSurvives70Seconds(t *testing.T) {
 		t.Skip("Skipping long-running browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -208,7 +207,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 		t.Skip("Skipping browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -285,7 +284,7 @@ func TestNoSSEConnectionExhaustionDuringCountdown(t *testing.T) {
 	}
 
 	// Create handler and server
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -437,7 +436,7 @@ func TestPlayerReconnectionDuringCountdown(t *testing.T) {
 		t.Skip("Skipping browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()

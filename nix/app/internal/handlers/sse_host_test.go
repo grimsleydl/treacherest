@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 )
@@ -21,8 +22,9 @@ import (
 // TestStreamHost tests the host SSE endpoint
 func TestStreamHost(t *testing.T) {
 	// Create test handler
-	gameStore := store.NewMemoryStore()
-	h := New(gameStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg)
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()
@@ -102,8 +104,9 @@ func TestStreamHost(t *testing.T) {
 // TestStreamHostUnauthorized tests unauthorized access to host SSE
 func TestStreamHostUnauthorized(t *testing.T) {
 	// Create test handler
-	gameStore := store.NewMemoryStore()
-	h := New(gameStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg)
 
 	// Create a room with regular player
 	room, err := gameStore.CreateRoom()
@@ -167,8 +170,9 @@ func TestStreamHostUnauthorized(t *testing.T) {
 // TestStreamHostPlayerUpdates tests that host SSE receives player join/leave events
 func TestStreamHostPlayerUpdates(t *testing.T) {
 	// Create test handler
-	gameStore := store.NewMemoryStore()
-	h := New(gameStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg)
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()

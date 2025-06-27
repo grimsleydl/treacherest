@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 
@@ -19,8 +20,9 @@ import (
 
 // BenchmarkRoomCreation benchmarks the time to create a new room
 func BenchmarkRoomCreation(b *testing.B) {
-	s := store.NewMemoryStore()
-	h := New(s, createMockCardService())
+	cfg := config.DefaultConfig()
+	s := store.NewMemoryStore(cfg)
+	h := New(s, createMockCardService(), cfg)
 
 	// Create a form request
 	form := url.Values{}
@@ -44,8 +46,9 @@ func BenchmarkRoomCreation(b *testing.B) {
 
 // BenchmarkJoinRoom benchmarks the time to join an existing room
 func BenchmarkJoinRoom(b *testing.B) {
-	s := store.NewMemoryStore()
-	h := New(s, createMockCardService())
+	cfg := config.DefaultConfig()
+	s := store.NewMemoryStore(cfg)
+	h := New(s, createMockCardService(), cfg)
 
 	// Create a room first
 	room, _ := s.CreateRoom()
@@ -88,8 +91,9 @@ func BenchmarkSSEBroadcast(b *testing.B) {
 
 	for _, numClients := range testCases {
 		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
-			s := store.NewMemoryStore()
-			h := New(s, createMockCardService())
+			cfg := config.DefaultConfig()
+			s := store.NewMemoryStore(cfg)
+			h := New(s, createMockCardService(), cfg)
 
 			// Create a room with players
 			room, _ := s.CreateRoom()
@@ -143,8 +147,9 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 
 	for _, numClients := range testCases {
 		b.Run(fmt.Sprintf("%d_concurrent", numClients), func(b *testing.B) {
-			s := store.NewMemoryStore()
-			h := New(s, createMockCardService())
+			cfg := config.DefaultConfig()
+			s := store.NewMemoryStore(cfg)
+			h := New(s, createMockCardService(), cfg)
 
 			// Create multiple rooms
 			numRooms := numClients / 10 // Average 10 clients per room
@@ -216,8 +221,9 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 			var m1 runtime.MemStats
 			runtime.ReadMemStats(&m1)
 
-			s := store.NewMemoryStore()
-			h := New(s, createMockCardService())
+			cfg := config.DefaultConfig()
+			s := store.NewMemoryStore(cfg)
+			h := New(s, createMockCardService(), cfg)
 
 			rooms := make([]*game.Room, b.N)
 
@@ -303,7 +309,8 @@ func BenchmarkEventBusPublish(b *testing.B) {
 // BenchmarkStoreOperations measures store performance
 func BenchmarkStoreOperations(b *testing.B) {
 	b.Run("CreateRoom", func(b *testing.B) {
-		s := store.NewMemoryStore()
+		cfg := config.DefaultConfig()
+		s := store.NewMemoryStore(cfg)
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -315,7 +322,8 @@ func BenchmarkStoreOperations(b *testing.B) {
 	})
 
 	b.Run("GetRoom", func(b *testing.B) {
-		s := store.NewMemoryStore()
+		cfg := config.DefaultConfig()
+		s := store.NewMemoryStore(cfg)
 		room, _ := s.CreateRoom()
 		code := room.Code
 
@@ -329,7 +337,8 @@ func BenchmarkStoreOperations(b *testing.B) {
 	})
 
 	b.Run("UpdateRoom", func(b *testing.B) {
-		s := store.NewMemoryStore()
+		cfg := config.DefaultConfig()
+		s := store.NewMemoryStore(cfg)
 		room, _ := s.CreateRoom()
 
 		b.ResetTimer()

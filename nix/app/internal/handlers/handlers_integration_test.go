@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"testing"
+	"treacherest/internal/config"
 	"treacherest/internal/store"
 )
 
 func TestHandler_Store(t *testing.T) {
-	memStore := store.NewMemoryStore()
-	handler := New(memStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	memStore := store.NewMemoryStore(cfg)
+	handler := New(memStore, createMockCardService(), cfg)
 
 	// Test that Store() returns the same store
 	if handler.Store() != memStore {

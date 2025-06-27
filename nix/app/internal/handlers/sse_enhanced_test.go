@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 
@@ -186,7 +187,8 @@ func TestConnectionTracker(t *testing.T) {
 
 func TestEnhancedHandler_StreamLobbyEnhanced(t *testing.T) {
 	t.Run("sends heartbeat events", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -245,7 +247,8 @@ func TestEnhancedHandler_StreamLobbyEnhanced(t *testing.T) {
 	})
 
 	t.Run("replays missed events", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -306,7 +309,8 @@ func TestEnhancedHandler_StreamLobbyEnhanced(t *testing.T) {
 	})
 
 	t.Run("tracks connections", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -370,7 +374,8 @@ func TestEnhancedHandler_StreamLobbyEnhanced(t *testing.T) {
 	})
 
 	t.Run("generates unique event IDs", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Generate multiple IDs
 		ids := make(map[string]bool)
@@ -386,7 +391,8 @@ func TestEnhancedHandler_StreamLobbyEnhanced(t *testing.T) {
 
 func TestEnhancedHandler_StreamGameEnhanced(t *testing.T) {
 	t.Run("includes game state in heartbeat", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -444,7 +450,8 @@ func TestEnhancedHandler_StreamGameEnhanced(t *testing.T) {
 	})
 
 	t.Run("stores game events properly", func(t *testing.T) {
-		h := NewEnhanced(store.NewMemoryStore(), createMockCardService())
+		cfg := config.DefaultConfig()
+		h := NewEnhanced(store.NewMemoryStore(cfg), createMockCardService(), cfg)
 
 		// Create a room with players
 		room, _ := h.store.CreateRoom()

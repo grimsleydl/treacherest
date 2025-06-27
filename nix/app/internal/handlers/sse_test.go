@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 	"treacherest/internal/game"
-	"treacherest/internal/store"
 
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/sdk/go"
@@ -17,7 +16,7 @@ import (
 
 func TestHandler_StreamLobby(t *testing.T) {
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		req := httptest.NewRequest("GET", "/room/XXXXX/lobby", nil)
 		req.Header.Set("Accept", "text/event-stream")
@@ -38,7 +37,7 @@ func TestHandler_StreamLobby(t *testing.T) {
 	})
 
 	t.Run("returns 401 when no player cookie", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
@@ -62,7 +61,7 @@ func TestHandler_StreamLobby(t *testing.T) {
 	})
 
 	t.Run("returns 401 when player not in room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
@@ -90,7 +89,7 @@ func TestHandler_StreamLobby(t *testing.T) {
 	})
 
 	t.Run("streams lobby updates successfully", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -149,7 +148,7 @@ func TestHandler_StreamLobby(t *testing.T) {
 	})
 
 	t.Run("sends game_started event", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -206,7 +205,7 @@ func TestHandler_StreamLobby(t *testing.T) {
 
 func TestHandler_StreamGame(t *testing.T) {
 	t.Run("streams game updates successfully", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -264,7 +263,7 @@ func TestHandler_StreamGame(t *testing.T) {
 	})
 
 	t.Run("updates on event", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with players
 		room, _ := h.store.CreateRoom()
@@ -349,7 +348,7 @@ func (t templTestComponent) Render(ctx context.Context, w io.Writer) error {
 
 func TestSSEHelpers(t *testing.T) {
 	t.Run("renderLobby sends correct selector", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create test data
 		room, _ := h.store.CreateRoom()
@@ -378,7 +377,7 @@ func TestSSEHelpers(t *testing.T) {
 	})
 
 	t.Run("renderGame sends correct selector", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create test data
 		room, _ := h.store.CreateRoom()

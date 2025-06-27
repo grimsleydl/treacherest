@@ -9,11 +9,10 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"treacherest/internal/store"
 )
 
 func TestJoinFlowBackNavigation(t *testing.T) {
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	// Create first room
 	w1 := httptest.NewRecorder()
@@ -219,7 +218,7 @@ func setupTestRouter(h *Handler) *chi.Mux {
 }
 
 func TestJoinFlowBrowserBackButton(t *testing.T) {
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 	testRouter := setupTestRouter(h)
 
 	// Create a room
