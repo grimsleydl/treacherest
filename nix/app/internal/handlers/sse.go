@@ -287,7 +287,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 	// Generate and send QR code once
 	baseURL := getBaseURL(r)
 	qrURL := fmt.Sprintf("%s/room/%s", baseURL, roomCode)
-	
+
 	qrCode, err := generateQRCode(qrURL)
 	if err != nil {
 		log.Printf("❌ Failed to generate QR code for room %s: %v", roomCode, err)
@@ -412,7 +412,7 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 // generateQRCode generates a QR code for the given URL and returns it as base64 encoded PNG
 func generateQRCode(url string) (string, error) {
 	// Create QR code with medium error correction level
-	qrc, err := qrcode.NewWith(url, 
+	qrc, err := qrcode.NewWith(url,
 		qrcode.WithErrorCorrectionLevel(qrcode.ErrorCorrectionMedium),
 		qrcode.WithEncodingMode(qrcode.EncModeByte),
 	)
@@ -422,7 +422,7 @@ func generateQRCode(url string) (string, error) {
 
 	// Create a temporary file
 	tmpFile := fmt.Sprintf("/tmp/qr_%d.png", time.Now().UnixNano())
-	
+
 	// Create a writer with appropriate options
 	w, err := standard.New(tmpFile,
 		standard.WithBuiltinImageEncoder(standard.PNG_FORMAT),
@@ -448,7 +448,7 @@ func generateQRCode(url string) (string, error) {
 
 	// Encode the PNG data as base64
 	encoded := base64.StdEncoding.EncodeToString(data)
-	
+
 	return encoded, nil
 }
 

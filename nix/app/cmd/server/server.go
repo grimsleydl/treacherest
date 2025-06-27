@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"treacherest"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
@@ -15,6 +16,12 @@ import (
 
 // SetupServer creates and configures the server
 func SetupServer() http.Handler {
+	// Load server configuration
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal("Failed to load configuration: ", err)
+	}
+
 	// Create CardService with fail-fast initialization
 	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
@@ -22,10 +29,10 @@ func SetupServer() http.Handler {
 	}
 	
 	// Initialize in-memory store
-	gameStore := store.NewMemoryStore()
+	gameStore := store.NewMemoryStore(cfg)
 
 	// Initialize handlers
-	h := handlers.New(gameStore, cardService)
+	h := handlers.New(gameStore, cardService, cfg)
 
 	// Set up router
 	r := chi.NewRouter()

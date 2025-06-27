@@ -4,11 +4,18 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 )
 
+// Helper function to create a test store
+func newTestStore() *MemoryStore {
+	cfg := config.DefaultConfig()
+	return NewMemoryStore(cfg)
+}
+
 func TestNewMemoryStore(t *testing.T) {
-	store := NewMemoryStore()
+	store := newTestStore()
 
 	if store == nil {
 		t.Fatal("NewMemoryStore returned nil")
@@ -24,7 +31,7 @@ func TestNewMemoryStore(t *testing.T) {
 }
 
 func TestCreateRoom(t *testing.T) {
-	store := NewMemoryStore()
+	store := newTestStore()
 
 	t.Run("creates room with unique code", func(t *testing.T) {
 		room, err := store.CreateRoom()
@@ -70,8 +77,8 @@ func TestCreateRoom(t *testing.T) {
 			t.Errorf("expected empty players map, got %d players", len(room.Players))
 		}
 
-		if room.MaxPlayers != 4 {
-			t.Errorf("expected max players 4, got %d", room.MaxPlayers)
+		if room.MaxPlayers != 20 {
+			t.Errorf("expected max players 20, got %d", room.MaxPlayers)
 		}
 
 		if room.CreatedAt.IsZero() {
@@ -117,7 +124,7 @@ func TestCreateRoom(t *testing.T) {
 }
 
 func TestGetRoom(t *testing.T) {
-	store := NewMemoryStore()
+	store := newTestStore()
 
 	t.Run("returns error for non-existent room", func(t *testing.T) {
 		_, err := store.GetRoom("ABCDE")
@@ -176,7 +183,7 @@ func TestGetRoom(t *testing.T) {
 }
 
 func TestUpdateRoom(t *testing.T) {
-	store := NewMemoryStore()
+	store := newTestStore()
 
 	t.Run("updates existing room", func(t *testing.T) {
 		// Create a room
@@ -285,7 +292,7 @@ func TestGenerateRoomCode(t *testing.T) {
 }
 
 func TestConcurrentAccess(t *testing.T) {
-	store := NewMemoryStore()
+	store := newTestStore()
 
 	t.Run("concurrent room creation", func(t *testing.T) {
 		var wg sync.WaitGroup
@@ -391,7 +398,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 func TestMemoryStoreEdgeCases(t *testing.T) {
 	t.Run("handles empty room code in GetRoom", func(t *testing.T) {
-		store := NewMemoryStore()
+		store := newTestStore()
 		_, err := store.GetRoom("")
 		if err == nil {
 			t.Error("expected error for empty room code")
@@ -399,7 +406,7 @@ func TestMemoryStoreEdgeCases(t *testing.T) {
 	})
 
 	t.Run("handles nil room in UpdateRoom", func(t *testing.T) {
-		store := NewMemoryStore()
+		store := newTestStore()
 		// This will panic in current implementation
 		// Documenting expected behavior
 		defer func() {

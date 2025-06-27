@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"net/http"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 	"treacherest/internal/views/pages"
@@ -156,9 +157,9 @@ type EnhancedHandler struct {
 }
 
 // NewEnhanced creates a new enhanced handler
-func NewEnhanced(s *store.MemoryStore, cardService *game.CardService) *EnhancedHandler {
+func NewEnhanced(s *store.MemoryStore, cardService *game.CardService, cfg *config.ServerConfig) *EnhancedHandler {
 	return &EnhancedHandler{
-		Handler:      New(s, cardService),
+		Handler:      New(s, cardService, cfg),
 		eventStore:   NewEventStore(100), // Keep last 100 events per room
 		connTracker:  NewConnectionTracker(),
 		eventCounter: 0,
