@@ -217,6 +217,140 @@ templ Base(title string) {
 				margin: 0;
 				color: #ffd700;
 			}
+			
+			/* Role Configuration Styles */
+			.role-configuration {
+				background: #16213e;
+				border: 2px solid #0f3460;
+				border-radius: 8px;
+				padding: 1.5rem;
+				margin: 2rem 0;
+			}
+			
+			.role-configuration h3 {
+				color: #e94560;
+				margin-bottom: 1rem;
+			}
+			
+			.player-count-config {
+				margin-bottom: 1.5rem;
+			}
+			
+			.player-range {
+				display: flex;
+				gap: 2rem;
+				margin-top: 0.5rem;
+			}
+			
+			.preset-selector {
+				margin-bottom: 1.5rem;
+			}
+			
+			.preset-selector select {
+				background: #16213e;
+				color: white;
+				border: 2px solid #0f3460;
+				padding: 0.5rem;
+				font-size: 1rem;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			
+			.role-settings {
+				margin-top: 1.5rem;
+			}
+			
+			.role-settings h4 {
+				color: #4169e1;
+				margin-bottom: 1rem;
+			}
+			
+			.role-item {
+				background: rgba(0, 0, 0, 0.2);
+				border: 1px solid #333;
+				border-radius: 4px;
+				padding: 1rem;
+				margin-bottom: 0.75rem;
+			}
+			
+			.role-header {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			
+			.role-header input[type="checkbox"] {
+				width: auto;
+				margin: 0;
+			}
+			
+			.role-header label {
+				flex: 1;
+				cursor: pointer;
+			}
+			
+			.role-category {
+				color: #888;
+				font-size: 0.9rem;
+			}
+			
+			.role-count {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				margin-top: 0.5rem;
+				padding-left: 1.5rem;
+			}
+			
+			.role-count input[type="number"] {
+				width: 80px;
+				padding: 0.25rem;
+				font-size: 1rem;
+			}
+			
+			.role-constraint {
+				color: #ffd700;
+				font-size: 0.85rem;
+			}
+			
+			.validation-messages {
+				margin-top: 1rem;
+				padding: 1rem;
+				border-radius: 4px;
+			}
+			
+			.validation-errors {
+				background: rgba(220, 20, 60, 0.1);
+				border: 1px solid #dc143c;
+				padding: 0.75rem;
+				border-radius: 4px;
+			}
+			
+			.validation-errors .error {
+				color: #ff6b6b;
+				margin: 0.25rem 0;
+			}
+			
+			.validation-warnings {
+				background: rgba(255, 215, 0, 0.1);
+				border: 1px solid #ffd700;
+				padding: 0.75rem;
+				border-radius: 4px;
+				margin-top: 0.5rem;
+			}
+			
+			.validation-warnings .warning {
+				color: #ffd700;
+				margin: 0.25rem 0;
+			}
+			
+			.validation-success {
+				background: rgba(0, 255, 0, 0.1);
+				border: 1px solid #00ff00;
+				padding: 0.75rem;
+				border-radius: 4px;
+				color: #00ff00;
+			}
 		</style>
 		</head>
 		<body>

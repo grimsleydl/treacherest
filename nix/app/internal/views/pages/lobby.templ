@@ -3,26 +3,29 @@ package pages
 import (
 	"treacherest/internal/game"
 	"treacherest/internal/views/layouts"
+	"treacherest/internal/views/components"
+	"treacherest/internal/config"
+	"time"
 )
 
-templ LobbyPage(room *game.Room, currentPlayer *game.Player) {
+templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
 	@layouts.Base("Lobby") {
-		@LobbyBody(room, currentPlayer)
+		@LobbyBody(room, currentPlayer, cfg)
 	}
 }
 
-templ LobbyBody(room *game.Room, currentPlayer *game.Player) {
+templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
 	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
 	<div data-on-load={ "@get('/sse/lobby/" + room.Code + "')" }>
 		<div id="lobby-container" class="container">
 			<div id="lobby-content">
-				@LobbyContent(room, currentPlayer)
+				@LobbyContent(room, currentPlayer, cfg)
 			</div>
 		</div>
 	</div>
 }
 
-templ LobbyContent(room *game.Room, currentPlayer *game.Player) {
+templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
 	<h1>Game Lobby</h1>
 	<div class="room-code">{ room.Code }</div>
 	<div class="player-list">
@@ -33,6 +36,12 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player) {
 			</div>
 		}
 	</div>
+	
+	// Show role configuration for the first player if no host is present
+	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) && room.RoleConfig != nil {
+		@components.RoleConfiguration(room, cfg)
+	}
+	
 	if room.GetActivePlayerCount() >= 1 {
 		<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
 			Start Game
@@ -43,4 +52,32 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player) {
 	<button data-on-click={ "@post('/room/" + room.Code + "/leave')" } style="margin-top: 1rem;">
 		Leave Room
 	</button>
+}
+
+// Helper function to check if there's a host in the room
+func hasHost(room *game.Room) bool {
+	for _, player := range room.Players {
+		if player.IsHost {
+			return true
+		}
+	}
+	return false
+}
+
+// Helper function to get the first player ID (room creator)
+func getFirstPlayerID(room *game.Room) string {
+	var firstPlayer *game.Player
+	var firstJoinTime time.Time
+	
+	for _, player := range room.Players {
+		if !player.IsHost && (firstPlayer == nil || player.JoinedAt.Before(firstJoinTime)) {
+			firstPlayer = player
+			firstJoinTime = player.JoinedAt
+		}
+	}
+	
+	if firstPlayer != nil {
+		return firstPlayer.ID
+	}
+	return ""
 }

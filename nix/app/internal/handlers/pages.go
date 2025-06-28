@@ -108,7 +108,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				var component templ.Component
 				switch room.State {
 				case game.StateLobby:
-					component = pages.HostDashboardLobby(room, player)
+					component = pages.HostDashboardLobby(room, player, h.config)
 				case game.StateCountdown:
 					component = pages.HostDashboardCountdown(room, player)
 				case game.StatePlaying:
@@ -116,12 +116,12 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				case game.StateEnded:
 					component = pages.HostDashboardEnded(room, player)
 				default:
-					component = pages.HostDashboardLobby(room, player)
+					component = pages.HostDashboardLobby(room, player, h.config)
 				}
 				component.Render(r.Context(), w)
 			} else if room.State == game.StateLobby {
 				// Regular player sees lobby
-				component := pages.LobbyPage(room, player)
+				component := pages.LobbyPage(room, player, h.config)
 				component.Render(r.Context(), w)
 			} else {
 				// Regular player in active game
@@ -200,7 +200,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Show lobby
 	log.Printf("🏠 Rendering lobby page for room %s with %d players", room.Code, len(room.Players))
-	component := pages.LobbyPage(room, player)
+	component := pages.LobbyPage(room, player, h.config)
 	err = component.Render(r.Context(), w)
 	if err != nil {
 		log.Printf("❌ Error rendering lobby page: %v", err)
@@ -238,14 +238,14 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		var component templ.Component
 		switch room.State {
 		case game.StateCountdown:
-			component = pages.HostDashboardCountdownPage(room, player)
+			component = pages.HostDashboardCountdownPage(room, player, h.config)
 		case game.StatePlaying:
-			component = pages.HostDashboardPlayingPage(room, player)
+			component = pages.HostDashboardPlayingPage(room, player, h.config)
 		case game.StateEnded:
-			component = pages.HostDashboardEndedPage(room, player)
+			component = pages.HostDashboardEndedPage(room, player, h.config)
 		default:
 			// Shouldn't happen, but fallback to playing view
-			component = pages.HostDashboardPlayingPage(room, player)
+			component = pages.HostDashboardPlayingPage(room, player, h.config)
 		}
 		component.Render(r.Context(), w)
 	} else {

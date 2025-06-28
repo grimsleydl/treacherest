@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"treacherest/internal/game"
 	"treacherest/internal/views/layouts"
+	"treacherest/internal/views/components"
+	"treacherest/internal/config"
 )
 
-templ HostDashboardLobby(room *game.Room, player *game.Player) {
+templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	@layouts.Base("Host Dashboard") {
 		<style>
 			/* Tablet-optimized responsive styles */
 			.host-dashboard {
 				display: grid;
-				grid-template-columns: 1fr 1fr;
+				grid-template-columns: 1fr 1fr 1fr;
 				gap: 2rem;
 				height: calc(100vh - 2rem);
 				padding: 1rem;
@@ -118,22 +120,22 @@ templ HostDashboardLobby(room *game.Room, player *game.Player) {
 				padding: 1.2rem;
 			}
 		</style>
-		@HostDashboardBody(room, player)
+		@HostDashboardBody(room, player, cfg)
 	}
 }
 
-templ HostDashboardBody(room *game.Room, player *game.Player) {
+templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	// Wrapper div with data-on-load that never gets morphed
 	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } data-signals="{qrCode: ''}">
 		<div id="host-dashboard-container" class="host-dashboard">
 			<div id="host-dashboard-content">
-				@HostDashboardContent(room, player)
+				@HostDashboardContent(room, player, cfg)
 			</div>
 		</div>
 	</div>
 }
 
-templ HostDashboardContent(room *game.Room, player *game.Player) {
+templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	<div class="qr-section">
 		<h1>Scan to Join</h1>
 		<div class="room-code-large">{ room.Code }</div>
@@ -181,6 +183,10 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 			}
 		</div>
 	</div>
+	// Role configuration section - only for host
+	if room.RoleConfig != nil {
+		@components.RoleConfiguration(room, cfg)
+	}
 }
 
 // Countdown state content for SSE updates
@@ -220,20 +226,20 @@ templ HostDashboardEnded(room *game.Room, player *game.Player) {
 }
 
 // Full page versions for direct navigation (not SSE updates)
-templ HostDashboardCountdownPage(room *game.Room, player *game.Player) {
+templ HostDashboardCountdownPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	@layouts.Base("Host Dashboard - Starting") {
-		@HostDashboardBody(room, player)
+		@HostDashboardBody(room, player, cfg)
 	}
 }
 
-templ HostDashboardPlayingPage(room *game.Room, player *game.Player) {
+templ HostDashboardPlayingPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	@layouts.Base("Host Dashboard - Game") {
-		@HostDashboardBody(room, player)
+		@HostDashboardBody(room, player, cfg)
 	}
 }
 
-templ HostDashboardEndedPage(room *game.Room, player *game.Player) {
+templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
 	@layouts.Base("Host Dashboard - Game Over") {
-		@HostDashboardBody(room, player)
+		@HostDashboardBody(room, player, cfg)
 	}
 }

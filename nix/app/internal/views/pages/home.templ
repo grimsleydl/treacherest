@@ -24,7 +24,7 @@ templ Home() {
 			}
 		</style>
 		<body>
-			<div class="container">
+			<div class="container" data-signals-host-mode="false">
 				<h1>MTG Treacherest</h1>
 				<p>A game of deception and hidden roles</p>
 				<div style="display: flex; flex-direction: column; gap: 2rem; margin-top: 3rem;">
@@ -40,17 +40,10 @@ templ Home() {
 							/>
 							
 							<label class="mode-toggle">
-								<input type="checkbox" name="hostOnly" value="true" data-on-change="
-									const desc = document.getElementById('mode-description');
-									if (this.checked) {
-										desc.textContent = 'You will manage the game and display it on this device for others to join';
-									} else {
-										desc.textContent = 'You will join as a player and participate in the game';
-									}
-								"/>
+								<input type="checkbox" name="hostOnly" value="true" data-bind-host-mode/>
 								<span>Host mode (don't play, just manage)</span>
 							</label>
-							<div id="mode-description" class="mode-description">
+							<div id="mode-description" class="mode-description" data-text="$hostMode ? 'You will manage the game and display it on this device for others to join' : 'You will join as a player and participate in the game'">
 								You will join as a player and participate in the game
 							</div>
 							
