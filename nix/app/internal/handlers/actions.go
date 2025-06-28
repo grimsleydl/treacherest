@@ -45,10 +45,27 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assign roles
+	// Assign roles using room configuration
 	players := room.GetPlayers()
+	log.Printf("🎲 Assigning roles to %d players", len(players))
 	if h.cardService != nil {
-		game.AssignRoles(players, h.cardService)
+		if room.RoleConfig != nil {
+			log.Printf("🎲 Using role configuration: %+v", room.RoleConfig)
+			roleService := game.NewRoleConfigService(h.config)
+			game.AssignRolesWithConfig(players, h.cardService, room.RoleConfig, roleService)
+		} else {
+			// Fallback to legacy assignment
+			log.Printf("🎲 Using legacy role assignment")
+			game.AssignRoles(players, h.cardService)
+		}
+		// Log assigned roles
+		for _, p := range players {
+			if p.Role != nil {
+				log.Printf("🎲 Player %s assigned role: %s", p.Name, p.Role.Name)
+			} else {
+				log.Printf("❌ Player %s has no role assigned!", p.Name)
+			}
+		}
 	} else {
 		log.Printf("❌ CardService is nil, cannot assign roles")
 		http.Error(w, "Internal server error: CardService not available", http.StatusInternalServerError)

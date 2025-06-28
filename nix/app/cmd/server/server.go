@@ -52,6 +52,11 @@ func SetupServer() http.Handler {
 	r.Post("/room/{code}/start", h.StartGame)
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Get("/game/{code}", h.GamePage)
+	
+	// Role configuration endpoints
+	r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
+	r.Post("/room/{code}/config/toggle", h.ToggleRole)
+	r.Post("/room/{code}/config/count", h.UpdateRoleCount)
 
 	// SSE endpoints
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
