@@ -6,16 +6,24 @@ import (
 	"fmt"
 )
 
-templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig) {
+type SortedRole struct {
+	Name       string
+	Definition config.RoleDefinition
+}
+
+templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig, sortedRoles []SortedRole) {
 	<div id="role-config" class="role-configuration">
 		<h3>Game Configuration</h3>
 		
 		// Player count settings
 		<div class="player-count-config">
-			<label>Player Count Range:</label>
+			<label>Player Count:</label>
 			<div class="player-range">
-				<span>Min: { fmt.Sprintf("%d", room.RoleConfig.MinPlayers) }</span>
-				<span>Max: { fmt.Sprintf("%d", room.RoleConfig.MaxPlayers) }</span>
+				if room.RoleConfig.MinPlayers == room.RoleConfig.MaxPlayers {
+					<span>{ fmt.Sprintf("%d players", room.RoleConfig.MinPlayers) }</span>
+				} else {
+					<span>{ fmt.Sprintf("%d - %d players", room.RoleConfig.MinPlayers, room.RoleConfig.MaxPlayers) }</span>
+				}
 			</div>
 		</div>
 
@@ -40,34 +48,34 @@ templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig) {
 		// Role toggles and counts
 		<div class="role-settings">
 			<h4>Roles</h4>
-			for roleName, roleDef := range cfg.Roles.Available {
-				<div class="role-item" data-role={ roleName }>
-					<form id={ "toggle-form-" + roleName } data-on-change={ "@post('/room/" + room.Code + "/config/toggle', {contentType: 'form'})" }>
+			for _, role := range sortedRoles {
+				<div class="role-item" data-role={ role.Name }>
+					<form id={ "toggle-form-" + role.Name } data-on-change={ "@post('/room/" + room.Code + "/config/toggle', {contentType: 'form'})" }>
 						<div class="role-header">
 							<input 
 								type="checkbox" 
-								id={ "role-" + roleName }
-								name={ "role-" + roleName }
-								checked?={ room.RoleConfig.EnabledRoles[roleName] }
+								id={ "role-" + role.Name }
+								name={ "role-" + role.Name }
+								checked?={ room.RoleConfig.EnabledRoles[role.Name] }
 							/>
-							<label for={ "role-" + roleName }>
-								{ roleDef.DisplayName }
-								<span class="role-category">({ roleDef.Category })</span>
+							<label for={ "role-" + role.Name }>
+								{ role.Definition.DisplayName }
+								<span class="role-category">({ role.Definition.Category })</span>
 							</label>
 						</div>
 					</form>
-					if room.RoleConfig.EnabledRoles[roleName] {
-						<form id={ "count-form-" + roleName } data-on-change={ "@post('/room/" + room.Code + "/config/count', {contentType: 'form'})" }>
+					if room.RoleConfig.EnabledRoles[role.Name] {
+						<form id={ "count-form-" + role.Name } data-on-change={ "@post('/room/" + room.Code + "/config/count', {contentType: 'form'})" }>
 							<div class="role-count">
 								<label>Count:</label>
 								<input 
 									type="number" 
-									name={ "count-" + roleName }
-									value={ fmt.Sprintf("%d", room.RoleConfig.RoleCounts[roleName]) }
-									min={ fmt.Sprintf("%d", roleDef.MinCount) }
-									max={ fmt.Sprintf("%d", roleDef.MaxCount) }
+									name={ "count-" + role.Name }
+									value={ fmt.Sprintf("%d", room.RoleConfig.RoleCounts[role.Name]) }
+									min={ fmt.Sprintf("%d", role.Definition.MinCount) }
+									max={ fmt.Sprintf("%d", role.Definition.MaxCount) }
 								/>
-								if roleDef.MinCount > 0 {
+								if role.Definition.MinCount > 0 {
 									<span class="role-constraint">Required</span>
 								}
 							</div>

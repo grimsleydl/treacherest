@@ -12,19 +12,21 @@ import (
 
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
-	store       *store.MemoryStore
-	eventBus    *EventBus
-	cardService *game.CardService
-	config      *config.ServerConfig
+	store             *store.MemoryStore
+	eventBus          *EventBus
+	cardService       *game.CardService
+	config            *config.ServerConfig
+	roleConfigService *game.RoleConfigService
 }
 
 // New creates a new handler
 func New(store *store.MemoryStore, cardService *game.CardService, cfg *config.ServerConfig) *Handler {
 	return &Handler{
-		store:       store,
-		eventBus:    NewEventBus(),
-		cardService: cardService,
-		config:      cfg,
+		store:             store,
+		eventBus:          NewEventBus(),
+		cardService:       cardService,
+		config:            cfg,
+		roleConfigService: game.NewRoleConfigService(cfg),
 	}
 }
 
