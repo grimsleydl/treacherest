@@ -36,6 +36,7 @@ go.work.sum
 
 air
 server
+nix/app/main
 
 # nixago: ignore-linked-files
 /lefthook.yml
@@ -54,3 +55,4 @@ playwright/.cache/
 
 digest.txt
 nix/app/static/images/
+.gemini/
