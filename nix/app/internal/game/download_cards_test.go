@@ -59,9 +59,9 @@ func TestCardIDMapping(t *testing.T) {
 		role     string
 		expected string
 	}{
-		{44, "The Blood Empress", "Leader", "https://mtgtreachery.net/images/cards/en/trd/Leader%20-%20The%20Blood%20Empress.jpg"},
-		{3, "The Bodyguard", "Guardian", "https://mtgtreachery.net/images/cards/en/trd/Guardian%20-%20The%20Bodyguard.jpg"},
-		{1, "The Ætherist", "Guardian", "https://mtgtreachery.net/images/cards/en/trd/Guardian%20-%20The%20%C3%86therist.jpg"},
+		{44, "The Seer", "Assassin", "https://mtgtreachery.net/images/cards/en/trd/044%20-%20Assassin%20-%20The%20Seer.jpg"},
+		{3, "The Bodyguard", "Guardian", "https://mtgtreachery.net/images/cards/en/trd/003%20-%20Guardian%20-%20The%20Bodyguard.jpg"},
+		{1, "The Ætherist", "Guardian", "https://mtgtreachery.net/images/cards/en/trd/001%20-%20Guardian%20-%20The%20%C3%86therist.jpg"},
 	}
 
 	for _, tc := range testCases {
@@ -87,8 +87,8 @@ func TestCardIDMapping(t *testing.T) {
 			t.Errorf("Card %d: expected role '%s', got '%s'", tc.id, tc.role, found.Types.Subtype)
 		}
 
-		// Verify URL construction
-		fileName := fmt.Sprintf("%s - %s.jpg", found.Types.Subtype, found.Name)
+		// Verify URL construction with new format (ID prefix)
+		fileName := fmt.Sprintf("%03d - %s - %s.jpg", found.ID, found.Types.Subtype, found.Name)
 		encodedFileName := url.PathEscape(fileName)
 		actualURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
 		

@@ -19,7 +19,7 @@ func main() {
 	}
 
 	// Download a few sample cards for testing
-	// Using the actual URL pattern: https://mtgtreachery.net/images/cards/en/trd/{Role} - {Card Name}.jpg
+	// Using the new URL pattern: https://mtgtreachery.net/images/cards/en/trd/{ID} - {Role} - {Card Name}.jpg
 	sampleCards := []struct {
 		ID   int
 		Name string
@@ -36,8 +36,8 @@ func main() {
 	}
 
 	for _, card := range sampleCards {
-		// Construct the correct URL
-		fileName := fmt.Sprintf("%s - %s.jpg", card.Role, card.Name)
+		// Construct the correct URL with ID prefix
+		fileName := fmt.Sprintf("%03d - %s - %s.jpg", card.ID, card.Role, card.Name)
 		encodedFileName := url.PathEscape(fileName)
 		imageURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
 		
