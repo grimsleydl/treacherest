@@ -56,3 +56,5 @@ playwright/.cache/
 digest.txt
 nix/app/static/images/
 .gemini/
+/agents/agent-logs/
+/nix/app/scripts/static/images
