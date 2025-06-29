@@ -18,11 +18,12 @@ const (
 
 // RoleConfiguration represents the role settings for a room
 type RoleConfiguration struct {
-	PresetName    string           `json:"presetName"`    // e.g., "standard", "assassination", "custom"
-	EnabledRoles  map[string]bool  `json:"enabledRoles"`  // Which roles from master pool are enabled
-	RoleCounts    map[string]int   `json:"roleCounts"`    // Exact counts per role
-	MinPlayers    int              `json:"minPlayers"`    // Minimum players needed
-	MaxPlayers    int              `json:"maxPlayers"`    // Maximum players allowed
+	PresetName          string           `json:"presetName"`          // e.g., "standard", "assassination", "custom"
+	EnabledRoles        map[string]bool  `json:"enabledRoles"`        // Which roles from master pool are enabled
+	RoleCounts          map[string]int   `json:"roleCounts"`          // Exact counts per role
+	MinPlayers          int              `json:"minPlayers"`          // Minimum players needed
+	MaxPlayers          int              `json:"maxPlayers"`          // Maximum players allowed
+	AllowLeaderlessGame bool             `json:"allowLeaderlessGame"` // Allow games without a leader role
 }
 
 // Room represents a game room

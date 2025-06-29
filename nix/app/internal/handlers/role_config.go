@@ -307,6 +307,76 @@ func (h *Handler) updatePlayerLimits(room *game.Room) {
 	room.RoleConfig.MaxPlayers = maxPlayers
 }
 
+// UpdateLeaderlessGame updates the leaderless game setting for a room
+func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Parse JSON body
+	var body struct {
+		Allowed bool `json:"allowed"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	// Update the setting
+	room.RoleConfig.AllowLeaderlessGame = body.Allowed
+	
+	// If disabling leaderless games and leader is not enabled, enable it
+	if !body.Allowed && !room.RoleConfig.EnabledRoles["leader"] {
+		room.RoleConfig.EnabledRoles["leader"] = true
+		room.RoleConfig.RoleCounts["leader"] = 1
+		room.RoleConfig.PresetName = "custom"
+	}
+	
+	h.store.UpdateRoom(room)
+	
+	// Notify all players
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated", 
+		RoomCode: room.Code,
+		Data:     room,
+	})
+	
+	// Re-render the entire role configuration component
+	sse := datastar.NewSSE(w, r)
+	roleService := game.NewRoleConfigService(h.config)
+	tempSortedRoles := roleService.GetSortedRoles()
+	
+	// Convert to components.SortedRole type
+	sortedRoles := make([]components.SortedRole, len(tempSortedRoles))
+	for i, role := range tempSortedRoles {
+		sortedRoles[i] = components.SortedRole{
+			Name:       role.Name,
+			Definition: role.Definition,
+		}
+	}
+	
+	component := components.RoleConfiguration(room, h.config, sortedRoles)
+	html := renderToString(component)
+	
+	sse.MergeFragments(html,
+		datastar.WithSelector("#role-config"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	
+	// Also send validation update
+	h.sendRoleValidation(w, r, room)
+}
+
 func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	errors := []string{}
 	warnings := []string{}
@@ -328,7 +398,11 @@ func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, roo
 	
 	// Check for required leader role
 	if !hasLeader {
-		errors = append(errors, "Leader role is required")
+		if room.RoleConfig.AllowLeaderlessGame {
+			warnings = append(warnings, "⚠️ Leaderless game - All roles will be hidden. Guardians and Assassins must deduce their allies without a revealed Leader.")
+		} else {
+			errors = append(errors, "Leader role is required")
+		}
 	}
 	
 	// Check player count constraints

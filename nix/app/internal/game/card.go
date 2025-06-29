@@ -72,6 +72,37 @@ func (c *Card) GetWinCondition() string {
 	}
 }
 
+// GetLeaderlessWinCondition returns win conditions for leaderless games
+func (c *Card) GetLeaderlessWinCondition() string {
+	switch c.Types.Subtype {
+	case "Leader":
+		return "Not applicable in leaderless games"
+	case "Guardian":
+		return "Win if majority of non-Traitor players survive"
+	case "Assassin":
+		return "Win by eliminating your secret target"
+	case "Traitor":
+		return "Be the last player standing"
+	default:
+		return ""
+	}
+}
+
+// IsLeaderDependent returns true if the card's ability references the Leader
+func (c *Card) IsLeaderDependent() bool {
+	// List of cards that specifically reference the Leader
+	leaderDependentCards := map[string]bool{
+		"The Golem":        true,
+		"The Great Martyr": true,
+		"The Oracle":       true,
+		"The Quellmaster":  true,
+		"The Metamorph":    true,
+		"The Puppet Master": true,
+	}
+	
+	return leaderDependentCards[c.Name]
+}
+
 // GetImagePath returns the local path to the card image
 func (c *Card) GetImagePath() string {
 	if c.ImagePath != "" {
