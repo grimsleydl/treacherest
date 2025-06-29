@@ -12,7 +12,7 @@ type SortedRole struct {
 }
 
 templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig, sortedRoles []SortedRole) {
-	<div id="role-config" class="role-configuration" data-signals="{roleName: '', enabled: false}">
+	<div id="role-config" class="role-configuration">
 		<h3>Game Configuration</h3>
 		
 		// Player count settings
@@ -49,13 +49,15 @@ templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig, sortedRoles [
 		<div class="role-settings">
 			<h4>Roles</h4>
 			for _, role := range sortedRoles {
-				<div class="role-item" data-role={ role.Name }>
+				<div class="role-item" 
+				     data-role={ role.Name }
+				     data-signals={ fmt.Sprintf(`{%s_enabled: %t, roleName: '%s', enabled: %t}`, role.Name, room.RoleConfig.EnabledRoles[role.Name], role.Name, room.RoleConfig.EnabledRoles[role.Name]) }>
 					<div class="role-header">
 						<input 
 							type="checkbox" 
 							id={ "role-" + role.Name }
-							checked?={ room.RoleConfig.EnabledRoles[role.Name] }
-							data-on-change={ fmt.Sprintf(`$roleName = '%s'; $enabled = evt.target.checked; @post('/room/%s/config/toggle')`, role.Name, room.Code) }
+							data-bind={ role.Name + "_enabled" }
+							data-on-change={ fmt.Sprintf(`$roleName = '%s'; $enabled = $%s_enabled; @post('/room/%s/config/toggle')`, role.Name, role.Name, room.Code) }
 						/>
 						<label for={ "role-" + role.Name }>
 							{ role.Definition.DisplayName }
