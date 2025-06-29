@@ -16,14 +16,19 @@ const (
 	StateEnded     GameState = "ended"
 )
 
+// RoleTypeConfig represents configuration for a specific role type (Leader, Guardian, etc)
+type RoleTypeConfig struct {
+	Count        int             `json:"count"`        // Desired number of this type
+	EnabledCards map[string]bool `json:"enabledCards"` // Which specific cards are available
+}
+
 // RoleConfiguration represents the role settings for a room
 type RoleConfiguration struct {
-	PresetName          string           `json:"presetName"`          // e.g., "standard", "assassination", "custom"
-	EnabledRoles        map[string]bool  `json:"enabledRoles"`        // Which roles from master pool are enabled
-	RoleCounts          map[string]int   `json:"roleCounts"`          // Exact counts per role
-	MinPlayers          int              `json:"minPlayers"`          // Minimum players needed
-	MaxPlayers          int              `json:"maxPlayers"`          // Maximum players allowed
-	AllowLeaderlessGame bool             `json:"allowLeaderlessGame"` // Allow games without a leader role
+	PresetName          string                     `json:"presetName"`          // e.g., "standard", "assassination", "custom"
+	MinPlayers          int                        `json:"minPlayers"`          // Minimum players needed
+	MaxPlayers          int                        `json:"maxPlayers"`          // Maximum players allowed
+	AllowLeaderlessGame bool                       `json:"allowLeaderlessGame"` // Allow games without a leader role
+	RoleTypes           map[string]*RoleTypeConfig `json:"roleTypes"`           // Role type configurations
 }
 
 // Room represents a game room
@@ -184,20 +189,33 @@ func (r *Room) ValidateRoleConfig() error {
 		return fmt.Errorf("maximum %d players allowed, have %d", r.RoleConfig.MaxPlayers, activeCount)
 	}
 
-	// Count total roles
+	// Count total roles and validate each type
 	totalRoles := 0
 	hasLeader := false
-	for role, count := range r.RoleConfig.RoleCounts {
-		if r.RoleConfig.EnabledRoles[role] {
-			totalRoles += count
-			if role == "leader" {
-				hasLeader = true
+	
+	for roleType, config := range r.RoleConfig.RoleTypes {
+		// Count enabled cards for this type
+		enabledCount := 0
+		for _, enabled := range config.EnabledCards {
+			if enabled {
+				enabledCount++
 			}
+		}
+		
+		// Check if we have enough enabled cards for the desired count
+		if config.Count > enabledCount {
+			return fmt.Errorf("%s: need %d cards but only %d are enabled", roleType, config.Count, enabledCount)
+		}
+		
+		totalRoles += config.Count
+		
+		if roleType == "Leader" && config.Count > 0 {
+			hasLeader = true
 		}
 	}
 
-	// Must have exactly one leader
-	if !hasLeader {
+	// Must have exactly one leader unless leaderless game is allowed
+	if !hasLeader && !r.RoleConfig.AllowLeaderlessGame {
 		return fmt.Errorf("must have exactly one leader role")
 	}
 
