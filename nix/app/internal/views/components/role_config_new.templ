@@ -1,0 +1,151 @@
+package components
+
+import (
+	"treacherest/internal/config"
+	"treacherest/internal/game"
+	"fmt"
+)
+
+type RoleTypeDisplay struct {
+	TypeName string
+	Config   *game.RoleTypeConfig
+	Cards    []CardDisplay
+}
+
+type CardDisplay struct {
+	Name    string
+	Enabled bool
+}
+
+templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService) {
+	<div id="role-config" class="role-configuration">
+		<h3>Game Configuration</h3>
+		
+		// Player count settings
+		<div class="player-count-config">
+			<label>Player Count:</label>
+			<div class="player-range">
+				if room.RoleConfig.MinPlayers == room.RoleConfig.MaxPlayers {
+					<span>{ fmt.Sprintf("%d players", room.RoleConfig.MinPlayers) }</span>
+				} else {
+					<span>{ fmt.Sprintf("%d - %d players", room.RoleConfig.MinPlayers, room.RoleConfig.MaxPlayers) }</span>
+				}
+			</div>
+		</div>
+
+		// Preset selector
+		<div class="preset-selector">
+			<form id="preset-form" data-on-change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
+				<label for="role-preset">Role Preset:</label>
+				<select 
+					id="role-preset" 
+					name="preset"
+				>
+					<option value="custom" selected?={ room.RoleConfig.PresetName == "custom" }>Custom</option>
+					for presetName := range cfg.Roles.Presets {
+						<option value={ presetName } selected?={ room.RoleConfig.PresetName == presetName }>
+							{ presetName }
+						</option>
+					}
+				</select>
+			</form>
+		</div>
+
+		// Advanced options
+		<div class="advanced-options">
+			<h4>Advanced Options</h4>
+			<div class="option-item">
+				<input 
+					type="checkbox" 
+					id="allow-leaderless"
+					checked?={ room.RoleConfig.AllowLeaderlessGame }
+					data-on-change={ fmt.Sprintf(`(!evt.target.checked || confirm('Enable leaderless games? This will allow games where all roles are hidden.')) && @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: evt.target.checked})})`, room.Code) }
+				/>
+				<label for="allow-leaderless">
+					Allow Leaderless Games
+					<span class="option-description">(Enables games without a Leader role)</span>
+				</label>
+			</div>
+		</div>
+
+		// Role types with collapsible sections
+		<div class="role-settings" data-signals="{Leader_expanded: false, Guardian_expanded: false, Assassin_expanded: false, Traitor_expanded: false}">
+			<h4>Roles</h4>
+			@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
+			@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
+			@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
+			@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
+		</div>
+
+		// Validation messages
+		<div id="role-validation" class="validation-messages">
+			// Validation messages will be inserted here via SSE
+		</div>
+	</div>
+}
+
+templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTypeConfig, cards []*game.Card) {
+	if typeConfig == nil {
+		<div class="role-type-section">
+			<div class="role-type-header">
+				<span class="role-type-name">{ typeName }s</span>
+				<span class="role-type-warning">Not configured</span>
+			</div>
+		</div>
+	} else {
+		<div class="role-type-section">
+			<div class="role-type-header" 
+			     data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }>
+				<span class="role-type-toggle" data-class-expanded={ fmt.Sprintf(`$%s_expanded`, typeName) }>▶</span>
+				<span class="role-type-name">{ typeName }s</span>
+				<div class="role-type-count">
+					<label>Count:</label>
+					<input 
+						type="number" 
+						value={ fmt.Sprintf("%d", typeConfig.Count) }
+						min="0"
+						max="10"
+						data-on-change={ fmt.Sprintf(`@post('/room/%s/config/role-type-count', {body: JSON.stringify({roleType: '%s', count: parseInt(evt.target.value)})})`, room.Code, typeName) }
+						onclick="event.stopPropagation()"
+					/>
+					if typeConfig.Count > 0 {
+						@RoleTypeStatus(typeName, typeConfig)
+					}
+				</div>
+			</div>
+			<div class="role-cards-list" data-class-show={ fmt.Sprintf(`$%s_expanded`, typeName) }>
+				for _, card := range cards {
+					<div class="role-card-item">
+						<input 
+							type="checkbox" 
+							id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
+							checked?={ typeConfig.EnabledCards[card.Name] }
+							data-on-change={ fmt.Sprintf(`@post('/room/%s/config/card-toggle', {body: JSON.stringify({roleType: '%s', cardName: '%s', enabled: evt.target.checked})})`, room.Code, typeName, card.Name) }
+						/>
+						<label for={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }>
+							{ card.Name }
+						</label>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ RoleTypeStatus(typeName string, typeConfig *game.RoleTypeConfig) {
+	if typeConfig.Count > countEnabledCards(typeConfig) {
+		<span class="role-type-warning">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
+	} else {
+		<span class="role-type-ok">✓</span>
+	}
+}
+
+func countEnabledCards(typeConfig *game.RoleTypeConfig) int {
+	count := 0
+	for _, enabled := range typeConfig.EnabledCards {
+		if enabled {
+			count++
+		}
+	}
+	return count
+}
