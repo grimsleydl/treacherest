@@ -68,7 +68,9 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 
 	// Create handler
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	cardService := createMockCardService()
+	s.SetCardService(cardService)
+	h := New(s, cardService, cfg)
 
 	// Create a room with standard preset
 	room := &game.Room{
@@ -80,6 +82,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 	
 	// Initialize with standard preset
 	roleService := game.NewRoleConfigService(cfg)
+	roleService.SetCardService(cardService)
 	room.RoleConfig, _ = roleService.CreateFromPreset("standard", room.MaxPlayers)
 	
 	player := &game.Player{
@@ -93,8 +96,8 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 
 	// Verify initial leader count
 	t.Run("initial leader count", func(t *testing.T) {
-		if room.RoleConfig.RoleCounts["leader"] != 1 {
-			t.Errorf("Initial leader count should be 1, got %d", room.RoleConfig.RoleCounts["leader"])
+		if room.RoleConfig.RoleTypes["Leader"] == nil || room.RoleConfig.RoleTypes["Leader"].Count != 1 {
+			t.Errorf("Initial leader count should be 1, got %v", room.RoleConfig.RoleTypes["Leader"])
 		}
 	})
 
@@ -119,8 +122,8 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 
 		// Check leader count is still 1
 		updatedRoom, _ := s.GetRoom("TEST1")
-		if updatedRoom.RoleConfig.RoleCounts["leader"] != 1 {
-			t.Errorf("Leader count should remain 1 after preset switch, got %d", updatedRoom.RoleConfig.RoleCounts["leader"])
+		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
+			t.Errorf("Leader count should remain 1 after preset switch, got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
 	})
 
@@ -145,8 +148,8 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 
 		// Check leader count is still 1
 		updatedRoom, _ := s.GetRoom("TEST1")
-		if updatedRoom.RoleConfig.RoleCounts["leader"] != 1 {
-			t.Errorf("Leader count should remain 1 in custom mode, got %d", updatedRoom.RoleConfig.RoleCounts["leader"])
+		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
+			t.Errorf("Leader count should remain 1 in custom mode, got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
 		
 		// Check preset is now custom
@@ -155,11 +158,8 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		}
 		
 		// Check traitor was enabled with proper count
-		if !updatedRoom.RoleConfig.EnabledRoles["traitor"] {
-			t.Error("Traitor role should be enabled")
-		}
-		if updatedRoom.RoleConfig.RoleCounts["traitor"] != 1 {
-			t.Errorf("Traitor count should be 1, got %d", updatedRoom.RoleConfig.RoleCounts["traitor"])
+		if updatedRoom.RoleConfig.RoleTypes["Traitor"] == nil || updatedRoom.RoleConfig.RoleTypes["Traitor"].Count != 1 {
+			t.Errorf("Traitor count should be 1, got %v", updatedRoom.RoleConfig.RoleTypes["Traitor"])
 		}
 	})
 
@@ -184,14 +184,24 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 
 		// Check leader count is still 1
 		updatedRoom, _ := s.GetRoom("TEST1")
-		if updatedRoom.RoleConfig.RoleCounts["leader"] != 1 {
-			t.Errorf("Leader count should remain 1 after switching back to preset, got %d", updatedRoom.RoleConfig.RoleCounts["leader"])
+		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
+			t.Errorf("Leader count should remain 1 after switching back to preset, got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
 		
-		// Check all enabled roles have proper counts
-		for role, enabled := range updatedRoom.RoleConfig.EnabledRoles {
-			if enabled && updatedRoom.RoleConfig.RoleCounts[role] == 0 {
-				t.Errorf("Enabled role %s has 0 count", role)
+		// Check all role types have proper counts
+		for typeName, typeConfig := range updatedRoom.RoleConfig.RoleTypes {
+			if typeConfig.Count > 0 {
+				// At least one card should be enabled for non-zero count
+				hasEnabled := false
+				for _, enabled := range typeConfig.EnabledCards {
+					if enabled {
+						hasEnabled = true
+						break
+					}
+				}
+				if !hasEnabled {
+					t.Errorf("Role type %s has count %d but no enabled cards", typeName, typeConfig.Count)
+				}
 			}
 		}
 	})
@@ -203,7 +213,9 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 
 	// Create handler
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	cardService := createMockCardService()
+	s.SetCardService(cardService)
+	h := New(s, cardService, cfg)
 
 	// Create a room starting in custom mode
 	room := &game.Room{
@@ -212,11 +224,10 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
-			PresetName:   "custom",
-			EnabledRoles: make(map[string]bool),
-			RoleCounts:   make(map[string]int),
-			MinPlayers:   1,
-			MaxPlayers:   8,
+			PresetName: "custom",
+			MinPlayers: 1,
+			MaxPlayers: 8,
+			RoleTypes:  make(map[string]*game.RoleTypeConfig),
 		},
 	}
 	
@@ -250,11 +261,8 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 
 		// Check leader was enabled with count 1
 		updatedRoom, _ := s.GetRoom("CUSTOM1")
-		if !updatedRoom.RoleConfig.EnabledRoles["leader"] {
-			t.Error("Leader role should be enabled")
-		}
-		if updatedRoom.RoleConfig.RoleCounts["leader"] != 1 {
-			t.Errorf("Leader count should be 1 (MinCount), got %d", updatedRoom.RoleConfig.RoleCounts["leader"])
+		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
+			t.Errorf("Leader count should be 1 (MinCount), got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
 	})
 
@@ -279,11 +287,8 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 
 		// Check guardian was enabled with count 1 (default for MinCount = 0)
 		updatedRoom, _ := s.GetRoom("CUSTOM1")
-		if !updatedRoom.RoleConfig.EnabledRoles["guardian"] {
-			t.Error("Guardian role should be enabled")
-		}
-		if updatedRoom.RoleConfig.RoleCounts["guardian"] != 1 {
-			t.Errorf("Guardian count should be 1 (default), got %d", updatedRoom.RoleConfig.RoleCounts["guardian"])
+		if updatedRoom.RoleConfig.RoleTypes["Guardian"] == nil || updatedRoom.RoleConfig.RoleTypes["Guardian"].Count != 1 {
+			t.Errorf("Guardian count should be 1 (default), got %v", updatedRoom.RoleConfig.RoleTypes["Guardian"])
 		}
 	})
 }

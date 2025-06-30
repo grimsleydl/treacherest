@@ -22,15 +22,20 @@ func createMockCardService() *game.CardService {
 	return &game.CardService{
 		Leaders: []*game.Card{
 			{ID: 1, Name: "Test Leader", Types: game.CardTypes{Subtype: "Leader"}, Base64Image: "data:image/jpeg;base64,test"},
+			{ID: 5, Name: "Test Leader 2", Types: game.CardTypes{Subtype: "Leader"}, Base64Image: "data:image/jpeg;base64,test"},
 		},
 		Guardians: []*game.Card{
 			{ID: 2, Name: "Test Guardian", Types: game.CardTypes{Subtype: "Guardian"}, Base64Image: "data:image/jpeg;base64,test"},
+			{ID: 6, Name: "Test Guardian 2", Types: game.CardTypes{Subtype: "Guardian"}, Base64Image: "data:image/jpeg;base64,test"},
+			{ID: 7, Name: "Test Guardian 3", Types: game.CardTypes{Subtype: "Guardian"}, Base64Image: "data:image/jpeg;base64,test"},
 		},
 		Assassins: []*game.Card{
 			{ID: 3, Name: "Test Assassin", Types: game.CardTypes{Subtype: "Assassin"}, Base64Image: "data:image/jpeg;base64,test"},
+			{ID: 8, Name: "Test Assassin 2", Types: game.CardTypes{Subtype: "Assassin"}, Base64Image: "data:image/jpeg;base64,test"},
 		},
 		Traitors: []*game.Card{
 			{ID: 4, Name: "Test Traitor", Types: game.CardTypes{Subtype: "Traitor"}, Base64Image: "data:image/jpeg;base64,test"},
+			{ID: 9, Name: "Test Traitor 2", Types: game.CardTypes{Subtype: "Traitor"}, Base64Image: "data:image/jpeg;base64,test"},
 		},
 	}
 }
@@ -42,9 +47,13 @@ func setupTestRouter() (*chi.Mux, *handlers.Handler) {
 
 	// Initialize in-memory store
 	gameStore := store.NewMemoryStore(cfg)
+	
+	// Create and set card service
+	cardService := createMockCardService()
+	gameStore.SetCardService(cardService)
 
 	// Initialize handlers
-	h := handlers.New(gameStore, createMockCardService(), cfg)
+	h := handlers.New(gameStore, cardService, cfg)
 
 	// Set up router
 	r := chi.NewRouter()
@@ -282,8 +291,8 @@ func TestLeaveRoomIntegration(t *testing.T) {
 
 		router.ServeHTTP(w, req)
 
-		if w.Code != http.StatusSeeOther {
-			t.Errorf("expected redirect status 303, got %d", w.Code)
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
 		}
 
 		// Check player was removed

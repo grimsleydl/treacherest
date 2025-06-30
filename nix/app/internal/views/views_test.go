@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"treacherest"
 	"treacherest/internal/game"
+	"treacherest/internal/config"
 	"treacherest/internal/views/layouts"
 	"treacherest/internal/views/pages"
 )
@@ -36,6 +38,13 @@ func TestTemplateRendering(t *testing.T) {
 	room.Players[player.ID] = player
 
 	ctx := context.Background()
+	
+	// Create config and card service
+	cfg := config.DefaultConfig()
+	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("Failed to create card service: %v", err)
+	}
 
 	t.Run("Base layout renders", func(t *testing.T) {
 		buf := &bytes.Buffer{}
@@ -68,7 +77,7 @@ func TestTemplateRendering(t *testing.T) {
 
 	t.Run("LobbyPage renders", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		component := pages.LobbyPage(room, player)
+		component := pages.LobbyPage(room, player, cfg, cardService)
 
 		err := component.Render(ctx, buf)
 		if err != nil {
@@ -82,7 +91,7 @@ func TestTemplateRendering(t *testing.T) {
 
 	t.Run("LobbyBody renders", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		component := pages.LobbyBody(room, player)
+		component := pages.LobbyBody(room, player, cfg, cardService)
 
 		err := component.Render(ctx, buf)
 		if err != nil {

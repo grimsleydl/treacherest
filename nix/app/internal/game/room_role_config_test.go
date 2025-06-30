@@ -14,18 +14,13 @@ func TestRoom_RoleConfiguration(t *testing.T) {
 		State:      StateLobby,
 		RoleConfig: &RoleConfiguration{
 			PresetName: "custom",
-			EnabledRoles: map[string]bool{
-				"leader":   true,
-				"guardian": true,
-				"traitor":  true,
-			},
-			RoleCounts: map[string]int{
-				"leader":   1,
-				"guardian": 2,
-				"traitor":  1,
-			},
 			MinPlayers: 4,
 			MaxPlayers: 4,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true}},
+				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		},
 	}
 
@@ -37,8 +32,8 @@ func TestRoom_RoleConfiguration(t *testing.T) {
 	// Test role counts
 	expectedTotal := 4
 	actualTotal := 0
-	for _, count := range room.RoleConfig.RoleCounts {
-		actualTotal += count
+	for _, typeConfig := range room.RoleConfig.RoleTypes {
+		actualTotal += typeConfig.Count
 	}
 	if actualTotal != expectedTotal {
 		t.Errorf("Expected total roles %d, got %d", expectedTotal, actualTotal)
@@ -108,6 +103,7 @@ func TestAssignRolesWithConfig(t *testing.T) {
 
 	// Create role config service
 	roleService := NewRoleConfigService(cfg)
+	roleService.SetCardService(cardService)
 
 	// Create role configuration from preset
 	roleConfig, err := roleService.CreateFromPreset("basic-3p", 10)
@@ -175,26 +171,22 @@ func TestAssignRolesWithConfig_HostExclusion(t *testing.T) {
 	// Create minimal card service
 	cardService := &CardService{
 		Leaders: []*Card{
-			{ID: 1, Name: "Test Leader", Types: CardTypes{Subtype: "Leader"}},
+			{ID: 1, Name: "The Usurper", Types: CardTypes{Subtype: "Leader"}},
 		},
 		Guardians: []*Card{
-			{ID: 2, Name: "Test Guardian", Types: CardTypes{Subtype: "Guardian"}},
+			{ID: 2, Name: "The Bodyguard", Types: CardTypes{Subtype: "Guardian"}},
 		},
 	}
 
 	// Create role configuration
 	roleConfig := &RoleConfiguration{
 		PresetName: "custom",
-		EnabledRoles: map[string]bool{
-			"leader":   true,
-			"guardian": true,
-		},
-		RoleCounts: map[string]int{
-			"leader":   1,
-			"guardian": 1,
-		},
 		MinPlayers: 2,
 		MaxPlayers: 2,
+		RoleTypes: map[string]*RoleTypeConfig{
+			"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+			"Guardian": {Count: 1, EnabledCards: map[string]bool{"The Bodyguard": true}},
+		},
 	}
 
 	// Create test players including a host
