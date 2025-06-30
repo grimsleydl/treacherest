@@ -21,12 +21,15 @@ type Handler struct {
 
 // New creates a new handler
 func New(store *store.MemoryStore, cardService *game.CardService, cfg *config.ServerConfig) *Handler {
+	roleConfigService := game.NewRoleConfigService(cfg)
+	roleConfigService.SetCardService(cardService)
+	
 	return &Handler{
 		store:             store,
 		eventBus:          NewEventBus(),
 		cardService:       cardService,
 		config:            cfg,
-		roleConfigService: game.NewRoleConfigService(cfg),
+		roleConfigService: roleConfigService,
 	}
 }
 

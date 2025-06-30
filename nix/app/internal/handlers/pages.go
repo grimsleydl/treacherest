@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"treacherest/internal/game"
-	"treacherest/internal/views/components"
 	"treacherest/internal/views/pages"
 )
 
@@ -109,16 +108,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				var component templ.Component
 				switch room.State {
 				case game.StateLobby:
-					// Get sorted roles for stable display
-					sortedRoles := h.roleConfigService.GetSortedRoles()
-					var templateRoles []components.SortedRole
-					for _, role := range sortedRoles {
-						templateRoles = append(templateRoles, components.SortedRole{
-							Name:       role.Name,
-							Definition: role.Definition,
-						})
-					}
-					component = pages.HostDashboardLobby(room, player, h.config, templateRoles)
+					component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
 				case game.StateCountdown:
 					component = pages.HostDashboardCountdown(room, player)
 				case game.StatePlaying:
@@ -126,30 +116,12 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 				case game.StateEnded:
 					component = pages.HostDashboardEnded(room, player)
 				default:
-					// Get sorted roles for default case too
-					sortedRoles := h.roleConfigService.GetSortedRoles()
-					var templateRoles []components.SortedRole
-					for _, role := range sortedRoles {
-						templateRoles = append(templateRoles, components.SortedRole{
-							Name:       role.Name,
-							Definition: role.Definition,
-						})
-					}
-					component = pages.HostDashboardLobby(room, player, h.config, templateRoles)
+					component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
 				}
 				component.Render(r.Context(), w)
 			} else if room.State == game.StateLobby {
 				// Regular player sees lobby
-				// Get sorted roles for stable display
-				sortedRoles := h.roleConfigService.GetSortedRoles()
-				var templateRoles []components.SortedRole
-				for _, role := range sortedRoles {
-					templateRoles = append(templateRoles, components.SortedRole{
-						Name:       role.Name,
-						Definition: role.Definition,
-					})
-				}
-				component := pages.LobbyPage(room, player, h.config, templateRoles)
+				component := pages.LobbyPage(room, player, h.config, h.cardService)
 				component.Render(r.Context(), w)
 			} else {
 				// Regular player in active game
@@ -228,16 +200,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Show lobby
 	log.Printf("🏠 Rendering lobby page for room %s with %d players", room.Code, len(room.Players))
-	// Get sorted roles for stable display
-	sortedRoles := h.roleConfigService.GetSortedRoles()
-	var templateRoles []components.SortedRole
-	for _, role := range sortedRoles {
-		templateRoles = append(templateRoles, components.SortedRole{
-			Name:       role.Name,
-			Definition: role.Definition,
-		})
-	}
-	component := pages.LobbyPage(room, player, h.config, templateRoles)
+	component := pages.LobbyPage(room, player, h.config, h.cardService)
 	err = component.Render(r.Context(), w)
 	if err != nil {
 		log.Printf("❌ Error rendering lobby page: %v", err)
@@ -272,27 +235,17 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 
 	// Show appropriate view based on player type
 	if player.IsHost {
-		// Get sorted roles for host dashboard pages
-		sortedRoles := h.roleConfigService.GetSortedRoles()
-		var templateRoles []components.SortedRole
-		for _, role := range sortedRoles {
-			templateRoles = append(templateRoles, components.SortedRole{
-				Name:       role.Name,
-				Definition: role.Definition,
-			})
-		}
-		
 		var component templ.Component
 		switch room.State {
 		case game.StateCountdown:
-			component = pages.HostDashboardCountdownPage(room, player, h.config, templateRoles)
+			component = pages.HostDashboardCountdownPage(room, player, h.config, h.cardService)
 		case game.StatePlaying:
-			component = pages.HostDashboardPlayingPage(room, player, h.config, templateRoles)
+			component = pages.HostDashboardPlayingPage(room, player, h.config, h.cardService)
 		case game.StateEnded:
-			component = pages.HostDashboardEndedPage(room, player, h.config, templateRoles)
+			component = pages.HostDashboardEndedPage(room, player, h.config, h.cardService)
 		default:
 			// Shouldn't happen, but fallback to playing view
-			component = pages.HostDashboardPlayingPage(room, player, h.config, templateRoles)
+			component = pages.HostDashboardPlayingPage(room, player, h.config, h.cardService)
 		}
 		component.Render(r.Context(), w)
 	} else {
