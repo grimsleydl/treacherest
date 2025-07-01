@@ -1,14 +1,32 @@
 {
-  "name": "treacherest-tests",
+  "name": "treacherest",
   "version": "1.0.0",
-  "description": "Playwright tests for Treacherest game",
+  "description": "Treacherest game with DaisyUI",
+  "type": "module",
   "scripts": {
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "test:playwright:debug": "playwright test --debug",
-    "playwright:install": "playwright install chromium"
+    "playwright:install": "playwright install chromium",
+    "build:css": "postcss static/css/input.css -o static/css/output.css --verbose",
+    "build:css:prod": "NODE_ENV=production postcss static/css/input.css -o static/css/output.min.css",
+    "watch:css": "postcss static/css/input.css -o static/css/output.css --watch --verbose",
+    "backup:css": "cp -r internal/views internal/views.backup-$(date +%Y%m%d-%H%M%S)"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
-  }
+    "@playwright/test": "^1.40.0",
+    "tailwindcss": "^4.1.11",
+    "@tailwindcss/postcss": "^4.1.11",
+    "daisyui": "^5.0.43",
+    "postcss": "^8.4.47",
+    "postcss-cli": "^11.0.0",
+    "autoprefixer": "^10.4.20",
+    "postcss-import": "^16.1.0",
+    "cssnano": "^7.0.6"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
 }
