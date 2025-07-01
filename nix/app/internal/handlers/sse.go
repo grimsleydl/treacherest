@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 	"treacherest/internal/game"
+	"treacherest/internal/views/components"
 	"treacherest/internal/views/pages"
 )
 
@@ -82,7 +83,7 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
 
 			switch event.Type {
-			case "player_joined", "player_left", "player_updated", "role_config_updated":
+			case "player_joined", "player_left", "player_updated":
 				// Re-render lobby only if still in lobby state
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
@@ -112,6 +113,14 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				// Players should already be on the game page, so just close this lobby connection
 				log.Printf("🎮 Game event '%s' received in lobby SSE - closing connection for room %s", event.Type, roomCode)
 				return
+			case "role_config_updated":
+				// Role config was updated - just send the updated role config component
+				log.Printf("🎯 Role config updated for room %s", roomCode)
+				component := components.RoleConfigurationNew(room, h.config, h.cardService)
+				html := renderToString(component)
+				sse.MergeFragments(html,
+					datastar.WithSelector("#role-config"),
+					datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
