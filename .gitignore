@@ -60,3 +60,7 @@ nix/app/static/images/
 /agents/analysis/
 /nix/app/scripts/static/images
 node_modules/
+
+# CSS build outputs
+nix/app/static/css/output.css
+nix/app/static/css/output.min.css
