@@ -59,6 +59,8 @@ in {
       nodejs_22 # Match the version playwright expects
       (lib.hiPrio playwright-driver) # Give playwright high priority
       (lib.hiPrio playwright-test)   # Give playwright-test high priority
+
+      # Node/npm already included via nodejs_22 above
     ];
 
     commands = [
@@ -195,6 +197,66 @@ in {
           go run download_cards_info.go
         '';
       }
+      {
+        name = "setup-css";
+        help = "Install CSS dependencies via npm";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          npm install
+          echo "✅ CSS dependencies installed"
+        '';
+      }
+      {
+        name = "build-css";
+        help = "Build CSS with Tailwind and DaisyUI";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          npm run build:css
+        '';
+      }
+      {
+        name = "build-css-prod";
+        help = "Build minified CSS for production";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          npm run build:css:prod
+        '';
+      }
+      {
+        name = "dev-css";
+        help = "Start development server with CSS watching";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          
+          # Kill any existing processes
+          pkill -f "postcss.*watch" || true
+          pkill -f "templ generate.*watch" || true
+          
+          # Start CSS watcher
+          npm run watch:css &
+          CSS_PID=$!
+          
+          # Start templ watcher
+          templ generate --watch --proxy="http://localhost:8080" --open-browser=false &
+          TEMPL_PID=$!
+          
+          # Cleanup on exit
+          trap "kill $CSS_PID $TEMPL_PID 2>/dev/null || true" EXIT INT TERM
+          
+          # Start air
+          air
+        '';
+      }
+      {
+        name = "backup-templates";
+        help = "Backup template files before CSS migration";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          timestamp=$(date +%Y%m%d-%H%M%S)
+          cp -r internal/views internal/views.backup-$timestamp
+          echo "✅ Templates backed up to internal/views.backup-$timestamp"
+        '';
+      }
     ];
 
     env = [
@@ -244,6 +306,13 @@ in {
       echo "  update-deps      - Update Go dependencies"
       echo "  download-cards   - Download all MTG Treachery card images"
       echo "  download-cards-sample - Download sample card images for testing"
+      echo ""
+      echo "CSS/DaisyUI Migration commands:"
+      echo "  setup-css        - Install CSS dependencies"
+      echo "  build-css        - Build CSS with Tailwind and DaisyUI"
+      echo "  build-css-prod   - Build minified CSS for production"
+      echo "  dev-css          - Start dev server with CSS watching"
+      echo "  backup-templates - Backup templates before migration"
       echo ""
       echo "Playwright environment configured:"
       echo "  PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
