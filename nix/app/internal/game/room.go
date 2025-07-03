@@ -136,6 +136,11 @@ func (r *Room) CanStart() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	// Must be in lobby state
+	if r.State != StateLobby {
+		return false
+	}
+
 	// Count only active (non-host) players
 	activePlayerCount := 0
 	for _, p := range r.Players {
@@ -144,7 +149,90 @@ func (r *Room) CanStart() bool {
 		}
 	}
 
-	return activePlayerCount >= 1 && r.State == StateLobby
+	// Need at least 1 player
+	if activePlayerCount < 1 {
+		return false
+	}
+
+	// If we have role configuration, validate it
+	if r.RoleConfig != nil {
+		// Count total configured roles
+		totalRoles := 0
+		hasLeader := false
+		
+		for roleType, typeConfig := range r.RoleConfig.RoleTypes {
+			if typeConfig.Count > 0 {
+				totalRoles += typeConfig.Count
+				if roleType == "Leader" {
+					hasLeader = true
+				}
+			}
+		}
+
+		// Check if we have enough roles for all players
+		if totalRoles < activePlayerCount {
+			return false
+		}
+
+		// Check if we need a leader
+		if !hasLeader && !r.RoleConfig.AllowLeaderlessGame {
+			return false
+		}
+	}
+
+	return true
+}
+
+// GetStartValidationError returns a detailed error message if the game cannot start
+func (r *Room) GetStartValidationError() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Must be in lobby state
+	if r.State != StateLobby {
+		return "Game is not in lobby state"
+	}
+
+	// Count only active (non-host) players
+	activePlayerCount := 0
+	for _, p := range r.Players {
+		if !p.IsHost {
+			activePlayerCount++
+		}
+	}
+
+	// Need at least 1 player
+	if activePlayerCount < 1 {
+		return "Need at least 1 player to start"
+	}
+
+	// If we have role configuration, validate it
+	if r.RoleConfig != nil {
+		// Count total configured roles
+		totalRoles := 0
+		hasLeader := false
+		
+		for roleType, typeConfig := range r.RoleConfig.RoleTypes {
+			if typeConfig.Count > 0 {
+				totalRoles += typeConfig.Count
+				if roleType == "Leader" {
+					hasLeader = true
+				}
+			}
+		}
+
+		// Check if we have enough roles for all players
+		if totalRoles < activePlayerCount {
+			return fmt.Sprintf("Not enough roles configured (%d) for %d players", totalRoles, activePlayerCount)
+		}
+
+		// Check if we need a leader
+		if !hasLeader && !r.RoleConfig.AllowLeaderlessGame {
+			return "Leader role is required (or enable leaderless games)"
+		}
+	}
+
+	return ""
 }
 
 // GetLeader returns the player with the Leader role
@@ -180,7 +268,7 @@ func (r *Room) ValidateRoleConfig() error {
 	}
 
 	activeCount := r.GetActivePlayerCount()
-	
+
 	// Check player count bounds
 	if activeCount < r.RoleConfig.MinPlayers {
 		return fmt.Errorf("need at least %d players, have %d", r.RoleConfig.MinPlayers, activeCount)
@@ -192,7 +280,7 @@ func (r *Room) ValidateRoleConfig() error {
 	// Count total roles and validate each type
 	totalRoles := 0
 	hasLeader := false
-	
+
 	for roleType, config := range r.RoleConfig.RoleTypes {
 		// Count enabled cards for this type
 		enabledCount := 0
@@ -201,14 +289,14 @@ func (r *Room) ValidateRoleConfig() error {
 				enabledCount++
 			}
 		}
-		
+
 		// Check if we have enough enabled cards for the desired count
 		if config.Count > enabledCount {
 			return fmt.Errorf("%s: need %d cards but only %d are enabled", roleType, config.Count, enabledCount)
 		}
-		
+
 		totalRoles += config.Count
-		
+
 		if roleType == "Leader" && config.Count > 0 {
 			hasLeader = true
 		}

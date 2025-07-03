@@ -41,10 +41,10 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 
 	// Create role configuration with new structure
 	roleConfig := &RoleConfiguration{
-		PresetName:   presetName,
-		MinPlayers:   minPlayers,
-		MaxPlayers:   maxPlayers,
-		RoleTypes:    make(map[string]*RoleTypeConfig),
+		PresetName: presetName,
+		MinPlayers: minPlayers,
+		MaxPlayers: maxPlayers,
+		RoleTypes:  make(map[string]*RoleTypeConfig),
 	}
 
 	// Initialize all role types with all cards enabled
@@ -98,10 +98,10 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 // CreateDefaultConfiguration creates a new role configuration with all cards enabled
 func (s *RoleConfigService) CreateDefaultConfiguration() *RoleConfiguration {
 	roleConfig := &RoleConfiguration{
-		PresetName:   "custom",
-		MinPlayers:   s.config.Server.MinPlayersPerRoom,
-		MaxPlayers:   s.config.Server.MaxPlayersPerRoom,
-		RoleTypes:    make(map[string]*RoleTypeConfig),
+		PresetName: "custom",
+		MinPlayers: s.config.Server.MinPlayersPerRoom,
+		MaxPlayers: s.config.Server.MaxPlayersPerRoom,
+		RoleTypes:  make(map[string]*RoleTypeConfig),
 	}
 
 	// Initialize all role types with all cards enabled
@@ -189,7 +189,7 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 		if closestCount > 0 {
 			dist := preset.Distributions[closestCount]
 			result := make(map[RoleType]int)
-			
+
 			// Start with the base distribution
 			totalRoles := 0
 			for role, count := range dist {
@@ -243,13 +243,25 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 		}
 	}
 
+	// For custom configurations, return exact counts without adjustment
+	// This respects the user's configuration exactly as specified
+	if config.PresetName == "custom" {
+		// Only validate that we don't exceed player count
+		if totalRoles > playerCount {
+			return nil, fmt.Errorf("too many roles (%d) for player count (%d)", totalRoles, playerCount)
+		}
+		// Return exact configured counts, even if less than player count
+		return result, nil
+	}
+
+	// For presets, we still adjust to match player count
 	// Ensure we have at least one leader (unless leaderless games are allowed)
 	if result[RoleLeader] == 0 && !config.AllowLeaderlessGame {
 		result[RoleLeader] = 1
 		totalRoles++
 	}
 
-	// Adjust for player count mismatch
+	// Adjust for player count mismatch (only for presets)
 	if totalRoles < playerCount {
 		// Add more guardians to fill
 		result[RoleGuardian] += playerCount - totalRoles
@@ -306,11 +318,11 @@ func (s *RoleConfigService) ValidateConfiguration(config *RoleConfiguration) err
 
 	// Validate player bounds
 	if config.MinPlayers < s.config.Server.MinPlayersPerRoom {
-		return fmt.Errorf("minimum players %d is less than server minimum %d", 
+		return fmt.Errorf("minimum players %d is less than server minimum %d",
 			config.MinPlayers, s.config.Server.MinPlayersPerRoom)
 	}
 	if config.MaxPlayers > s.config.Server.MaxPlayersPerRoom {
-		return fmt.Errorf("maximum players %d exceeds server maximum %d", 
+		return fmt.Errorf("maximum players %d exceeds server maximum %d",
 			config.MaxPlayers, s.config.Server.MaxPlayersPerRoom)
 	}
 
@@ -365,10 +377,10 @@ func (s *RoleConfigService) GetSortedRoles() []struct {
 				"Traitor":  5,
 				"Assassin": 6,
 			}
-			
+
 			orderI, hasI := categoryOrder[roles[i].Definition.Category]
 			orderJ, hasJ := categoryOrder[roles[j].Definition.Category]
-			
+
 			if hasI && hasJ {
 				return orderI < orderJ
 			}
@@ -378,7 +390,7 @@ func (s *RoleConfigService) GetSortedRoles() []struct {
 			if hasJ {
 				return false
 			}
-			
+
 			// Fallback to alphabetical by category
 			return roles[i].Definition.Category < roles[j].Definition.Category
 		}

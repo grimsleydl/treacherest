@@ -44,13 +44,13 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 
 	// Get role distribution for the actual player count
 	var roleDistribution map[RoleType]int
-	if roleService != nil {
+	if roleService != nil && roleConfig != nil {
 		dist, err := roleService.GetDistributionForPlayerCount(roleConfig, count)
 		if err == nil {
 			roleDistribution = dist
 		}
 	}
-	
+
 	// If no distribution yet (roleService is nil or error), use counts from config directly
 	if roleDistribution == nil && roleConfig != nil {
 		roleDistribution = make(map[RoleType]int)
@@ -60,11 +60,12 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			}
 		}
 	}
+	
 
 	// Assign cards based on role distribution
 	playerIndex := 0
 	usedCards := make(map[*Card]bool)
-	
+
 	// Map for getting cards by type
 	categoryToCards := map[RoleType][]*Card{
 		RoleLeader:   cardService.Leaders,
@@ -80,7 +81,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 
 		// Get the category name for this role type
 		categoryName := string(roleType)
-		
+
 		// Get enabled cards for this type from config
 		var enabledCardNames map[string]bool
 		if typeConfig, exists := roleConfig.RoleTypes[categoryName]; exists {
@@ -94,6 +95,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 				availableCards = append(availableCards, card)
 			}
 		}
+		
 
 		// Shuffle available cards
 		shuffledCards := make([]*Card, len(availableCards))
