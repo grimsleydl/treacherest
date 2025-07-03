@@ -1,9 +1,9 @@
 package components
 
 import (
+	"fmt"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
-	"fmt"
 )
 
 type RoleTypeDisplay struct {
@@ -17,11 +17,9 @@ type CardDisplay struct {
 	Enabled bool
 }
 
-
 templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false}">
+	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0}">
 		<h3>Game Configuration</h3>
-
 		// Player count settings
 		<div class="player-count-config">
 			<label>Player Count:</label>
@@ -33,7 +31,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 				}
 			</div>
 		</div>
-
 		// Preset selector
 		<div class="preset-selector">
 			<form id="preset-form" data-on-change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
@@ -51,7 +48,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 				</select>
 			</form>
 		</div>
-
 		// Advanced options
 		<div class="advanced-options" data-signals__ifmissing={ fmt.Sprintf(`{allowLeaderless: %t}`, room.RoleConfig.AllowLeaderlessGame) }>
 			<h4>Advanced Options</h4>
@@ -69,7 +65,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 				</label>
 			</div>
 		</div>
-
 		// Role types with collapsible sections
 		<div class="role-settings" data-signals__ifmissing="{Leader_expanded: false, Guardian_expanded: false, Assassin_expanded: false, Traitor_expanded: false}">
 			<h4>Roles</h4>
@@ -78,7 +73,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
 			@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
 		</div>
-
 		// Validation messages
 		<div id="role-validation" class="validation-messages">
 			// Validation messages will be inserted here via SSE
@@ -96,8 +90,10 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 		</div>
 	} else {
 		<div class="role-type-section" data-signals__ifmissing={ fmt.Sprintf(`{%s_count: %d}`, typeName, typeConfig.Count) }>
-			<div class="role-type-header"
-			     data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }>
+			<div
+				class="role-type-header"
+				data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }
+			>
 				<span class="role-type-toggle" data-class-expanded={ fmt.Sprintf(`$%s_expanded`, typeName) }>▶</span>
 				<span class="role-type-name">{ typeName }s</span>
 				<div class="role-type-count">
@@ -107,7 +103,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 						data-bind={ fmt.Sprintf(`%s_count`, typeName) }
 						min="0"
 						max="10"
-						data-on-change={ fmt.Sprintf(`@post('/room/%s/config/role-type-count', {body: JSON.stringify({roleType: '%s', count: parseInt($%s_count)})})`, room.Code, typeName, typeName) }
+						data-on-change={ fmt.Sprintf(`$roleType = '%s'; $roleCount = parseInt($%s_count); @post('/room/%s/config/role-type-count')`, typeName, typeName, room.Code) }
 						onclick="event.stopPropagation()"
 					/>
 					if typeConfig.Count > 0 {
