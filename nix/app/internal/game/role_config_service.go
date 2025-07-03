@@ -401,3 +401,66 @@ func (s *RoleConfigService) GetSortedRoles() []struct {
 
 	return roles
 }
+
+// CanAutoScale checks if a role configuration can automatically scale to accommodate more players
+// Returns (canScale bool, details string) where details explains why scaling can/cannot happen
+func (s *RoleConfigService) CanAutoScale(config *RoleConfiguration, targetPlayerCount int) (bool, string) {
+	// Custom configurations don't support auto-scaling
+	if config.PresetName == "custom" {
+		return false, "Custom configurations do not support auto-scaling"
+	}
+	
+	// Check if preset exists
+	preset, exists := s.config.GetPreset(config.PresetName)
+	if !exists {
+		return false, fmt.Sprintf("Preset '%s' not found", config.PresetName)
+	}
+	
+	// Count current configured roles
+	currentTotal := 0
+	for _, typeConfig := range config.RoleTypes {
+		currentTotal += typeConfig.Count
+	}
+	
+	// Check if the preset has a distribution for the target player count
+	if _, hasExact := preset.Distributions[targetPlayerCount]; hasExact {
+		return true, fmt.Sprintf("Can scale from %d to %d players using %s preset", currentTotal, targetPlayerCount, config.PresetName)
+	}
+	
+	// Check if we can find a suitable distribution close to target
+	var closestCount int
+	var closestDiff = targetPlayerCount // Start with max possible diff
+	
+	for count := range preset.Distributions {
+		// Only consider distributions that have enough roles
+		if count >= targetPlayerCount {
+			diff := count - targetPlayerCount
+			if diff < closestDiff {
+				closestDiff = diff
+				closestCount = count
+			}
+		}
+	}
+	
+	// If we found a distribution with enough roles
+	if closestCount > 0 {
+		return true, fmt.Sprintf("Can scale to %d players by adapting %d-player %s preset", targetPlayerCount, closestCount, config.PresetName)
+	}
+	
+	// Check if we can scale up by adding guardian roles
+	maxDist := 0
+	for count := range preset.Distributions {
+		if count > maxDist {
+			maxDist = count
+		}
+	}
+	
+	if maxDist > 0 && maxDist < targetPlayerCount {
+		// We can potentially scale by adding more guardians
+		guardianDiff := targetPlayerCount - maxDist
+		return true, fmt.Sprintf("Can scale to %d players by adding %d guardian role(s) to %d-player %s preset", 
+			targetPlayerCount, guardianDiff, maxDist, config.PresetName)
+	}
+	
+	return false, fmt.Sprintf("Cannot scale %s preset to %d players - no suitable distribution found", config.PresetName, targetPlayerCount)
+}

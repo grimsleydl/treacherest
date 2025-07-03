@@ -1,11 +1,12 @@
 package pages
 
 import (
-	"treacherest/internal/game"
-	"treacherest/internal/views/layouts"
-	"treacherest/internal/views/components"
-	"treacherest/internal/config"
+	"fmt"
 	"time"
+	"treacherest/internal/config"
+	"treacherest/internal/game"
+	"treacherest/internal/views/components"
+	"treacherest/internal/views/layouts"
 )
 
 templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
@@ -26,32 +27,62 @@ templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 }
 
 templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	<h1>Game Lobby</h1>
-	<div class="room-code">{ room.Code }</div>
-	<div class="player-list">
-		<h2>Players ({ room.GetActivePlayerCount() })</h2>
-		for _, player := range room.GetActivePlayers() {
-			<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
-				{ player.Name }
-			</div>
+	// Add signals for error state and button management
+	<div data-signals-is-starting="false" 
+	     data-signals-start-error=""
+	     data-signals-can-start-game="true"
+	     data-signals-validation-message=""
+	     data-signals-can-auto-scale="false"
+	     data-signals-auto-scale-details="">
+		
+		<h1>Game Lobby</h1>
+		<div class="room-code">{ room.Code }</div>
+		
+		// Error display container - errors will be inserted here by SSE
+		<div id="error-container">
+			// This will be populated by SSE fragments when errors occur
+		</div>
+		
+		<div class="player-list">
+			<h2>Players ({ room.GetActivePlayerCount() })</h2>
+			for _, player := range room.GetActivePlayers() {
+				<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
+					{ player.Name }
+				</div>
+			}
+		</div>
+		
+		// Show role configuration for the first player if no host is present
+		if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) && room.RoleConfig != nil {
+			@components.RoleConfigurationNew(room, cfg, cardService)
 		}
-	</div>
-	
-	// Show role configuration for the first player if no host is present
-	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) && room.RoleConfig != nil {
-		@components.RoleConfigurationNew(room, cfg, cardService)
-	}
-	
-	if room.GetActivePlayerCount() >= 1 {
-		<button class="btn btn-primary btn-lg" data-on-click={ "@post('/room/" + room.Code + "/start')" }>
-			Start Game
+		
+		// Enhanced start button with proper state management
+		if room.GetActivePlayerCount() >= 1 {
+			<button class="btn btn-primary btn-lg" 
+				data-on-click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
+				data-attr-disabled="$isStarting || !$canStartGame"
+				data-class-loading="$isStarting"
+				data-attr-aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
+				data-attr-aria-busy="$isStarting ? 'true' : 'false'"
+				data-attr-aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
+				data-attr-aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null">
+				<span data-show="!$isStarting">Start Game</span>
+				<span data-show="$isStarting" aria-hidden="true">Starting...</span>
+			</button>
+			
+			// Validation help text
+			<div id="validation-help" class="text-sm mt-2" data-show="$validationMessage && !$canStartGame">
+				<span data-text="$validationMessage" class="text-error"></span>
+			</div>
+		} else {
+			<p id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</p>
+		}
+		
+		<button class="btn btn-error mt-4" data-on-click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
+			Leave Room
 		</button>
-	} else {
-		<p>Need at least 1 player to start</p>
-	}
-	<button class="btn btn-error mt-4" data-on-click={ "@post('/room/" + room.Code + "/leave')" }>
-		Leave Room
-	</button>
+	</div>
 }
 
 // Helper function to check if there's a host in the room
@@ -68,14 +99,14 @@ func hasHost(room *game.Room) bool {
 func getFirstPlayerID(room *game.Room) string {
 	var firstPlayer *game.Player
 	var firstJoinTime time.Time
-	
+
 	for _, player := range room.Players {
 		if !player.IsHost && (firstPlayer == nil || player.JoinedAt.Before(firstJoinTime)) {
 			firstPlayer = player
 			firstJoinTime = player.JoinedAt
 		}
 	}
-	
+
 	if firstPlayer != nil {
 		return firstPlayer.ID
 	}

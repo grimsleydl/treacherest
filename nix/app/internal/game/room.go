@@ -31,6 +31,18 @@ type RoleConfiguration struct {
 	RoleTypes           map[string]*RoleTypeConfig `json:"roleTypes"`           // Role type configurations
 }
 
+// ValidationState represents the current validation status of a room
+type ValidationState struct {
+	Version           int64     `json:"version"`           // For detecting stale states
+	Timestamp         time.Time `json:"timestamp"`         // When validated
+	CanStart          bool      `json:"canStart"`          // Whether game can start
+	ValidationMessage string    `json:"validationMessage"` // User-friendly message
+	CanAutoScale      bool      `json:"canAutoScale"`      // If auto-scaling can help
+	AutoScaleDetails  string    `json:"autoScaleDetails"`  // Details about auto-scaling
+	RequiredRoles     int       `json:"requiredRoles"`     // Players needing roles
+	ConfiguredRoles   int       `json:"configuredRoles"`   // Currently configured roles
+}
+
 // Room represents a game room
 type Room struct {
 	Code       string
@@ -48,6 +60,10 @@ type Room struct {
 
 	// Role configuration
 	RoleConfig *RoleConfiguration
+
+	// Validation versioning to detect stale UI states
+	ValidationVersion int64     `json:"-"`
+	LastValidatedAt   time.Time `json:"-"`
 
 	mu sync.RWMutex
 }
@@ -310,4 +326,88 @@ func (r *Room) ValidateRoleConfig() error {
 	// For now, we allow flexible role counts
 	// The assignment logic will handle distributing roles appropriately
 	return nil
+}
+
+// GetValidationState returns comprehensive validation information
+// THIS IS THE SINGLE SOURCE OF TRUTH for all validation
+func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationState {
+	r.mu.Lock()
+	r.ValidationVersion++
+	r.LastValidatedAt = time.Now()
+	version := r.ValidationVersion
+	timestamp := r.LastValidatedAt
+	r.mu.Unlock()
+	
+	state := ValidationState{
+		Version:           version,
+		Timestamp:         timestamp,
+		CanStart:          true,
+		ValidationMessage: "",
+		CanAutoScale:      false,
+	}
+	
+	// Check basic requirements
+	activeCount := r.GetActivePlayerCount()
+	if activeCount < 1 {
+		state.CanStart = false
+		state.ValidationMessage = "Need at least 1 player to start"
+		return state
+	}
+	
+	// Must be in lobby state
+	if r.State != StateLobby {
+		state.CanStart = false
+		state.ValidationMessage = "Game is not in lobby state"
+		return state
+	}
+	
+	// Check role configuration
+	if r.RoleConfig != nil {
+		totalRoles := 0
+		hasLeader := false
+		
+		for roleType, config := range r.RoleConfig.RoleTypes {
+			if config.Count > 0 {
+				totalRoles += config.Count
+				if roleType == "Leader" {
+					hasLeader = true
+				}
+			}
+		}
+		
+		state.ConfiguredRoles = totalRoles
+		state.RequiredRoles = activeCount
+		
+		// Check if we have enough roles
+		if totalRoles < activeCount {
+			// Check if auto-scaling can help
+			if roleService != nil && r.RoleConfig.PresetName != "custom" {
+				canScale, details := roleService.CanAutoScale(r.RoleConfig, activeCount)
+				state.CanAutoScale = canScale
+				state.AutoScaleDetails = details
+				
+				if canScale {
+					state.CanStart = true
+					state.ValidationMessage = fmt.Sprintf("Will auto-scale roles from %d to %d players", totalRoles, activeCount)
+				} else {
+					state.CanStart = false
+					state.ValidationMessage = fmt.Sprintf("Not enough roles configured (%d) for %d players. %s", totalRoles, activeCount, details)
+				}
+			} else {
+				state.CanStart = false
+				state.ValidationMessage = fmt.Sprintf("Not enough roles configured (%d) for %d players", totalRoles, activeCount)
+				if r.RoleConfig.PresetName == "custom" {
+					state.AutoScaleDetails = "Custom configurations do not support auto-scaling"
+				}
+			}
+		}
+		
+		// Check leader requirement
+		if !hasLeader && !r.RoleConfig.AllowLeaderlessGame && state.CanStart {
+			state.CanStart = false
+			state.ValidationMessage = "Leader role is required (or enable leaderless games)"
+		}
+	}
+	
+	return state
 }
