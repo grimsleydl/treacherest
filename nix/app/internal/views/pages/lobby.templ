@@ -27,38 +27,49 @@ templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 }
 
 templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	// Add signals for error state and button management
-	<div data-signals-is-starting="false" 
-	     data-signals-start-error=""
-	     data-signals-can-start-game="true"
-	     data-signals-validation-message=""
-	     data-signals-can-auto-scale="false"
-	     data-signals-auto-scale-details="">
-		
-		<h1>Game Lobby</h1>
-		<div class="room-code">{ room.Code }</div>
-		
-		// Error display container - errors will be inserted here by SSE
-		<div id="error-container">
-			// This will be populated by SSE fragments when errors occur
+	// Only add signals for players who can control the game
+	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) {
+		<div data-signals-is-starting="false" 
+		     data-signals-start-error=""
+		     data-signals-can-start-game="true"
+		     data-signals-validation-message=""
+		     data-signals-can-auto-scale="false"
+		     data-signals-auto-scale-details="">
+			@LobbyContentInner(room, currentPlayer, cfg, cardService, true)
 		</div>
-		
-		<div class="player-list">
-			<h2>Players ({ room.GetActivePlayerCount() })</h2>
-			for _, player := range room.GetActivePlayers() {
-				<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
-					{ player.Name }
-				</div>
-			}
+	} else {
+		// Non-controlling players don't need role configuration signals
+		<div>
+			@LobbyContentInner(room, currentPlayer, cfg, cardService, false)
 		</div>
-		
-		// Show role configuration for the first player if no host is present
-		if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) && room.RoleConfig != nil {
-			@components.RoleConfigurationNew(room, cfg, cardService)
+	}
+}
+
+templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService, canControl bool) {
+	<h1>Game Lobby</h1>
+	<div class="room-code">{ room.Code }</div>
+	
+	// Error display container - errors will be inserted here by SSE
+	<div id="error-container">
+		// This will be populated by SSE fragments when errors occur
+	</div>
+	
+	<div class="player-list">
+		<h2>Players ({ room.GetActivePlayerCount() })</h2>
+		for _, player := range room.GetActivePlayers() {
+			<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
+				{ player.Name }
+			</div>
 		}
-		
-		// Enhanced start button with proper state management
-		if room.GetActivePlayerCount() >= 1 {
+	</div>
+	
+	// Show role configuration for the first player if no host is present
+	if canControl && room.RoleConfig != nil {
+		@components.RoleConfigurationNew(room, cfg, cardService)
+	}
+	
+	// Enhanced start button with proper state management
+	if canControl && room.GetActivePlayerCount() >= 1 {
 			<button class="btn btn-primary btn-lg" 
 				data-on-click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
 				data-attr-disabled="$isStarting || !$canStartGame"
@@ -75,14 +86,16 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.Serv
 			<div id="validation-help" class="text-sm mt-2" data-show="$validationMessage && !$canStartGame">
 				<span data-text="$validationMessage" class="text-error"></span>
 			</div>
-		} else {
-			<p id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</p>
-		}
-		
-		<button class="btn btn-error mt-4" data-on-click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
-			Leave Room
-		</button>
-	</div>
+	} else if !canControl && room.GetActivePlayerCount() >= 1 {
+		// Non-controlling players just see a waiting message
+		<p id="waiting-message" role="status" aria-live="polite">Waiting for game to start...</p>
+	} else {
+		<p id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</p>
+	}
+	
+	<button class="btn btn-error mt-4" data-on-click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
+		Leave Room
+	</button>
 }
 
 // Helper function to check if there's a host in the room
