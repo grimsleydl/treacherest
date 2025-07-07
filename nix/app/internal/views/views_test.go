@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 	"treacherest"
-	"treacherest/internal/game"
 	"treacherest/internal/config"
+	"treacherest/internal/game"
 	"treacherest/internal/views/layouts"
 	"treacherest/internal/views/pages"
 )
@@ -38,7 +38,7 @@ func TestTemplateRendering(t *testing.T) {
 	room.Players[player.ID] = player
 
 	ctx := context.Background()
-	
+
 	// Create config and card service
 	cfg := config.DefaultConfig()
 	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)

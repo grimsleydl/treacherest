@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 		// Create a temporary YAML file
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, "test-config.yaml")
-		
+
 		yamlContent := `
 server:
   maxPlayersPerRoom: 10

@@ -3,8 +3,8 @@ package pages
 import (
 	"testing"
 	"treacherest"
-	"treacherest/internal/game"
 	"treacherest/internal/config"
+	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
 )
 

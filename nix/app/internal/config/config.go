@@ -39,9 +39,9 @@ type RoleDefinition struct {
 
 // Preset defines a named role distribution preset
 type Preset struct {
-	Name          string                       `yaml:"name"`
-	Description   string                       `yaml:"description"`
-	Distributions map[int]map[string]int       `yaml:"distributions"`
+	Name          string                 `yaml:"name"`
+	Description   string                 `yaml:"description"`
+	Distributions map[int]map[string]int `yaml:"distributions"`
 }
 
 // LoadConfig loads the server configuration from a YAML file
@@ -167,7 +167,7 @@ func (c *ServerConfig) Validate() error {
 			if playerCount < 1 || playerCount > c.Server.MaxPlayersPerRoom {
 				return fmt.Errorf("preset %s: invalid player count %d", presetName, playerCount)
 			}
-			
+
 			// Check that all roles in distribution exist
 			for roleName := range distribution {
 				if _, exists := c.Roles.Available[roleName]; !exists {

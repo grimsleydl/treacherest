@@ -79,12 +79,12 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		State:      game.StateLobby,
 	}
-	
+
 	// Initialize with standard preset
 	roleService := game.NewRoleConfigService(cfg)
 	roleService.SetCardService(cardService)
 	room.RoleConfig, _ = roleService.CreateFromPreset("standard", room.MaxPlayers)
-	
+
 	player := &game.Player{
 		ID:       "player1",
 		Name:     "Test Player",
@@ -151,12 +151,12 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
 			t.Errorf("Leader count should remain 1 in custom mode, got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
-		
+
 		// Check preset is now custom
 		if updatedRoom.RoleConfig.PresetName != "custom" {
 			t.Errorf("Preset should be 'custom' after toggling role, got %s", updatedRoom.RoleConfig.PresetName)
 		}
-		
+
 		// Check traitor was enabled with proper count
 		if updatedRoom.RoleConfig.RoleTypes["Traitor"] == nil || updatedRoom.RoleConfig.RoleTypes["Traitor"].Count != 1 {
 			t.Errorf("Traitor count should be 1, got %v", updatedRoom.RoleConfig.RoleTypes["Traitor"])
@@ -187,7 +187,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		if updatedRoom.RoleConfig.RoleTypes["Leader"] == nil || updatedRoom.RoleConfig.RoleTypes["Leader"].Count != 1 {
 			t.Errorf("Leader count should remain 1 after switching back to preset, got %v", updatedRoom.RoleConfig.RoleTypes["Leader"])
 		}
-		
+
 		// Check all role types have proper counts
 		for typeName, typeConfig := range updatedRoom.RoleConfig.RoleTypes {
 			if typeConfig.Count > 0 {
@@ -230,7 +230,7 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 			RoleTypes:  make(map[string]*game.RoleTypeConfig),
 		},
 	}
-	
+
 	player := &game.Player{
 		ID:       "player1",
 		Name:     "Test Player",

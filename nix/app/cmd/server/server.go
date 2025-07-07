@@ -27,7 +27,7 @@ func SetupServer() http.Handler {
 	if err != nil {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
-	
+
 	// Initialize in-memory store
 	gameStore := store.NewMemoryStore(cfg)
 
@@ -52,7 +52,7 @@ func SetupServer() http.Handler {
 	r.Post("/room/{code}/start", h.StartGame)
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Get("/game/{code}", h.GamePage)
-	
+
 	// Role configuration endpoints
 	r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
 	r.Post("/room/{code}/config/toggle", h.ToggleRole)

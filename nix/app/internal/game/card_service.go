@@ -37,24 +37,24 @@ func NewCardService(jsonData []byte, imagesFS embed.FS) (*CardService, error) {
 	// Categorize cards by subtype and load images
 	for i := range collection.Cards {
 		card := &collection.Cards[i]
-		
+
 		// Load and encode the image from embedded filesystem
 		imagePath := fmt.Sprintf("static/images/cards/%d.jpg", card.ID)
 		imageData, err := imagesFS.ReadFile(imagePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read embedded image for card %d (%s): %w", card.ID, card.Name, err)
 		}
-		
+
 		// Detect MIME type
 		mimeType := http.DetectContentType(imageData)
-		
+
 		// Create base64 data URI
 		base64Data := base64.StdEncoding.EncodeToString(imageData)
 		card.Base64Image = fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data)
-		
+
 		// Keep image path for backward compatibility
 		card.ImagePath = fmt.Sprintf("/static/images/cards/%d.jpg", card.ID)
-		
+
 		switch card.Types.Subtype {
 		case "Leader":
 			service.Leaders = append(service.Leaders, card)

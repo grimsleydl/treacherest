@@ -31,14 +31,13 @@ templ Home() {
 					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
 						<h2>Create New Game</h2>
 						<form action="/room/new" method="POST">
-							<input 
-								type="text" 
-								name="playerName" 
-								placeholder="Enter your name" 
-								required 
+							<input
+								type="text"
+								name="playerName"
+								placeholder="Enter your name"
+								required
 								style="width: 100%; padding: 0.8rem; font-size: 1.1rem;"
 							/>
-							
 							<label class="mode-toggle">
 								<input type="checkbox" name="hostOnly" value="true" data-bind-host-mode/>
 								<span>Host mode (don't play, just manage)</span>
@@ -46,17 +45,14 @@ templ Home() {
 							<div id="mode-description" class="mode-description" data-text="$hostMode ? 'You will manage the game and display it on this device for others to join' : 'You will join as a player and participate in the game'">
 								You will join as a player and participate in the game
 							</div>
-							
 							<button type="submit" class="btn btn-primary btn-lg w-full mt-6">
 								Create Room
 							</button>
 						</form>
 					</div>
-					
 					<div style="text-align: center;">
 						<span style="color: #666;">— OR —</span>
 					</div>
-					
 					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
 						<h2>Join Existing Game</h2>
 						<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()">

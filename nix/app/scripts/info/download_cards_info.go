@@ -29,11 +29,11 @@ func main() {
 		"../../../docs/external/treachery-cards.json",
 		os.Getenv("PRJ_ROOT") + "/docs/external/treachery-cards.json",
 	}
-	
+
 	var jsonData []byte
 	var err error
 	var foundPath string
-	
+
 	for _, path := range possiblePaths {
 		jsonData, err = os.ReadFile(path)
 		if err == nil {
@@ -41,7 +41,7 @@ func main() {
 			break
 		}
 	}
-	
+
 	if err != nil {
 		fmt.Printf("Error reading treachery-cards.json: %v\n", err)
 		return

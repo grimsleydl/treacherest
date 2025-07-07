@@ -34,7 +34,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				if currentPlayer.Role != nil {
 					<div class={ "role-card", getRoleClass(string(currentPlayer.Role.GetRoleType())) }>
 						<div class="card-image-container">
-							<img 
+							<img
 								src={ currentPlayer.Role.GetImageBase64() }
 								alt={ currentPlayer.Role.Name }
 								class="card-image"

@@ -15,7 +15,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-
 func TestUpdateRolePreset(t *testing.T) {
 	// Create test config
 	cfg := config.DefaultConfig()
@@ -49,7 +48,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			RoleTypes:  make(map[string]*game.RoleTypeConfig),
 		},
 	}
-	
+
 	player := &game.Player{
 		ID:       "player1",
 		Name:     "Test Player",
@@ -98,7 +97,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			form.Add("preset", tt.preset)
 			req := httptest.NewRequest("POST", "/room/TEST1/config/preset", strings.NewReader(form.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			
+
 			// Set cookie
 			req.AddCookie(&http.Cookie{
 				Name:  "player_TEST1",
@@ -158,7 +157,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			},
 		},
 	}
-	
+
 	player := &game.Player{
 		ID:       "player1",
 		Name:     "Test Player",
@@ -195,7 +194,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			form.Add("role-"+tt.roleName, "on")
 			req := httptest.NewRequest("POST", "/room/TEST2/config/toggle", strings.NewReader(form.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			
+
 			// Set cookie
 			req.AddCookie(&http.Cookie{
 				Name:  "player_TEST2",
@@ -261,7 +260,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			MaxPlayers: 8,
 		},
 	}
-	
+
 	player := &game.Player{
 		ID:       "player1",
 		Name:     "Test Player",
@@ -304,7 +303,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			form.Add("count-"+tt.roleName, tt.count)
 			req := httptest.NewRequest("POST", "/room/TEST3/config/count", strings.NewReader(form.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			
+
 			// Set cookie
 			req.AddCookie(&http.Cookie{
 				Name:  "player_TEST3",
@@ -330,7 +329,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			// Verify count was updated
 			updatedRoom, _ := s.GetRoom("TEST3")
 			if updatedRoom.RoleConfig.RoleCounts[tt.roleName] != tt.wantCount {
-				t.Errorf("role count not updated correctly: got %v want %v", 
+				t.Errorf("role count not updated correctly: got %v want %v",
 					updatedRoom.RoleConfig.RoleCounts[tt.roleName], tt.wantCount)
 			}
 		})

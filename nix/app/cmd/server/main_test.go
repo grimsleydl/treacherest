@@ -47,7 +47,7 @@ func setupTestRouter() (*chi.Mux, *handlers.Handler) {
 
 	// Initialize in-memory store
 	gameStore := store.NewMemoryStore(cfg)
-	
+
 	// Create and set card service
 	cardService := createMockCardService()
 	gameStore.SetCardService(cardService)

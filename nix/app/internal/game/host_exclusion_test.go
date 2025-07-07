@@ -94,7 +94,7 @@ func TestHostExclusion(t *testing.T) {
 
 	t.Run("GetActivePlayerCount excludes hosts", func(t *testing.T) {
 		room := &Room{
-			Code:       "TEST",  
+			Code:       "TEST",
 			Players:    make(map[string]*Player),
 			MaxPlayers: 8,
 		}
