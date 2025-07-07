@@ -126,7 +126,14 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 
 templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	// Wrapper div with data-on-load that never gets morphed
-	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } data-signals="{qrCode: ''}">
+	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } 
+	     data-signals="{qrCode: ''}"
+	     data-signals-can-start-game="true"
+	     data-signals-validation-message=""
+	     data-signals-can-auto-scale="false"
+	     data-signals-auto-scale-details=""
+	     data-signals-required-roles="0"
+	     data-signals-configured-roles="0">
 		<div id="host-dashboard-container" class="host-dashboard">
 			<div id="host-dashboard-content">
 				@HostDashboardContent(room, player, cfg, cardService)

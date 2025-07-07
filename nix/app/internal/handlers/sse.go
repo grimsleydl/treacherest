@@ -383,6 +383,23 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial player list
 	h.renderHostDashboard(sse, room, player)
+	
+	// Send initial validation state for host dashboard
+	if room.State == game.StateLobby {
+		roleService := game.NewRoleConfigService(h.config)
+		validationState := room.GetValidationState(roleService)
+		
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"canStartGame": validationState.CanStart,
+			"validationMessage": validationState.ValidationMessage,
+			"canAutoScale": validationState.CanAutoScale,
+			"autoScaleDetails": validationState.AutoScaleDetails,
+			"requiredRoles": validationState.RequiredRoles,
+			"configuredRoles": validationState.ConfiguredRoles,
+		})
+		
+		log.Printf("📡 Sent initial validation state for host dashboard: canAutoScale=%v", validationState.CanAutoScale)
+	}
 
 	// Subscribe to events
 	events := h.eventBus.Subscribe(roomCode)
