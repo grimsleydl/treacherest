@@ -202,7 +202,17 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	defer h.eventBus.Unsubscribe(roomCode, events)
 
 	// Send initial render
+	log.Printf("🎮 Initial render for room %s, state: %s, countdown: %d", roomCode, room.State, room.CountdownRemaining)
 	h.renderGame(sse, room, player)
+	
+	// Send initial signals including countdown
+	signals := map[string]interface{}{
+		"countdown": room.CountdownRemaining,
+	}
+	err = sse.MarshalAndMergeSignals(signals)
+	if err != nil {
+		log.Printf("❌ Failed to send initial game signals: %v", err)
+	}
 
 	// If joining during countdown, calculate actual remaining time
 	if room.State == game.StateCountdown {
@@ -214,12 +224,14 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		// Update the room with actual remaining time
 		if actualRemaining > 0 {
 			room.CountdownRemaining = actualRemaining
+			h.store.UpdateRoom(room) // Save the updated countdown to store
 			log.Printf("📡 Browser connected during countdown for room %s, actual remaining: %d seconds", roomCode, actualRemaining)
 		} else {
 			// Countdown should have finished, transition to playing
 			room.State = game.StatePlaying
 			room.CountdownRemaining = 0
 			room.LeaderRevealed = true
+			h.store.UpdateRoom(room) // Save the updated state to store
 			log.Printf("📡 Browser connected after countdown finished for room %s, showing game state", roomCode)
 		}
 
@@ -232,11 +244,42 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 			return
-		case <-events:
-			// Re-render on any event
-			room, _ = h.store.GetRoom(roomCode)
-			player = room.GetPlayer(player.ID) // Refresh player data
-			h.renderGame(sse, room, player)
+		case event := <-events:
+			log.Printf("📡 SSE event received for game %s: %s", roomCode, event.Type)
+			switch event.Type {
+			case "countdown_update":
+				// Get fresh room data
+				room, _ = h.store.GetRoom(roomCode)
+				
+				// Send ONLY the countdown signal
+				signals := map[string]interface{}{
+					"countdown": room.CountdownRemaining,
+				}
+				
+				err := sse.MarshalAndMergeSignals(signals)
+				if err != nil {
+					log.Printf("❌ Failed to send countdown signal: %v", err)
+				} else {
+					log.Printf("⏱️ Sent countdown signal for room %s: %d", roomCode, room.CountdownRemaining)
+				}
+			case "game_playing":
+				// Transition to playing state - render and clear countdown
+				room, _ = h.store.GetRoom(roomCode)
+				player = room.GetPlayer(player.ID)
+				h.renderGame(sse, room, player)
+				
+				// Clear countdown signal
+				signals := map[string]interface{}{
+					"countdown": 0,
+				}
+				sse.MarshalAndMergeSignals(signals)
+				log.Printf("🎮 Game playing - cleared countdown signal for room %s", roomCode)
+			default:
+				// All other events need full re-render
+				room, _ = h.store.GetRoom(roomCode)
+				player = room.GetPlayer(player.ID) // Refresh player data
+				h.renderGame(sse, room, player)
+			}
 		}
 	}
 }
@@ -307,10 +350,18 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 
 // renderGame renders the game content (without wrapper to prevent re-triggering data-on-load)
 func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
+	log.Printf("🎨 Rendering game for room %s, state: %s, countdown: %d", room.Code, room.State, room.CountdownRemaining)
 	component := pages.GameContent(room, player)
 
 	// Render to string
 	html := renderToString(component)
+	
+	// Log first 200 chars of rendered HTML for debugging
+	if len(html) > 200 {
+		log.Printf("🎭 Rendered HTML preview: %s...", html[:200])
+	} else {
+		log.Printf("🎭 Rendered HTML: %s", html)
+	}
 
 	// Send as fragment with morph mode and explicit selector
 	sse.MergeFragments(html,
@@ -399,6 +450,17 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		})
 		
 		log.Printf("📡 Sent initial validation state for host dashboard: canAutoScale=%v", validationState.CanAutoScale)
+	} else if room.State == game.StateCountdown {
+		// Send initial countdown signal if joining during countdown
+		signals := map[string]interface{}{
+			"countdown": room.CountdownRemaining,
+		}
+		err = sse.MarshalAndMergeSignals(signals)
+		if err != nil {
+			log.Printf("❌ Failed to send initial countdown signal to host: %v", err)
+		} else {
+			log.Printf("📡 Sent initial countdown signal to host: %d", room.CountdownRemaining)
+		}
 	}
 
 	// Subscribe to events
@@ -464,13 +526,31 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				room, _ = h.store.GetRoom(roomCode)
 				h.renderHostDashboard(sse, room, player)
 			case "countdown_update":
-				// Update countdown display
+				// Get fresh room data
 				room, _ = h.store.GetRoom(roomCode)
-				h.renderHostDashboard(sse, room, player)
+				
+				// Send ONLY the countdown signal for the host
+				signals := map[string]interface{}{
+					"countdown": room.CountdownRemaining,
+				}
+				
+				err := sse.MarshalAndMergeSignals(signals)
+				if err != nil {
+					log.Printf("❌ Failed to send countdown signal to host: %v", err)
+				} else {
+					log.Printf("⏱️ Sent countdown signal to host for room %s: %d", roomCode, room.CountdownRemaining)
+				}
 			case "game_playing":
 				// Update dashboard to show game state
 				room, _ = h.store.GetRoom(roomCode)
 				h.renderHostDashboard(sse, room, player)
+				
+				// Clear countdown signal for host
+				signals := map[string]interface{}{
+					"countdown": 0,
+				}
+				sse.MarshalAndMergeSignals(signals)
+				log.Printf("🎮 Game playing - cleared countdown signal for host in room %s", roomCode)
 			case "game_ended":
 				// Update dashboard to show ended state
 				room, _ = h.store.GetRoom(roomCode)
