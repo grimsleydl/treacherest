@@ -44,14 +44,23 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 
 	// Get role distribution for the actual player count
 	var roleDistribution map[RoleType]int
-	if roleService != nil && roleConfig != nil {
+	if roleConfig != nil && roleConfig.PresetName == "custom" {
+		// For custom games, use the exact counts from the configuration
+		roleDistribution = make(map[RoleType]int)
+		for roleTypeName, typeConfig := range roleConfig.RoleTypes {
+			if typeConfig.Count > 0 {
+				roleDistribution[RoleType(roleTypeName)] = typeConfig.Count
+			}
+		}
+	} else if roleService != nil && roleConfig != nil {
+    // For preset-based games, get the distribution from the service (which can auto-scale)
 		dist, err := roleService.GetDistributionForPlayerCount(roleConfig, count)
 		if err == nil {
 			roleDistribution = dist
 		}
 	}
 
-	// If no distribution yet (roleService is nil or error), use counts from config directly
+	// Fallback if no distribution could be determined
 	if roleDistribution == nil && roleConfig != nil {
 		roleDistribution = make(map[RoleType]int)
 		for roleTypeName, typeConfig := range roleConfig.RoleTypes {
