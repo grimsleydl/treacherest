@@ -3,6 +3,7 @@ package pages
 import (
 	"fmt"
 	"treacherest/internal/game"
+	"treacherest/internal/views/components"
 	"treacherest/internal/views/layouts"
 )
 
@@ -23,12 +24,10 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 	<div
 		id="game-container"
 		class="container"
-		data-signals={ fmt.Sprintf("{countdown: %d}", room.CountdownRemaining) }
+		data-signals={ fmt.Sprintf(`{"countdown": %d}`, room.CountdownRemaining) }
 	>
 		if room.State == game.StateCountdown {
-			<div class="countdown">
-				<h1>Revealing roles in { fmt.Sprint(room.CountdownRemaining) }...</h1>
-			</div>
+			@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
 		} else {
 			<div class="role-view">
 				if currentPlayer.Role != nil {
