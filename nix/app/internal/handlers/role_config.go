@@ -59,8 +59,8 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Send validation update
-	h.sendRoleValidation(w, r, room)
+	// Send updated UI using the helper
+	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 // ToggleRole enables/disables a role
@@ -142,41 +142,59 @@ func (h *Handler) updatePlayerLimits(room *game.Room) {
 // UpdateLeaderlessGame updates the leaderless game setting for a room
 func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
+	log.Printf("🔍 UpdateLeaderlessGame called for room: %s", roomCode)
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
 	}
 
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
+		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	// Parse JSON body
 	var body struct {
-		Allowed bool `json:"allowed"`
+		AllowLeaderless bool `json:"allowLeaderless"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Log state change
+	previousState := room.RoleConfig.AllowLeaderlessGame
+	leaderCount := 0
+	if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists {
+		leaderCount = leaderConfig.Count
+	}
+	
+	log.Printf("📊 UpdateLeaderlessGame state change for room %s:", roomCode)
+	log.Printf("  - Previous AllowLeaderlessGame: %v", previousState)
+	log.Printf("  - New AllowLeaderlessGame: %v", body.AllowLeaderless)
+	log.Printf("  - Current Leader count: %d", leaderCount)
+
 	// Update the setting
-	room.RoleConfig.AllowLeaderlessGame = body.Allowed
+	room.RoleConfig.AllowLeaderlessGame = body.AllowLeaderless
 
 	// If disabling leaderless games and leader count is 0, set it to 1
-	if !body.Allowed {
+	if !body.AllowLeaderless {
 		if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists && leaderConfig.Count == 0 {
+			log.Printf("  - Auto-adding 1 Leader because leaderless disabled and leader count was 0")
 			leaderConfig.Count = 1
 			room.RoleConfig.PresetName = "custom"
 		}
 	}
 
 	h.store.UpdateRoom(room)
+	log.Printf("✅ UpdateLeaderlessGame completed for room %s", roomCode)
 
 	// Notify all players
 	h.eventBus.Publish(Event{
@@ -185,17 +203,8 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Re-render the entire role configuration component
-	sse := datastar.NewSSE(w, r)
-	component := components.RoleConfigurationNew(room, h.config, h.cardService)
-	html := renderToString(component)
-
-	sse.MergeFragments(html,
-		datastar.WithSelector("#role-config"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-
-	// Also send validation update
-	h.sendRoleValidation(w, r, room)
+	// Send updated UI using the helper
+	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, room *game.Room) {
@@ -203,45 +212,67 @@ func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, roo
 	h.sendRoleValidationNew(w, r, room)
 }
 
-// UpdateRoleTypeCount updates the count for a specific role type
-func (h *Handler) UpdateRoleTypeCount(w http.ResponseWriter, r *http.Request) {
-	roomCode := chi.URLParam(r, "code")
+// IncrementRoleTypeCount increments the count for a specific role type
+func (h *Handler) IncrementRoleTypeCount(w http.ResponseWriter, r *http.Request) {
+	log.Printf("DEBUG: IncrementRoleTypeCount called")
+	h.updateRoleTypeCount(w, r, "increment")
+}
 
+// DecrementRoleTypeCount decrements the count for a specific role type
+func (h *Handler) DecrementRoleTypeCount(w http.ResponseWriter, r *http.Request) {
+	h.updateRoleTypeCount(w, r, "decrement")
+}
+
+// updateRoleTypeCount handles the actual count update logic
+func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, action string) {
+	roomCode := chi.URLParam(r, "code")
+	roleType := chi.URLParam(r, "roleType")
+
+	// Get room
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
-		http.Error(w, "Room not found", http.StatusNotFound)
+		// Return error fragment
+		sse := datastar.NewSSE(w, r)
+		sse.MergeFragments(`<div class="alert alert-error">Room not found</div>`,
+			datastar.WithSelector("#role-validation"))
 		return
 	}
 
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// Return error fragment
+		sse := datastar.NewSSE(w, r)
+		sse.MergeFragments(`<div class="alert alert-error">Unauthorized</div>`,
+			datastar.WithSelector("#role-validation"))
 		return
 	}
 
-	// Parse JSON body with signal variables
-	var body map[string]interface{}
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	// Get the type config
+	typeConfig, exists := room.RoleConfig.RoleTypes[roleType]
+	if !exists {
+		// Return error fragment
+		sse := datastar.NewSSE(w, r)
+		sse.MergeFragments(fmt.Sprintf(`<div class="alert alert-error">Invalid role type: %s</div>`, roleType),
+			datastar.WithSelector("#role-validation"))
 		return
 	}
 
-	// Extract values from the map
-	roleType, _ := body["roleType"].(string)
-	roleCountFloat, _ := body["roleCount"].(float64)
-	count := int(roleCountFloat)
-
-	// Validate role type exists
-	if _, exists := room.RoleConfig.RoleTypes[roleType]; !exists {
-		log.Printf("ERROR: Invalid role type received: '%s'", roleType)
-		http.Error(w, "Invalid role type", http.StatusBadRequest)
+	// Update count based on action
+	switch action {
+	case "increment":
+		typeConfig.Count++
+		room.RoleConfig.PresetName = "custom" // Switch to custom when modified
+	case "decrement":
+		if typeConfig.Count > 0 {
+			typeConfig.Count--
+			room.RoleConfig.PresetName = "custom" // Switch to custom when modified
+		}
+	default:
+		// This should never happen with our current implementation
+		log.Printf("ERROR: Invalid action '%s'", action)
 		return
 	}
-
-	// Update count
-	room.RoleConfig.RoleTypes[roleType].Count = count
-	room.RoleConfig.PresetName = "custom"
 
 	// Update min/max players based on role counts
 	h.updatePlayerLimitsNew(room)
@@ -255,8 +286,8 @@ func (h *Handler) UpdateRoleTypeCount(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Send validation update
-	h.sendRoleValidationNew(w, r, room)
+	// CRITICAL: Return updated DOM fragments, not just signals
+	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 // ToggleRoleCard enables/disables a specific role card
@@ -341,8 +372,8 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Send validation update
-	h.sendRoleValidationNew(w, r, room)
+	// Send updated UI using the helper
+	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
@@ -589,4 +620,48 @@ func (h *Handler) sendRoleValidationNew(w http.ResponseWriter, r *http.Request, 
 	sse.MergeFragments(html,
 		datastar.WithSelector("#role-validation"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+}
+
+func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request, room *game.Room) {
+	log.Printf("📤 sendUpdatedRoleConfigUI called for room %s", room.Code)
+	sse := datastar.NewSSE(w, r)
+	
+	// Log current state
+	leaderCount := 0
+	if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists {
+		leaderCount = leaderConfig.Count
+	}
+	log.Printf("  - Current AllowLeaderlessGame: %v", room.RoleConfig.AllowLeaderlessGame)
+	log.Printf("  - Current Leader count: %d", leaderCount)
+	
+	// Re-render just the role configuration component
+	component := components.RoleConfigurationNew(room, h.config, h.cardService)
+	html := renderToString(component)
+	
+	log.Printf("  - Sending role config update with selector #role-config")
+	
+	// Send the role config fragment
+	sse.MergeFragments(html,
+		datastar.WithSelector("#role-config"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	
+	// Also update validation state
+	roleService := game.NewRoleConfigService(h.config)
+	validationState := room.GetValidationState(roleService)
+	
+	log.Printf("  - Validation state: CanStart=%v, Message=%s", validationState.CanStart, validationState.ValidationMessage)
+	
+	signals := map[string]interface{}{
+		"canStartGame": validationState.CanStart,
+		"validationMessage": validationState.ValidationMessage,
+		"canAutoScale": validationState.CanAutoScale,
+		"autoScaleDetails": validationState.AutoScaleDetails,
+		"requiredRoles": validationState.RequiredRoles,
+		"configuredRoles": validationState.ConfiguredRoles,
+		"updatingLeaderless": false, // Reset loading state
+		"allowLeaderless": room.RoleConfig.AllowLeaderlessGame, // Sync checkbox state
+	}
+	
+	log.Printf("  - Sending signals (with allowLeaderless): %+v", signals)
+	sse.MarshalAndMergeSignals(signals)
 }

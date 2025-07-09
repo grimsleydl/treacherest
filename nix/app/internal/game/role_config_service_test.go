@@ -183,15 +183,15 @@ func TestRoleConfigService_GetDistributionForPlayerCount(t *testing.T) {
 	}
 
 	service := NewRoleConfigService(cfg)
-	
+
 	// Create a dynamic preset config
 	roleConfig, _ := service.CreateFromPreset("dynamic", 10)
 
 	tests := []struct {
-		name         string
-		playerCount  int
-		wantRoles    map[RoleType]int
-		wantErr      bool
+		name        string
+		playerCount int
+		wantRoles   map[RoleType]int
+		wantErr     bool
 	}{
 		{
 			name:        "3 players matches 3-4 range",
@@ -305,7 +305,7 @@ func TestRoleConfigService_ValidateConfiguration(t *testing.T) {
 					"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
 				},
 			},
-			wantValid:  true,
+			wantValid: true,
 		},
 		{
 			name: "missing required role",
@@ -316,7 +316,7 @@ func TestRoleConfigService_ValidateConfiguration(t *testing.T) {
 					"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true}},
 				},
 			},
-			wantValid:  false, // leader is required
+			wantValid: false, // leader is required
 		},
 		{
 			name: "invalid role count",
@@ -327,7 +327,7 @@ func TestRoleConfigService_ValidateConfiguration(t *testing.T) {
 				MinPlayers: 2,
 				MaxPlayers: 2,
 			},
-			wantValid:  false,
+			wantValid: false,
 		},
 	}
 
@@ -398,12 +398,12 @@ func TestRoleConfigService_CreateFromPreset_InitializesRoleCounts(t *testing.T) 
 	if result.RoleTypes["Leader"] == nil || result.RoleTypes["Leader"].Count != 1 {
 		t.Errorf("expected leader count to be 1, got %v", result.RoleTypes["Leader"])
 	}
-	
+
 	// Check guardian has the preset count (3 for 5 players)
 	if result.RoleTypes["Guardian"] == nil || result.RoleTypes["Guardian"].Count != 3 {
 		t.Errorf("expected guardian count to be 3, got %v", result.RoleTypes["Guardian"])
 	}
-	
+
 	// Check assassin has the preset count (1 for 5 players)
 	if result.RoleTypes["Assassin"] == nil || result.RoleTypes["Assassin"].Count != 1 {
 		t.Errorf("expected assassin count to be 1, got %v", result.RoleTypes["Assassin"])
