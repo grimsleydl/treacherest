@@ -64,3 +64,4 @@ node_modules/
 # CSS build outputs
 nix/app/static/css/output.css
 nix/app/static/css/output.min.css
+/agents/ignore
