@@ -55,4 +55,42 @@
   .player-card-compat.current {
     @apply bg-base-300 ring-2 ring-primary;
   }
+  
+  /* Role count controls styling */
+  .role-count {
+    @apply text-lg w-8 text-center;
+  }
+  
+  .role-type-controls .btn-square {
+    @apply w-8 h-8 min-h-0;
+  }
+  
+  /* Countdown animation speed overrides */
+  /* Override the default DaisyUI countdown transition */
+  .countdown > *::before {
+    transition: all 0.25s ease-out !important;
+  }
+  
+  /* Speed variants */
+  .countdown-fast > *::before {
+    transition: all 0.1s ease-out !important;
+  }
+  
+  .countdown-normal > *::before {
+    transition: all 0.3s ease-out !important;
+  }
+  
+  .countdown-slow > *::before {
+    transition: all 0.6s ease-out !important;
+  }
+  
+  /* No animation */
+  .countdown-instant > *::before {
+    transition: none !important;
+  }
+  
+  /* Smooth linear animation (no easing) */
+  .countdown-linear > *::before {
+    transition: all 0.3s linear !important;
+  }
 }
