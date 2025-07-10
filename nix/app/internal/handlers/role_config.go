@@ -41,8 +41,13 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 		// Keep current custom configuration
 		room.RoleConfig.PresetName = "custom"
 	} else {
-		// Load preset configuration
-		newConfig, err := h.roleConfigService.CreateFromPreset(presetName, room.MaxPlayers)
+		// Load preset configuration using current player count from role config
+		playerCount := room.RoleConfig.MaxPlayers
+		if playerCount == 0 {
+			// Fallback to default game size if not set
+			playerCount = h.config.Server.DefaultGameSize
+		}
+		newConfig, err := h.roleConfigService.CreateFromPreset(presetName, playerCount)
 		if err != nil {
 			http.Error(w, "Invalid preset", http.StatusBadRequest)
 			return
@@ -399,12 +404,6 @@ func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
 		maxPlayers = h.config.Server.MaxPlayersPerRoom
 	}
 
-	// For presets, we might want to allow flexibility for more players
-	// This allows the game to scale up with more of certain roles
-	if room.RoleConfig.PresetName != "custom" && maxPlayers < h.config.Server.MaxPlayersPerRoom {
-		// Allow scaling up to max server limit for presets
-		maxPlayers = h.config.Server.MaxPlayersPerRoom
-	}
 
 	room.RoleConfig.MinPlayers = minPlayers
 	room.RoleConfig.MaxPlayers = maxPlayers

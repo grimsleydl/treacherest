@@ -124,9 +124,9 @@ func TestLeaderlessRoleDistribution(t *testing.T) {
 		assert.Equal(t, 2, distribution[RoleTraitor])
 	})
 
-	t.Run("auto-adds leader when leaderless not allowed", func(t *testing.T) {
+	t.Run("auto-adds leader for presets when leaderless not allowed", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
-			PresetName:          "custom",
+			PresetName:          "standard", // Changed to preset to enable auto-leader
 			MinPlayers:          2,
 			MaxPlayers:          2,
 			AllowLeaderlessGame: false,
