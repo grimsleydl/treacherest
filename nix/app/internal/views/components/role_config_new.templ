@@ -93,12 +93,14 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			}
 		</div>
 		// Role types with collapsible sections
-		<div class="role-settings" data-signals__ifmissing="{Leader_expanded: false, Guardian_expanded: false, Assassin_expanded: false, Traitor_expanded: false}">
+		<div class="role-settings">
 			<h4>Roles</h4>
-			@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
-			@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
-			@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
-			@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
+			<div class="join join-vertical w-full">
+				@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
+				@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
+				@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
+				@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
+			</div>
 		</div>
 		// Validation messages
 		<div id="role-validation" class="validation-messages">
@@ -109,70 +111,70 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 
 templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTypeConfig, cards []*game.Card) {
 	if typeConfig == nil {
-		<div class="role-type-section">
-			<div class="role-type-header">
-				<span class="role-type-name">{ typeName }s</span>
-				<span class="role-type-warning">Not configured</span>
+		<div class="flex items-start gap-4 join-item border border-base-300 p-2">
+			<div class="w-20"></div> <!-- Adjusted spacer for wider buttons -->
+			<div class="py-3">
+				<span class="font-bold">{ typeName }s</span>
+				<span class="text-warning ml-2">Not configured</span>
 			</div>
 		</div>
 	} else {
-		<div class="role-type-section">
-			<div class="role-type-header-row">
-				// Clickable section
-				<div
-					class="role-type-header-clickable"
-					data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }
-				>
-					<span class="role-type-toggle" data-class-expanded={ fmt.Sprintf(`$%s_expanded`, typeName) }>▶</span>
-					<span class="role-type-name">{ typeName }s</span>
-				</div>
-				// Non-clickable section
-				<div class="role-type-controls flex items-center gap-4">
-					<div class="tooltip tooltip-top" data-tip={ fmt.Sprintf("Number of %s roles", typeName) }>
-						<div class="btn-group">
-							<button 
-								class="btn btn-sm btn-primary"
-								data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
-								disabled?={ typeConfig.Count == 0 }
-							>-</button>
-							<button class="btn btn-sm btn-ghost cursor-default">{ fmt.Sprintf("%d", typeConfig.Count) }</button>
-							<button 
-								class="btn btn-sm btn-primary"
-								data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
-							>+</button>
+		<div class="join-item border border-base-300
+					grid grid-cols-5 grid-rows-1
+					auto-cols-max w-full
+					">
+			<div class="grid grid-cols-1 grid-rows-3">
+				<!-- Left controls - wider buttons -->
+					<button
+						class="btn btn-primary
+							   row-start-1
+							   "
+						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
+					>+</button>
+					<span class="text-lg font-bold my-1 row-start-2 text-center">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
+					<button 
+						class="btn btn-primary
+							   row-start-3
+							   "
+						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
+						disabled?={ typeConfig.Count == 0 }
+					>-</button>
+			</div>
+
+				<!-- Accordion part -->
+				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4">
+					<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } class="peer" id={ fmt.Sprintf("role-accordion-%s", typeName) } />
+					<label for={ fmt.Sprintf("role-accordion-%s", typeName) } class="collapse-title h-full font-bold items-center px-3">
+						{ typeName }s
+						if typeConfig.Count > countEnabledCards(typeConfig) {
+							<span class="text-warning ml-2 text-sm">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
+						} else if typeConfig.Count > 0 {
+							<span class="text-success ml-2">✓</span>
+						}
+					</label>
+					<div class="collapse-content">
+						<div class="space-y-2 pt-2">
+							for _, card := range cards {
+								<div class="form-control">
+									<label class="label cursor-pointer justify-start gap-2">
+										<input
+											type="checkbox"
+											class="toggle"
+											id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
+											checked?={ typeConfig.EnabledCards[card.Name] }
+											data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
+										/>
+										<span class="label-text">{ card.Name }</span>
+									</label>
+								</div>
+							}
 						</div>
 					</div>
-					if typeConfig.Count > 0 {
-						@RoleTypeStatus(typeName, typeConfig)
-					}
 				</div>
-			</div>
-			<div class="role-cards-list" data-class-show={ fmt.Sprintf(`$%s_expanded`, typeName) }>
-				for _, card := range cards {
-					<div class="role-card-item">
-						<input
-							type="checkbox"
-							id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
-							checked?={ typeConfig.EnabledCards[card.Name] }
-							data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
-						/>
-						<label for={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }>
-							{ card.Name }
-						</label>
-					</div>
-				}
-			</div>
 		</div>
 	}
 }
 
-templ RoleTypeStatus(typeName string, typeConfig *game.RoleTypeConfig) {
-	if typeConfig.Count > countEnabledCards(typeConfig) {
-		<span class="role-type-warning">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
-	} else {
-		<span class="role-type-ok">✓</span>
-	}
-}
 
 func countEnabledCards(typeConfig *game.RoleTypeConfig) int {
 	count := 0
