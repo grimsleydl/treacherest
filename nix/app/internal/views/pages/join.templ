@@ -8,7 +8,7 @@ templ Join(roomCode string, errorMsg string) {
 			<div style="max-width: 400px; margin: 100px auto; text-align: center;">
 				<h1>Join Room { roomCode }</h1>
 				if errorMsg != "" {
-					<div class="error-message" style="color: #ff6b6b; margin-bottom: 1rem; padding: 0.5rem; background: rgba(255, 107, 107, 0.1); border-radius: 4px;">
+					<div class="alert alert-error mb-4">
 						{ errorMsg }
 					</div>
 				}

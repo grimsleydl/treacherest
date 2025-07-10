@@ -28,7 +28,7 @@ templ Home() {
 				<h1>MTG Treacherest</h1>
 				<p>A game of deception and hidden roles</p>
 				<div style="display: flex; flex-direction: column; gap: 2rem; margin-top: 3rem;">
-					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+					<div class="border border-base-300 p-8 rounded-lg max-w-xl mx-auto">
 						<h2>Create New Game</h2>
 						<form action="/room/new" method="POST">
 							<input
@@ -51,9 +51,9 @@ templ Home() {
 						</form>
 					</div>
 					<div style="text-align: center;">
-						<span style="color: #666;">— OR —</span>
+						<span class="text-base-content text-opacity-50">— OR —</span>
 					</div>
-					<div style="border: 1px solid #ddd; padding: 2rem; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+					<div class="border border-base-300 p-8 rounded-lg max-w-xl mx-auto">
 						<h2>Join Existing Game</h2>
 						<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()">
 							<input
