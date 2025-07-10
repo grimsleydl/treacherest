@@ -44,10 +44,10 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 		}
 	}
 
-	// Create default role configuration using standard preset
+	// Create default role configuration using standard preset with default game size
 	roleService := game.NewRoleConfigService(s.config)
 	roleService.SetCardService(s.cardService)
-	roleConfig, _ := roleService.CreateFromPreset("standard", s.config.Server.MaxPlayersPerRoom)
+	roleConfig, _ := roleService.CreateFromPreset("standard", s.config.Server.DefaultGameSize)
 
 	room := &game.Room{
 		Code:       code,
