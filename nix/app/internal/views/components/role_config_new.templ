@@ -165,7 +165,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 						}
 					</label>
 					<div class="collapse-content">
-						<div class="space-y-2 pt-2">
+						<div class="space-y-2 pt-2" data-show={ fmt.Sprintf("$accordion%s", typeName) }>
 							for _, card := range cards {
 								<div class="form-control">
 									<label class="label cursor-pointer justify-start gap-2">
