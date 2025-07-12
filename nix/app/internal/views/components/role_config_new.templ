@@ -163,7 +163,9 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 										checked?={ typeConfig.EnabledCards[card.Name] }
 										data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
 									/>
-									<span class="label-text">{ card.Name }</span>
+									<span class="label-text">
+										@CardWithModal(card, "")
+									</span>
 								</label>
 							</div>
 						}
