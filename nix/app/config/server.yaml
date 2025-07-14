@@ -110,3 +110,29 @@ roles:
         18: {leader: 1, guardian: 9, assassin: 5, traitor: 4}
         19: {leader: 1, guardian: 10, assassin: 5, traitor: 4}
         20: {leader: 1, guardian: 10, assassin: 5, traitor: 5}
+
+
+    traitorous:
+      name: "Traitors Only"
+      description: "TRAITORS ONLY"
+      distributions:
+        1: {traitor: 1}
+        2: {traitor: 2}
+        3: {traitor: 3}
+        4: {traitor: 4}
+        5: {traitor: 5}
+        6: {traitor: 6}
+        7: {traitor: 7}
+        8: {traitor: 8}
+        9: {traitor: 9}
+        10: {traitor: 10}
+        11: {traitor: 11}
+        12: {traitor: 12}
+        13: {traitor: 13}
+        14: {traitor: 14}
+        15: {traitor: 15}
+        16: {traitor: 16}
+        17: {traitor: 17}
+        18: {traitor: 18}
+        19: {traitor: 19}
+        20: {traitor: 20}
