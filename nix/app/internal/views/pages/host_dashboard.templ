@@ -15,14 +15,16 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 
 templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	// Wrapper div with data-on-load that never gets morphed
-	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } 
-	     data-signals="{qrCode: ''}"
-	     data-signals-can-start-game="true"
-	     data-signals-validation-message=""
-	     data-signals-can-auto-scale="false"
-	     data-signals-auto-scale-details=""
-	     data-signals-required-roles="0"
-	     data-signals-configured-roles="0">
+	<div
+		data-on-load={ "@get('/sse/host/" + room.Code + "')" }
+		data-signals="{qrCode: ''}"
+		data-signals-can-start-game="true"
+		data-signals-validation-message=""
+		data-signals-can-auto-scale="false"
+		data-signals-auto-scale-details=""
+		data-signals-required-roles="0"
+		data-signals-configured-roles="0"
+	>
 		<div id="host-dashboard-container" class="min-h-screen p-4">
 			<div id="host-dashboard-content">
 				@HostDashboardContent(room, player, cfg, cardService)
@@ -57,7 +59,6 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 				or enter the room code
 			</div>
 		</div>
-		
 		// Players Section
 		<div class="card bg-base-200 shadow-xl p-8 flex flex-col">
 			<h2 class="text-2xl font-bold text-primary mb-4">Players in Room</h2>
@@ -82,7 +83,6 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 				}
 			</div>
 		</div>
-		
 		// Role configuration section - desktop: 3rd column, tablet: full width below, mobile: below
 		if room.RoleConfig != nil {
 			<div class="md:col-span-2 lg:col-span-1">
@@ -90,25 +90,23 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 				<div class="lg:hidden mb-4">
 					<button class="btn btn-outline btn-primary w-full" onclick="document.getElementById('config-modal').showModal()">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
 						</svg>
 						Game Configuration
 					</button>
 				</div>
-				
 				// Desktop: show inline, Tablet/Mobile: show in modal
 				<div class="hidden lg:block">
-					@components.RoleConfigurationNew(room, cfg, cardService)
+					@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
 				</div>
-				
 				// Modal for tablet/mobile
 				<dialog id="config-modal" class="modal lg:hidden">
 					<div class="modal-box max-w-2xl">
 						<form method="dialog">
 							<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
 						</form>
-						@components.RoleConfigurationNew(room, cfg, cardService)
+						@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
 					</div>
 					<form method="dialog" class="modal-backdrop">
 						<button>close</button>

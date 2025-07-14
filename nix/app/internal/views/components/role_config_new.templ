@@ -17,21 +17,48 @@ type CardDisplay struct {
 	Enabled bool
 }
 
-templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
-		 data-signals__ifmissing="{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false}"
-			>
+type PlayerCountDisplay struct {
+	IncrementTooltip string
+	DecrementTooltip string
+	CanIncrement     bool
+	CanDecrement     bool
+}
+
+templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService, playerCountDisplay PlayerCountDisplay) {
+	<div
+		id="role-config"
+		class="role-configuration"
+		data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
+		data-signals__ifmissing="{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false}"
+	>
 		<h3>Game Configuration</h3>
 		// Player count settings
 		<div class="player-count-config">
 			<label>Player Count:</label>
-			<div class="player-range">
-				if room.RoleConfig.MinPlayers == room.RoleConfig.MaxPlayers {
-					<span>{ fmt.Sprintf("%d players", room.RoleConfig.MinPlayers) }</span>
-				} else {
-					<span>{ fmt.Sprintf("%d - %d players", room.RoleConfig.MinPlayers, room.RoleConfig.MaxPlayers) }</span>
-				}
+			<div class="player-range flex items-center gap-2">
+				<button
+					class="btn btn-primary btn-sm"
+					data-on-click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
+					disabled?={ shouldDisableDecrement(playerCountDisplay, room, cfg) }
+					title={ getDecrementTitle(playerCountDisplay) }
+				>
+					-
+				</button>
+				<span class="px-2 font-semibold">{ fmt.Sprintf("%d players", room.RoleConfig.MaxPlayers) }</span>
+				<button
+					class="btn btn-primary btn-sm"
+					data-on-click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
+					disabled?={ shouldDisableIncrement(playerCountDisplay, room, cfg) }
+					title={ getIncrementTitle(playerCountDisplay) }
+				>
+					+
+				</button>
 			</div>
+			if room.RoleConfig.PresetName == "custom" {
+				<div class="text-xs text-gray-500 mt-1">
+					Custom mode: Roles will be rebalanced automatically
+				</div>
+			}
 		</div>
 		// Preset selector
 		<div class="preset-selector">
@@ -68,12 +95,13 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					<span data-show="$updatingLeaderless" class="loading loading-spinner loading-xs ml-2"></span>
 				</label>
 			</div>
-			
 			// Auto-scale toggle - only show for preset configurations
 			if room.RoleConfig.PresetName != "custom" {
-				<div class="option-item" 
+				<div
+					class="option-item"
 					data-show="$canAutoScale"
-					data-attr-title="$autoScaleDetails">
+					data-attr-title="$autoScaleDetails"
+				>
 					<input
 						type="checkbox"
 						id="enable-auto-scale"
@@ -86,7 +114,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 						<span class="option-description">({ room.RoleConfig.PresetName } preset will adjust roles automatically)</span>
 					</label>
 				</div>
-				
 				// Show auto-scale details when relevant
 				<div class="auto-scale-info" data-show="$canAutoScale && $autoScaleDetails">
 					<span class="info-icon">ℹ️</span>
@@ -124,8 +151,11 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 		<div class="join-item border border-base-300">
 			<!-- Accordion with integrated controls -->
 			<div class="collapse collapse-arrow duration-100">
-				<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } id={ fmt.Sprintf("role-accordion-%s", typeName) }
-					   data-bind={ fmt.Sprintf("accordion%s", typeName) }
+				<input
+					type="checkbox"
+					name={ fmt.Sprintf("accordion-%s", typeName) }
+					id={ fmt.Sprintf("role-accordion-%s", typeName) }
+					data-bind={ fmt.Sprintf("accordion%s", typeName) }
 				/>
 				<div class="collapse-title font-bold flex items-center gap-4">
 					<!-- Controls on the left side of the title -->
@@ -136,7 +166,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 							onclick="event.stopPropagation()"
 						>+</button>
 						<span class="text-lg font-bold">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
-						<button 
+						<button
 							class="btn btn-primary relative z-20"
 							data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
 							disabled?={ typeConfig.Count == 0 }
@@ -176,7 +206,6 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 	}
 }
 
-
 func countEnabledCards(typeConfig *game.RoleTypeConfig) int {
 	count := 0
 	for _, enabled := range typeConfig.EnabledCards {
@@ -185,4 +214,32 @@ func countEnabledCards(typeConfig *game.RoleTypeConfig) int {
 		}
 	}
 	return count
+}
+
+func shouldDisableDecrement(display PlayerCountDisplay, room *game.Room, cfg *config.ServerConfig) bool {
+	if display.DecrementTooltip != "" {
+		return !display.CanDecrement
+	}
+	return room.RoleConfig.MaxPlayers <= cfg.Server.MinPlayersPerRoom || room.RoleConfig.MaxPlayers <= len(room.Players)
+}
+
+func shouldDisableIncrement(display PlayerCountDisplay, room *game.Room, cfg *config.ServerConfig) bool {
+	if display.IncrementTooltip != "" {
+		return !display.CanIncrement
+	}
+	return room.RoleConfig.MaxPlayers >= cfg.Server.MaxPlayersPerRoom
+}
+
+func getDecrementTitle(display PlayerCountDisplay) string {
+	if display.DecrementTooltip != "" {
+		return display.DecrementTooltip
+	}
+	return "Decrease player count"
+}
+
+func getIncrementTitle(display PlayerCountDisplay) string {
+	if display.IncrementTooltip != "" {
+		return display.IncrementTooltip
+	}
+	return "Increase player count"
 }

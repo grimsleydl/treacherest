@@ -29,12 +29,14 @@ templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	// Only add signals for players who can control the game
 	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) {
-		<div data-signals-is-starting="false" 
-		     data-signals-start-error=""
-		     data-signals-can-start-game="true"
-		     data-signals-validation-message=""
-		     data-signals-can-auto-scale="false"
-		     data-signals-auto-scale-details="">
+		<div
+			data-signals-is-starting="false"
+			data-signals-start-error=""
+			data-signals-can-start-game="true"
+			data-signals-validation-message=""
+			data-signals-can-auto-scale="false"
+			data-signals-auto-scale-details=""
+		>
 			@LobbyContentInner(room, currentPlayer, cfg, cardService, true)
 		</div>
 	} else {
@@ -52,12 +54,10 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 			<div class="text-5xl font-bold tracking-wider text-primary">{ room.Code }</div>
 		</div>
 	</div>
-	
 	// Error display container - errors will be inserted here by SSE
 	<div id="error-container">
 		// This will be populated by SSE fragments when errors occur
 	</div>
-	
 	<div class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
 		<div class="card-body">
 			<h2 class="card-title">Players ({ room.GetActivePlayerCount() })</h2>
@@ -75,27 +75,26 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 			</div>
 		</div>
 	</div>
-	
 	// Show role configuration for the first player if no host is present
 	if canControl && room.RoleConfig != nil {
-		@components.RoleConfigurationNew(room, cfg, cardService)
+		@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
 	}
-	
 	// Enhanced start button with proper state management
 	<div class="flex flex-col items-center gap-4 mt-8">
 		if canControl && room.GetActivePlayerCount() >= 1 {
-			<button class="btn btn-primary btn-lg btn-wide" 
+			<button
+				class="btn btn-primary btn-lg btn-wide"
 				data-on-click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
 				data-attr-disabled="$isStarting || !$canStartGame"
 				data-class-loading="$isStarting"
 				data-attr-aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
 				data-attr-aria-busy="$isStarting ? 'true' : 'false'"
 				data-attr-aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
-				data-attr-aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null">
+				data-attr-aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
+			>
 				<span data-show="!$isStarting">Start Game</span>
 				<span data-show="$isStarting" aria-hidden="true">Starting...</span>
 			</button>
-			
 			// Validation help text
 			<div id="validation-help" class="text-sm mt-2" data-show="$validationMessage && !$canStartGame">
 				<span data-text="$validationMessage" class="text-error"></span>
@@ -108,11 +107,10 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 			</div>
 		} else {
 			<div class="alert alert-warning max-w-sm">
-				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
 				<span id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</span>
 			</div>
 		}
-		
 		<button class="btn btn-error btn-outline" data-on-click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
 			Leave Room
 		</button>
