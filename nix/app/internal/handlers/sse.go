@@ -55,23 +55,23 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	// But DO send initial validation state to ensure UI is in sync
 	roleService := game.NewRoleConfigService(h.config)
 	validationState := room.GetValidationState(roleService)
-	
+
 	err = sse.MarshalAndMergeSignals(map[string]interface{}{
-		"canStartGame": validationState.CanStart,
+		"canStartGame":      validationState.CanStart,
 		"validationMessage": validationState.ValidationMessage,
-		"canAutoScale": validationState.CanAutoScale,
-		"autoScaleDetails": validationState.AutoScaleDetails,
-		"requiredRoles": validationState.RequiredRoles,
-		"configuredRoles": validationState.ConfiguredRoles,
+		"canAutoScale":      validationState.CanAutoScale,
+		"autoScaleDetails":  validationState.AutoScaleDetails,
+		"requiredRoles":     validationState.RequiredRoles,
+		"configuredRoles":   validationState.ConfiguredRoles,
 		// Ensure button is not in loading state on initial connect
 		"isStarting": false,
 		"startError": "",
 	})
-	
+
 	if err != nil {
 		log.Printf("❌ Failed to send initial validation state: %v", err)
 	}
-	
+
 	log.Printf("📡 SSE connection ready for room %s with validation state v%d", roomCode, validationState.Version)
 
 	// Set up a heartbeat to detect stale connections
@@ -136,29 +136,30 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				// Role config was updated - send updates appropriately based on player type
 				log.Printf("🎯 Role config updated for room %s", roomCode)
 				room, _ = h.store.GetRoom(roomCode)
-				
+
 				// Check if current player can control the game
 				canControl := !hasHost(room) && player.ID == getFirstPlayerID(room)
-				
+
 				if canControl {
 					// Send the role config component only to controlling players
-					component := components.RoleConfigurationNew(room, h.config, h.cardService)
+					playerCountDisplay := h.createPlayerCountDisplay(room)
+					component := components.RoleConfigurationNew(room, h.config, h.cardService, playerCountDisplay)
 					html := renderToString(component)
 					sse.MergeFragments(html,
 						datastar.WithSelector("#role-config"),
 						datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-					
+
 					// Also update validation state for controlling players
 					roleService := game.NewRoleConfigService(h.config)
 					validationState := room.GetValidationState(roleService)
-					
+
 					sse.MarshalAndMergeSignals(map[string]interface{}{
-						"canStartGame": validationState.CanStart,
+						"canStartGame":      validationState.CanStart,
 						"validationMessage": validationState.ValidationMessage,
-						"canAutoScale": validationState.CanAutoScale,
-						"autoScaleDetails": validationState.AutoScaleDetails,
-						"requiredRoles": validationState.RequiredRoles,
-						"configuredRoles": validationState.ConfiguredRoles,
+						"canAutoScale":      validationState.CanAutoScale,
+						"autoScaleDetails":  validationState.AutoScaleDetails,
+						"requiredRoles":     validationState.RequiredRoles,
+						"configuredRoles":   validationState.ConfiguredRoles,
 					})
 				} else {
 					// Non-controlling players don't need role config updates
@@ -204,7 +205,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	// Send initial render
 	log.Printf("🎮 Initial render for room %s, state: %s, countdown: %d", roomCode, room.State, room.CountdownRemaining)
 	h.renderGame(sse, room, player)
-	
+
 	// Send initial signals including countdown
 	signals := map[string]interface{}{
 		"countdown": room.CountdownRemaining,
@@ -250,12 +251,12 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 			case "countdown_update":
 				// Get fresh room data
 				room, _ = h.store.GetRoom(roomCode)
-				
+
 				// Send ONLY the countdown signal
 				signals := map[string]interface{}{
 					"countdown": room.CountdownRemaining,
 				}
-				
+
 				err := sse.MarshalAndMergeSignals(signals)
 				if err != nil {
 					log.Printf("❌ Failed to send countdown signal: %v", err)
@@ -267,7 +268,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				room, _ = h.store.GetRoom(roomCode)
 				player = room.GetPlayer(player.ID)
 				h.renderGame(sse, room, player)
-				
+
 				// Clear countdown signal
 				signals := map[string]interface{}{
 					"countdown": 0,
@@ -290,29 +291,29 @@ func (h *Handler) sendLobbyUpdate(sse *datastar.ServerSentEventGenerator, room *
 	// CRITICAL: Always use GetValidationState for consistency
 	roleService := game.NewRoleConfigService(h.config)
 	validationState := room.GetValidationState(roleService)
-	
+
 	// First send the HTML fragment
 	log.Printf("DEBUG: sendLobbyUpdate calling renderLobby for room %s", room.Code)
 	h.renderLobby(sse, room, player)
-	
+
 	// Then send the validation signals to keep UI in sync
 	err := sse.MarshalAndMergeSignals(map[string]interface{}{
-		"canStartGame": validationState.CanStart,
+		"canStartGame":      validationState.CanStart,
 		"validationMessage": validationState.ValidationMessage,
-		"canAutoScale": validationState.CanAutoScale,
-		"autoScaleDetails": validationState.AutoScaleDetails,
-		"requiredRoles": validationState.RequiredRoles,
-		"configuredRoles": validationState.ConfiguredRoles,
+		"canAutoScale":      validationState.CanAutoScale,
+		"autoScaleDetails":  validationState.AutoScaleDetails,
+		"requiredRoles":     validationState.RequiredRoles,
+		"configuredRoles":   validationState.ConfiguredRoles,
 		// Reset error state on updates
 		"isStarting": false,
 		"startError": "",
 	})
-	
+
 	if err != nil {
 		log.Printf("❌ Failed to update validation signals: %v", err)
 		return err
 	}
-	
+
 	log.Printf("✅ Sent lobby update with validation state v%d for room %s", validationState.Version, room.Code)
 	return nil
 }
@@ -355,7 +356,7 @@ func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.
 
 	// Render to string
 	html := renderToString(component)
-	
+
 	// Log first 200 chars of rendered HTML for debugging
 	if len(html) > 200 {
 		log.Printf("🎭 Rendered HTML preview: %s...", html[:200])
@@ -434,21 +435,21 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial player list
 	h.renderHostDashboard(sse, room, player)
-	
+
 	// Send initial validation state for host dashboard
 	if room.State == game.StateLobby {
 		roleService := game.NewRoleConfigService(h.config)
 		validationState := room.GetValidationState(roleService)
-		
+
 		sse.MarshalAndMergeSignals(map[string]interface{}{
-			"canStartGame": validationState.CanStart,
+			"canStartGame":      validationState.CanStart,
 			"validationMessage": validationState.ValidationMessage,
-			"canAutoScale": validationState.CanAutoScale,
-			"autoScaleDetails": validationState.AutoScaleDetails,
-			"requiredRoles": validationState.RequiredRoles,
-			"configuredRoles": validationState.ConfiguredRoles,
+			"canAutoScale":      validationState.CanAutoScale,
+			"autoScaleDetails":  validationState.AutoScaleDetails,
+			"requiredRoles":     validationState.RequiredRoles,
+			"configuredRoles":   validationState.ConfiguredRoles,
 		})
-		
+
 		log.Printf("📡 Sent initial validation state for host dashboard: canAutoScale=%v", validationState.CanAutoScale)
 	} else if room.State == game.StateCountdown {
 		// Send initial countdown signal if joining during countdown
@@ -507,18 +508,18 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					h.renderHostDashboard(sse, room, player)
-					
-					// Also send validation state for host dashboard  
+
+					// Also send validation state for host dashboard
 					roleService := game.NewRoleConfigService(h.config)
 					validationState := room.GetValidationState(roleService)
-					
+
 					sse.MarshalAndMergeSignals(map[string]interface{}{
-						"canStartGame": validationState.CanStart,
+						"canStartGame":      validationState.CanStart,
 						"validationMessage": validationState.ValidationMessage,
-						"canAutoScale": validationState.CanAutoScale,
-						"autoScaleDetails": validationState.AutoScaleDetails,
-						"requiredRoles": validationState.RequiredRoles,
-						"configuredRoles": validationState.ConfiguredRoles,
+						"canAutoScale":      validationState.CanAutoScale,
+						"autoScaleDetails":  validationState.AutoScaleDetails,
+						"requiredRoles":     validationState.RequiredRoles,
+						"configuredRoles":   validationState.ConfiguredRoles,
 					})
 				}
 			case "game_started":
@@ -528,12 +529,12 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 			case "countdown_update":
 				// Get fresh room data
 				room, _ = h.store.GetRoom(roomCode)
-				
+
 				// Send ONLY the countdown signal for the host
 				signals := map[string]interface{}{
 					"countdown": room.CountdownRemaining,
 				}
-				
+
 				err := sse.MarshalAndMergeSignals(signals)
 				if err != nil {
 					log.Printf("❌ Failed to send countdown signal to host: %v", err)
@@ -544,7 +545,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				// Update dashboard to show game state
 				room, _ = h.store.GetRoom(roomCode)
 				h.renderHostDashboard(sse, room, player)
-				
+
 				// Clear countdown signal for host
 				signals := map[string]interface{}{
 					"countdown": 0,
