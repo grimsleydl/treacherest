@@ -653,11 +653,18 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 
 	log.Printf("  - Validation state: CanStart=%v, Message=%s", validationState.CanStart, validationState.ValidationMessage)
 
-	// Get auto-scale details regardless of whether auto-scaling is needed
+	// Get auto-scale details for presets
 	var autoScaleDetails string
 	if room.RoleConfig.PresetName != "custom" && roleService != nil {
-		_, details := roleService.CanAutoScale(room.RoleConfig, validationState.RequiredRoles)
-		autoScaleDetails = details
+		// Use the configured max players instead of current player count to show what the preset supports
+		targetPlayers := room.RoleConfig.MaxPlayers
+		if targetPlayers > 0 {
+			_, details := roleService.CanAutoScale(room.RoleConfig, targetPlayers)
+			// Simplify the message to just indicate auto-scaling capability
+			if details != "" && !strings.Contains(details, "Cannot scale") {
+				autoScaleDetails = fmt.Sprintf("%s preset auto-scales roles based on player count", room.RoleConfig.PresetName)
+			}
+		}
 	}
 
 	signals := map[string]interface{}{
