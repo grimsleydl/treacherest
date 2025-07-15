@@ -213,6 +213,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
+
 func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	// Deprecated - use sendRoleValidationNew
 	h.sendRoleValidationNew(w, r, room)
@@ -652,11 +653,18 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 
 	log.Printf("  - Validation state: CanStart=%v, Message=%s", validationState.CanStart, validationState.ValidationMessage)
 
+	// Get auto-scale details regardless of whether auto-scaling is needed
+	var autoScaleDetails string
+	if room.RoleConfig.PresetName != "custom" && roleService != nil {
+		_, details := roleService.CanAutoScale(room.RoleConfig, validationState.RequiredRoles)
+		autoScaleDetails = details
+	}
+
 	signals := map[string]interface{}{
 		"canStartGame":             validationState.CanStart,
 		"validationMessage":        validationState.ValidationMessage,
 		"canAutoScale":             validationState.CanAutoScale,
-		"autoScaleDetails":         validationState.AutoScaleDetails,
+		"autoScaleDetails":         autoScaleDetails,
 		"requiredRoles":            validationState.RequiredRoles,
 		"configuredRoles":          validationState.ConfiguredRoles,
 		"updatingLeaderless":       false,                                 // Reset loading state
