@@ -58,15 +58,12 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// Send updated UI using the helper
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 // ToggleRole enables/disables a role
@@ -202,15 +199,12 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateLeaderlessGame completed for room %s", roomCode)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// Send updated UI using the helper
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 
@@ -299,15 +293,12 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 
 	h.store.UpdateRoom(room)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// CRITICAL: Return updated DOM fragments, not just signals
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 // ToggleRoleCard enables/disables a specific role card
@@ -385,15 +376,12 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// Send updated UI using the helper
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
@@ -828,11 +816,15 @@ func (h *Handler) calculateRoleAdjustment(room *game.Room, increment bool) strin
 
 // IncrementPlayerCount increments the player count for a room
 func (h *Handler) IncrementPlayerCount(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	log.Printf("🔍 DEBUG: IncrementPlayerCount called for room %s", roomCode)
 	h.updatePlayerCount(w, r, "increment")
 }
 
 // DecrementPlayerCount decrements the player count for a room
 func (h *Handler) DecrementPlayerCount(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	log.Printf("🔍 DEBUG: DecrementPlayerCount called for room %s", roomCode)
 	h.updatePlayerCount(w, r, "decrement")
 }
 
@@ -893,25 +885,34 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 		return
 	}
 
-	// Apply different behavior based on mode
+	// Apply different behavior based on mode and whether there are actual players
+	activePlayerCount := 0
+	for _, p := range room.Players {
+		if !p.IsHost {
+			activePlayerCount++
+		}
+	}
+
 	if room.RoleConfig.PresetName != "custom" {
-		// Preset mode: immediately apply preset distribution for new player count
+		// Preset mode: immediately apply preset distribution for new player count (both host and non-host modes)
+		log.Printf("🔍 DEBUG: Calling applyPresetForPlayerCount for room %s (preset: %s, active players: %d)", roomCode, room.RoleConfig.PresetName, activePlayerCount)
 		h.applyPresetForPlayerCount(room)
 	}
-	// Custom mode: just update player count, let user manually adjust roles
+	// Custom mode: just update player count, no immediate role changes
 
 	// Update room
 	h.store.UpdateRoom(room)
 
-	// Publish event
+	log.Printf("🔍 DEBUG: About to publish role_config_updated event for room %s after %s player count", roomCode, action)
+
+	// Publish event - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
 
-	// Send updated UI
-	h.sendUpdatedRoleConfigUI(w, r, room)
+	log.Printf("🔍 DEBUG: Finished publishing role_config_updated event for room %s", roomCode)
 }
 
 func (h *Handler) applyPresetForPlayerCount(room *game.Room) {
@@ -1042,15 +1043,12 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateHideDistribution completed for room %s", roomCode)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// Send updated UI using the helper
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
 
 // UpdateFullyRandom updates the fully random roles setting for a room
@@ -1110,13 +1108,10 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateFullyRandom completed for room %s", roomCode)
 
-	// Notify all players
+	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
 		RoomCode: room.Code,
 		Data:     room,
 	})
-
-	// Send updated UI using the helper
-	h.sendUpdatedRoleConfigUI(w, r, room)
 }
