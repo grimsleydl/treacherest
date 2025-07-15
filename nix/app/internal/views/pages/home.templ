@@ -5,63 +5,60 @@ import "treacherest/internal/views/layouts"
 templ Home() {
 	@layouts.Base("Welcome") {
 		<div class="min-h-screen bg-base-200 flex items-center justify-center p-4" data-signals-host-mode="false">
-			<div class="max-w-4xl mx-auto">
+			<div class="max-w-2xl w-full mx-auto">
 				<h1 class="text-4xl font-bold text-center mb-2">MTG Treacherest</h1>
 				<p class="text-xl text-center text-base-content/70 mb-8">A game of deception and hidden roles</p>
-				
 				<div class="grid grid-cols-1 gap-8 place-items-center">
 					<!-- Create game card -->
-					<div class="card bg-base-100 shadow-xl w-[80dvw]">
+					<div class="card bg-base-100 shadow-xl w-full max-w-[60vw] min-w-0 ">
 						<div class="card-body">
-								<h2 class="text-2xl font-semibold mb-4 text-center">Create New Game</h2>
-								<form action="/room/new" method="POST" class="space-y-4 w-full">
-									<div class="form-control w-full">
-										<input
-											type="text"
-											name="playerName"
-											placeholder="Enter your name"
-											required
-											class="input input-bordered w-full text-lg"
-										/>
+							<h2 class="text-2xl font-semibold mb-4 text-center">Create New Game</h2>
+							<form action="/room/new" method="POST" class="space-y-4 w-full">
+								<div class="form-control w-full">
+									<input
+										type="text"
+										name="playerName"
+										placeholder="Enter your name"
+										required
+										class="input input-bordered w-full text-lg"
+									/>
+								</div>
+								<div class="form-control w-full">
+									<label class="label cursor-pointer gap-3 flex-wrap items-center w-full min-w-0">
+										<input type="checkbox" name="hostOnly" value="true" class="toggle" data-bind-host-mode/>
+										<span class="label-text break-words flex-1 min-w-0" style="white-space:normal">Host mode (don't play, just manage)</span>
+									</label>
+									<div class="text-sm text-base-content/70 mt-2 px-1 break-words max-w-full" data-text="$hostMode ? 'You will manage the game and display it on this device for others to join' : 'You will join as a player and participate in the game'">
+										You will join as a player and participate in the game
 									</div>
-									<div class="form-control w-full">
-										<label class="label cursor-pointer justify-start gap-3">
-											<input type="checkbox" name="hostOnly" value="true" class="toggle" data-bind-host-mode/>
-											<span class="label-text text-base wrap-normal">Host mode (don't play, just manage)</span>
-										</label>
-										<div class="text-sm text-base-content/70 mt-2 px-1 break-words max-w-full" data-text="$hostMode ? 'You will manage the game and display it on this device for others to join' : 'You will join as a player and participate in the game'">
-											You will join as a player and participate in the game
-										</div>
-									</div>
-									<button type="submit" class="btn btn-primary btn-lg w-full">
-										Create Room
-									</button>
-								</form>
+								</div>
+								<button type="submit" class="btn btn-primary btn-lg w-full">
+									Create Room
+								</button>
+							</form>
 						</div>
 					</div>
-					
 					<div class="divider max-w-xs">OR</div>
-					
 					<!-- Join game card -->
-					<div class="card bg-base-100 shadow-xl w-[80dvw]">
+					<div class="card bg-base-100 shadow-xl w-full max-w-[60vw] min-w-0 ">
 						<div class="card-body">
-								<h2 class="text-2xl font-semibold mb-4 text-center">Join Existing Game</h2>
-								<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()" class="space-y-4">
-									<div class="form-control">
-										<input
-											type="text"
-											id="roomCode"
-											placeholder="Enter room code (e.g., ABC12)"
-											pattern="[A-Za-z0-9]{5}"
-											maxlength="5"
-											required
-											class="input input-bordered w-full text-lg text-center uppercase tracking-wider"
-										/>
-									</div>
-									<button type="submit" class="btn btn-secondary btn-lg w-full">
-										Join Room
-									</button>
-								</form>
+							<h2 class="text-2xl font-semibold mb-4 text-center">Join Existing Game</h2>
+							<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()" class="space-y-4">
+								<div class="form-control">
+									<input
+										type="text"
+										id="roomCode"
+										placeholder="Enter room code (e.g., ABC12)"
+										pattern="[A-Za-z0-9]{5}"
+										maxlength="5"
+										required
+										class="input input-bordered w-full text-lg text-center uppercase tracking-wider"
+									/>
+								</div>
+								<button type="submit" class="btn btn-secondary btn-lg w-full">
+									Join Room
+								</button>
+							</form>
 						</div>
 					</div>
 				</div>

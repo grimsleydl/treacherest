@@ -1,8 +1,6 @@
 package components
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // CountdownDisplay is a reusable countdown component using DaisyUI countdown styling
 templ CountdownDisplay(initialValue int) {
@@ -70,10 +68,9 @@ templ CountdownWithSpeed(initialValue int, message string, speed string) {
 // CountdownInline for inline countdown displays with custom duration
 templ CountdownInline(initialValue int, animationMs int) {
 	<span class="countdown font-mono text-4xl">
-		<span 
-			style={ fmt.Sprintf("--value:%d; --animation-duration:%dms", initialValue, animationMs) } 
+		<span
+			style={ fmt.Sprintf("--value:%d; --animation-duration:%dms", initialValue, animationMs) }
 			data-attr-style={ fmt.Sprintf("'--value:' + $countdown + '; --animation-duration:%dms'", animationMs) }
 		></span>
 	</span>
 }
-

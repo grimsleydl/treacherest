@@ -29,7 +29,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 		id="role-config"
 		class="role-configuration"
 		data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
-		data-signals__ifmissing="{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false}"
+		data-signals__ifmissing={ fmt.Sprintf(`{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false, allowLeaderless: %t, hideRoleDistribution: %t, fullyRandomRoles: %t, enableAutoScale: true, updatingLeaderless: false, updatingHideDistribution: false, updatingFullyRandom: false}`, room.RoleConfig.AllowLeaderlessGame, room.RoleConfig.HideRoleDistribution, room.RoleConfig.FullyRandomRoles) }
 	>
 		<h3>Game Configuration</h3>
 		// Player count settings
@@ -61,7 +61,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			}
 		</div>
 		// Preset selector
-		<div class="preset-selector">
+		<div class="preset-selector" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
 			<form id="preset-form" data-on-change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
 				<label for="role-preset">Role Preset:</label>
 				<select
@@ -78,7 +78,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			</form>
 		</div>
 		// Advanced options
-		<div class="advanced-options" data-signals__ifmissing={ fmt.Sprintf(`{allowLeaderless: %t, enableAutoScale: true, updatingLeaderless: false}`, room.RoleConfig.AllowLeaderlessGame) }>
+		<div class="advanced-options">
 			<h4>Advanced Options</h4>
 			<div class="option-item">
 				<input
@@ -87,12 +87,42 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					checked?={ room.RoleConfig.AllowLeaderlessGame }
 					data-bind="allowLeaderless"
 					data-attr-disabled="$updatingLeaderless"
-					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: $allowLeaderless})})`, room.Code) }
+					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: evt.target.checked})})`, room.Code) }
 				/>
 				<label for="allow-leaderless">
 					Allow Leaderless Games
 					<span class="option-description">(Enables games without a Leader role)</span>
 					<span data-show="$updatingLeaderless" class="loading loading-spinner loading-xs ml-2"></span>
+				</label>
+			</div>
+			<div class="option-item">
+				<input
+					type="checkbox"
+					id="hide-role-distribution"
+					checked?={ room.RoleConfig.HideRoleDistribution }
+					data-bind="hideRoleDistribution"
+					data-attr-disabled="$updatingHideDistribution || $fullyRandomRoles"
+					data-on-change={ fmt.Sprintf(`$updatingHideDistribution = true; @post('/room/%s/config/hide-distribution', {body: JSON.stringify({hide: evt.target.checked})})`, room.Code) }
+				/>
+				<label for="hide-role-distribution">
+					Hide Role Distribution
+					<span class="option-description">(Hide role counts and randomly select preset)</span>
+					<span data-show="$updatingHideDistribution" class="loading loading-spinner loading-xs ml-2"></span>
+				</label>
+			</div>
+			<div class="option-item">
+				<input
+					type="checkbox"
+					id="fully-random-roles"
+					checked?={ room.RoleConfig.FullyRandomRoles }
+					data-bind="fullyRandomRoles"
+					data-attr-disabled="$updatingFullyRandom || $hideRoleDistribution"
+					data-on-change={ fmt.Sprintf(`$updatingFullyRandom = true; @post('/room/%s/config/fully-random', {body: JSON.stringify({random: evt.target.checked})})`, room.Code) }
+				/>
+				<label for="fully-random-roles">
+					Fully Random Roles
+					<span class="option-description">(Completely randomize role distribution)</span>
+					<span data-show="$updatingFullyRandom" class="loading loading-spinner loading-xs ml-2"></span>
 				</label>
 			</div>
 			// Auto-scale toggle - only show for preset configurations
@@ -124,11 +154,16 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 		// Role types with collapsible sections
 		<div class="role-settings">
 			<h4>Roles</h4>
-			<div class="join join-vertical w-full">
+			<div class="join join-vertical w-full" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
 				@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
 				@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
 				@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
 				@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
+			</div>
+			<div class="alert alert-info" data-show="$hideRoleDistribution || $fullyRandomRoles">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+				<span data-show="$hideRoleDistribution">Role distribution is hidden. A preset will be randomly selected when the game starts.</span>
+				<span data-show="$fullyRandomRoles">Roles will be completely randomized when the game starts.</span>
 			</div>
 		</div>
 		// Validation messages
