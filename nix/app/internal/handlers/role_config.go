@@ -893,9 +893,12 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 		return
 	}
 
-	// For preset mode, roles will auto-scale at game start via GetDistributionForPlayerCount
-	// For custom mode, user must manually adjust roles to match player count
-	// No immediate role adjustments here - let validation show if roles don't match
+	// Apply different behavior based on mode
+	if room.RoleConfig.PresetName != "custom" {
+		// Preset mode: immediately apply preset distribution for new player count
+		h.applyPresetForPlayerCount(room)
+	}
+	// Custom mode: just update player count, let user manually adjust roles
 
 	// Update room
 	h.store.UpdateRoom(room)
