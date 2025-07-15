@@ -29,11 +29,11 @@ func TestRoomValidation_LeaderlessGames(t *testing.T) {
 		}
 
 		state := room.GetValidationState(roleService)
-		
+
 		if !state.CanStart {
 			t.Errorf("Should be able to start with 0 leaders when leaderless is enabled, but got: %s", state.ValidationMessage)
 		}
-		
+
 		if state.ConfiguredRoles != 3 {
 			t.Errorf("Expected 3 configured roles (0 leader + 2 guardian + 1 traitor), got %d", state.ConfiguredRoles)
 		}
@@ -59,11 +59,11 @@ func TestRoomValidation_LeaderlessGames(t *testing.T) {
 		}
 
 		state := room.GetValidationState(roleService)
-		
+
 		if state.CanStart {
 			t.Error("Should NOT be able to start with 0 leaders when leaderless is disabled")
 		}
-		
+
 		if state.ValidationMessage != "Leader role is required (or enable leaderless games)" {
 			t.Errorf("Expected leader required message, got: %s", state.ValidationMessage)
 		}
@@ -71,7 +71,7 @@ func TestRoomValidation_LeaderlessGames(t *testing.T) {
 
 	t.Run("allows starting game with 1 leader regardless of leaderless setting", func(t *testing.T) {
 		testCases := []bool{true, false}
-		
+
 		for _, allowLeaderless := range testCases {
 			room := &Room{
 				Code:  "TEST3",
@@ -92,7 +92,7 @@ func TestRoomValidation_LeaderlessGames(t *testing.T) {
 			}
 
 			state := room.GetValidationState(roleService)
-			
+
 			if !state.CanStart {
 				t.Errorf("Should be able to start with 1 leader (leaderless=%v), but got: %s", allowLeaderless, state.ValidationMessage)
 			}

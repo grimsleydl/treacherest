@@ -50,19 +50,19 @@ func TestGetValidationState(t *testing.T) {
 	roleService := NewRoleConfigService(cfg)
 
 	tests := []struct {
-		name                  string
-		setupRoom             func() *Room
-		expectedCanStart      bool
-		expectedCanAutoScale  bool
+		name                    string
+		setupRoom               func() *Room
+		expectedCanStart        bool
+		expectedCanAutoScale    bool
 		expectedMessageContains string
 	}{
 		{
 			name: "Valid configuration with matching players",
 			setupRoom: func() *Room {
 				room := &Room{
-					Code:      "TEST1",
-					State:     StateLobby,
-					Players:   make(map[string]*Player),
+					Code:    "TEST1",
+					State:   StateLobby,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName: "standard",
 						MinPlayers: 4,
@@ -80,17 +80,17 @@ func TestGetValidationState(t *testing.T) {
 				}
 				return room
 			},
-			expectedCanStart:     true,
-			expectedCanAutoScale: false,
+			expectedCanStart:        true,
+			expectedCanAutoScale:    false,
 			expectedMessageContains: "",
 		},
 		{
 			name: "Too many players, can auto-scale",
 			setupRoom: func() *Room {
 				room := &Room{
-					Code:      "TEST2",
-					State:     StateLobby,
-					Players:   make(map[string]*Player),
+					Code:    "TEST2",
+					State:   StateLobby,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName: "standard",
 						MinPlayers: 4,
@@ -108,17 +108,17 @@ func TestGetValidationState(t *testing.T) {
 				}
 				return room
 			},
-			expectedCanStart:     true,
-			expectedCanAutoScale: true,
+			expectedCanStart:        true,
+			expectedCanAutoScale:    true,
 			expectedMessageContains: "Will auto-scale roles from 4 to 5 players",
 		},
 		{
 			name: "Custom configuration cannot auto-scale",
 			setupRoom: func() *Room {
 				room := &Room{
-					Code:      "TEST3",
-					State:     StateLobby,
-					Players:   make(map[string]*Player),
+					Code:    "TEST3",
+					State:   StateLobby,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName: "custom",
 						MinPlayers: 4,
@@ -136,17 +136,17 @@ func TestGetValidationState(t *testing.T) {
 				}
 				return room
 			},
-			expectedCanStart:     false,
-			expectedCanAutoScale: false,
+			expectedCanStart:        false,
+			expectedCanAutoScale:    false,
 			expectedMessageContains: "Not enough roles configured (4) for 5 players",
 		},
 		{
 			name: "No players cannot start",
 			setupRoom: func() *Room {
 				return &Room{
-					Code:      "TEST4",
-					State:     StateLobby,
-					Players:   make(map[string]*Player),
+					Code:    "TEST4",
+					State:   StateLobby,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName: "standard",
 						MinPlayers: 4,
@@ -159,17 +159,17 @@ func TestGetValidationState(t *testing.T) {
 					},
 				}
 			},
-			expectedCanStart:     false,
-			expectedCanAutoScale: false,
+			expectedCanStart:        false,
+			expectedCanAutoScale:    false,
 			expectedMessageContains: "Need at least 1 player to start",
 		},
 		{
 			name: "Not in lobby state",
 			setupRoom: func() *Room {
 				room := &Room{
-					Code:      "TEST5",
-					State:     StatePlaying,
-					Players:   make(map[string]*Player),
+					Code:    "TEST5",
+					State:   StatePlaying,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName: "standard",
 						MinPlayers: 4,
@@ -187,17 +187,17 @@ func TestGetValidationState(t *testing.T) {
 				}
 				return room
 			},
-			expectedCanStart:     false,
-			expectedCanAutoScale: false,
+			expectedCanStart:        false,
+			expectedCanAutoScale:    false,
 			expectedMessageContains: "Game is not in lobby state",
 		},
 		{
 			name: "Missing leader role",
 			setupRoom: func() *Room {
 				room := &Room{
-					Code:      "TEST6",
-					State:     StateLobby,
-					Players:   make(map[string]*Player),
+					Code:    "TEST6",
+					State:   StateLobby,
+					Players: make(map[string]*Player),
 					RoleConfig: &RoleConfiguration{
 						PresetName:          "custom",
 						MinPlayers:          2,
@@ -214,8 +214,8 @@ func TestGetValidationState(t *testing.T) {
 				}
 				return room
 			},
-			expectedCanStart:     false,
-			expectedCanAutoScale: false,
+			expectedCanStart:        false,
+			expectedCanAutoScale:    false,
 			expectedMessageContains: "Leader role is required",
 		},
 	}
@@ -284,9 +284,9 @@ func TestCanAutoScale(t *testing.T) {
 	roleService := NewRoleConfigService(cfg)
 
 	tests := []struct {
-		name           string
-		config         *RoleConfiguration
-		targetPlayers  int
+		name             string
+		config           *RoleConfiguration
+		targetPlayers    int
 		expectedCanScale bool
 		expectedDetails  string
 	}{
@@ -373,7 +373,7 @@ func TestCanAutoScale(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr) >= 0))
 }
 
