@@ -78,16 +78,16 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	// CRITICAL: Use the same validation function as SSE updates
 	roleService := game.NewRoleConfigService(h.config)
 	validationState := room.GetValidationState(roleService)
-	
+
 	log.Printf("🔍 Validation state: CanStart=%v, RequiredRoles=%d, ConfiguredRoles=%d, Message=%s",
 		validationState.CanStart, validationState.RequiredRoles, validationState.ConfiguredRoles, validationState.ValidationMessage)
-	
+
 	if !validationState.CanStart {
 		log.Printf("❌ Room cannot start: %s", validationState.ValidationMessage)
-		
+
 		// Always return HTTP 200 with error fragment
 		sse := datastar.NewSSE(w, r)
-		
+
 		// Send error as HTML fragment
 		errorHTML := fmt.Sprintf(`<div id="start-game-error" class="alert alert-error mt-4">
 			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -95,32 +95,32 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			</svg>
 			<span>%s</span>
 		</div>`, html.EscapeString(validationState.ValidationMessage))
-		
+
 		// Send fragment targeting error container
 		err := sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
 		if err != nil {
 			log.Printf("❌ Failed to send error fragment: %v", err)
 		}
-		
+
 		// Also update button state and re-sync ALL validation signals
 		err = sse.MarshalAndMergeSignals(map[string]interface{}{
 			"isStarting": false,
 			"startError": validationState.ValidationMessage,
 			// IMPORTANT: Re-sync all validation signals to ensure consistency
-			"canStartGame": validationState.CanStart,
+			"canStartGame":      validationState.CanStart,
 			"validationMessage": validationState.ValidationMessage,
-			"canAutoScale": validationState.CanAutoScale,
-			"autoScaleDetails": validationState.AutoScaleDetails,
+			"canAutoScale":      validationState.CanAutoScale,
+			"autoScaleDetails":  validationState.AutoScaleDetails,
 		})
 		if err != nil {
 			log.Printf("❌ Failed to update signals: %v", err)
 		}
-		
+
 		// Flush to ensure immediate delivery
 		if flusher, ok := w.(http.Flusher); ok {
 			flusher.Flush()
 		}
-		
+
 		return
 	}
 

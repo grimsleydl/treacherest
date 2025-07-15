@@ -24,11 +24,13 @@ type RoleTypeConfig struct {
 
 // RoleConfiguration represents the role settings for a room
 type RoleConfiguration struct {
-	PresetName          string                     `json:"presetName"`          // e.g., "standard", "assassination", "custom"
-	MinPlayers          int                        `json:"minPlayers"`          // Minimum players needed
-	MaxPlayers          int                        `json:"maxPlayers"`          // Maximum players allowed
-	AllowLeaderlessGame bool                       `json:"allowLeaderlessGame"` // Allow games without a leader role
-	RoleTypes           map[string]*RoleTypeConfig `json:"roleTypes"`           // Role type configurations
+	PresetName           string                     `json:"presetName"`           // e.g., "standard", "assassination", "custom"
+	MinPlayers           int                        `json:"minPlayers"`           // Minimum players needed
+	MaxPlayers           int                        `json:"maxPlayers"`           // Maximum players allowed
+	AllowLeaderlessGame  bool                       `json:"allowLeaderlessGame"`  // Allow games without a leader role
+	HideRoleDistribution bool                       `json:"hideRoleDistribution"` // Hide role count distribution from players
+	FullyRandomRoles     bool                       `json:"fullyRandomRoles"`     // Completely randomize role distribution
+	RoleTypes            map[string]*RoleTypeConfig `json:"roleTypes"`            // Role type configurations
 }
 
 // ValidationState represents the current validation status of a room
