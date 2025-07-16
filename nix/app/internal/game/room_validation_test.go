@@ -314,7 +314,7 @@ func TestCanAutoScale(t *testing.T) {
 			},
 			targetPlayers:    5,
 			expectedCanScale: true,
-			expectedDetails:  "Can scale from 4 to 5 players using standard preset",
+			expectedDetails:  "Can scale using standard preset",
 		},
 		{
 			name: "Scale to nearby distribution",
