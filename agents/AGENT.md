@@ -2,20 +2,6 @@
 
 This file provides guidance to Claude Code when working with this repository.
 
-## Table of Contents
-- [Critical: Role Assignment](#critical-role-assignment-required)
-- [Project Overview](#project-overview)
-- [Quick Start](#quick-start)
-- [Development Commands](#development-commands-reference)
-- [Role-Based Development](#role-based-development)
-- [Development Process](#development-process)
-- [Compliance & Security](#compliance--security)
-- [Prompt Engineering](#prompt-engineering)
-- [Git Workflow](#git-workflow)
-- [Project-Specific Guidelines](#project-specific-guidelines)
-- [Documentation Standards](#documentation-standards)
-- [Maintaining This Document](#maintaining-this-document)
-
 ## CRITICAL: Role Assignment Required
 ⚠️ **STOP** - Before proceeding with ANY task, you MUST ask which role to assume if not specified.
 
@@ -80,7 +66,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ### Important Notes
 - **Claude Code runs in nix develop shell automatically** - all commands available from workspace root
-- **ALWAYS** regenerate templates after modifying `.templ` files  
+- **ALWAYS** regenerate templates after modifying `.templ` files
 - **USE** `rg` (ripgrep) for searching, not `grep` or `find`
 
 ## Role-Based Development
@@ -210,8 +196,6 @@ Convert conventional commit format to snake_case without emojis:
 - Added lobby page template in views/pages/lobby.templ
 - Created real-time room list updates via SSE
 </how>
-<prompt>[summary of the approved prompt that led to this change]</prompt>
-<post-prompt>SSE connection handling was tricky - added reconnection logic</post-prompt>
 ```
 
 For complete examples and the full emoji reference, see `docs/examples/commit-messages.md`
@@ -294,27 +278,6 @@ docs/
 - Backend docs in `docs/architecture/backend/`
 - Optimize for LLM comprehension over human readability
 - Include implementation status in project docs
-
-### Conversation Storage
-Store in `docs/conversations/YYYY-MM/YYYY-MM-DD-HHMM-[topic].md`:
-
-```markdown
-TITLE: [Brief topic]
-DATE: YYYY-MM-DD
-PARTICIPANTS: [List]
-SUMMARY: [Key points]
-
-INITIAL PROMPT: [User's first message only]
-
-KEY DECISIONS:
-- [Decision 1]
-- [Decision 2]
-
-FILES CHANGED:
-- [File 1]: [Summary of changes]
-```
-
-**Important**: Use UTC timestamps in 24-hour format
 
 ## Maintaining This Document
 
