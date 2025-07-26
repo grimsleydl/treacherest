@@ -59,10 +59,10 @@ func main() {
 	r.Post("/room/{code}/config/card-toggle-fast", h.ToggleRoleCardFast)
 	r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
 
-	// SSE routes
-	r.Get("/sse/lobby/{code}", h.StreamLobby)
-	r.Get("/sse/game/{code}", h.StreamGame)
-	r.Get("/sse/host/{code}", h.StreamHost)
+	// SSE routes with validation middleware
+	r.Get("/sse/lobby/{code}", handlers.ValidateSSERequest(h.StreamLobby))
+	r.Get("/sse/game/{code}", handlers.ValidateSSERequest(h.StreamGame))
+	r.Get("/sse/host/{code}", handlers.ValidateSSERequest(h.StreamHost))
 
 	// Static files
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
