@@ -88,19 +88,6 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		// Player already in room
 		player := room.GetPlayer(playerCookie.Value)
 		if player != nil {
-			// If a new name is provided, update the player's name
-			newName := r.URL.Query().Get("name")
-			if newName != "" && newName != player.Name {
-				player.Name = newName
-				h.store.UpdateRoom(room)
-
-				// Notify other players of the name change
-				h.eventBus.Publish(Event{
-					Type:     "player_updated",
-					RoomCode: room.Code,
-					Data:     room,
-				})
-			}
 
 			// Show appropriate page based on player type and game state
 			if player.IsHost {
