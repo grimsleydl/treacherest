@@ -93,7 +93,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					checked?={ room.RoleConfig.AllowLeaderlessGame }
 					data-bind="allowLeaderless"
 					data-attr-disabled="$updatingLeaderless"
-					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: evt.target.checked})})`, room.Code) }
+					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowLeaderless: evt.target.checked})})`, room.Code) }
 				/>
 				<label for="allow-leaderless">
 					Allow Leaderless Games
