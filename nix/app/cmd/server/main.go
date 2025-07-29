@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"treacherest"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
@@ -65,25 +68,67 @@ func main() {
 	r.Get("/sse/game/{code}", handlers.ValidateSSERequest(h.StreamGame))
 	r.Get("/sse/host/{code}", handlers.ValidateSSERequest(h.StreamHost))
 
+	// Health check endpoints (no auth required)
+	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	
+	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
+		// Check if store is available
+		if s == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Store not ready"))
+			return
+		}
+		
+		// In production, you might check:
+		// - Database connections
+		// - External service availability
+		// - Cache connections
+		
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	
 	// Static files
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	// Start server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	addr := ":" + port
-
-	// Create custom server with no idle timeout for SSE connections
+	// Start server with production configuration
+	addr := cfg.Server.Host + ":" + cfg.Server.Port
+	
+	// Create custom server with production settings
 	server := &http.Server{
-		Addr:        addr,
-		Handler:     r,
-		IdleTimeout: 0, // Disable idle timeout to keep SSE connections alive
+		Addr:         addr,
+		Handler:      r,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout, // 0 for SSE support
 	}
 
-	log.Printf("Starting server on %s", addr)
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+	// Start server in goroutine
+	go func() {
+		log.Printf("Starting server on %s", addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server failed to start:", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	
+	log.Println("Shutting down server...")
+	
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	defer cancel()
+	
+	// Attempt graceful shutdown
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
 	}
+	
+	log.Println("Server gracefully stopped")
 }
