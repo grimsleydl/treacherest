@@ -18,8 +18,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	playerName := r.FormValue("playerName")
 	if playerName == "" {
-		http.Error(w, "Player name is required", http.StatusBadRequest)
-		return
+		playerName = generateRandomName()
 	}
 
 	// Check if creating as host only
@@ -154,10 +153,9 @@ func (h *Handler) JoinRoomPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate player name (1+ chars, alphanumeric + spaces)
+	// Generate random name if not provided
 	if playerName == "" {
-		http.Error(w, "Player name is required", http.StatusBadRequest)
-		return
+		playerName = generateRandomName()
 	}
 	if len(playerName) < 1 || len(playerName) > 20 {
 		http.Error(w, "Player name must be between 1 and 20 characters", http.StatusBadRequest)
