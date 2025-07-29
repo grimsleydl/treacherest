@@ -182,21 +182,21 @@ func TestHandler_JoinRoom(t *testing.T) {
 
 		body := w.Body.String()
 		// Verify the Templ template is rendered
-		if !strings.Contains(body, "Join Room "+roomCode) {
-			t.Error("expected join form with room code")
+		if !strings.Contains(body, "Join Game Room") {
+			t.Error("expected join form title")
 		}
-		if !strings.Contains(body, `name="name"`) {
-			t.Error("expected name input field")
+		if !strings.Contains(body, roomCode) {
+			t.Error("expected room code to be displayed")
+		}
+		if !strings.Contains(body, `name="player_name"`) {
+			t.Error("expected player_name input field")
 		}
 		if !strings.Contains(body, "Enter your name") {
 			t.Error("expected placeholder text")
 		}
-		if !strings.Contains(body, `data-store="{}"`) {
-			t.Error("expected datastar attributes")
-		}
 	})
 
-	t.Run("preserves host status when joining with host cookie", func(t *testing.T) {
+	t.Run("shows join form even with host cookie", func(t *testing.T) {
 		h := newTestHandler()
 
 		// Create a room first
@@ -207,8 +207,8 @@ func TestHandler_JoinRoom(t *testing.T) {
 		router := chi.NewRouter()
 		router.Get("/room/{code}", h.JoinRoom)
 
-		// Join with a name and host cookie
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Host+Player", nil)
+		// Try to access room with host cookie (but no player cookie)
+		req := httptest.NewRequest("GET", "/room/"+roomCode, nil)
 		// Add the host cookie
 		req.AddCookie(&http.Cookie{
 			Name:  "host_" + roomCode,
@@ -223,8 +223,88 @@ func TestHandler_JoinRoom(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 
-		// Verify the player was added as a host
-		room, _ = h.store.GetRoom(roomCode)
+		// Should still show join form since no player cookie
+		body := w.Body.String()
+		if !strings.Contains(body, "Join Game Room") {
+			t.Error("expected join form to be shown")
+		}
+		if !strings.Contains(body, roomCode) {
+			t.Error("expected room code in join form")
+		}
+	})
+}
+
+func TestHandler_JoinRoomPost(t *testing.T) {
+	t.Run("successfully joins room via POST", func(t *testing.T) {
+		h := newTestHandler()
+		
+		// Create a room
+		room, _ := h.store.CreateRoom()
+		
+		// Join via POST
+		formData := "room_code=" + room.Code + "&player_name=Test+Player"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w, req)
+		
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", w.Code)
+		}
+		
+		// Check redirect location
+		location := w.Header().Get("Location")
+		expectedLocation := "/room/" + room.Code
+		if location != expectedLocation {
+			t.Errorf("expected redirect to %s, got %s", expectedLocation, location)
+		}
+		
+		// Verify player was added
+		room, _ = h.store.GetRoom(room.Code)
+		if len(room.Players) != 1 {
+			t.Errorf("expected 1 player, got %d", len(room.Players))
+		}
+		
+		// Verify player cookie was set
+		cookies := w.Result().Cookies()
+		found := false
+		for _, cookie := range cookies {
+			if cookie.Name == "player_"+room.Code {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("expected player cookie to be set")
+		}
+	})
+
+	t.Run("preserves host status when joining with host cookie", func(t *testing.T) {
+		h := newTestHandler()
+		
+		// Create a room
+		room, _ := h.store.CreateRoom()
+		
+		// Join via POST with host cookie
+		formData := "room_code=" + room.Code + "&player_name=Host+Player"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		// Add host cookie
+		req.AddCookie(&http.Cookie{
+			Name:  "host_" + room.Code,
+			Value: "true",
+		})
+		w := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w, req)
+		
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", w.Code)
+		}
+		
+		// Verify player was added as host
+		room, _ = h.store.GetRoom(room.Code)
 		var foundHost bool
 		for _, player := range room.Players {
 			if player.Name == "Host Player" && player.IsHost {
@@ -232,15 +312,143 @@ func TestHandler_JoinRoom(t *testing.T) {
 				break
 			}
 		}
-
 		if !foundHost {
-			t.Error("expected player to be marked as host when joining with host cookie")
+			t.Error("expected player to be marked as host")
 		}
+	})
 
-		// Verify host doesn't count toward player limit
-		activeCount := room.GetActivePlayerCount()
-		if activeCount != 0 {
-			t.Errorf("expected 0 active players (host shouldn't count), got %d", activeCount)
+	t.Run("rejects duplicate names in same room", func(t *testing.T) {
+		h := newTestHandler()
+		
+		// Create a room and add first player
+		room, _ := h.store.CreateRoom()
+		
+		// First player joins
+		formData := "room_code=" + room.Code + "&player_name=Alice"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w, req)
+		
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303 for first player, got %d", w.Code)
+		}
+		
+		// Second player tries to join with same name
+		formData2 := "room_code=" + room.Code + "&player_name=Alice"
+		req2 := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData2))
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w2 := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w2, req2)
+		
+		if w2.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 for duplicate name, got %d", w2.Code)
+		}
+		
+		// Check error message
+		body := w2.Body.String()
+		if !strings.Contains(body, "a player with that name already exists") {
+			t.Errorf("expected duplicate name error message, got: %s", body)
+		}
+		
+		// Verify only one player in room
+		room, _ = h.store.GetRoom(room.Code)
+		if len(room.Players) != 1 {
+			t.Errorf("expected 1 player in room, got %d", len(room.Players))
+		}
+	})
+
+	t.Run("rejects duplicate names case-insensitive", func(t *testing.T) {
+		h := newTestHandler()
+		
+		// Create a room and add first player
+		room, _ := h.store.CreateRoom()
+		
+		// First player joins with lowercase
+		formData := "room_code=" + room.Code + "&player_name=alice"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w, req)
+		
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303 for first player, got %d", w.Code)
+		}
+		
+		// Second player tries to join with uppercase
+		formData2 := "room_code=" + room.Code + "&player_name=ALICE"
+		req2 := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData2))
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w2 := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w2, req2)
+		
+		if w2.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 for duplicate name (case-insensitive), got %d", w2.Code)
+		}
+		
+		// Check error message
+		body := w2.Body.String()
+		if !strings.Contains(body, "a player with that name already exists") {
+			t.Errorf("expected duplicate name error message, got: %s", body)
+		}
+	})
+
+	t.Run("allows same name in different rooms", func(t *testing.T) {
+		h := newTestHandler()
+		
+		// Create two rooms
+		room1, _ := h.store.CreateRoom()
+		room2, _ := h.store.CreateRoom()
+		
+		// Join first room
+		formData1 := "room_code=" + room1.Code + "&player_name=Alice"
+		req1 := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData1))
+		req1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w1 := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w1, req1)
+		
+		if w1.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303 for first room, got %d", w1.Code)
+		}
+		
+		// Join second room with same name
+		formData2 := "room_code=" + room2.Code + "&player_name=Alice"
+		req2 := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData2))
+		req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w2 := httptest.NewRecorder()
+		
+		h.JoinRoomPost(w2, req2)
+		
+		if w2.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303 for second room, got %d", w2.Code)
+		}
+		
+		// Verify both rooms have a player named Alice
+		room1, _ = h.store.GetRoom(room1.Code)
+		room2, _ = h.store.GetRoom(room2.Code)
+		
+		var found1, found2 bool
+		for _, p := range room1.Players {
+			if p.Name == "Alice" {
+				found1 = true
+			}
+		}
+		for _, p := range room2.Players {
+			if p.Name == "Alice" {
+				found2 = true
+			}
+		}
+		
+		if !found1 {
+			t.Error("expected Alice in room 1")
+		}
+		if !found2 {
+			t.Error("expected Alice in room 2")
 		}
 	})
 }

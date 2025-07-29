@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 	"treacherest/internal/game"
 	"treacherest/internal/views/pages"
@@ -132,26 +131,62 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Show join form
-	playerName := r.URL.Query().Get("name")
-	if playerName == "" {
-		// Show join form using Templ template
-		component := pages.Join(roomCode, "")
-		component.Render(r.Context(), w)
+	// Show join form - no longer process name parameter for security
+	component := pages.Join(roomCode, "")
+	component.Render(r.Context(), w)
+}
+
+// JoinRoomPost handles POST requests to join a room
+func (h *Handler) JoinRoomPost(w http.ResponseWriter, r *http.Request) {
+	// Parse form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
 	}
 
-	// Create player and add to room
-	sessionID := getOrCreateSession(w, r)
+	roomCode := r.FormValue("room_code")
+	playerName := r.FormValue("player_name")
 
-	// Check if we have an existing player ID in the cookie (for reconnection)
-	var playerID string
-	if playerCookie != nil {
-		playerID = playerCookie.Value
-	} else {
-		playerID = generatePlayerID()
+	// Validate room code
+	if roomCode == "" {
+		http.Error(w, "Room code is required", http.StatusBadRequest)
+		return
 	}
 
+	// Validate player name (1+ chars, alphanumeric + spaces)
+	if playerName == "" {
+		http.Error(w, "Player name is required", http.StatusBadRequest)
+		return
+	}
+	if len(playerName) < 1 || len(playerName) > 20 {
+		http.Error(w, "Player name must be between 1 and 20 characters", http.StatusBadRequest)
+		return
+	}
+	// Basic validation - alphanumeric and spaces only
+	for _, ch := range playerName {
+		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == ' ') {
+			http.Error(w, "Player name must contain only letters, numbers, and spaces", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Get room
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if game already started
+	if room.State != game.StateLobby {
+		http.Error(w, "Game already started", http.StatusBadRequest)
+		return
+	}
+
+	// Create player
+	sessionID := getOrCreateSession(w, r)
+	playerID := generatePlayerID()
 	player := game.NewPlayer(playerID, playerName, sessionID)
 
 	// Check if this player should be marked as a host
@@ -160,6 +195,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		player.IsHost = true
 	}
 
+	// Add player to room
 	err = room.AddPlayer(player)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -168,7 +204,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 
-	// Store player ID in session
+	// Store player ID in session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "player_" + room.Code,
 		Value:    player.ID,
@@ -185,16 +221,8 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Show lobby
-	log.Printf("🏠 Rendering lobby page for room %s with %d players", room.Code, len(room.Players))
-	component := pages.LobbyPage(room, player, h.config, h.cardService)
-	err = component.Render(r.Context(), w)
-	if err != nil {
-		log.Printf("❌ Error rendering lobby page: %v", err)
-		http.Error(w, "Failed to render lobby", http.StatusInternalServerError)
-		return
-	}
-	log.Printf("✅ Successfully rendered lobby page for room %s", room.Code)
+	// Redirect to room (no name in URL)
+	http.Redirect(w, r, "/room/"+room.Code, http.StatusSeeOther)
 }
 
 // GamePage shows the active game page
