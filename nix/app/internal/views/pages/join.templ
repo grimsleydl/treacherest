@@ -17,17 +17,22 @@ templ Join(roomCode string, errorMsg string) {
 							<span>{ errorMsg }</span>
 						</div>
 					}
-					<form method="GET" class="space-y-4">
+					<form method="POST" action="/join-room" class="space-y-4">
+						<input type="hidden" name="room_code" value={ roomCode } />
 						<div class="form-control">
 							<label class="label">
 								<span class="label-text">Your Name</span>
 							</label>
 							<input
 								type="text"
-								name="name"
+								name="player_name"
 								placeholder="Enter your name"
 								required
 								autofocus
+								minlength="1"
+								maxlength="20"
+								pattern="[a-zA-Z0-9 ]+"
+								title="Name must be 1-20 characters long and contain only letters, numbers, and spaces"
 								class="input input-bordered w-full text-lg"
 							/>
 						</div>
