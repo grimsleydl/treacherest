@@ -1,6 +1,12 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/go-chi/chi/v5"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
@@ -64,4 +70,22 @@ func mockGuardianCard() *game.Card {
 		Types:       game.CardTypes{Subtype: "Guardian"},
 		Base64Image: "data:image/jpeg;base64,test",
 	}
+}
+
+// joinRoomViaPostHelper is a test helper function to join a room using the new POST endpoint
+// It returns the response recorder with the redirect result
+func joinRoomViaPostHelper(t *testing.T, router *chi.Mux, roomCode, playerName string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+	formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, playerName)
+	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	
+	// Add any provided cookies
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
+	
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	
+	return w
 }
