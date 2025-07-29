@@ -38,6 +38,7 @@ func main() {
 	r.Get("/", h.Home)
 	r.Post("/room/new", h.CreateRoom) // Changed from /room/create to match form action
 	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/join-room", h.JoinRoomPost) // New POST endpoint for joining rooms
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Post("/room/{code}/start", h.StartGame)
 	r.Get("/game/{code}", h.GamePage)
