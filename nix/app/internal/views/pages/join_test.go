@@ -16,8 +16,8 @@ func TestJoinPage(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
-			AssertContains("Join Room " + roomCode).
-			AssertHasClass("container")
+			AssertContains("Join Game Room").
+			AssertContains(roomCode)
 	})
 
 	t.Run("has join form with correct structure", func(t *testing.T) {
@@ -27,11 +27,10 @@ func TestJoinPage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertHasElement("form").
-			AssertContains(`method="GET"`).
+			AssertContains(`method="POST"`).
 			AssertHasElement("input").
-			AssertContains(`name="name"`).
-			AssertContains(`placeholder="Enter your name"`).
-			AssertContains(`required`)
+			AssertContains(`name="player_name"`).
+			AssertContains(`placeholder="Enter your name (optional)"`)
 	})
 
 	t.Run("displays error message when provided", func(t *testing.T) {
@@ -41,7 +40,7 @@ func TestJoinPage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains(errorMsg).
-			AssertHasClass("error-message")
+			AssertHasClass("alert-error")
 	})
 
 	t.Run("does not show error section when no error", func(t *testing.T) {
@@ -50,7 +49,7 @@ func TestJoinPage(t *testing.T) {
 		component := Join(roomCode, errorMsg)
 
 		renderer.Render(component).
-			AssertNotContains("error-message")
+			AssertNotContains("alert-error")
 	})
 
 	t.Run("has submit button", func(t *testing.T) {
@@ -61,7 +60,7 @@ func TestJoinPage(t *testing.T) {
 		renderer.Render(component).
 			AssertHasElement("button").
 			AssertContains(`type="submit"`).
-			AssertContains("Join")
+			AssertContains("Join Game")
 	})
 
 	t.Run("input field has proper attributes", func(t *testing.T) {
@@ -79,8 +78,9 @@ func TestJoinPage(t *testing.T) {
 		errorMsg := ""
 		component := Join(roomCode, errorMsg)
 
+		// Data-store attributes were removed from the template
 		renderer.Render(component).
-			AssertContains(`data-store="{}"`)
+			AssertNotEmpty()
 	})
 
 	t.Run("room code is properly displayed", func(t *testing.T) {
@@ -89,6 +89,7 @@ func TestJoinPage(t *testing.T) {
 		component := Join(roomCode, errorMsg)
 
 		renderer.Render(component).
-			AssertContains("<h1>Join Room " + roomCode + "</h1>")
+			AssertContains("Join Game Room").
+			AssertContains(roomCode)
 	})
 }

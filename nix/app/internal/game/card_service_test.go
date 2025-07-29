@@ -160,10 +160,10 @@ func TestCard_GetWinCondition(t *testing.T) {
 		subtype  string
 		expected string
 	}{
-		{"Leader", "Leader", "Survive and be the last player standing"},
-		{"Guardian", "Guardian", "Win or lose with the Leader"},
-		{"Assassin", "Assassin", "Win if the Leader is eliminated"},
-		{"Traitor", "Traitor", "Be the last player standing"},
+		{"Leader", "Leader", "The Leader, and their Guardians, win if they are the last players standing."},
+		{"Guardian", "Guardian", "The Guardians help the Leader, they win or lose with them."},
+		{"Assassin", "Assassin", "The Assassins win if the Leader is eliminated."},
+		{"Traitor", "Traitor", "The Traitor wins if they are the last player standing."},
 		{"Unknown", "Unknown", ""},
 	}
 

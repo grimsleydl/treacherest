@@ -15,8 +15,7 @@ func TestHomePage(t *testing.T) {
 			AssertNotEmpty().
 			AssertValid().
 			AssertContains("MTG Treacherest").
-			AssertContains("A game of deception").
-			AssertHasClass("container")
+			AssertContains("A game of deception")
 	})
 
 	t.Run("has create room form", func(t *testing.T) {
@@ -28,7 +27,7 @@ func TestHomePage(t *testing.T) {
 			AssertContains(`method="POST"`).
 			AssertHasElement("input").
 			AssertContains(`name="playerName"`).
-			AssertContains(`placeholder="Enter your name"`)
+			AssertContains(`placeholder="Enter your name (optional)"`)
 	})
 
 	t.Run("has room code input", func(t *testing.T) {
@@ -52,9 +51,10 @@ func TestHomePage(t *testing.T) {
 	t.Run("has proper styling", func(t *testing.T) {
 		component := Home()
 
+		// Style element and container class were removed
 		renderer.Render(component).
-			AssertHasClass("container").
-			AssertHasElement("style")
+			AssertContains("card").
+			AssertContains("bg-base-100")
 	})
 
 	t.Run("has form submit handler", func(t *testing.T) {

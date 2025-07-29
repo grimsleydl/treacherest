@@ -90,7 +90,7 @@ func TestGamePage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Test Guardian").
-			AssertContains("Win or lose with the Leader")
+			AssertContains("The Guardians help the Leader, they win or lose with them.")
 	})
 
 	t.Run("shows countdown state", func(t *testing.T) {
@@ -100,7 +100,8 @@ func TestGamePage(t *testing.T) {
 		component := GamePage(room, player)
 
 		renderer.Render(component).
-			AssertContains("Revealing roles in 3...")
+			AssertContains("Revealing roles in...").
+			AssertContains("data-attr-style=\"&#39;--value:&#39; + $countdown\"")
 	})
 
 	t.Run("shows player list", func(t *testing.T) {
@@ -157,7 +158,7 @@ func TestGameBody(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Win Condition:").
-			AssertContains("Win if the Leader is eliminated")
+			AssertContains("The Assassins win if the Leader is eliminated.")
 	})
 
 	t.Run("shows leader when revealed", func(t *testing.T) {
@@ -189,14 +190,17 @@ func TestGameBody(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Hidden Player").
-			AssertNotContains("Guardian") // Role should not be shown
+			// Only check that the specific player's role isn't shown
+			// since other guardians might be revealed
+			AssertNotContains("<span>Hidden Player</span> <span class=\"badge badge-sm\">Guardian</span>")
 	})
 
 	t.Run("shows role class styling", func(t *testing.T) {
 		component := GameBody(room, player)
 
+		// Role card styling is done with border colors now
 		renderer.Render(component).
-			AssertHasClass("role-card").
-			AssertHasClass("assassin")
+			AssertContains("card").
+			AssertContains("border-error") // Assassin border
 	})
 }

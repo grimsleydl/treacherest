@@ -41,10 +41,9 @@ func TestBaseLayout(t *testing.T) {
 	t.Run("includes custom CSS", func(t *testing.T) {
 		component := Base("Style Test")
 
+		// CSS is now in external stylesheet
 		renderer.Render(component).
-			AssertHasElement("style").
-			AssertContains("body").
-			AssertContains("container")
+			AssertContains(`href="/static/css/output.css"`)
 	})
 
 	t.Run("has proper structure", func(t *testing.T) {
