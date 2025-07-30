@@ -4,16 +4,18 @@ import "treacherest/internal/views/components"
 
 templ Base(title string) {
 	<!DOCTYPE html>
-	<html lang="en" data-signals-theme="'dracula'" data-attr-data-theme="$theme" data-persist="theme">
+	<html lang="en" data-theme="dracula">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } - MTG Treacherest</title>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 			<link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css"/>
-			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-beta.11/bundles/datastar.js"></script>
+			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js"></script>
 		</head>
-		<body>
+		<body 
+			data-signals-theme="localStorage.getItem('theme') || 'dracula'"
+			data-effect="document.documentElement.setAttribute('data-theme', $theme); localStorage.setItem('theme', $theme)">
 			<nav class="navbar bg-base-100 shadow-lg">
 				<div class="flex-1">
 					<a class="btn btn-ghost normal-case text-xl" href="/">MTG Treacherest</a>
