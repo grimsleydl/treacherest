@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/sdk/go"
+	datastar "github.com/starfederation/datastar-go/datastar"
 	"html"
 	"log"
 	"net/http"
@@ -27,8 +27,8 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			</svg>
 			<span>Room not found</span>
 		</div>`
-		sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"isStarting": false,
 		})
 		return
@@ -45,8 +45,8 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			</svg>
 			<span>You are not in this room</span>
 		</div>`
-		sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"isStarting": false,
 		})
 		return
@@ -62,8 +62,8 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			</svg>
 			<span>You are not in this room</span>
 		</div>`
-		sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"isStarting": false,
 		})
 		return
@@ -97,13 +97,13 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 		</div>`, html.EscapeString(validationState.ValidationMessage))
 
 		// Send fragment targeting error container
-		err := sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
+		err := sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
 		if err != nil {
 			log.Printf("❌ Failed to send error fragment: %v", err)
 		}
 
 		// Also update button state and re-sync ALL validation signals
-		err = sse.MarshalAndMergeSignals(map[string]interface{}{
+		err = sse.MarshalAndPatchSignals(map[string]interface{}{
 			"isStarting": false,
 			"startError": validationState.ValidationMessage,
 			// IMPORTANT: Re-sync all validation signals to ensure consistency
@@ -154,8 +154,8 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			</svg>
 			<span>Internal server error: Cannot assign roles</span>
 		</div>`
-		sse.MergeFragments(errorHTML, datastar.WithSelector("#error-container"))
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"isStarting": false,
 		})
 		return

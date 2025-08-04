@@ -90,7 +90,7 @@ func (eb *EventBus) Publish(event Event) {
 	defer eb.mu.RUnlock()
 
 	subscribers := eb.subscribers[event.RoomCode]
-	
+
 	for _, ch := range subscribers {
 		select {
 		case ch <- event:
