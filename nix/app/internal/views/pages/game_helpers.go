@@ -25,28 +25,28 @@ type CardTextPart struct {
 func FormatCardTextToLines(text string) []CardTextLine {
 	lines := strings.Split(text, "|")
 	result := make([]CardTextLine, len(lines))
-	
+
 	for i, line := range lines {
 		result[i] = formatLineWithParentheses(line)
 	}
-	
+
 	return result
 }
 
 // formatLineWithParentheses formats a single line, marking parenthetical text as italic and extracting mana symbols
 func formatLineWithParentheses(line string) CardTextLine {
 	var result CardTextLine
-	
+
 	// Keep Unicode characters as-is - the issue is in the HTTP response encoding
-	
+
 	// Regular expressions for mana symbols and parentheses
 	manaRe := regexp.MustCompile(`\{([0-9WUBRGCXYZ]+)\}`)
-	
+
 	// Process the line to handle both mana symbols and parentheses
 	remaining := line
 	inParentheses := false
 	currentText := ""
-	
+
 	for len(remaining) > 0 {
 		// Check for mana symbol at the start
 		if manaMatch := manaRe.FindStringSubmatch(remaining); manaMatch != nil && strings.HasPrefix(remaining, manaMatch[0]) {
@@ -58,23 +58,23 @@ func formatLineWithParentheses(line string) CardTextLine {
 				})
 				currentText = ""
 			}
-			
+
 			// Add the mana symbol
 			result.Parts = append(result.Parts, CardTextPart{
 				IsMana:     true,
 				ManaSymbol: manaMatch[1],
 			})
-			
+
 			// Move past the mana symbol
 			remaining = remaining[len(manaMatch[0]):]
 			continue
 		}
-		
+
 		// Handle character by character for parentheses
 		// We need to handle multi-byte UTF-8 characters properly
 		r, size := utf8.DecodeRuneInString(remaining)
 		remaining = remaining[size:]
-		
+
 		if r == '(' && !inParentheses {
 			// Save any accumulated text before parenthesis
 			if currentText != "" {
@@ -99,7 +99,7 @@ func formatLineWithParentheses(line string) CardTextLine {
 			currentText += string(r)
 		}
 	}
-	
+
 	// Add any remaining text
 	if currentText != "" {
 		result.Parts = append(result.Parts, CardTextPart{
@@ -107,7 +107,7 @@ func formatLineWithParentheses(line string) CardTextLine {
 			Italic: inParentheses,
 		})
 	}
-	
+
 	return result
 }
 
