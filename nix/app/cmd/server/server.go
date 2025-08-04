@@ -42,11 +42,11 @@ func SetupServer() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
-	
+
 	// Our custom middleware
 	r.Use(localMiddleware.RequestSizeLimiter(cfg.Server.MaxRequestSize))
 	r.Use(localMiddleware.SecurityHeaders())
-	
+
 	// Rate limiting
 	rateLimiter := localMiddleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateLimitBurst)
 	r.Use(rateLimiter.Middleware())

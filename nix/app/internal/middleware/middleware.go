@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"sync"
-	
+
 	"golang.org/x/time/rate"
 )
 
@@ -26,7 +26,7 @@ func SecurityHeaders() func(http.Handler) http.Handler {
 			w.Header().Set("X-Frame-Options", "DENY")
 			w.Header().Set("X-XSS-Protection", "1; mode=block")
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -53,13 +53,13 @@ func NewRateLimiter(rateLimit float64, burst int) *RateLimiter {
 func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
-	
+
 	limiter, exists := rl.limiters[key]
 	if !exists {
 		limiter = rate.NewLimiter(rl.rate, rl.burst)
 		rl.limiters[key] = limiter
 	}
-	
+
 	return limiter
 }
 
@@ -72,13 +72,13 @@ func (rl *RateLimiter) Middleware() func(http.Handler) http.Handler {
 			if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
 				key = forwarded
 			}
-			
+
 			limiter := rl.getLimiter(key)
 			if !limiter.Allow() {
 				http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
