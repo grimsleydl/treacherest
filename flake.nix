@@ -9,8 +9,15 @@
     std.inputs.devshell.url = "github:numtide/devshell";
     std.inputs.nixago.url = "github:nix-community/nixago";
 
+    templ.url = "github:a-h/templ";
+    
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    
+    nix2container = {
+      url = "github:nlewo/nix2container";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -38,6 +45,7 @@
     } {
       devShells = std.harvest self ["local" "shells"];
       packages = std.harvest self ["app" "packages"];
+      containers = std.harvest self ["containers" "containers"];
     };
 
   nixConfig = {
