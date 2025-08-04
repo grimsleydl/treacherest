@@ -78,14 +78,14 @@ func joinRoomViaPostHelper(t *testing.T, router *chi.Mux, roomCode, playerName s
 	formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, playerName)
 	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	
+
 	// Add any provided cookies
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
 	}
-	
+
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	
+
 	return w
 }

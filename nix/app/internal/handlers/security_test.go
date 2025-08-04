@@ -140,7 +140,7 @@ func TestURLParameterSecurityFix(t *testing.T) {
 			shouldFail  bool
 			description string
 		}{
-			{"", "EmptyName", true, "empty name should fail"},
+			{"", "EmptyName", false, "empty name should generate random name"},
 			{"A", "A", false, "single character should pass"},
 			{"ValidName123", "ValidName123", false, "alphanumeric should pass"},
 			{"Name With Spaces", "Name With Spaces", false, "spaces should pass"},

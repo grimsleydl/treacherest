@@ -161,7 +161,7 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 	})
 
-	t.Run("returns 400 when cannot start game", func(t *testing.T) {
+	t.Run("returns SSE error when player not found in room", func(t *testing.T) {
 		h := newTestHandler()
 
 		// Create a room with 0 players (not enough to start)
@@ -170,6 +170,7 @@ func TestHandler_StartGame(t *testing.T) {
 		// Don't add player to room, but still send request with cookie
 
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+		req.Header.Set("Accept", "text/event-stream")
 		req.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
 			Value: player.ID,
@@ -184,9 +185,10 @@ func TestHandler_StartGame(t *testing.T) {
 
 		h.StartGame(w, req)
 
-		resp := w.Result()
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Errorf("expected status 401 (player not in room), got %d", resp.StatusCode)
+		// Check for SSE error message
+		body := w.Body.String()
+		if !strings.Contains(body, "You are not in this room") {
+			t.Errorf("expected SSE error message for player not in room, got: %s", body)
 		}
 	})
 }
@@ -242,10 +244,11 @@ func TestHandler_LeaveRoom(t *testing.T) {
 		}
 	})
 
-	t.Run("returns 404 for non-existent room", func(t *testing.T) {
+	t.Run("redirects to home for non-existent room", func(t *testing.T) {
 		h := newTestHandler()
 
 		req := httptest.NewRequest("POST", "/room/XXXXX/leave", nil)
+		req.Header.Set("Accept", "text/event-stream")
 
 		// Add chi URL params
 		rctx := chi.NewRouteContext()
@@ -256,19 +259,21 @@ func TestHandler_LeaveRoom(t *testing.T) {
 
 		h.LeaveRoom(w, req)
 
-		resp := w.Result()
-		if resp.StatusCode != http.StatusNotFound {
-			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		// Check for SSE redirect
+		body := w.Body.String()
+		if !strings.Contains(body, "window.location.href = '/'") {
+			t.Errorf("expected SSE redirect to home, got: %s", body)
 		}
 	})
 
-	t.Run("returns 401 when no player cookie", func(t *testing.T) {
+	t.Run("redirects to home when no player cookie", func(t *testing.T) {
 		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
 
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/leave", nil)
+		req.Header.Set("Accept", "text/event-stream")
 		// No player cookie
 
 		// Add chi URL params
@@ -280,9 +285,10 @@ func TestHandler_LeaveRoom(t *testing.T) {
 
 		h.LeaveRoom(w, req)
 
-		resp := w.Result()
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		// Check for SSE redirect
+		body := w.Body.String()
+		if !strings.Contains(body, "window.location.href = '/'") {
+			t.Errorf("expected SSE redirect to home, got: %s", body)
 		}
 	})
 

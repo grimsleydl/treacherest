@@ -19,7 +19,7 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 
@@ -140,7 +140,7 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 

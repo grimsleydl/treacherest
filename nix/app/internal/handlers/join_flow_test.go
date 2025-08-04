@@ -60,7 +60,7 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 			t.Errorf("Expected status 303, got %d", w.Code)
 			t.Logf("Response body: %s", w.Body.String())
 		}
-		
+
 		// Check redirect location
 		location := w.Header().Get("Location")
 		expectedLocation := "/room/" + roomCode1
@@ -189,15 +189,15 @@ func joinRoomViaPost(t *testing.T, h *Handler, router *chi.Mux, roomCode, player
 	formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, playerName)
 	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	
+
 	// Add any provided cookies
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
 	}
-	
+
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	
+
 	return w
 }
 
@@ -207,7 +207,7 @@ func setupTestRouter(h *Handler) *chi.Mux {
 	// Room routes
 	r.Post("/room/create", h.CreateRoom)
 	r.Get("/room/{code}", h.JoinRoom)
-	r.Post("/join-room", h.JoinRoomPost)  // New POST endpoint
+	r.Post("/join-room", h.JoinRoomPost) // New POST endpoint
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Post("/room/{code}/start", h.StartGame)
 

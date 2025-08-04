@@ -311,8 +311,8 @@ func TestGetBaseURL(t *testing.T) {
 	}
 }
 
-// TestMarshalAndMergeSignals tests the signal sending for QR code
-func TestMarshalAndMergeSignals(t *testing.T) {
+// TestMarshalAndPatchSignals tests the signal sending for QR code
+func TestMarshalAndPatchSignals(t *testing.T) {
 	// This test verifies that the signal format is correct
 	signals := map[string]string{
 		"qrCode": "data:image/png;base64,iVBORw0KGgoAAAANS...",

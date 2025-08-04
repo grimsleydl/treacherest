@@ -36,12 +36,12 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 		Players: map[string]*game.Player{"player1": player},
 		State:   game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
-			MinPlayers:          3,
-			MaxPlayers:          8,
-			AllowLeaderlessGame: false,
+			MinPlayers:           3,
+			MaxPlayers:           8,
+			AllowLeaderlessGame:  false,
 			HideRoleDistribution: false,
-			FullyRandomRoles:    false,
-			PresetName:          "custom",
+			FullyRandomRoles:     false,
+			PresetName:           "custom",
 			RoleTypes: map[string]*game.RoleTypeConfig{
 				"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Commander": true}},
 				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true}},
@@ -66,7 +66,7 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 				// Should contain SSE events
 				assert.Contains(t, response, "event: datastar-merge-fragments")
 				assert.Contains(t, response, "data: fragments")
-				
+
 				// Should reset the loading state
 				assert.Contains(t, response, "event: datastar-merge-signals")
 				assert.Contains(t, response, `"updatingLeaderless":false`)
@@ -80,7 +80,7 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 				// Should contain SSE events
 				assert.Contains(t, response, "event: datastar-merge-fragments")
 				assert.Contains(t, response, "data: fragments")
-				
+
 				// Should reset the loading state
 				assert.Contains(t, response, "event: datastar-merge-signals")
 				assert.Contains(t, response, `"updatingHideDistribution":false`)
@@ -94,7 +94,7 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 				// Should contain SSE events
 				assert.Contains(t, response, "event: datastar-merge-fragments")
 				assert.Contains(t, response, "data: fragments")
-				
+
 				// Should reset the loading state
 				assert.Contains(t, response, "event: datastar-merge-signals")
 				assert.Contains(t, response, `"updatingFullyRandom":false`)
@@ -109,15 +109,15 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 			req := httptest.NewRequest("POST", tt.endpoint, bytes.NewReader(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{Name: "player_TEST123", Value: "player1"})
-			
+
 			// Add chi context
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("code", "TEST123")
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-			
+
 			// Create response recorder
 			w := httptest.NewRecorder()
-			
+
 			// Call the appropriate handler
 			if strings.Contains(tt.endpoint, "leaderless") {
 				handler.UpdateLeaderlessGame(w, req)
@@ -126,11 +126,11 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 			} else if strings.Contains(tt.endpoint, "fully-random") {
 				handler.UpdateFullyRandom(w, req)
 			}
-			
+
 			// Check response
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Contains(t, w.Header().Get("Content-Type"), "text/event-stream")
-			
+
 			// Check SSE content
 			responseBody := w.Body.String()
 			require.NotEmpty(t, responseBody)

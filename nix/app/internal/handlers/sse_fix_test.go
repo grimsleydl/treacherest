@@ -18,7 +18,7 @@ func TestSSEConnectionPersistence(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 
@@ -130,7 +130,7 @@ func TestSSEConnectionSurvives70Seconds(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping long-running browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 
@@ -212,7 +212,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 
@@ -291,7 +291,7 @@ func TestNoSSEConnectionExhaustionDuringCountdown(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 
@@ -447,7 +447,7 @@ func TestPlayerReconnectionDuringCountdown(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
-	
+
 	// Skip if Chrome is not available
 	skipIfNoBrowser(t)
 

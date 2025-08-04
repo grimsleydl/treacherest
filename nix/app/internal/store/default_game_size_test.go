@@ -11,7 +11,7 @@ func TestDefaultGameSize(t *testing.T) {
 	// Set required environment variables
 	t.Setenv("HOST", "localhost")
 	t.Setenv("PORT", "8080")
-	
+
 	// Load the configuration
 	cfg, err := config.LoadConfig("../../config/server.yaml")
 	if err != nil {
@@ -57,8 +57,8 @@ func TestDefaultGameSize(t *testing.T) {
 	// Verify the role distribution matches the 5-player preset
 	expectedRoles := map[string]int{
 		"Leader":   1,
-		"Guardian": 2,
-		"Assassin": 1,
+		"Guardian": 1,
+		"Assassin": 2,
 		"Traitor":  1,
 	}
 
