@@ -11,7 +11,7 @@ func TestLoadConfig(t *testing.T) {
 	// Set required environment variables
 	t.Setenv("HOST", "localhost")
 	t.Setenv("PORT", "8080")
-	
+
 	// Test loading default config when file doesn't exist
 	t.Run("LoadDefaultWhenMissing", func(t *testing.T) {
 		config, err := LoadConfig("nonexistent.yaml")
@@ -88,7 +88,7 @@ func TestConfigValidation(t *testing.T) {
 	// Set required environment variables
 	t.Setenv("HOST", "localhost")
 	t.Setenv("PORT", "8080")
-	
+
 	tests := []struct {
 		name      string
 		config    *ServerConfig
@@ -99,6 +99,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "ValidConfig",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 20,
 					MinPlayersPerRoom: 1,
 					RoomCodeLength:    5,
@@ -122,6 +124,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "InvalidMaxPlayers",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 0,
 					MinPlayersPerRoom: 1,
 					RoomCodeLength:    5,
@@ -139,6 +143,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "MinGreaterThanMax",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 5,
 					MinPlayersPerRoom: 10,
 					RoomCodeLength:    5,
@@ -156,6 +162,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "NoLeaderRole",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 20,
 					MinPlayersPerRoom: 1,
 					RoomCodeLength:    5,
@@ -173,6 +181,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "InvalidRoleMinMax",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 20,
 					MinPlayersPerRoom: 1,
 					RoomCodeLength:    5,
@@ -194,6 +204,8 @@ func TestConfigValidation(t *testing.T) {
 			name: "UnknownRoleInPreset",
 			config: &ServerConfig{
 				Server: ServerSettings{
+					Host:              "localhost",
+					Port:              "8080",
 					MaxPlayersPerRoom: 20,
 					MinPlayersPerRoom: 1,
 					RoomCodeLength:    5,
