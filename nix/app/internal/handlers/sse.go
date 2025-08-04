@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/sdk/go"
+	datastar "github.com/starfederation/datastar-go/datastar"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 	"log"
@@ -61,7 +61,7 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	roleService := game.NewRoleConfigService(h.config)
 	validationState := room.GetValidationState(roleService)
 
-	err = sse.MarshalAndMergeSignals(map[string]interface{}{
+	err = sse.MarshalAndPatchSignals(map[string]interface{}{
 		"canStartGame":      validationState.CanStart,
 		"validationMessage": validationState.ValidationMessage,
 		"canAutoScale":      validationState.CanAutoScale,
@@ -96,12 +96,8 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing SSE", roomCode)
 				return
 			}
-			// Send SSE comment heartbeat to keep connection alive
-			// Comments don't trigger any client-side processing
-			fmt.Fprintf(w, ": heartbeat\n\n")
-			if flusher, ok := w.(http.Flusher); ok {
-				flusher.Flush()
-			}
+			// Heartbeat - just check if connection is still alive
+			// The datastar SSE library handles keepalive internally
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
 
@@ -115,7 +111,7 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					for pid, p := range room.Players {
 						log.Printf("📡 DEBUG:   - Player %s: %s", pid, p.Name)
 					}
-					
+
 					// Refresh player reference in case it was updated
 					originalPlayerID := player.ID
 					player = room.GetPlayer(player.ID)
@@ -159,15 +155,14 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					playerCountDisplay := h.createPlayerCountDisplay(room)
 					component := components.RoleConfigurationNew(room, h.config, h.cardService, playerCountDisplay)
 					html := renderToString(component)
-					sse.MergeFragments(html,
-						datastar.WithSelector("#role-config"),
-						datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+					sse.PatchElements(html,
+						datastar.WithSelector("#role-config"))
 
 					// Also update validation state for controlling players
 					roleService := game.NewRoleConfigService(h.config)
 					validationState := room.GetValidationState(roleService)
 
-					sse.MarshalAndMergeSignals(map[string]interface{}{
+					sse.MarshalAndPatchSignals(map[string]interface{}{
 						"canStartGame":      validationState.CanStart,
 						"validationMessage": validationState.ValidationMessage,
 						"canAutoScale":      validationState.CanAutoScale,
@@ -224,7 +219,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	signals := map[string]interface{}{
 		"countdown": room.CountdownRemaining,
 	}
-	err = sse.MarshalAndMergeSignals(signals)
+	err = sse.MarshalAndPatchSignals(signals)
 	if err != nil {
 		log.Printf("❌ Failed to send initial game signals: %v", err)
 	}
@@ -271,7 +266,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 					"countdown": room.CountdownRemaining,
 				}
 
-				err := sse.MarshalAndMergeSignals(signals)
+				err := sse.MarshalAndPatchSignals(signals)
 				if err != nil {
 					log.Printf("❌ Failed to send countdown signal: %v", err)
 				} else {
@@ -287,7 +282,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				signals := map[string]interface{}{
 					"countdown": 0,
 				}
-				sse.MarshalAndMergeSignals(signals)
+				sse.MarshalAndPatchSignals(signals)
 				log.Printf("🎮 Game playing - cleared countdown signal for room %s", roomCode)
 			default:
 				// All other events need full re-render
@@ -302,18 +297,18 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 // sendPlayerListUpdate sends only the player list card - minimal update for player join/leave
 func (h *Handler) sendPlayerListUpdate(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
 	log.Printf("📤 Sending minimal player list update for room %s", room.Code)
-	
+
 	// Render just the player list card
 	component := pages.LobbyPlayerList(room, player)
 	html := renderToString(component)
-	
+
 	log.Printf("📝 Player list HTML length: %d chars (was 5MB before!)", len(html))
-	
+	log.Printf("[DEBUG] Player list HTML: %s", html)
+
 	// Send fragment targeting the player list card
-	sse.MergeFragments(html,
-		datastar.WithSelector("#player-list-card"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-		
+	sse.PatchElements(html,
+		datastar.WithSelector("#player-list-card"))
+
 	log.Printf("✅ Sent minimal player list update for room %s", room.Code)
 }
 
@@ -330,7 +325,7 @@ func (h *Handler) sendLobbyUpdate(sse *datastar.ServerSentEventGenerator, room *
 	h.renderLobby(sse, room, player)
 
 	// Then send the validation signals to keep UI in sync
-	err := sse.MarshalAndMergeSignals(map[string]interface{}{
+	err := sse.MarshalAndPatchSignals(map[string]interface{}{
 		"canStartGame":      validationState.CanStart,
 		"validationMessage": validationState.ValidationMessage,
 		"canAutoScale":      validationState.CanAutoScale,
@@ -365,7 +360,7 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		log.Printf("🎨 DEBUG:   - Player %s: %s (Host: %v)", pid, p.Name, p.IsHost)
 	}
 	log.Printf("🎨 DEBUG: Active player count: %d", room.GetActivePlayerCount())
-	
+
 	component := pages.LobbyContent(room, player, h.config, h.cardService)
 
 	// Render to string
@@ -383,9 +378,8 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	// Send fragment directly to #lobby-content
 	// This preserves the DOM structure (lobby-container stays intact)
 	log.Printf("📤 DEBUG: Sending fragment with selector #lobby-content, merge mode: morph")
-	sse.MergeFragments(html,
-		datastar.WithSelector("#lobby-content"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#lobby-content"))
 	log.Printf("✅ Sent lobby fragment update for room %s to player %s", room.Code, player.ID)
 }
 
@@ -405,9 +399,8 @@ func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.
 	}
 
 	// Send as fragment with morph mode and explicit selector
-	sse.MergeFragments(html,
-		datastar.WithSelector("#game-container"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#game-container"))
 }
 
 // renderToString renders a templ component to string
@@ -466,7 +459,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		signals := map[string]string{
 			"qrCode": qrDataURI,
 		}
-		if err := sse.MarshalAndMergeSignals(signals); err != nil {
+		if err := sse.MarshalAndPatchSignals(signals); err != nil {
 			log.Printf("❌ Failed to send QR code signal for room %s: %v", roomCode, err)
 		} else {
 			log.Printf("📱 Sent QR code for room %s", roomCode)
@@ -481,7 +474,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		roleService := game.NewRoleConfigService(h.config)
 		validationState := room.GetValidationState(roleService)
 
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"canStartGame":      validationState.CanStart,
 			"validationMessage": validationState.ValidationMessage,
 			"canAutoScale":      validationState.CanAutoScale,
@@ -496,7 +489,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		signals := map[string]interface{}{
 			"countdown": room.CountdownRemaining,
 		}
-		err = sse.MarshalAndMergeSignals(signals)
+		err = sse.MarshalAndPatchSignals(signals)
 		if err != nil {
 			log.Printf("❌ Failed to send initial countdown signal to host: %v", err)
 		} else {
@@ -527,11 +520,8 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing host SSE", roomCode)
 				return
 			}
-			// Send SSE comment heartbeat to keep connection alive
-			fmt.Fprintf(w, ": heartbeat\n\n")
-			if flusher, ok := w.(http.Flusher); ok {
-				flusher.Flush()
-			}
+			// Heartbeat - just check if connection is still alive
+			// The datastar SSE library handles keepalive internally
 		case event := <-events:
 			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
 
@@ -553,7 +543,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 					roleService := game.NewRoleConfigService(h.config)
 					validationState := room.GetValidationState(roleService)
 
-					sse.MarshalAndMergeSignals(map[string]interface{}{
+					sse.MarshalAndPatchSignals(map[string]interface{}{
 						"canStartGame":      validationState.CanStart,
 						"validationMessage": validationState.ValidationMessage,
 						"canAutoScale":      validationState.CanAutoScale,
@@ -575,7 +565,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 					"countdown": room.CountdownRemaining,
 				}
 
-				err := sse.MarshalAndMergeSignals(signals)
+				err := sse.MarshalAndPatchSignals(signals)
 				if err != nil {
 					log.Printf("❌ Failed to send countdown signal to host: %v", err)
 				} else {
@@ -590,7 +580,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				signals := map[string]interface{}{
 					"countdown": 0,
 				}
-				sse.MarshalAndMergeSignals(signals)
+				sse.MarshalAndPatchSignals(signals)
 				log.Printf("🎮 Game playing - cleared countdown signal for host in room %s", roomCode)
 			case "game_ended":
 				// Update dashboard to show ended state
@@ -630,9 +620,8 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	log.Printf("🎨 Rendering host dashboard for room %s in state %s", room.Code, room.State)
 
 	// Send fragment with full container structure
-	sse.MergeFragments(wrappedHTML,
-		datastar.WithSelector("#host-dashboard-container"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(wrappedHTML,
+		datastar.WithSelector("#host-dashboard-container"))
 
 	log.Printf("✅ Sent host dashboard update for room %s", room.Code)
 }
