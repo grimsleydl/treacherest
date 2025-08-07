@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -14,6 +15,15 @@ const (
 	StatePlaying   GameState = "playing"
 	StateEnded     GameState = "ended"
 )
+
+// RoleConfiguration represents the role settings for a room
+type RoleConfiguration struct {
+	PresetName    string           `json:"presetName"`    // e.g., "standard", "assassination", "custom"
+	EnabledRoles  map[string]bool  `json:"enabledRoles"`  // Which roles from master pool are enabled
+	RoleCounts    map[string]int   `json:"roleCounts"`    // Exact counts per role
+	MinPlayers    int              `json:"minPlayers"`    // Minimum players needed
+	MaxPlayers    int              `json:"maxPlayers"`    // Maximum players allowed
+}
 
 // Room represents a game room
 type Room struct {
@@ -29,6 +39,9 @@ type Room struct {
 
 	// Game state
 	LeaderRevealed bool
+
+	// Role configuration
+	RoleConfig *RoleConfiguration
 
 	mu sync.RWMutex
 }
@@ -138,5 +151,56 @@ func (r *Room) GetLeader() *Player {
 			return p
 		}
 	}
+	return nil
+}
+
+// GetHost returns the first player who joined (usually the host)
+func (r *Room) GetHost() *Player {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// In a real implementation, we'd track who created the room
+	// For now, return the first player
+	for _, p := range r.Players {
+		return p
+	}
+	return nil
+}
+
+// ValidateRoleConfig validates if the current role configuration can work with the player count
+func (r *Room) ValidateRoleConfig() error {
+	if r.RoleConfig == nil {
+		return fmt.Errorf("no role configuration set")
+	}
+
+	activeCount := r.GetActivePlayerCount()
+	
+	// Check player count bounds
+	if activeCount < r.RoleConfig.MinPlayers {
+		return fmt.Errorf("need at least %d players, have %d", r.RoleConfig.MinPlayers, activeCount)
+	}
+	if activeCount > r.RoleConfig.MaxPlayers {
+		return fmt.Errorf("maximum %d players allowed, have %d", r.RoleConfig.MaxPlayers, activeCount)
+	}
+
+	// Count total roles
+	totalRoles := 0
+	hasLeader := false
+	for role, count := range r.RoleConfig.RoleCounts {
+		if r.RoleConfig.EnabledRoles[role] {
+			totalRoles += count
+			if role == "leader" {
+				hasLeader = true
+			}
+		}
+	}
+
+	// Must have exactly one leader
+	if !hasLeader {
+		return fmt.Errorf("must have exactly one leader role")
+	}
+
+	// For now, we allow flexible role counts
+	// The assignment logic will handle distributing roles appropriately
 	return nil
 }
