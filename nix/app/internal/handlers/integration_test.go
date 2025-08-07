@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 
@@ -26,8 +27,9 @@ type IntegrationTestHelper struct {
 
 // NewIntegrationTestHelper creates a new integration test helper
 func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
-	gameStore := store.NewMemoryStore()
-	h := New(gameStore, createMockCardService())
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg)
 
 	// Set up router with all routes
 	r := chi.NewRouter()

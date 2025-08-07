@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 	"treacherest/internal/game"
-	"treacherest/internal/store"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func TestJoinRoomDirect(t *testing.T) {
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	t.Run("shows join form when no name provided", func(t *testing.T) {
 		// Create a room
@@ -227,7 +226,7 @@ func TestJoinRoomDirect(t *testing.T) {
 }
 
 func TestGamePageDirect(t *testing.T) {
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	t.Run("returns 404 for invalid room", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/game/INVALID", nil)

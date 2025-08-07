@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 	"treacherest/internal/game"
-	"treacherest/internal/store"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func TestHandler_StartGame(t *testing.T) {
 	t.Run("starts game successfully", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with players
 		room, _ := h.store.CreateRoom()
@@ -75,7 +74,7 @@ func TestHandler_StartGame(t *testing.T) {
 	})
 
 	t.Run("responds with datastar redirect script", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with 1 player (minimum to start)
 		room, _ := h.store.CreateRoom()
@@ -119,7 +118,7 @@ func TestHandler_StartGame(t *testing.T) {
 	})
 
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		req := httptest.NewRequest("POST", "/room/XXXXX/start", nil)
 
@@ -139,7 +138,7 @@ func TestHandler_StartGame(t *testing.T) {
 	})
 
 	t.Run("returns 401 when player not in room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
@@ -163,7 +162,7 @@ func TestHandler_StartGame(t *testing.T) {
 	})
 
 	t.Run("returns 400 when cannot start game", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with 0 players (not enough to start)
 		room, _ := h.store.CreateRoom()
@@ -194,7 +193,7 @@ func TestHandler_StartGame(t *testing.T) {
 
 func TestHandler_LeaveRoom(t *testing.T) {
 	t.Run("player leaves room successfully", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with players
 		room, _ := h.store.CreateRoom()
@@ -244,7 +243,7 @@ func TestHandler_LeaveRoom(t *testing.T) {
 	})
 
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		req := httptest.NewRequest("POST", "/room/XXXXX/leave", nil)
 
@@ -264,7 +263,7 @@ func TestHandler_LeaveRoom(t *testing.T) {
 	})
 
 	t.Run("returns 401 when no player cookie", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
@@ -288,7 +287,7 @@ func TestHandler_LeaveRoom(t *testing.T) {
 	})
 
 	t.Run("handles player not in room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room without adding the player
 		room, _ := h.store.CreateRoom()
@@ -325,7 +324,7 @@ func TestHandler_LeaveRoom(t *testing.T) {
 
 func TestHandler_runCountdown(t *testing.T) {
 	t.Run("runs countdown and transitions to playing", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()

@@ -8,11 +8,10 @@ import (
 	"strings"
 	"testing"
 	"treacherest/internal/game"
-	"treacherest/internal/store"
 )
 
 func TestHandler_Home(t *testing.T) {
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -39,7 +38,7 @@ func TestHandler_Home(t *testing.T) {
 
 func TestHandler_CreateRoom(t *testing.T) {
 	t.Run("creates room successfully", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		form := url.Values{}
 		form.Add("playerName", "Test Player")
@@ -98,7 +97,7 @@ func TestHandler_CreateRoom(t *testing.T) {
 	})
 
 	t.Run("returns error when player name is empty", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		form := url.Values{}
 		form.Add("playerName", "")
@@ -121,7 +120,7 @@ func TestHandler_CreateRoom(t *testing.T) {
 	})
 
 	t.Run("preserves existing session", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		existingSession := "existing-session-123"
 
@@ -161,7 +160,7 @@ func TestHandler_CreateRoom(t *testing.T) {
 
 func TestHandler_JoinRoom(t *testing.T) {
 	t.Run("renders join form when no name provided", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room first
 		room, _ := h.store.CreateRoom()
@@ -198,7 +197,7 @@ func TestHandler_JoinRoom(t *testing.T) {
 	})
 
 	t.Run("preserves host status when joining with host cookie", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room first
 		room, _ := h.store.CreateRoom()
@@ -248,7 +247,7 @@ func TestHandler_JoinRoom(t *testing.T) {
 
 func TestHandler_GamePage(t *testing.T) {
 	t.Run("shows game page for player in game", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room with a player
 		room, _ := h.store.CreateRoom()
@@ -288,7 +287,7 @@ func TestHandler_GamePage(t *testing.T) {
 	})
 
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		router := chi.NewRouter()
 		router.Get("/game/{code}", h.GamePage)
@@ -305,7 +304,7 @@ func TestHandler_GamePage(t *testing.T) {
 	})
 
 	t.Run("returns 401 when no player cookie", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()
@@ -325,7 +324,7 @@ func TestHandler_GamePage(t *testing.T) {
 	})
 
 	t.Run("returns 401 when player not in room", func(t *testing.T) {
-		h := New(store.NewMemoryStore(), createMockCardService())
+		h := newTestHandler()
 
 		// Create a room
 		room, _ := h.store.CreateRoom()

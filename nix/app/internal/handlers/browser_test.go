@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 	"treacherest/internal/game"
-	"treacherest/internal/store"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -22,7 +21,7 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 	}
 
 	// Create handler with in-memory store
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	// Create test server
 	router := setupTestRouter(h)
@@ -140,7 +139,7 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	}
 
 	// Create handler with in-memory store
-	h := New(store.NewMemoryStore(), createMockCardService())
+	h := newTestHandler()
 
 	// Create test server
 	router := setupTestRouter(h)
