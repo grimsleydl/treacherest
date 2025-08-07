@@ -2,6 +2,7 @@ package game
 
 import (
 	"testing"
+	"treacherest"
 )
 
 func TestAssignRoles(t *testing.T) {
@@ -22,7 +23,7 @@ func TestAssignRoles(t *testing.T) {
 	}
 
 	// Create CardService for testing
-	cardService, err := NewCardService()
+	cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		t.Fatalf("Failed to create CardService: %v", err)
 	}
@@ -163,7 +164,7 @@ func TestGetRoleDistribution(t *testing.T) {
 
 func TestAssignRoles_NoDuplicateCards(t *testing.T) {
 	// Create CardService for testing
-	cardService, err := NewCardService()
+	cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		t.Fatalf("Failed to create CardService: %v", err)
 	}
@@ -203,7 +204,7 @@ func TestAssignRoles_NoDuplicateCards(t *testing.T) {
 
 func TestAssignRoles_CorrectRoleTypes(t *testing.T) {
 	// Create CardService for testing
-	cardService, err := NewCardService()
+	cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		t.Fatalf("Failed to create CardService: %v", err)
 	}

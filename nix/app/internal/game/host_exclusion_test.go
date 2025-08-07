@@ -2,6 +2,7 @@ package game
 
 import (
 	"testing"
+	"treacherest"
 )
 
 func TestHostExclusion(t *testing.T) {
@@ -14,7 +15,7 @@ func TestHostExclusion(t *testing.T) {
 		}
 
 		// Create card service
-		cardService, err := NewCardService()
+		cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 		if err != nil {
 			t.Fatalf("Failed to create card service: %v", err)
 		}
@@ -124,7 +125,7 @@ func TestHostExclusion(t *testing.T) {
 			{ID: "host", Name: "Host", IsHost: true},
 		}
 
-		cardService, err := NewCardService()
+		cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 		if err != nil {
 			t.Fatalf("Failed to create card service: %v", err)
 		}

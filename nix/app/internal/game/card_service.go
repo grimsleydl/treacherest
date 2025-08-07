@@ -1,13 +1,12 @@
 package game
 
 import (
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 // CardService manages the loaded cards and provides methods to access them
@@ -19,35 +18,12 @@ type CardService struct {
 	allCards  []Card
 }
 
-// NewCardService creates a new CardService by loading cards from the JSON file
-func NewCardService() (*CardService, error) {
-	// Try multiple possible paths for the JSON file
-	possiblePaths := []string{
-		"docs/external/treachery-cards.json",
-		"../../docs/external/treachery-cards.json",
-		filepath.Join(os.Getenv("PRJ_ROOT"), "docs/external/treachery-cards.json"),
-		"/workspace/docs/external/treachery-cards.json",
-	}
-
-	var jsonData []byte
-	var err error
-	var successPath string
-
-	for _, path := range possiblePaths {
-		jsonData, err = os.ReadFile(path)
-		if err == nil {
-			successPath = path
-			break
-		}
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read treachery-cards.json from any known location: %w", err)
-	}
-
+// NewCardService creates a new CardService by loading cards from embedded data
+func NewCardService(jsonData []byte, imagesFS embed.FS) (*CardService, error) {
+	// Parse the embedded JSON data
 	var collection CardCollection
 	if err := json.Unmarshal(jsonData, &collection); err != nil {
-		return nil, fmt.Errorf("failed to parse treachery-cards.json from %s: %w", successPath, err)
+		return nil, fmt.Errorf("failed to parse embedded treachery-cards.json: %w", err)
 	}
 
 	service := &CardService{
@@ -58,35 +34,15 @@ func NewCardService() (*CardService, error) {
 		allCards:  collection.Cards,
 	}
 
-	// Find the base path for images
-	var basePath string
-	imagePaths := []string{
-		"static/images/cards",
-		"../../static/images/cards",
-		filepath.Join(os.Getenv("PRJ_ROOT"), "nix/app/static/images/cards"),
-		"/workspace/nix/app/static/images/cards",
-	}
-	
-	for _, path := range imagePaths {
-		if _, err := os.Stat(filepath.Join(path, "1.jpg")); err == nil {
-			basePath = path
-			break
-		}
-	}
-	
-	if basePath == "" {
-		return nil, fmt.Errorf("failed to find card images directory")
-	}
-
 	// Categorize cards by subtype and load images
 	for i := range collection.Cards {
 		card := &collection.Cards[i]
 		
-		// Load and encode the image
-		imagePath := filepath.Join(basePath, fmt.Sprintf("%d.jpg", card.ID))
-		imageData, err := os.ReadFile(imagePath)
+		// Load and encode the image from embedded filesystem
+		imagePath := fmt.Sprintf("static/images/cards/%d.jpg", card.ID)
+		imageData, err := imagesFS.ReadFile(imagePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read image for card %d (%s): %w", card.ID, card.Name, err)
+			return nil, fmt.Errorf("failed to read embedded image for card %d (%s): %w", card.ID, card.Name, err)
 		}
 		
 		// Detect MIME type

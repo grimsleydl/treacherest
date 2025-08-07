@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"treacherest"
 	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
@@ -15,7 +16,7 @@ import (
 // SetupServer creates and configures the server
 func SetupServer() http.Handler {
 	// Create CardService with fail-fast initialization
-	cardService, err := game.NewCardService()
+	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
