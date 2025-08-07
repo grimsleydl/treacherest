@@ -20,17 +20,17 @@ server:
   sseTimeout: 4h
   
   # Stricter rate limiting for production
-  rateLimit: 10
-  rateLimitBurst: 20
+  rateLimit: 50
+  rateLimitBurst: 100
   
   # Request limits
   maxRequestSize: 5242880    # 5MB for production
-  maxSSEConnections: 120    # Higher limit for production
+  maxSSEConnections: 1000    # Higher limit for production
   
   # Production logging
   logLevel: info
-  logFormat: json  # JSON for structured logging in production
-  enableMetrics: true
+  logFormat: text  # JSON for structured logging in production
+  enableMetrics: false
   metricsPort: "9090"
 
 # Include all role definitions for production

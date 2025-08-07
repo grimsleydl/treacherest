@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,17 @@ func main() {
 		log.Fatal("Failed to load configuration: ", err)
 	}
 	log.Printf("Loaded configuration: max players per room = %d", cfg.Server.MaxPlayersPerRoom)
+
+	// Debug mode - dump config and enable verbose logging
+	if os.Getenv("DEBUG") != "" {
+		configJSON, err := json.MarshalIndent(cfg, "", "  ")
+		if err != nil {
+			log.Printf("Failed to marshal config for dumping: %v", err)
+		} else {
+			log.Printf("DEBUG: Server configuration:\n%s", string(configJSON))
+		}
+		log.Printf("DEBUG: Debug mode enabled - verbose logging active")
+	}
 
 	// Create CardService with fail-fast initialization using embedded resources
 	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)

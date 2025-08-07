@@ -23,6 +23,13 @@ import (
 func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
 	log.Printf("📡 SSE connection established for lobby %s", roomCode)
+	
+	// Debug mode: log request details
+	if os.Getenv("DEBUG") != "" {
+		log.Printf("DEBUG: 📡 SSE request details - User-Agent: %s, RemoteAddr: %s", r.Header.Get("User-Agent"), r.RemoteAddr)
+		deadline, hasDeadline := r.Context().Deadline()
+		log.Printf("DEBUG: 📡 SSE request timeout context: deadline=%v, hasDeadline=%v", deadline, hasDeadline)
+	}
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
@@ -80,13 +87,17 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	log.Printf("📡 SSE connection ready for room %s with validation state v%d", roomCode, validationState.Version)
 
 	// Set up a heartbeat to detect stale connections
-	heartbeat := time.NewTicker(30 * time.Second)
+	// TEMPORARILY DISABLED FOR DEBUGGING - using 5 minute interval
+	heartbeat := time.NewTicker(5 * time.Minute)
 	defer heartbeat.Stop()
 
 	// Stream updates
 	for {
 		select {
 		case <-r.Context().Done():
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 SSE context cancelled for room %s - error: %v", roomCode, r.Context().Err())
+			}
 			log.Printf("📡 Lobby SSE context cancelled for room %s", roomCode)
 			return
 		case <-heartbeat.C:
@@ -97,11 +108,25 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			
+			// Debug mode: log detailed heartbeat info
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 SSE heartbeat for lobby %s - player %s (%s)", roomCode, player.Name, player.ID)
+			}
+			
 			// Send keepalive ping to prevent browser timeout
 			// Browsers may close idle SSE connections after 2-5 minutes
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Sending keepalive for room %s", roomCode)
+			}
 			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+				if os.Getenv("DEBUG") != "" {
+					log.Printf("DEBUG: 📡 Keepalive send error: %v", err)
+				}
 				log.Printf("📡 Keepalive failed for room %s: %v - closing connection", roomCode, err)
 				return
+			}
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Keepalive sent successfully for room %s", roomCode)
 			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)

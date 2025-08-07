@@ -44,20 +44,20 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 			r.Use(middleware.Timeout(cfg.Server.RequestTimeout))
 		}
 
-	// Our custom middleware
-	r.Use(localMiddleware.RequestSizeLimiter(cfg.Server.MaxRequestSize))
-	r.Use(localMiddleware.SecurityHeaders())
+		// Our custom middleware
+		r.Use(localMiddleware.RequestSizeLimiter(cfg.Server.MaxRequestSize))
+		r.Use(localMiddleware.SecurityHeaders())
 
-	// Rate limiting (conditionally applied)
-	if !opts.DisableRateLimiting {
-		rateLimiter := localMiddleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateLimitBurst)
-		r.Use(rateLimiter.Middleware())
-	}
+		// Rate limiting (conditionally applied)
+		if !opts.DisableRateLimiting {
+			rateLimiter := localMiddleware.NewRateLimiter(cfg.Server.RateLimit, cfg.Server.RateLimitBurst)
+			r.Use(rateLimiter.Middleware())
+		}
 
-	// Apply custom middleware if provided
-	for _, mw := range opts.CustomMiddleware {
-		r.Use(mw)
-	}
+		// Apply custom middleware if provided
+		for _, mw := range opts.CustomMiddleware {
+			r.Use(mw)
+		}
 
 		// Static files
 		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(opts.StaticDir))))
@@ -89,12 +89,11 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
 	})
 
-	// Group for SSE routes with different (or no) timeout
+	// Group for SSE routes with NO timeout at all
 	r.Group(func(r chi.Router) {
-		// Apply SSE timeout if configured (0 means no timeout)
-		if cfg.Server.SSETimeout > 0 {
-			r.Use(middleware.Timeout(cfg.Server.SSETimeout))
-		}
+		// SSE routes should have no timeout - they're long-lived connections
+		// Don't apply any timeout middleware to this group
+		// NOTE: SSE routes should NOT inherit RequestTimeout from regular routes
 
 		// SSE routes with validation middleware
 		r.Get("/sse/lobby/{code}", ValidateSSERequest(h.StreamLobby))
