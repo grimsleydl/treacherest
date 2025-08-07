@@ -65,3 +65,6 @@ node_modules/
 nix/app/static/css/output.css
 nix/app/static/css/output.min.css
 /agents/ignore
+/result
+*.trace
+compile.json
