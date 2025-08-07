@@ -21,7 +21,7 @@ func TestDefaultGameSize(t *testing.T) {
 
 	// Create store
 	store := NewMemoryStore(cfg)
-	
+
 	// Create card service and set it
 	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {

@@ -23,13 +23,13 @@ func TestRoleAssignmentRespectsConfiguration(t *testing.T) {
 	roleService.SetCardService(cardService)
 
 	tests := []struct {
-		name            string
-		roleConfig      *RoleConfiguration
-		playerCount     int
-		expectLeader    bool
-		expectGuardian  bool
-		expectAssassin  bool
-		expectTraitor   bool
+		name           string
+		roleConfig     *RoleConfiguration
+		playerCount    int
+		expectLeader   bool
+		expectGuardian bool
+		expectAssassin bool
+		expectTraitor  bool
 	}{
 		{
 			name: "Zero guardian count should not assign guardians",
@@ -195,15 +195,15 @@ func TestRoleAssignmentRespectsConfiguration(t *testing.T) {
 
 func TestCanStartValidation(t *testing.T) {
 	tests := []struct {
-		name       string
-		room       *Room
-		canStart   bool
-		wantErr    string
+		name     string
+		room     *Room
+		canStart bool
+		wantErr  string
 	}{
 		{
 			name: "Should not allow start with more players than roles (CanStart doesn't support autoscaling)",
 			room: &Room{
-				State:   StateLobby,
+				State: StateLobby,
 				Players: map[string]*Player{
 					"1": {ID: "1", Name: "Player 1"},
 					"2": {ID: "2", Name: "Player 2"},
@@ -229,7 +229,7 @@ func TestCanStartValidation(t *testing.T) {
 		{
 			name: "Should not require leader if leaderless allowed",
 			room: &Room{
-				State:   StateLobby,
+				State: StateLobby,
 				Players: map[string]*Player{
 					"1": {ID: "1", Name: "Player 1"},
 					"2": {ID: "2", Name: "Player 2"},

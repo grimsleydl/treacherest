@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 	"treacherest"
 )
 
@@ -48,7 +48,7 @@ func TestRoleAssignmentOrder(t *testing.T) {
 					leaderCount++
 				}
 			}
-			
+
 			// Debug output
 			if !hasLeader && i == 0 {
 				t.Logf("Debug: Role distribution for iteration 1:")
@@ -93,7 +93,7 @@ func TestRoleAssignmentOrder(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, expectedLeaders, actualLeaders, 
+			assert.Equal(t, expectedLeaders, actualLeaders,
 				"Player count %d: Expected %d leaders, got %d", count, expectedLeaders, actualLeaders)
 		}
 	})

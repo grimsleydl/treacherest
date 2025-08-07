@@ -137,7 +137,7 @@ func TestUpdateLeaderlessGame(t *testing.T) {
 	t.Run("Rapid toggle protection", func(t *testing.T) {
 		// Test rapid toggling doesn't cause issues
 		states := []bool{true, false, true, false, true}
-		
+
 		for _, state := range states {
 			body := map[string]bool{"allowLeaderless": state}
 			jsonBody, _ := json.Marshal(body)
@@ -152,7 +152,7 @@ func TestUpdateLeaderlessGame(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			handler.UpdateLeaderlessGame(w, req)
-			
+
 			assert.Equal(t, http.StatusOK, w.Code)
 		}
 
@@ -260,7 +260,7 @@ func TestUpdateLeaderlessGameConcurrency(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			handler.UpdateLeaderlessGame(w, req)
-			
+
 			require.Equal(t, http.StatusOK, w.Code)
 			done <- true
 		}(i)
