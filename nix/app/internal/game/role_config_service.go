@@ -8,7 +8,8 @@ import (
 
 // RoleConfigService handles role configuration logic
 type RoleConfigService struct {
-	config *config.ServerConfig
+	config      *config.ServerConfig
+	cardService *CardService
 }
 
 // NewRoleConfigService creates a new role configuration service
@@ -16,6 +17,11 @@ func NewRoleConfigService(cfg *config.ServerConfig) *RoleConfigService {
 	return &RoleConfigService{
 		config: cfg,
 	}
+}
+
+// SetCardService sets the card service for the role config service
+func (s *RoleConfigService) SetCardService(cs *CardService) {
+	s.cardService = cs
 }
 
 // CreateFromPreset creates a RoleConfiguration from a preset name
@@ -33,31 +39,54 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 		}
 	}
 
-	// Create role configuration
+	// Create role configuration with new structure
 	roleConfig := &RoleConfiguration{
 		PresetName:   presetName,
-		EnabledRoles: make(map[string]bool),
-		RoleCounts:   make(map[string]int),
 		MinPlayers:   minPlayers,
 		MaxPlayers:   maxPlayers,
+		RoleTypes:    make(map[string]*RoleTypeConfig),
 	}
 
-	// Enable all roles that appear in any distribution
-	for _, dist := range preset.Distributions {
-		for role := range dist {
-			roleConfig.EnabledRoles[role] = true
+	// Initialize all role types with all cards enabled
+	for _, roleDef := range s.config.Roles.Available {
+		if roleConfig.RoleTypes[roleDef.Category] == nil {
+			roleConfig.RoleTypes[roleDef.Category] = &RoleTypeConfig{
+				Count:        0,
+				EnabledCards: make(map[string]bool),
+			}
 		}
 	}
 
-	// Initialize role counts based on MinCount from role definitions
-	for role, enabled := range roleConfig.EnabledRoles {
-		if enabled {
-			if roleDef, exists := s.config.Roles.Available[role]; exists {
-				if roleDef.MinCount > 0 {
-					roleConfig.RoleCounts[role] = roleDef.MinCount
-				} else {
-					// Default to 1 for enabled roles without MinCount
-					roleConfig.RoleCounts[role] = 1
+	// Enable all cards for each type
+	if s.cardService != nil {
+		for _, card := range s.cardService.Leaders {
+			if roleConfig.RoleTypes["Leader"] != nil {
+				roleConfig.RoleTypes["Leader"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Guardians {
+			if roleConfig.RoleTypes["Guardian"] != nil {
+				roleConfig.RoleTypes["Guardian"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Assassins {
+			if roleConfig.RoleTypes["Assassin"] != nil {
+				roleConfig.RoleTypes["Assassin"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Traitors {
+			if roleConfig.RoleTypes["Traitor"] != nil {
+				roleConfig.RoleTypes["Traitor"].EnabledCards[card.Name] = true
+			}
+		}
+	}
+
+	// Set counts based on the preset's closest distribution
+	if dist, exists := preset.Distributions[maxPlayers]; exists {
+		for role, count := range dist {
+			if roleDef, ok := s.config.Roles.Available[role]; ok {
+				if roleConfig.RoleTypes[roleDef.Category] != nil {
+					roleConfig.RoleTypes[roleDef.Category].Count = count
 				}
 			}
 		}
@@ -66,69 +95,55 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 	return roleConfig, nil
 }
 
-// CreateCustomConfiguration creates a custom role configuration
-func (s *RoleConfigService) CreateCustomConfiguration(enabledRoles map[string]bool, roleCounts map[string]int) (*RoleConfiguration, error) {
-	// Validate that all roles exist
-	for role := range enabledRoles {
-		if _, exists := s.config.GetRoleDefinition(role); !exists {
-			return nil, fmt.Errorf("unknown role: %s", role)
-		}
+// CreateDefaultConfiguration creates a new role configuration with all cards enabled
+func (s *RoleConfigService) CreateDefaultConfiguration() *RoleConfiguration {
+	roleConfig := &RoleConfiguration{
+		PresetName:   "custom",
+		MinPlayers:   s.config.Server.MinPlayersPerRoom,
+		MaxPlayers:   s.config.Server.MaxPlayersPerRoom,
+		RoleTypes:    make(map[string]*RoleTypeConfig),
 	}
 
-	// Ensure role counts respect MinCount
-	adjustedRoleCounts := make(map[string]int)
-	for role, enabled := range enabledRoles {
-		if enabled {
-			providedCount, hasCount := roleCounts[role]
-			roleDef, _ := s.config.GetRoleDefinition(role)
-			
-			if !hasCount || providedCount < roleDef.MinCount {
-				// Use MinCount if not provided or less than minimum
-				if roleDef.MinCount > 0 {
-					adjustedRoleCounts[role] = roleDef.MinCount
-				} else {
-					// Default to 1 for enabled roles
-					adjustedRoleCounts[role] = 1
-				}
-			} else if providedCount == 0 && roleDef.MinCount == 0 {
-				// Special case: if provided 0 for a role with MinCount 0, still default to 1
-				// This ensures enabled roles always have at least 1 count
-				adjustedRoleCounts[role] = 1
-			} else {
-				// Use provided count if valid
-				adjustedRoleCounts[role] = providedCount
+	// Initialize all role types with all cards enabled
+	for _, roleDef := range s.config.Roles.Available {
+		if roleConfig.RoleTypes[roleDef.Category] == nil {
+			roleConfig.RoleTypes[roleDef.Category] = &RoleTypeConfig{
+				Count:        0,
+				EnabledCards: make(map[string]bool),
 			}
 		}
 	}
 
-	// Calculate min/max players based on adjusted role counts
-	minPlayers := 0
-	maxPlayers := 0
-	
-	for role, count := range adjustedRoleCounts {
-		if enabledRoles[role] && count > 0 {
-			minPlayers += count
-			maxPlayers += count
+	// Enable all cards for each type
+	if s.cardService != nil {
+		for _, card := range s.cardService.Leaders {
+			if roleConfig.RoleTypes["Leader"] != nil {
+				roleConfig.RoleTypes["Leader"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Guardians {
+			if roleConfig.RoleTypes["Guardian"] != nil {
+				roleConfig.RoleTypes["Guardian"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Assassins {
+			if roleConfig.RoleTypes["Assassin"] != nil {
+				roleConfig.RoleTypes["Assassin"].EnabledCards[card.Name] = true
+			}
+		}
+		for _, card := range s.cardService.Traitors {
+			if roleConfig.RoleTypes["Traitor"] != nil {
+				roleConfig.RoleTypes["Traitor"].EnabledCards[card.Name] = true
+			}
 		}
 	}
 
-	// Ensure we have at least the server minimum
-	if minPlayers < s.config.Server.MinPlayersPerRoom {
-		minPlayers = s.config.Server.MinPlayersPerRoom
+	// Set default leader count
+	if roleConfig.RoleTypes["Leader"] != nil {
+		roleConfig.RoleTypes["Leader"].Count = 1
 	}
 
-	// Cap at server maximum
-	if maxPlayers > s.config.Server.MaxPlayersPerRoom {
-		maxPlayers = s.config.Server.MaxPlayersPerRoom
-	}
-
-	return &RoleConfiguration{
-		PresetName:   "custom",
-		EnabledRoles: enabledRoles,
-		RoleCounts:   adjustedRoleCounts,
-		MinPlayers:   minPlayers,
-		MaxPlayers:   maxPlayers,
-	}, nil
+	return roleConfig
 }
 
 // GetDistributionForPlayerCount returns the role distribution for a specific player count
@@ -209,24 +224,22 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 		}
 	}
 
-	// For custom configurations, use the specified counts
+	// For custom configurations, use the counts from RoleTypes
 	result := make(map[RoleType]int)
 	totalRoles := 0
 
-	for role, count := range config.RoleCounts {
-		if config.EnabledRoles[role] && count > 0 {
-			// Map lowercase role names to RoleType constants
-			switch role {
-			case "leader":
-				result[RoleLeader] = count
-			case "guardian":
-				result[RoleGuardian] = count
-			case "assassin":
-				result[RoleAssassin] = count
-			case "traitor":
-				result[RoleTraitor] = count
-			}
-			totalRoles += count
+	// Map category names to RoleType constants
+	categoryToRoleType := map[string]RoleType{
+		"Leader":   RoleLeader,
+		"Guardian": RoleGuardian,
+		"Assassin": RoleAssassin,
+		"Traitor":  RoleTraitor,
+	}
+
+	for category, typeConfig := range config.RoleTypes {
+		if roleType, ok := categoryToRoleType[category]; ok && typeConfig.Count > 0 {
+			result[roleType] = typeConfig.Count
+			totalRoles += typeConfig.Count
 		}
 	}
 
@@ -257,44 +270,34 @@ func (s *RoleConfigService) ValidateConfiguration(config *RoleConfiguration) err
 
 	// Check that we have at least one leader
 	hasLeader := false
-	totalMinRoles := 0
-	totalMaxRoles := 0
+	totalRoles := 0
 
-	for role, enabled := range config.EnabledRoles {
-		if !enabled {
+	for category, typeConfig := range config.RoleTypes {
+		if typeConfig.Count == 0 {
 			continue
 		}
 
-		count, hasCount := config.RoleCounts[role]
-		if !hasCount || count == 0 {
-			continue
-		}
-
-		roleDef, exists := s.config.GetRoleDefinition(role)
-		if !exists {
-			return fmt.Errorf("unknown role: %s", role)
-		}
-
-		if role == "leader" {
-			hasLeader = true
-			if count != 1 && !config.AllowLeaderlessGame {
-				return fmt.Errorf("must have exactly 1 leader, got %d", count)
-			}
-			if count > 1 {
-				return fmt.Errorf("cannot have more than 1 leader, got %d", count)
+		// Count enabled cards
+		enabledCount := 0
+		for _, enabled := range typeConfig.EnabledCards {
+			if enabled {
+				enabledCount++
 			}
 		}
 
-		// Validate count bounds
-		if count < roleDef.MinCount {
-			return fmt.Errorf("role %s: count %d is less than minimum %d", role, count, roleDef.MinCount)
-		}
-		if count > roleDef.MaxCount {
-			return fmt.Errorf("role %s: count %d exceeds maximum %d", role, count, roleDef.MaxCount)
+		// Validate we have enough cards
+		if typeConfig.Count > enabledCount {
+			return fmt.Errorf("%s: need %d cards but only %d are enabled", category, typeConfig.Count, enabledCount)
 		}
 
-		totalMinRoles += roleDef.MinCount
-		totalMaxRoles += count
+		totalRoles += typeConfig.Count
+
+		if category == "Leader" {
+			hasLeader = typeConfig.Count > 0
+			if typeConfig.Count > 1 {
+				return fmt.Errorf("cannot have more than 1 leader, got %d", typeConfig.Count)
+			}
+		}
 	}
 
 	if !hasLeader && !config.AllowLeaderlessGame {

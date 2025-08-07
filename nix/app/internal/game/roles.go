@@ -51,26 +51,12 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 		}
 	}
 	
-	// Fallback to direct config if service not available
-	if roleDistribution == nil {
+	// If no distribution yet (roleService is nil or error), use counts from config directly
+	if roleDistribution == nil && roleConfig != nil {
 		roleDistribution = make(map[RoleType]int)
-		for roleName, enabled := range roleConfig.EnabledRoles {
-			if !enabled {
-				continue
-			}
-			count := roleConfig.RoleCounts[roleName]
-			if count > 0 {
-				// Map role names to RoleType
-				switch roleName {
-				case "leader":
-					roleDistribution[RoleLeader] = count
-				case "guardian":
-					roleDistribution[RoleGuardian] = count
-				case "assassin":
-					roleDistribution[RoleAssassin] = count
-				case "traitor":
-					roleDistribution[RoleTraitor] = count
-				}
+		for roleTypeName, typeConfig := range roleConfig.RoleTypes {
+			if typeConfig.Count > 0 {
+				roleDistribution[RoleType(roleTypeName)] = typeConfig.Count
 			}
 		}
 	}
@@ -79,17 +65,51 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 	playerIndex := 0
 	usedCards := make(map[*Card]bool)
 	
-	for roleType, count := range roleDistribution {
-		// Get random cards for this role type
-		cards := cardService.GetRandomCards(roleType, count)
+	// Map for getting cards by type
+	categoryToCards := map[RoleType][]*Card{
+		RoleLeader:   cardService.Leaders,
+		RoleGuardian: cardService.Guardians,
+		RoleAssassin: cardService.Assassins,
+		RoleTraitor:  cardService.Traitors,
+	}
+
+	for roleType, neededCount := range roleDistribution {
+		if neededCount == 0 {
+			continue
+		}
+
+		// Get the category name for this role type
+		categoryName := string(roleType)
+		
+		// Get enabled cards for this type from config
+		var enabledCardNames map[string]bool
+		if typeConfig, exists := roleConfig.RoleTypes[categoryName]; exists {
+			enabledCardNames = typeConfig.EnabledCards
+		}
+
+		// Filter cards to only include enabled ones
+		availableCards := make([]*Card, 0)
+		for _, card := range categoryToCards[roleType] {
+			if enabledCardNames == nil || enabledCardNames[card.Name] {
+				availableCards = append(availableCards, card)
+			}
+		}
+
+		// Shuffle available cards
+		shuffledCards := make([]*Card, len(availableCards))
+		copy(shuffledCards, availableCards)
+		rand.Shuffle(len(shuffledCards), func(i, j int) {
+			shuffledCards[i], shuffledCards[j] = shuffledCards[j], shuffledCards[i]
+		})
 
 		// Assign cards to players
-		for _, card := range cards {
-			if playerIndex >= len(shuffled) {
+		cardsAssigned := 0
+		for _, card := range shuffledCards {
+			if playerIndex >= len(shuffled) || cardsAssigned >= neededCount {
 				break
 			}
 
-			// Skip if card already used (shouldn't happen with GetRandomCards, but be safe)
+			// Skip if card already used
 			if usedCards[card] {
 				continue
 			}
@@ -103,6 +123,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			}
 
 			playerIndex++
+			cardsAssigned++
 		}
 	}
 }

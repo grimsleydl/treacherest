@@ -11,9 +11,10 @@ import (
 
 // MemoryStore holds all game state in memory
 type MemoryStore struct {
-	mu     sync.RWMutex
-	rooms  map[string]*game.Room
-	config *config.ServerConfig
+	mu          sync.RWMutex
+	rooms       map[string]*game.Room
+	config      *config.ServerConfig
+	cardService *game.CardService
 }
 
 // NewMemoryStore creates a new in-memory store
@@ -22,6 +23,11 @@ func NewMemoryStore(cfg *config.ServerConfig) *MemoryStore {
 		rooms:  make(map[string]*game.Room),
 		config: cfg,
 	}
+}
+
+// SetCardService sets the card service for the store
+func (s *MemoryStore) SetCardService(cardService *game.CardService) {
+	s.cardService = cardService
 }
 
 // CreateRoom creates a new game room
@@ -40,6 +46,7 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 
 	// Create default role configuration using standard preset
 	roleService := game.NewRoleConfigService(s.config)
+	roleService.SetCardService(s.cardService)
 	roleConfig, _ := roleService.CreateFromPreset("standard", s.config.Server.MaxPlayersPerRoom)
 
 	room := &game.Room{
@@ -103,39 +110,7 @@ func (s *MemoryStore) validateAndFixRoleConfig(room *game.Room) bool {
 		return false
 	}
 
-	fixed := false
-
-	// Check each enabled role has proper count
-	for role, enabled := range room.RoleConfig.EnabledRoles {
-		if !enabled {
-			continue
-		}
-
-		count, hasCount := room.RoleConfig.RoleCounts[role]
-		if roleDef, exists := s.config.Roles.Available[role]; exists {
-			// Fix missing or invalid counts
-			if !hasCount || count < roleDef.MinCount {
-				if roleDef.MinCount > 0 {
-					room.RoleConfig.RoleCounts[role] = roleDef.MinCount
-				} else {
-					room.RoleConfig.RoleCounts[role] = 1
-				}
-				fixed = true
-				// Log the fix for debugging
-				fmt.Printf("Fixed role %s count from %d to %d in room %s\n", 
-					role, count, room.RoleConfig.RoleCounts[role], room.Code)
-			}
-		}
-	}
-
-	// Specifically check for leader role
-	if room.RoleConfig.EnabledRoles["leader"] {
-		if count, exists := room.RoleConfig.RoleCounts["leader"]; !exists || count < 1 {
-			room.RoleConfig.RoleCounts["leader"] = 1
-			fixed = true
-			fmt.Printf("Fixed missing leader in room %s\n", room.Code)
-		}
-	}
-
-	return fixed
+	// For now, we don't need to fix anything with the new structure
+	// The validation is handled by the room's ValidateRoleConfig method
+	return false
 }
