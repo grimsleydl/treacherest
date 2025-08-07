@@ -61,59 +61,59 @@ func TestSSEConnectionPersistence(t *testing.T) {
 		// Player 1 creates room
 		page1 := browser.MustPage()
 		defer page1.MustClose()
-		
+
 		setupConsoleMonitor(page1, "Player1")
-		
+
 		page1.MustNavigate(ts.URL)
 		page1.MustElement("input[name='name']").MustInput("Player1")
 		page1.MustElement("button[type='submit']").MustClick()
 		page1.MustWaitLoad()
-		
+
 		roomCode := page1.MustInfo().URL[len(ts.URL+"/room/"):]
-		
+
 		// Check initial SSE connections
 		time.Sleep(1 * time.Second)
 		sseCount1 := page1.MustEval(`() => window.sseConnections`).Int()
 		assert.Equal(t, 1, sseCount1, "Player 1 should have exactly 1 SSE connection")
-		
+
 		// Player 2 joins
 		page2 := browser.MustPage()
 		defer page2.MustClose()
-		
+
 		setupConsoleMonitor(page2, "Player2")
-		
+
 		page2.MustNavigate(ts.URL + "/room/" + roomCode)
 		page2.MustElement("input[name='name']").MustInput("Player2")
 		page2.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for SSE update
 		time.Sleep(2 * time.Second)
-		
+
 		// Check SSE connections haven't increased
 		sseCount1After := page1.MustEval(`() => window.sseConnections`).Int()
 		assert.Equal(t, 1, int(sseCount1After), "Player 1 should still have exactly 1 SSE connection after Player 2 joins")
-		
+
 		// Player 3 joins
 		page3 := browser.MustPage()
 		defer page3.MustClose()
-		
+
 		setupConsoleMonitor(page3, "Player3")
-		
+
 		page3.MustNavigate(ts.URL + "/room/" + roomCode)
 		page3.MustElement("input[name='name']").MustInput("Player3")
 		page3.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for SSE update
 		time.Sleep(2 * time.Second)
-		
+
 		// Final check - all players should have exactly 1 SSE connection
 		for i, page := range []*rod.Page{page1, page2, page3} {
 			sseCount := page.MustEval(`() => window.sseConnections`).Int()
 			errorCount := page.MustEval(`() => window.errorCount`).Int()
-			
+
 			assert.Equal(t, 1, sseCount, fmt.Sprintf("Player %d should have exactly 1 SSE connection", i+1))
 			assert.Equal(t, 0, errorCount, fmt.Sprintf("Player %d should have no errors", i+1))
-			
+
 			// Verify all players are visible
 			playerList, _ := page.MustElement(".player-list").Text()
 			assert.Contains(t, playerList, "Player1")
@@ -176,21 +176,21 @@ func TestSSEConnectionSurvives70Seconds(t *testing.T) {
 	checkInterval := 10 * time.Second
 	for time.Since(startTime) < 70*time.Second {
 		time.Sleep(checkInterval)
-		
+
 		// Check if page is still functional
 		bodyHTML, _ := page.MustElement("body").HTML()
 		if strings.TrimSpace(bodyHTML) == "" {
 			t.Fatalf("Page went white after %v", time.Since(startTime))
 		}
-		
+
 		// Check DOM structure is intact
 		hasContainer := page.MustEval(`() => !!document.getElementById('lobby-container')`).Bool()
 		hasContent := page.MustEval(`() => !!document.getElementById('lobby-content')`).Bool()
-		
+
 		if !hasContainer || !hasContent {
 			t.Fatalf("Lost DOM structure after %v", time.Since(startTime))
 		}
-		
+
 		fmt.Printf("✓ Connection alive at %v\n", time.Since(startTime).Round(time.Second))
 	}
 
@@ -198,7 +198,7 @@ func TestSSEConnectionSurvives70Seconds(t *testing.T) {
 	playerList, err := page.MustElement(".player-list").Text()
 	require.NoError(t, err)
 	assert.Contains(t, playerList, "TestPlayer")
-	
+
 	fmt.Println("✓ SSE connection survived 70 seconds!")
 }
 
@@ -240,9 +240,9 @@ func TestNoTargetsFoundError(t *testing.T) {
 		page := browser.MustPage()
 		pages[i] = page
 		defer page.MustClose()
-		
+
 		captureErrors(page)
-		
+
 		if i == 0 {
 			// First player creates room
 			page.MustNavigate(ts.URL)
@@ -256,7 +256,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 			page.MustElement("input[name='name']").MustInput(fmt.Sprintf("Player%d", i+1))
 			page.MustElement("button[type='submit']").MustClick()
 		}
-		
+
 		// Wait for SSE to settle
 		time.Sleep(2 * time.Second)
 	}
@@ -264,7 +264,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 	// Check for NoTargetsFound errors
 	for i, page := range pages {
 		errors := page.MustEval(`() => window.capturedErrors`).Arr()
-		
+
 		hasNoTargetsFound := false
 		for _, err := range errors {
 			errStr := fmt.Sprintf("%v", err)
@@ -273,7 +273,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 				t.Logf("Player %d has NoTargetsFound error: %s", i+1, errStr)
 			}
 		}
-		
+
 		assert.False(t, hasNoTargetsFound, fmt.Sprintf("Player %d should not have NoTargetsFound errors", i+1))
 	}
 }
@@ -331,98 +331,98 @@ func TestNoSSEConnectionExhaustionDuringCountdown(t *testing.T) {
 		// Player 1 creates room
 		page1 := browser.MustPage()
 		defer page1.MustClose()
-		
+
 		setupSSEMonitor(page1, "Player1")
-		
+
 		page1.MustNavigate(ts.URL)
 		page1.MustElement("input[name='name']").MustInput("Player1")
 		page1.MustElement("button[type='submit']").MustClick()
 		page1.MustWaitLoad()
-		
+
 		roomCode := page1.MustInfo().URL[len(ts.URL+"/room/"):]
-		
+
 		// Player 2 joins
 		page2 := browser.MustPage()
 		defer page2.MustClose()
-		
+
 		setupSSEMonitor(page2, "Player2")
-		
+
 		page2.MustNavigate(ts.URL + "/room/" + roomCode)
 		page2.MustElement("input[name='name']").MustInput("Player2")
 		page2.MustElement("button[type='submit']").MustClick()
-		
+
 		// Wait for lobby to stabilize
 		time.Sleep(2 * time.Second)
-		
+
 		// Check initial lobby SSE connections
 		lobbySSE1 := page1.MustEval(`() => window.sseConnections`).Int()
 		lobbySSE2 := page2.MustEval(`() => window.sseConnections`).Int()
 		assert.Equal(t, 1, lobbySSE1, "Player 1 should have exactly 1 SSE connection in lobby")
 		assert.Equal(t, 1, lobbySSE2, "Player 2 should have exactly 1 SSE connection in lobby")
-		
+
 		// Start the game
 		page1.MustElement("button").MustClick() // Start Game button
-		
+
 		// Wait for redirect to game page
 		time.Sleep(2 * time.Second)
-		
+
 		// Both players should now be on game page
 		assert.Contains(t, page1.MustInfo().URL, "/game/", "Player 1 should be on game page")
 		assert.Contains(t, page2.MustInfo().URL, "/game/", "Player 2 should be on game page")
-		
+
 		// Get initial game SSE connection counts
 		gameSSEStart1 := page1.MustEval(`() => window.sseConnections`).Int()
 		gameSSEStart2 := page2.MustEval(`() => window.sseConnections`).Int()
-		
+
 		// Monitor SSE connections during the 5-second countdown
 		startTime := time.Now()
 		maxConnections1 := gameSSEStart1
 		maxConnections2 := gameSSEStart2
-		
+
 		for time.Since(startTime) < 6*time.Second {
 			time.Sleep(500 * time.Millisecond)
-			
+
 			current1 := page1.MustEval(`() => window.sseConnections`).Int()
 			current2 := page2.MustEval(`() => window.sseConnections`).Int()
-			
+
 			if current1 > maxConnections1 {
 				maxConnections1 = current1
 			}
 			if current2 > maxConnections2 {
 				maxConnections2 = current2
 			}
-			
+
 			// Check countdown is updating
 			countdownText1, _ := page1.MustElement(".countdown h1").Text()
-			
+
 			t.Logf("Time: %v, P1 connections: %d, P2 connections: %d, Countdown: %s",
 				time.Since(startTime).Round(time.Millisecond),
 				current1, current2, countdownText1)
 		}
-		
+
 		// Assert no duplicate connections were created during countdown
-		assert.Equal(t, gameSSEStart1, maxConnections1, 
+		assert.Equal(t, gameSSEStart1, maxConnections1,
 			"Player 1 should not create new SSE connections during countdown")
-		assert.Equal(t, gameSSEStart2, maxConnections2, 
+		assert.Equal(t, gameSSEStart2, maxConnections2,
 			"Player 2 should not create new SSE connections during countdown")
-		
+
 		// Wait for countdown to finish and roles to be revealed
 		time.Sleep(2 * time.Second)
-		
+
 		// Verify game is showing roles
 		roleCard1 := page1.MustHas(".role-card")
 		roleCard2 := page2.MustHas(".role-card")
 		assert.True(t, roleCard1, "Player 1 should see role card after countdown")
 		assert.True(t, roleCard2, "Player 2 should see role card after countdown")
-		
+
 		// Final check - still no extra connections
 		finalSSE1 := page1.MustEval(`() => window.sseConnections`).Int()
 		finalSSE2 := page2.MustEval(`() => window.sseConnections`).Int()
-		
+
 		// Should have exactly 2 connections total: 1 for lobby, 1 for game
 		assert.Equal(t, 2, finalSSE1, "Player 1 should have exactly 2 total SSE connections (lobby + game)")
 		assert.Equal(t, 2, finalSSE2, "Player 2 should have exactly 2 total SSE connections (lobby + game)")
-		
+
 		// Log all SSE URLs for debugging
 		urls1 := page1.MustEval(`() => window.sseUrls`).Arr()
 		urls2 := page2.MustEval(`() => window.sseUrls`).Arr()
@@ -452,38 +452,38 @@ func TestPlayerReconnectionDuringCountdown(t *testing.T) {
 	// Player 1 creates room and starts game
 	page1 := browser.MustPage()
 	defer page1.MustClose()
-	
+
 	page1.MustNavigate(ts.URL)
 	page1.MustElement("input[name='name']").MustInput("Player1")
 	page1.MustElement("button[type='submit']").MustClick()
 	page1.MustWaitLoad()
-	
+
 	roomCode := page1.MustInfo().URL[len(ts.URL+"/room/"):]
-	
+
 	// Start the game
 	page1.MustElement("button").MustClick()
 	time.Sleep(2 * time.Second) // Wait for redirect
-	
+
 	// Wait 2 seconds into countdown
 	time.Sleep(2 * time.Second)
-	
+
 	// Player 2 joins mid-countdown
 	page2 := browser.MustPage()
 	defer page2.MustClose()
-	
+
 	page2.MustNavigate(ts.URL + "/game/" + roomCode)
-	
+
 	// Check that Player 2 sees the correct remaining countdown (not 5)
 	time.Sleep(1 * time.Second)
 	countdownText, _ := page2.MustElement(".countdown h1").Text()
-	
+
 	// Should show 1 or 0 seconds remaining, not 5
 	assert.NotContains(t, countdownText, "5", "New player should see actual remaining countdown, not initial 5 seconds")
 	assert.Contains(t, countdownText, "Revealing roles in", "Should show countdown message")
-	
+
 	// Wait for countdown to finish
 	time.Sleep(3 * time.Second)
-	
+
 	// Both players should see roles
 	roleCard1 := page1.MustHas(".role-card")
 	roleCard2 := page2.MustHas(".role-card")

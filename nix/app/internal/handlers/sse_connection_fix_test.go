@@ -18,7 +18,7 @@ import (
 func TestSSEConnectionExhaustionFixed(t *testing.T) {
 	// Create handler and server
 	h := New(store.NewMemoryStore())
-	
+
 	// Create room with players
 	room, _ := h.store.CreateRoom()
 	host := &game.Player{ID: "host-id", Name: "Host"}
@@ -26,7 +26,7 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 	room.AddPlayer(host)
 	room.AddPlayer(player2)
 	h.store.UpdateRoom(room)
-	
+
 	// Start game to trigger countdown
 	room.State = game.StateCountdown
 	room.CountdownRemaining = 5
@@ -35,14 +35,14 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 
 	// Track connection attempts by monitoring HTTP requests
 	connectionCount := 0
-	
+
 	// Create a test server that counts SSE connections
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/sse/game/") {
 			connectionCount++
 			t.Logf("SSE connection attempt #%d to %s", connectionCount, r.URL.Path)
 		}
-		
+
 		// Use the actual router
 		router := setupTestRouter(h)
 		router.ServeHTTP(w, r)
@@ -53,16 +53,16 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 	req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	w := httptest.NewRecorder()
-	
+
 	h.GamePage(w, req)
-	
+
 	// Verify the page loaded successfully
 	require.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
-	
+
 	// Verify the fix: data-on-load should be on wrapper, not game-container
 	assert.Contains(t, body, "data-on-load", "Should have data-on-load attribute")
-	
+
 	// Parse the HTML to check structure
 	gameContainerIndex := strings.Index(body, `id="game-container"`)
 	if gameContainerIndex > 0 {
@@ -70,9 +70,9 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 		tagStart := strings.LastIndex(body[:gameContainerIndex], "<")
 		tagEnd := strings.Index(body[tagStart:], ">") + tagStart
 		gameContainerTag := body[tagStart:tagEnd]
-		
+
 		// This is the key assertion - game-container should NOT have data-on-load
-		assert.NotContains(t, gameContainerTag, "data-on-load", 
+		assert.NotContains(t, gameContainerTag, "data-on-load",
 			"Fixed: game-container should not have data-on-load (prevents re-triggering)")
 	}
 }
@@ -80,7 +80,7 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 // TestGameTemplateStructure verifies the game template has the correct structure
 func TestGameTemplateStructure(t *testing.T) {
 	h := New(store.NewMemoryStore())
-	
+
 	// Create a game room
 	room, _ := h.store.CreateRoom()
 	player := &game.Player{ID: "test-player-id", Name: "TestPlayer"}
@@ -97,12 +97,12 @@ func TestGameTemplateStructure(t *testing.T) {
 	h.GamePage(w, req)
 
 	body := w.Body.String()
-	
+
 	// Verify the structure has the wrapper div with data-on-load
 	assert.Contains(t, body, "data-on-load", "Should have data-on-load attribute")
 	assert.Contains(t, body, fmt.Sprintf(`@get('/sse/game/%s')`, room.Code), "Should have SSE endpoint")
 	assert.Contains(t, body, `id="game-container"`, "Should have game-container element")
-	
+
 	// Verify data-on-load is NOT on the game-container itself
 	// This is the key fix - data-on-load should be on a wrapper, not the morphable element
 	gameContainerStart := strings.Index(body, `id="game-container"`)
@@ -111,9 +111,8 @@ func TestGameTemplateStructure(t *testing.T) {
 		tagStart := strings.LastIndex(body[:gameContainerStart], "<")
 		tagEnd := strings.Index(body[tagStart:], ">") + tagStart
 		gameContainerTag := body[tagStart:tagEnd]
-		
-		assert.NotContains(t, gameContainerTag, "data-on-load", 
+
+		assert.NotContains(t, gameContainerTag, "data-on-load",
 			"game-container element should NOT have data-on-load attribute (it should be on wrapper)")
 	}
 }
-

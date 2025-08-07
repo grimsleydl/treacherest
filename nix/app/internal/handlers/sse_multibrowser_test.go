@@ -569,9 +569,9 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 
 		// Track results for each browser
 		type browserResult struct {
-			gotRedirect bool
-			redirectData string
-			connectionClosed bool
+			gotRedirect       bool
+			redirectData      string
+			connectionClosed  bool
 			eventsBeforeClose []string
 		}
 		results := make([]browserResult, 3)
@@ -624,9 +624,9 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 						}
 
 						// Log all data for debugging
-						t.Logf("Browser %d SSE closed. Got redirect: %v, Total data length: %d", 
+						t.Logf("Browser %d SSE closed. Got redirect: %v, Total data length: %d",
 							browserIdx, results[browserIdx].gotRedirect, len(data))
-						
+
 						// Log the actual data for debugging
 						if len(data) > 0 {
 							t.Logf("Browser %d raw SSE data: %q", browserIdx, data)
@@ -773,10 +773,10 @@ func (w *sseCaptureWriter) Write(b []byte) (int, error) {
 
 	// Capture to our buffer
 	n, err := w.data.Write(b)
-	
+
 	// Also write to ResponseRecorder
 	w.ResponseRecorder.Write(b)
-	
+
 	return n, err
 }
 

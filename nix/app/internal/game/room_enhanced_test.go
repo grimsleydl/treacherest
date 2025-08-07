@@ -6,6 +6,55 @@ import (
 	"time"
 )
 
+// Helper functions to create mock cards for testing
+func mockLeaderCard() *Card {
+	return &Card{
+		ID:   1,
+		Name: "Test Leader",
+		Types: CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Leader",
+		},
+		Text: "Test Leader Card",
+	}
+}
+
+func mockGuardianCard() *Card {
+	return &Card{
+		ID:   2,
+		Name: "Test Guardian",
+		Types: CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Guardian",
+		},
+		Text: "Test Guardian Card",
+	}
+}
+
+func mockAssassinCard() *Card {
+	return &Card{
+		ID:   3,
+		Name: "Test Assassin",
+		Types: CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Assassin",
+		},
+		Text: "Test Assassin Card",
+	}
+}
+
+func mockTraitorCard() *Card {
+	return &Card{
+		ID:   4,
+		Name: "Test Traitor",
+		Types: CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Traitor",
+		},
+		Text: "Test Traitor Card",
+	}
+}
+
 func TestRoom_StateTransitions(t *testing.T) {
 	t.Run("lobby to countdown transition", func(t *testing.T) {
 		room := &Room{
@@ -47,10 +96,10 @@ func TestRoom_StateTransitions(t *testing.T) {
 
 		// Add players with roles
 		players := []*Player{
-			{ID: "p1", Name: "Alice", Role: LeaderRole},
-			{ID: "p2", Name: "Bob", Role: GuardianRole},
-			{ID: "p3", Name: "Charlie", Role: GuardianRole},
-			{ID: "p4", Name: "Dave", Role: TraitorRole},
+			{ID: "p1", Name: "Alice", Role: mockLeaderCard()},
+			{ID: "p2", Name: "Bob", Role: mockGuardianCard()},
+			{ID: "p3", Name: "Charlie", Role: mockGuardianCard()},
+			{ID: "p4", Name: "Dave", Role: mockTraitorCard()},
 		}
 
 		for _, p := range players {
@@ -328,9 +377,9 @@ func TestRoom_GetLeader(t *testing.T) {
 
 		// Add players with roles
 		players := []*Player{
-			{ID: "p1", Name: "Alice", Role: GuardianRole},
-			{ID: "p2", Name: "Bob", Role: LeaderRole},
-			{ID: "p3", Name: "Charlie", Role: TraitorRole},
+			{ID: "p1", Name: "Alice", Role: mockGuardianCard()},
+			{ID: "p2", Name: "Bob", Role: mockLeaderCard()},
+			{ID: "p3", Name: "Charlie", Role: mockTraitorCard()},
 		}
 
 		for _, p := range players {
