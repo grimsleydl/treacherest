@@ -51,3 +51,5 @@ server
 test-results/
 playwright-report/
 playwright/.cache/
+
+digest.txt
