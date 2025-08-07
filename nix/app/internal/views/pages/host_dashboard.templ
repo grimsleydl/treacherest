@@ -31,7 +31,6 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 				flex-direction: column;
 				align-items: center;
 				justify-content: center;
-				background: #16213e;
 				border-radius: 12px;
 				padding: 2rem;
 			}
@@ -52,7 +51,6 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 			}
 			
 			.players-section {
-				background: #16213e;
 				border-radius: 12px;
 				padding: 2rem;
 				overflow-y: auto;
@@ -62,13 +60,13 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 				font-size: 3rem;
 				font-weight: bold;
 				letter-spacing: 0.3em;
-				color: #e94560;
+				/* Use DaisyUI primary color */
 				margin-bottom: 1rem;
 			}
 			
 			.join-instruction {
 				font-size: 1.2rem;
-				color: #aaa;
+				/* Use DaisyUI base-content with opacity */
 				text-align: center;
 				margin-bottom: 2rem;
 			}
@@ -76,7 +74,7 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 			.player-count {
 				font-size: 1.5rem;
 				margin-bottom: 1rem;
-				color: #e94560;
+				/* Use DaisyUI primary color */
 			}
 			
 			.host-player-list {
@@ -86,7 +84,7 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 			}
 			
 			.host-player-item {
-				background: #0f3460;
+				/* Use DaisyUI base-300 */
 				padding: 1.5rem;
 				border-radius: 8px;
 				font-size: 1.3rem;
@@ -96,8 +94,7 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 			}
 			
 			.player-number {
-				background: #e94560;
-				color: white;
+				/* Use DaisyUI primary bg and content */
 				width: 40px;
 				height: 40px;
 				border-radius: 50%;
@@ -142,9 +139,9 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 }
 
 templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div class="qr-section">
+	<div class="qr-section bg-base-200">
 		<h1>Scan to Join</h1>
-		<div class="room-code-large">{ room.Code }</div>
+		<div class="room-code-large text-primary">{ room.Code }</div>
 		<div class="qr-code-container" id="qr-code-container">
 			<!-- QR code will be generated and inserted here -->
 			<img
@@ -154,24 +151,24 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 				alt="QR Code"
 				style="width: 300px; height: 300px;"
 			/>
-			<div id="qr-placeholder" data-show="$qrCode == ''" style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
+			<div id="qr-placeholder" data-show="$qrCode == ''" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center;" class="bg-base-300 text-base-content text-opacity-60">
 				Generating QR Code...
 			</div>
 		</div>
-		<div class="join-instruction">
+		<div class="join-instruction text-base-content text-opacity-60">
 			Players can scan this code
 			<br/>
 			or enter the room code
 		</div>
 	</div>
-	<div class="players-section">
-		<h2>Players in Room</h2>
+	<div class="players-section bg-base-200">
+		<h2 class="text-primary">Players in Room</h2>
 		<div class="player-count">{ room.GetActivePlayerCount() } connected</div>
 		<div id="player-list" class="host-player-list">
 			for i, player := range room.GetActivePlayers() {
-				<div class="host-player-item">
+				<div class="host-player-item bg-base-300">
 					<div style="display: flex; align-items: center;">
-						<div class="player-number">{ i + 1 }</div>
+						<div class="player-number bg-primary text-primary-content">{ i + 1 }</div>
 						<span>{ player.Name }</span>
 					</div>
 				</div>
