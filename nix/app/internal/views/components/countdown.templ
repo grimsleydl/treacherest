@@ -1,0 +1,26 @@
+package components
+
+import (
+	"fmt"
+)
+
+// CountdownDisplay is a reusable countdown component that binds to the $countdown signal
+templ CountdownDisplay(initialValue int) {
+	<div class="countdown-container" style="text-align: center; padding: 2rem 0;">
+		<h1 style="font-size: 2rem; margin-bottom: 1rem;">Game Starting...</h1>
+		<div class="countdown-value" style="font-size: 5rem; font-weight: bold; color: #e94560; margin: 2rem 0;">
+			<span data-text="$countdown">{ fmt.Sprint(initialValue) }</span>
+		</div>
+		<p style="font-size: 1.2rem; color: #718096;">Get ready!</p>
+	</div>
+}
+
+// CountdownDisplayWithMessage allows custom message
+templ CountdownDisplayWithMessage(initialValue int, message string) {
+	<div class="countdown-container" style="text-align: center; padding: 2rem 0;">
+		<h1 style="font-size: 2rem; margin-bottom: 1rem;">
+			{ message } <span data-text="$countdown" style="font-size: 5rem; font-weight: bold; color: #e94560;">{ fmt.Sprint(initialValue) }</span>...
+		</h1>
+		<p style="font-size: 1.2rem; color: #718096; margin-top: 2rem;">Get ready!</p>
+	</div>
+}
