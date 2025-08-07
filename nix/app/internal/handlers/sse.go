@@ -93,9 +93,13 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			case "game_started":
-				// Redirect to game page and close lobby connection
+				// Redirect to game page
 				log.Printf("🎮 Redirecting to game page for room %s", roomCode)
 				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
+				// Flush the SSE buffer to ensure redirect is sent immediately
+				if flusher, ok := w.(http.Flusher); ok {
+					flusher.Flush()
+				}
 				return // Close the lobby SSE connection
 			case "countdown_update", "game_playing":
 				// Game events should not be handled by lobby SSE - close connection
@@ -140,6 +144,29 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial render
 	h.renderGame(sse, room, player)
+
+	// If joining during countdown, calculate actual remaining time
+	if room.State == game.StateCountdown {
+		// Calculate how much time has passed since countdown started
+		elapsed := time.Since(room.StartedAt)
+		originalCountdown := 5 // seconds
+		actualRemaining := originalCountdown - int(elapsed.Seconds())
+
+		// Update the room with actual remaining time
+		if actualRemaining > 0 {
+			room.CountdownRemaining = actualRemaining
+			log.Printf("📡 Browser connected during countdown for room %s, actual remaining: %d seconds", roomCode, actualRemaining)
+		} else {
+			// Countdown should have finished, transition to playing
+			room.State = game.StatePlaying
+			room.CountdownRemaining = 0
+			room.LeaderRevealed = true
+			log.Printf("📡 Browser connected after countdown finished for room %s, showing game state", roomCode)
+		}
+
+		// Re-render with updated state
+		h.renderGame(sse, room, player)
+	}
 
 	// Stream updates
 	for {

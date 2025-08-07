@@ -55,7 +55,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	room.StartedAt = time.Now()
 	h.store.UpdateRoom(room)
 
-	// Start countdown
+	// Start countdown immediately
 	go h.runCountdown(room)
 
 	// Notify all players
@@ -70,6 +70,10 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	// Use datastar to redirect directly in the POST response
 	sse := datastar.NewSSE(w, r)
 	sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
+	// Flush the response to ensure redirect is sent immediately
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 // LeaveRoom removes a player from a room
