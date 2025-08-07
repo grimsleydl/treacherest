@@ -1,0 +1,138 @@
+# Server configuration for Treacherest game
+server:
+  maxPlayersPerRoom: 20
+  minPlayersPerRoom: 1
+  defaultGameSize: 5      # Default number of players for new rooms
+  roomCodeLength: 5
+  roomTimeout: 24h
+
+roles:
+  # Master pool of all available roles
+  available:
+    leader:
+      displayName: "Leader"
+      category: "Leader"
+      minCount: 1
+      maxCount: 1
+      alwaysRevealed: true
+    guardian:
+      displayName: "Guardian"
+      category: "Guardian"
+      minCount: 0
+      maxCount: 10
+    assassin:
+      displayName: "Assassin"
+      category: "Assassin"
+      minCount: 0
+      maxCount: 10
+    traitor:
+      displayName: "Traitor"
+      category: "Traitor"
+      minCount: 0
+      maxCount: 10
+  
+  # Predefined distributions for different player counts
+  presets:
+    standard:
+      name: "Standard"
+      description: "Balanced gameplay for all player counts"
+      distributions:
+        1: {leader: 1}
+        2: {leader: 1, traitor: 1}
+        3: {leader: 1, assassin: 1, traitor: 1}
+        4: {leader: 1, assassin: 2, traitor: 1}
+        5: {leader: 1, guardian: 1, assassin: 2, traitor: 1}
+        6: {leader: 1, guardian: 1, assassin: 3, traitor: 1}
+        7: {leader: 1, guardian: 2, assassin: 3, traitor: 1}
+        8: {leader: 1, guardian: 2, assassin: 3, traitor: 2}
+        # Balanced for two-phase gameplay
+        9: {leader: 1, guardian: 3, assassin: 4, traitor: 2}
+        10: {leader: 1, guardian: 3, assassin: 4, traitor: 3}
+        11: {leader: 1, guardian: 4, assassin: 4, traitor: 3}
+        12: {leader: 1, guardian: 4, assassin: 5, traitor: 3}
+        13: {leader: 1, guardian: 5, assassin: 5, traitor: 3}
+        14: {leader: 1, guardian: 5, assassin: 5, traitor: 4}
+        15: {leader: 1, guardian: 6, assassin: 5, traitor: 4}
+        16: {leader: 1, guardian: 6, assassin: 6, traitor: 4}
+        17: {leader: 1, guardian: 7, assassin: 6, traitor: 4}
+        18: {leader: 1, guardian: 7, assassin: 6, traitor: 5}
+        19: {leader: 1, guardian: 8, assassin: 6, traitor: 5}
+        20: {leader: 1, guardian: 8, assassin: 6, traitor: 6}
+    
+    assassination:
+      name: "Assassination Heavy"
+      description: "More assassins for a chaotic game"
+      distributions:
+        # More assassins, harder Phase 1
+        1: {leader: 1}
+        2: {leader: 1, assassin: 1}
+        3: {leader: 1, assassin: 2}
+        4: {leader: 1, assassin: 3}  # No traitor, pure assassination
+        5: {leader: 1, guardian: 0, assassin: 3, traitor: 1}
+        6: {leader: 1, guardian: 0, assassin: 3, traitor: 2}  # No guardian, +1 assassin
+        7: {leader: 1, guardian: 2, assassin: 3, traitor: 1}  # Same as standard
+        8: {leader: 1, guardian: 2, assassin: 4, traitor: 1}  # +1 assassin, -1 traitor
+        9: {leader: 1, guardian: 2, assassin: 5, traitor: 2}
+        10: {leader: 1, guardian: 3, assassin: 5, traitor: 2}
+        11: {leader: 1, guardian: 3, assassin: 5, traitor: 3}
+        12: {leader: 1, guardian: 3, assassin: 6, traitor: 3}
+        13: {leader: 1, guardian: 4, assassin: 6, traitor: 3}
+        14: {leader: 1, guardian: 4, assassin: 6, traitor: 4}
+        15: {leader: 1, guardian: 5, assassin: 6, traitor: 4}
+        16: {leader: 1, guardian: 5, assassin: 7, traitor: 4}
+        17: {leader: 1, guardian: 6, assassin: 7, traitor: 4}
+        18: {leader: 1, guardian: 6, assassin: 7, traitor: 5}
+        19: {leader: 1, guardian: 7, assassin: 7, traitor: 5}
+        20: {leader: 1, guardian: 7, assassin: 7, traitor: 6}
+
+    guardian:
+      name: "Guardian Heavy"
+      description: "More guardians for a defensive game"
+      distributions:
+        # More guardians, easier Phase 1, stronger Phase 2
+        1: {leader: 1}
+        2: {leader: 1, traitor: 1}  # Must have evil
+        3: {leader: 1, guardian: 1, traitor: 1}  # Guardian instead of assassin
+        4: {leader: 1, guardian: 1, assassin: 1, traitor: 1}  # -1 assassin, +1 guardian
+        5: {leader: 1, guardian: 2, assassin: 1, traitor: 1}  # +1 guardian, -1 assassin
+        6: {leader: 1, guardian: 2, assassin: 2, traitor: 1}  # +1 guardian, -1 assassin
+        7: {leader: 1, guardian: 3, assassin: 2, traitor: 1}  # +1 guardian, -1 assassin
+        8: {leader: 1, guardian: 3, assassin: 3, traitor: 1}  # +1 guardian, -1 traitor
+        9: {leader: 1, guardian: 4, assassin: 3, traitor: 2}
+        10: {leader: 1, guardian: 5, assassin: 3, traitor: 2}
+        11: {leader: 1, guardian: 5, assassin: 3, traitor: 3}
+        12: {leader: 1, guardian: 6, assassin: 3, traitor: 3}
+        13: {leader: 1, guardian: 7, assassin: 3, traitor: 3}
+        14: {leader: 1, guardian: 7, assassin: 4, traitor: 3}
+        15: {leader: 1, guardian: 8, assassin: 4, traitor: 3}
+        16: {leader: 1, guardian: 8, assassin: 4, traitor: 4}
+        17: {leader: 1, guardian: 9, assassin: 4, traitor: 4}
+        18: {leader: 1, guardian: 9, assassin: 5, traitor: 4}
+        19: {leader: 1, guardian: 10, assassin: 5, traitor: 4}
+        20: {leader: 1, guardian: 10, assassin: 5, traitor: 5}
+
+
+    traitorous:
+      name: "Traitors Only"
+      description: "TRAITORS ONLY"
+      distributions:
+        1: {traitor: 1}
+        2: {traitor: 2}
+        3: {traitor: 3}
+        4: {traitor: 4}
+        5: {traitor: 5}
+        6: {traitor: 6}
+        7: {traitor: 7}
+        8: {traitor: 8}
+        9: {traitor: 9}
+        10: {traitor: 10}
+        11: {traitor: 11}
+        12: {traitor: 12}
+        13: {traitor: 13}
+        14: {traitor: 14}
+        15: {traitor: 15}
+        16: {traitor: 16}
+        17: {traitor: 17}
+        18: {traitor: 18}
+        19: {traitor: 19}
+        20: {traitor: 20}
