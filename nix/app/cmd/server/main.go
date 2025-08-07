@@ -45,6 +45,7 @@ func main() {
 	r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
 	r.Post("/room/{code}/config/toggle", h.ToggleRole)
 	r.Post("/room/{code}/config/count", h.UpdateRoleCount)
+	r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
 	
 	// SSE routes
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
