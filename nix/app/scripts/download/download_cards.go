@@ -67,8 +67,12 @@ func main() {
 		return
 	}
 
-	// Create output directory - always relative to the scripts directory
-	outputDir := "../static/images/cards"
+	// Create output directory - use absolute path to avoid confusion
+	outputDir := filepath.Join(os.Getenv("PRJ_ROOT"), "nix/app/static/images/cards")
+	if outputDir == "/nix/app/static/images/cards" {
+		// Fallback if PRJ_ROOT not set
+		outputDir = "../../static/images/cards"
+	}
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		fmt.Printf("Error creating directory: %v\n", err)
 		return
@@ -83,9 +87,9 @@ func main() {
 	}
 
 	for _, card := range collection.Cards {
-		// Construct the correct URL pattern: https://mtgtreachery.net/images/cards/en/trd/{Role} - {Card Name}.jpg
+		// Construct the correct URL pattern: https://mtgtreachery.net/images/cards/en/trd/{ID} - {Role} - {Card Name}.jpg
 		role := card.Types.Subtype
-		fileName := fmt.Sprintf("%s - %s.jpg", role, card.Name)
+		fileName := fmt.Sprintf("%03d - %s - %s.jpg", card.ID, role, card.Name)
 		encodedFileName := url.PathEscape(fileName)
 		imageURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
 		

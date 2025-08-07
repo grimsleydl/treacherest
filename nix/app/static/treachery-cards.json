@@ -1,11 +1,11 @@
 {
     "game_variant": "MTG Treachery",
-    "api_author": "Stefouch",
+    "api_author": "Stefouch, Tymbaroth",
     "api_version": 0.2,
     "set_name": "Treachery",
-    "set_code": "TRD-2021",
+    "set_code": "TRD-2025",
     "set_lang": "EN",
-    "cards_count": 54,
+    "cards_count": 62,
     "cards": [
         {
             "id": 1,
@@ -21,7 +21,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "R",
-            "text": "Undercover — Unveil this identity only if another player controls five or more lands.|Unveil {4}|When The Ætherist is unveiled, counter target spell. At the beginning of target player’s next main phase, they gain life and add an amount of {C} equal to that spell’s mana value.",
+            "text": "Undercover|Unveil {3}|When The Ætherist is unveiled, counter target spell. At the beginning of target player’s next main phase, they gain life and add an amount of {C} equal to that spell’s mana value.",
             "flavor": "",
             "artist": "Roggles (Rogie Custodio) @ DeviantArt",
             "rulings": [
@@ -43,7 +43,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "R",
-            "text": "Undercover — Unveil this identity only if another player has four or fewer cards in hand.|Unveil {X}{2}|When The Augur is unveiled, shuffle your library, scry X, then reveal the top card of your library. You may play that card without paying its mana cost.",
+            "text": "Undercover|Unveil {X}|When The Augur is unveiled, target player shuffles, scries X, then exiles the top card of their library. They gain life equal to twice that card’s mana value, then they may cast it without paying its mana cost.",
             "flavor": "",
             "artist": "lorlandchain (Chen Wei) @ DeviantArt",
             "rulings": [
@@ -51,6 +51,7 @@
                 "If X is 0, you won’t scry at all. Any abilities that trigger whenever you scry won’t trigger.",
                 "Once The Augur’s unveiling triggered ability begins to resolve, no player may take other actions until it’s done. Notably, opponents can’t try to change your library after you scry but before you reveal the top card of your library.",
                 "If the revealed card in your library has {X} in its mana cost, you must choose 0 as the value of X when casting it without paying its mana cost.",
+                "If you exile a land card this way, you can’t play it. Its mana value is 0 and you won’t gain life.",
                 "The revealed card played with The Augur’s unveiling triggered ability is played from your library.",
                 "If you play the revealed card, you do so as part of the resolution of the triggered ability. You can’t wait to play it later in the turn. Timing permissions based on the card’s type are ignored, but other restrictions (such as \"Cast [this card] only during combat\") are not.",
                 "If you cast a card \"without paying its mana cost,\" you can’t pay any alternative costs. You can, however, pay additional costs. If the card has any mandatory additional costs, such as that of Costly Plunder, those must be paid to cast the card.",
@@ -71,7 +72,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "U",
-            "text": "Unveil {5} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Bodyguard is unveiled, until your next turn, prevent all damage that would be dealt to target player and each creature and planeswalker they control.",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Bodyguard is unveiled, until your next turn, prevent all damage that would be dealt to target player and each creature and planeswalker they control.",
             "flavor": "",
             "artist": "Hokunin (Prokopii Osipov) @ DeviantArt",
             "rulings": [
@@ -92,14 +93,14 @@
                 "subtype": "Guardian"
             },
             "rarity": "U",
-            "text": "Unveil—{6}, Pay 6 life. (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Cathar is unveiled, exile up to three target nonland permanents until you lose the game. (Those permanents return under their owners’ control.)",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil—{5}, Pay 5 life. (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Cathar is unveiled, exile up to three target nonland permanents until you lose the game. (Those permanents return under their owners’ control.)",
             "flavor": "",
             "artist": "akizhao @ DeviantArt",
             "rulings": [
-                "You can’t pay the unveil cost if your life total is less than 6.",
-                "If The Cathar’s controller loses the game before the triggered ability resolves, the targeted permanents won't be exiled.",
-                "Auras attached to the exiled permanents will be put into their owners' graveyards. Any Equipment will become unattached and remain on the battlefield. Any counters on the exiled permanent will cease to exist. When the card returns to the battlefield, it will be a new object with no connection to the card that was exiled.",
-                "If a token is exiled this way, it will cease to exist and won't return to the battlefield."
+                "You can’t pay the unveil cost if your life total is less than 5.",
+                "If The Cathar’s controller loses the game before the triggered ability resolves, the targeted permanents won’t be exiled.",
+                "Auras attached to the exiled permanents will be put into their owners’ graveyards. Any Equipment will become unattached and remain on the battlefield. Any counters on the exiled permanent will cease to exist. When the card returns to the battlefield, it will be a new object with no connection to the card that was exiled.",
+                "If a token is exiled this way, it will cease to exist and won’t return to the battlefield."
             ]
         },
         {
@@ -116,12 +117,12 @@
                 "subtype": "Guardian"
             },
             "rarity": "R",
-            "text": "Undercover — Unveil this identity only if another player controls ten or more permanents.|Unveil {X}{2}|When The Cryomancer is unveiled, tap X target permanents. If it’s your turn, those permanents don’t untap during their controller’s next untap step.",
+            "text": "Undercover|Unveil {X}|When The Cryomancer is unveiled, tap X target permanents and remove them from combat. If it’s your turn, distribute X stun counters among any number of those permanents. (If a permanent with a stun counter would become untapped, remove one from it instead.)",
             "flavor": "",
             "artist": "OPOA @ Pinterest",
             "rulings": [
                 "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
-                "If a permanent affected by The Cryomancer changes controllers before its old controller’s next untap step, The Cryomancer will prevent it from becoming untapped during its new controller’s next untap step."
+                "The Cryomancer’s unveiling triggered ability may target permanents that are already tapped. It can still put stun counters on them."
             ]
         },
         {
@@ -138,7 +139,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "U",
-            "text": "Unveil {6} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Flickering Mage is unveiled, exile up to five target nonland permanents. Return those cards to the battlefield tapped under their owner’s control at the beginning of the next end step.",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Flickering Mage is unveiled, exile up to four target nonland permanents. Return those cards to the battlefield tapped under their owner’s control at the beginning of the next end step.",
             "flavor": "",
             "artist": "Zolaida (Lisa Buijteweg) @ DeviantArt",
             "rulings": [
@@ -163,11 +164,12 @@
                 "subtype": "Guardian"
             },
             "rarity": "U",
-            "text": "Unveil {7} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Golem is unveiled, target Leader player loses 7 life and you gain 7 life.|Leader players have hexproof and can’t be attacked as long as you have 7 or more life.",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {6} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Golem is unveiled, target Leader player loses 6 life and you gain 6 life.|Leader players have hexproof and can’t be attacked. (Until you lose the game.)",
             "flavor": "",
             "artist": "Michael Phillippi @ DeviantArt",
             "rulings": [
-                "The Golem’s last ability affects the game only while the identity card is face up."
+                "When The Golem’s unveiling ability triggers, you may target a Leader player that has hexproof because you are now considered teammates as both your identity cards are face up.",
+                "The Golem’s last ability affects the game only while the identity card is face up, and until its controller loses the game."
             ]
         },
         {
@@ -184,7 +186,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "M",
-            "text": "Undercover — Unveil this identity only if another identity card has been unveiled or if another player attacked a Leader player this game.|Unveil {X}{X}{1}|When The Great Martyr is unveiled, you gain X life and draw X cards. Until end of turn, if a source an opponent controls would deal damage to a Leader player, that damage is dealt to you instead. The same is true for losing life, discarding cards and sacrificing permanents.",
+            "text": "Undercover|Unveil {2}|When The Great Martyr is unveiled, until end of turn, if a source an opponent controls would deal damage to a Leader player, that damage is dealt to you instead. The same is true for losing life, discarding cards and sacrificing permanents. Whenever you are dealt damage or lose life this way, draw half that many cards, rounded up. Whenever you discard a card or sacrifice a permanent this way, you gain 2life.",
             "flavor": "",
             "artist": "Jason Engle @ DeviantArt",
             "rulings": [
@@ -196,33 +198,12 @@
                 "An effect that prevents you from discarding cards or sacrificing permanents (as Tamiyo, Collector of Tales does) will apply and any discard or sacrifice effect redirected to you will do nothing.",
                 "An effect that prevents a Leader player from losing life, discarding cards or sacrificing permanents may be applied before or after The Great Martyr’s replacement effect, as they choose.",
                 "If an effect from a source an opponent controls states that something happens unless a Leader player pays life, discards a card or sacrifices a permanent (as Mogis, God of Slaughter does), or if an effect from a source an opponent controls instructs a Leader player to pay life, discard a card or sacrifice a permanent unless they perform an action (as Killing Wave does), and they choose to perform the action, instead you lose that much life, discard that many cards or sacrifice that many permanents.",
-                "If a Leader player spends life, discards a card or sacrifices a permanent to pay a cost of an ability an opponent controls (such as Excavation), The Great Martyr’s replacement effect does not apply and that Leader player still pays the cost themselves."
+                "If a Leader player spends life, discards a card or sacrifices a permanent to pay a cost of an ability an opponent controls (such as Excavation), The Great Martyr’s replacement effect does not apply and that Leader player still pays the cost themselves.",
+                "When The Great Martyr’s controller is dealt 1 or 2 damage this way, they only draw one card."
             ]
         },
         {
             "id": 9,
-            "name": "The Hieromancer",
-            "name_anchor": "the-hieromancer",
-            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-hieromancer",
-            "cost": "",
-            "cmc": 0,
-            "color": "blue",
-            "type": "Identity — Guardian",
-            "types": {
-                "supertype": "Identity",
-                "subtype": "Guardian"
-            },
-            "rarity": "R",
-            "text": "Unveil 9|This identity’s unveil cost costs {1} less for each creature controlled by non-Leader players.|When The Hieromancer is unveiled, tap all creatures controlled by non-Leader players. They don’t untap during their controller’s next untap step.",
-            "flavor": "",
-            "artist": "Kekai @ CGHUB",
-            "rulings": [
-                "The second part of The Hieromancer’s effect affects all creatures controlled by non-Leader players as it resolves, not just the ones that The Hieromancer actually caused to become tapped.",
-                "If a permanent affected by The Hieromancer changes controllers before its old controller’s next untap step, The Hieromancer will prevent it from becoming untapped during its new controller’s next untap step."
-            ]
-        },
-        {
-            "id": 10,
             "name": "The Immortal",
             "name_anchor": "the-immortal",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-immortal",
@@ -234,12 +215,33 @@
                 "supertype": "Identity",
                 "subtype": "Guardian"
             },
-            "rarity": "R",
-            "text": "Undercover — Unveil this identity only if a player’s life total is lesser or equal than half their starting life total, or if a graveyard has seven or more cards in it.|Unveil {4}|When The Immortal is unveiled, up to one target player gains 15 life and up to one target player shuffles their graveyard into their library.",
+            "rarity": "U",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {3} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Immortal is unveiled, up to one target player gains 15 life and up to one target player shuffles their graveyard into their library.",
             "flavor": "",
             "artist": "malisaa @ DeviantArt",
             "rulings": [
                 "If you choose both modes, you may target a single player twice."
+            ]
+        },
+        {
+            "id": 10,
+            "name": "The Inquisitor",
+            "name_anchor": "the-inquisitor",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-inquisitor",
+            "cost": "",
+            "cmc": 0,
+            "color": "blue",
+            "type": "Identity — Guardian",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Guardian"
+            },
+            "rarity": "U",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {X}{1} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Inquisitor is unveiled, choose X other target players. They each reveal their hand. For each of those players, choose a card from their graveyard or hand and exile it.",
+            "flavor": "",
+            "artist": "Asahisuperdry @ DeviantArt",
+            "rulings": [
+                "No extra rules information."
             ]
         },
         {
@@ -255,20 +257,46 @@
                 "supertype": "Identity",
                 "subtype": "Guardian"
             },
-            "rarity": "U",
-            "text": "Unveil {X}5 (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Marshal is unveiled, choose a color and a creature type. Target player creates X plus five 1/1 creature tokens of the chosen color and type. If X is 3 or more, destroy all other creatures.",
+            "rarity": "R",
+            "text": "Undercover|Unveil {X}{4}|When The Marshal is unveiled, choose a color and a creature type. Target player creates X plus four 1/1 creature tokens of the chosen color and type. If X is 3 or more, destroy all other creatures.",
             "flavor": "",
             "artist": "Diego Gisbert Llorens @ DeviantArt",
             "rulings": [
                 "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
                 "The Marshal’s unveiling triggered ability checks the number you chose for X, not the amount of mana you actually spent.",
-                "You do what the spell says in order. If X is 3 or more, you’ll put the creature tokens onto the battlefield, then you’ll destroy creatures.",
+                "You do what the spell says in order. If X is 4 or more, you’ll put the creature tokens onto the battlefield, then you’ll destroy other creatures.",
                 "No one can cast spells or activate abilities between the time the creature tokens are put onto the battlefield and the time all other creatures are destroyed. For example, you can’t sacrifice one of those tokens to regenerate a Dimir House Guard.",
                 "You must choose an existing creature type, such as Fish or Artificer. You can’t choose card types (e.g., artifact) or supertypes (e.g., snow)."
             ]
         },
         {
             "id": 12,
+            "name": "The Mirror Maestra",
+            "name_anchor": "the-mirror-maestra",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-mirror-maestra",
+            "cost": "",
+            "cmc": 0,
+            "color": "blue",
+            "type": "Identity — Guardian",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Guardian"
+            },
+            "rarity": "U",
+            "text": "Undercover (Unveil only if another identity has been unveiled or if another player attacked the Leader this game.)|Unveil {X}{X}{2} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Mirror Maestra is unveiled, choose a player and X target permanents. For each of those permanents, that player creates a token that’s a copy of it.",
+            "flavor": "",
+            "artist": "Anne Stokes",
+            "rulings": [
+                "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
+                "The token copies exactly what was printed on the original card and nothing else, with the listed exceptions (unless that permanent is itself copying something else; see below). It doesn’t copy whether that permanent is tapped or untapped, whether it has any counters on it or Auras attached to it, or any non-copy effects that have changed its power, toughness, types, color, and so on.",
+                "If the copied permanent is copying something else, then the token enters the battlefield as whatever that permanent copied, with the listed exceptions.",
+                "If the copied permanent has {X} in its mana cost, X is 0.",
+                "If the copied permanent is itself a token, the token created by The Mirror Maestra’s unveiling triggered ability copies the original characteristics of that token as stated by the effect that created it, with the listed exception.",
+                "Any enters-the-battlefield abilities of the copied permanent will trigger when the token enters the battlefield. Any \"as [this permanent] enters the battlefield\" or \"[this permanent] enters the battlefield with\" abilities of the permanent will also work."
+            ]
+        },
+        {
+            "id": 13,
             "name": "The Oracle",
             "name_anchor": "the-oracle",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-oracle",
@@ -281,7 +309,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "M",
-            "text": "Undercover — Unveil this identity only if a Leader player is the target of a spell or ability another player controls, or if they are attacked by a player other than you.|Unveil {2}|When The Oracle is unveiled, until end of turn, Leader players have protection from everything and their life totals can’t change.",
+            "text": "Undercover|Unveil {2}|When The Oracle is unveiled, until end of turn, Leader players have protection from everything and their life totals can’t change. (They can’t be targeted, dealt damage, or enchanted by anything and their life totals can’t change.)",
             "flavor": "",
             "artist": "GENZOMAN (Gonzalo Ordóñez Arias) @ DeviantArt",
             "rulings": [
@@ -301,7 +329,28 @@
             ]
         },
         {
-            "id": 13,
+            "id": 14,
+            "name": "The Quellmaster",
+            "name_anchor": "the-quellmaster",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-quellmaster",
+            "cost": "",
+            "cmc": 0,
+            "color": "blue",
+            "type": "Identity — Guardian",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Guardian"
+            },
+            "rarity": "R",
+            "text": "Undercover|Unveil {9}. This cost is reduced by {1} for each creature controlled by non-Leader players.|When The Quellmaster is unveiled, tap all creatures controlled by non-Leader players and put a stun counter on each of them. (If a permanent with a stun counter would become untapped, remove one from it instead.)",
+            "flavor": "",
+            "artist": "Kekai @ CGHUB",
+            "rulings": [
+                "The second part of The Quellmaster’s effect puts a stun counter on all creatures controlled by non-Leader players as it resolves, not just the ones that The Quellmaster actually caused to become tapped."
+            ]
+        },
+        {
+            "id": 15,
             "name": "The Spellsnatcher",
             "name_anchor": "the-spellsnatcher",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-spellsnatcher",
@@ -313,20 +362,18 @@
                 "supertype": "Identity",
                 "subtype": "Guardian"
             },
-            "rarity": "U",
-            "text": "Unveil {6} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Spellsnatcher is unveiled, target player gains control of target spell. They may choose new targets for it. (If that spell becomes a permanent, it enters the battlefield under that player’s control.)",
+            "rarity": "R",
+            "text": "Undercover|Unveil {4}|When The Spellsnatcher is unveiled, counter target spell. If that spell is countered this way, exile it instead of putting it into its owner’s graveyard. You may cast that card without paying its mana cost for as long as it remains exiled.",
             "flavor": "",
             "artist": "bpsola (Bryan Marvin P. Sola) @ DeviantArt",
             "rulings": [
-                "The Spellsnatcher’s unveiling triggered ability can target any spell, even one without targets.",
-                "If you gain control of an instant or sorcery spell, it will be put into its owner’s graveyard as it resolves.",
-                "You may change any or none of the spell’s targets. If you change a target, you must choose a legal target for the spell. If you can’t, you must leave the target unchanged (even if the current target is illegal). Notably, if you were originally chosen as a \"target opponent\" for a spell you gain control with The Spellsnatcher, you are now an illegal target as you aren’t your own opponent.",
-                "Combat damage dealt by a commander is tracked without regard to who controlled the commander at the time it dealt damage. For example, say a commander deals 10 combat damage to a player, leaves the battlefield, is recast, and you gain control of it with The Spellsnatcher. If it deals another 11 combat damage to that same player, they will lose the game.",
-                "If you gain control of a commander spell, the commander’s owner chooses whether to put it in the command zone if it later leaves the battlefield."
+                "You can target a spell you control with The Spellsnatcher’s unveiling triggered ability. This will give you the ability to cast the card later without paying its mana cost.",
+                "If you cast a spell \"without paying its mana cost,\" you can’t choose to cast it for any alternative costs. You can, however, pay additional costs, such as kicker costs. If the spell has any mandatory additional costs those must be paid to cast the spell.",
+                "If a spell has {X} in its mana cost, you must choose 0 as the value of X when casting it without paying its mana cost."
             ]
         },
         {
-            "id": 14,
+            "id": 16,
             "name": "The Summoner",
             "name_anchor": "the-summoner",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-summoner",
@@ -339,16 +386,15 @@
                 "subtype": "Guardian"
             },
             "rarity": "R",
-            "text": "Undercover — Unveil this identity only if another player attacked you or a Leader player this game.|Unveil {X}{Y}{1}|When The Summoner is unveiled, target player creates X Y/Y green Elemental Beast creature tokens.",
+            "text": "Undercover|Unveil {X}{Y}. X and Y can’t be 0.|When The Summoner is unveiled, target player creates X 0/0 colorless Shapeshifter creature tokens with changeling and reach. Put Y +1/+1 counters on each of them.",
             "flavor": "",
-            "artist": "Kekai @ CGHUB",
+            "artist": "Kevin Glint @ ArtStation",
             "rulings": [
-                "The X and Y in the unveiling triggered ability have the same value as the X and Y paid in the Unveil ability. This is pretty easy to derive since there is no other sources of X and Y.",
-                "The term \"another\" in the Undercover restriction means neither you nor a Leader player."
+                "The X and Y in the unveiling triggered ability have the same value as the X and Y paid in the Unveil ability. This is pretty easy to derive since there is no other sources of X and Y."
             ]
         },
         {
-            "id": 15,
+            "id": 17,
             "name": "The Supplier",
             "name_anchor": "the-supplier",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-supplier",
@@ -360,18 +406,23 @@
                 "supertype": "Identity",
                 "subtype": "Guardian"
             },
-            "rarity": "R",
-            "text": "Unveil {6}|When The Supplier is unveiled, choose one or both —|• Target player searches their library and/or graveyard for a card and put it into their hand. If they searched their library this way, they shuffle.|• Target player returns a face-up exiled card they own to their hand.",
+            "rarity": "M",
+            "text": "Undercover|Unveil—Discard a nonland card.|When The Supplier is unveiled, you get {m}{m}{m}{m}{m}{m} (six gem counters).|{1}, Pay {m}: Target player chooses a card from their graveyard or an exiled card they own and puts it into their library third from the top.|{2}, Pay {m}{m}: Target player reveals the top seven cards of their library. They put two of them into their hand and the rest on the bottom of their library in a random order.",
             "flavor": "",
             "artist": "Kieran Yanner",
             "rulings": [
-                "The two targets may be the same player or they may be different players.",
+                "You can’t pay the unveil cost if you have no cards in hand.",
+                "The Supplier’s fourth and fifth abilities can be activated only while the identity card is face up.",
                 "If The Supplier affects a suspended card, the card loses its time counters and is no longer suspended. (This doesn’t trigger the last ability of suspend.)",
-                "If The Supplier affects a card that’s haunting a creature, the haunt effect ends."
+                "If The Supplier affects a card that’s haunting a creature, the haunt effect ends.",
+                "{m} is the gem symbol. It represents one gem counter.",
+                "Gem counters are a kind of counter that a player may have. They’re not associated with specific permanents. (Other kinds of counters that players may have include poison, energy and experience.)",
+                "Keep careful track of how many gem counters the player has. You may do so by keeping a running count on paper, by using a die on that card, or by any other clear and mutually agreeable method.",
+                "If an effect says you get one or more {m}, you get that many gem counters. To pay one or more {m}, you lose that many gem counters. Any effects that interact with counters a player gets, has, or loses can interact with gem counters."
             ]
         },
         {
-            "id": 16,
+            "id": 18,
             "name": "The Warlock",
             "name_anchor": "the-warlock",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-warlock",
@@ -384,7 +435,7 @@
                 "subtype": "Guardian"
             },
             "rarity": "M",
-            "text": "Undercover — Unveil this identity only if another identity card has been unveiled this game.|Unveil {3}|When The Warlock is unveiled, end the phase if it isn’t the ending phase. (Exile all spells and abilities on the stack. Remove all creatures from combat. Then, the active player begins their next phase.)",
+            "text": "Undercover|Unveil {3}|When The Warlock is unveiled, end the phase if it isn’t the ending phase. (Exile all spells and abilities on the stack. Remove all creatures from combat. Then, the active player begins their next phase.)",
             "flavor": "",
             "artist": "Hokunin (Prokopii Osipov) @ DeviantArt",
             "rulings": [
@@ -395,7 +446,7 @@
             ]
         },
         {
-            "id": 17,
+            "id": 19,
             "name": "The Banisher",
             "name_anchor": "the-banisher",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-banisher",
@@ -416,7 +467,7 @@
             ]
         },
         {
-            "id": 18,
+            "id": 20,
             "name": "The Cleaner",
             "name_anchor": "the-cleaner",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-cleaner",
@@ -429,7 +480,7 @@
                 "subtype": "Traitor"
             },
             "rarity": "R",
-            "text": "Unveil {8} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Cleaner is unveiled, if it’s your main phase, exile all nonland permanents you don’t control.",
+            "text": "Unveil {8} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Cleaner is unveiled, if it’s your turn, exile all nonland permanents you don’t control and all opponents’ graveyards.",
             "flavor": "",
             "artist": "Snook-8 @ DeviantArt",
             "rulings": [
@@ -437,7 +488,7 @@
             ]
         },
         {
-            "id": 19,
+            "id": 21,
             "name": "The Ferryman",
             "name_anchor": "the-ferryman",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-ferryman",
@@ -450,7 +501,7 @@
                 "subtype": "Traitor"
             },
             "rarity": "M",
-            "text": "Unveil {1}|When The Ferryman is unveiled, choose target permanent. When that permanent is put into a graveyard this turn, return another target card that shares a card type with it from its owner’s graveyard to the battlefield under your control.|{3}: Turn The Ferryman face down. Activate only during your turn and only once each turn.",
+            "text": "Unveil {1}|When The Ferryman is unveiled, choose target permanent. When that permanent is put into a graveyard this turn, return another card that shares a card type with it from that graveyard to the battlefield under your control.|{3}: Turn The Ferryman face down. Activate only during your turn and only once each turn.",
             "flavor": "",
             "artist": "Andrew Hou",
             "rulings": [
@@ -460,7 +511,7 @@
             ]
         },
         {
-            "id": 20,
+            "id": 22,
             "name": "The Gatekeeper",
             "name_anchor": "the-gatekeeper",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-gatekeeper",
@@ -473,7 +524,7 @@
                 "subtype": "Traitor"
             },
             "rarity": "U",
-            "text": "Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Gatekeeper is unveiled, create Cerberus, a legendary 4/8 black and red Hound creature token with menace, double strike, trample, and lifelink.|{2}: Turn The Gatekeeper face down.",
+            "text": "Unveil {3} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Gatekeeper is unveiled, create Cerberus, a legendary 4/8 black and red Demon Dog creature token with menace, double strike, trample, and lifelink.|{2}: Turn The Gatekeeper face down.",
             "flavor": "",
             "artist": "Pierluigi Abbondanza @ DeviantArt",
             "rulings": [
@@ -482,7 +533,7 @@
             ]
         },
         {
-            "id": 21,
+            "id": 23,
             "name": "The Grenadier",
             "name_anchor": "the-grenadier",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-grenadier",
@@ -495,15 +546,53 @@
                 "subtype": "Traitor"
             },
             "rarity": "U",
-            "text": "Unveil {X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Grenadier is unveiled, create X colorless artifact tokens named Explosive with “{2}, {T}, Sacrifice this artifact: Destroy target nonland permanent. Its controller loses 2 life.”",
+            "text": "Unveil {X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Grenadier is unveiled, create X plus three colorless artifact tokens named Explosive.|{1}, Sacrifice a token named Explosive: Choose one —|• Destroy target nonland permanent.|• Target player loses 3 life.",
             "flavor": "",
             "artist": "Kekai @ CGHUB",
             "rulings": [
-                "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X."
+                "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
+                "An Explosive is an artifact with no ability."
             ]
         },
         {
-            "id": 22,
+            "id": 24,
+            "name": "He Who Comes To Save The Day",
+            "name_anchor": "he-who-comes-to-save-the-day",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=he-who-comes-to-save-the-day",
+            "cost": "",
+            "cmc": 0,
+            "color": "black",
+            "type": "Identity — Traitor",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Traitor"
+            },
+            "rarity": "M",
+            "text": "Unveil {2}|When He Who Comes To Save The Day is unveiled, the next time target player would lose the game this turn, instead they shuffle their hand, their graveyard, and all permanents they own into their library, then they draw twelve cards and their life total becomes 12. Then that player puts any number of permanent cards with mana value 4 or less from their hand onto the battlefield.",
+            "flavor": "",
+            "artist": "Kekai @ CGHUB",
+            "rulings": [
+                "On resolution, the unveiling triggered ability creates a replacement effect that can apply only one time, and only until the end of the turn. This replacement effect is mentioned hereinbelow the \"save effect.\"",
+                "Anything that triggers during the resolution of the Save effect will wait to be put on the stack until everything is put onto the battlefield and resolution is complete. The player whose turn it is will put all of their triggered abilities on the stack in any order, then each other player in turn order will do the same. (The last ability put on the stack will be the first one that resolves.)",
+                "If an effect says that the targeted player can’t lose the game, the save effect doesn’t apply.",
+                "The save effect applies any time the targeted player would lose the game, even if they’re not losing due to your life total being 0 or less. If the targeted player would have lost the game because they tried to draw from an empty library, their life total becomes 12 and they won’t lose again until they try to draw again and still can’t do so. If the targeted player would have lost the game due to having ten or more poison counters, their life total becomes 12, but they will lose the game immediately afterward because they still have ten or more poison counters.",
+                "The save effect does nothing on a player that concedes the game. A player who concedes leaves the game.",
+                "The save effect shuffles permanents owned by the targeted player into their library, regardless of who controls them.",
+                "The Save effect shuffles tokens owned by the targeted player into their library, too. The tokens they own will leave play. However, there’s no point to physically shuffle tokens into the library because the player can’t draw them as part of the Save effect and they’ll cease to exist immediately afterwards.",
+                "The Save effect doesn’t affect spells on the stack, cards that have been exiled, or permanents the targeted player controls but doesn’t own. They’ll stay where they are. Spells on the stack will then resolve as normal.",
+                "For a player’s life total to become 12, they will gain or lose the appropriate amount of life. For example, if the targeted player’s life total is -4 when this card’s unveiling ability applies, it will cause that player to gain 16 life. Alternatively, if the targeted player’s life total is 20 when it applies (perhaps because they tried to draw a card from an empty library), they will lose 8 life. Other cards that interact with life gain or life loss will interact with this effect accordingly. Notably, this means that if the targeted player can’t gain life or the life gain event is modified by another replacement effect, they might still have 0 or less life and still lose the game.",
+                "If a spell causes the targeted player to lose the game the next time state-based actions are checked (by dealing damage to them greater than their life total, for example), that spell will already be in the graveyard by the time the Save effect happens. If it’s in their graveyard, it will be shuffled into their library.",
+                "If, during a check of state-based actions, the targeted player would lose the game at the same time a creature they own would be put into their graveyard (due to an Earthquake for 10 or combat damage dealt to both the player and the creature, for example), that creature’s controller has a choice to make. The state-based actions rule is trying to simultaneously (a) shuffle that creature card into the player’s library (due to the Save replacement effect) and (b) put it into their graveyard. Only one of those things can happen. The creature’s controller chooses which one. If the creature is put into the graveyard, it isn’t shuffled into the library. Abilities that trigger when that creature is put into a graveyard will trigger only if that option is chosen.",
+                "If, during a check of state-based actions, the targeted player would lose the game for multiple reasons (for example, if they were at 1 life and had one card in their library, then Night’s Whisper caused them to draw two cards and lose 2 life), a single Save effect will replace all of them. You’ll do what the Save effect says just once.",
+                "A token’s owner is the player who created it.",
+                "If an effect states that an opponent wins the game, the Save effect doesn’t apply.",
+                "In a Two-Headed Giant game, if the targeted player’s team would lose the game during a Save effect, the team won’t lose. Instead, the targeted player will do what the Save effect says and their teammate won’t do anything. This is true even if the reason the team would lose is because the teammate tried to draw a card with an empty library or was affected by an ability that said they lost the game. The targeted player’s life total (which is the same as their team’s life total) becomes 12. The team’s life total is adjusted by the amount of life the targeted player gains or loses as a result of this, which basically means the team’s life total becomes 12.",
+                "If a card in a player’s hand has {X} in its mana cost, X is considered to be 0.",
+                "If a permanent card in a player’s hand has no mana symbols in its upper right corner (because it’s a land card, for example), its mana value is 0."
+            ]
+        },
+        {
+            "id": 25,
             "name": "The Metamorph",
             "name_anchor": "the-metamorph",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-metamorph",
@@ -515,16 +604,15 @@
                 "supertype": "Identity",
                 "subtype": "Traitor"
             },
-            "rarity": "M",
-            "text": "Unveil—Pay 8 life, Discard a card.|When The Metamorph is unveiled, until end of turn, as an opponent loses the game, you may put The Metamorph outside the game. If you do, gain control of that player’s identity card and turn it face down.",
+            "rarity": "S",
+            "text": "Unveil—Pay 8 life, Discard a card.|When The Metamorph is unveiled, until end of turn, as an opponent loses the game, you may remove The Metamorph from the game. If you do, gain control of that player’s identity card and turn it face down if it isn’t a Leader.",
             "flavor": "",
             "artist": "Myrmirada (Anna Verhoog) @ DeviantArt",
             "rulings": [
                 "You can’t pay the unveil cost if you have no cards in hand or if your life total is less than 8.",
                 "You may steal the Leader player’s identity card as they lose the game. If you do, the game will go on.",
-                "A Leader identity card can be turned face down. It will have no characteristics and you won’t be able to turn it face up if it doesn’t have Unveil. However, you’re changing team according to that role. Players will be able to track a Leader identity card turned face down this way until it’s shuffled in a face-down pile or it becomes a new object. (See rule 707.6 in the official CR, the same is true for a face-down identity card.)",
-                "\"Put outside the game\" means to remove it from game, not exiling it. The same identity card can be put outside the game only once.",
-                "If the game is restarted and The Metamorph was put outside the game, it comes back to the new game. This is an exception to rule 108.5 in the official CR due to rule 716.2 in the official CR taking precedence. The previously stolen identity card in the restarted game will leave the game as its original owner has lost that game.",
+                "\"Remove from the game\" means to put it outside the game, not exiling it.",
+                "If the game is restarted and The Metamorph was removed from the game, it comes back to the new game. This is an exception to rule 108.5 in the official CR due to rule 716.2 in the official CR taking precedence. The previously stolen identity card in the restarted game will leave the game as its original owner has lost that game.",
                 "The Metamorph’s replacement effect will apply no matter how a player loses the game: due to a state-based action (as a result of having a life total of 0 or less, trying to draw a card from an empty library, or having ten poison counters), a spell or ability that says that player loses the game, a concession, or a game loss awarded by a judge.",
                 "In a multiplayer game using the limited range of influence option (such as a Grand Melee game), if a spell or ability says that you win the game, it instead causes all of your opponents within your range of influence to lose the game. This is another way by which The Metamorph’s replacement effect can apply.",
                 "The victim who had their identity card stolen by The Metamorph remains a member of the last known team they were before.",
@@ -532,7 +620,7 @@
             ]
         },
         {
-            "id": 23,
+            "id": 26,
             "name": "The Oneiromancer",
             "name_anchor": "the-oneiromancer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-oneiromancer",
@@ -545,7 +633,7 @@
                 "subtype": "Traitor"
             },
             "rarity": "U",
-            "text": "Unveil {X}{X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Oneiromancer is unveiled, each player exiles the top X cards of their library face down.|You may look at cards exiled with The Oneiromancer, and you may cast spells among those cards without paying their mana costs. You can’t cast more than one spell this way each turn.",
+            "text": "Unveil {X}{X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Oneiromancer is unveiled, exile the top X cards of each player’s library face down.|You may look at cards exiled with The Oneiromancer.|Once each turn, you may cast a spell among cards exiled with The Oneiromancer without paying its mana cost. When you do, exile the top card of target player’s library face down.",
             "flavor": "",
             "artist": "Hamsterfly (Viktor Titov) @ DeviantArt",
             "rulings": [
@@ -561,7 +649,7 @@
             ]
         },
         {
-            "id": 24,
+            "id": 27,
             "name": "The Puppet Master",
             "name_anchor": "the-puppet-master",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-puppet-master",
@@ -573,23 +661,21 @@
                 "supertype": "Identity",
                 "subtype": "Traitor"
             },
-            "rarity": "M",
-            "text": "Unveil {8}|When The Puppet Master is unveiled, if it’s your turn, redistribute control of any number of other identity cards. Then, turn face down each of those cards that isn’t a Leader. (Each player must control one identity card.)|At the beginning of your end step, draw a card.",
+            "rarity": "S",
+            "text": "Unveil {6}|When The Puppet Master is unveiled, redistribute control of any number of other identity cards. Then turn face down each of those cards that isn’t a Leader. (Each player must control one identity card.)|You may look at face-down identity cards you don’t control any time.|At the beginning of your end step, draw two cards.",
             "flavor": "",
             "artist": "fuuryoku (Thom Scott) @ DeviantArt",
             "rulings": [
-                "Except for you, you choose which player gets which identity card when the unveiling triggered ability resolves.",
-                "Other players can respond to The Puppet Master's unveiling triggered ability. They can use their own Identity's unveil ability while they have priority. Afterwards, those identity cards could be turned face down during the resolution of The Puppet Master's ability.",
+                "Other players can respond to The Puppet Master’s unveiling triggered ability. They can use their own Identity’s unveil ability while they have priority. Afterwards, those identity cards will be turned face down during the resolution of The Puppet Master’s ability.",
                 "Once The Puppet Master’s unveiling triggered ability begins to resolve, no player may take other actions until it’s done. Notably, opponents won’t be allowed to unveil their identity card.",
-                "When The Puppet Master’s unveiling triggered ability starts to resolve, for each other player, you can choose to (a) leave their identity card as they are or (b) exchange control of that identity with another one (not being The Puppet Master). You can’t choose to have a player controls no identity card.",
-                "Except for The Puppet Master and the Leader, you choose which identity card is turned face down. You may choose an identity card whose control didn’t change.",
-                "If a player concedes during the resolution of The Puppet Master's unveiling triggered ability, their identity card leaves the game and no one gains control of it. If that player would have gained control of another identity card, instead assign that identity card to another player with no identity card assigned.",
+                "You choose which player gets which identity card when the unveiling triggered ability resolves, except for the control of The Puppet Master identity card who cannot change this way.When The Puppet Master’s unveiling triggered ability starts to resolve, for each other player, you can choose to (a) leave their identity card as they are or (b) exchange control of that identity with another one (not being The Puppet Master). You can’t choose to have a player controls no identity card.",
+                "You may look at face-down identity cards during the resolution of the unveiling triggered ability.If a player concedes during the resolution of The Puppet Master’s unveiling triggered ability, their identity card leaves the game and no one gains control of it. If that player would have gained control of another identity card, instead assign that identity card to another player with no identity card assigned.",
                 "The Puppet Master’s last ability can trigger only while the identity card is face up.",
                 "Each player is changing team according to their new role."
             ]
         },
         {
-            "id": 25,
+            "id": 28,
             "name": "The Reflector",
             "name_anchor": "the-reflector",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-reflector",
@@ -602,7 +688,7 @@
                 "subtype": "Traitor"
             },
             "rarity": "R",
-            "text": "Unveil {6}|When The Reflector is unveiled, gain control of target ability, instant, or sorcery spell. You may choose new targets for it. Then copy that spell or ability for each opponent. You may choose new targets for the copies.",
+            "text": "Unveil {5}|When The Reflector is unveiled, gain control of target ability, instant, or sorcery spell. You may choose new targets for it. Then copy that spell or ability for each opponent. You may choose new targets for the copies.",
             "flavor": "",
             "artist": "LeeJJ (Jon Lee) @ DeviantArt",
             "rulings": [
@@ -614,7 +700,7 @@
             ]
         },
         {
-            "id": 26,
+            "id": 29,
             "name": "The Time Bender",
             "name_anchor": "the-time-bender",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-time-bender",
@@ -627,9 +713,9 @@
                 "subtype": "Traitor"
             },
             "rarity": "R",
-            "text": "Unveil {6}|When The Time Bender is unveiled, choose two —|• Each player shuffles their hand and graveyard into their library, then draws seven cards.|• Take an extra turn after this one.|• End the turn.",
+            "text": "Unveil {6}|When The Time Bender is unveiled, choose two —|• Each player shuffles their hand and graveyard into their library, thendraws seven cards.|• Take an extra turn after this one.|• End the turn.",
             "flavor": "",
-            "artist": "Unknown",
+            "artist": "Bob Khel",
             "rulings": [
                 "If multiple \"extra turn\" effects resolve in the same turn, take them in the reverse of the order that the effects resolved.",
                 "If any abilities trigger while players are shuffling cards into their library or drawing seven cards, those abilities cease to exist when the turn ends. They won’t be put on the stack.",
@@ -641,7 +727,33 @@
             ]
         },
         {
-            "id": 27,
+            "id": 30,
+            "name": "The Treacherous Masochist",
+            "name_anchor": "the-treacherous-masochist",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-treacherous-masochist",
+            "cost": "",
+            "cmc": 0,
+            "color": "black",
+            "type": "Identity — Traitor",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Traitor"
+            },
+            "rarity": "S",
+            "text": "Unveil {0}|If you would be the first player to lose the game, or tied for first, instead you win the game. (You still win the game if you are the last player standing.)|As long as no player has lost the game, spells and abilities you control can’t cause you to lose the game, and you can’t pay life.",
+            "flavor": "",
+            "artist": "Roman Baramzin @ ArtStation",
+            "rulings": [
+                "The Treacherous Masochist’s second ability is a replacement effect that affects the game only while the identity card is face up. If you are the first player to lose the game and the identity card is face down, you won’t win the game.",
+                "The Treacherous Masochist’s replacement effect does nothing if you concede the game. A player who concedes leaves the game.",
+                "If you can’t lose the game (for example, you control a Platinum Angel), The Treacherous Masochist won’t do anything.",
+                "If a spell or an activated ability has a cost that requires you to pay life, that spell or ability can’t be cast or activated.",
+                "Other things may cause you to pay life, such as during the resolution of a spell or an ability. You cannot pay life for those too.",
+                "Players may always pay 0 life, even if an effect says they can’t pay life."
+            ]
+        },
+        {
+            "id": 31,
             "name": "The Wearer of Masks",
             "name_anchor": "the-wearer-of-masks",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-wearer-of-masks",
@@ -653,21 +765,21 @@
                 "supertype": "Identity",
                 "subtype": "Traitor"
             },
-            "rarity": "M",
-            "text": "Unveil {0}|As The Wearer of Masks is unveiled, choose four Traitor identity cards at random from outside the game. You may pay the unveil cost of one of those cards. If you do, until The Wearer of Masks is turned face down, it becomes a copy of that identity. If you don’t, turn The Wearer of Masks face down at the beginning of your next end step.",
+            "rarity": "S",
+            "text": "Unveil {X}|As The Wearer of Masks is unveiled, reveal up to X non-Leader identity cards at random from outside the game. You may choose one of them. If you do, until The Wearer of Masks is turned face down, it becomes a copy of that card, except it’s a Traitor. (It loses all other identity types.)",
             "flavor": "",
             "artist": "moonxels (David Demaret) @ DeviantArt",
             "rulings": [
-                "To choose four Traitor identity cards at random, you may for example shuffle the remaining ones from outside the game in a face-down pile, then choose and reveal the top four cards of that pile.",
+                "To choose some non-Leader identity cards at random, you may for example shuffle the remaining ones from outside the game in a face-down pile, then reveal the top cards of that pile. If you don’t want to shuffle all your remaining identity cards as it can be a logistical nightmare, you can also use a die roll on a small subset of cards, or any other clear and mutually agreeable method.",
                 "The Wearer of Masks’ ability to become a copy is a replacement effect. Because turning an identity face up and applying replacement effects both don’t use the stack, players won’t be able to take actions between the time you announce that you’re turning The Wearer of Masks face up and the time it has become a copy of the identity of your choice.",
-                "If you pay an Unveil cost with a {X}, you may choose a value for X.",
-                "If an ability from the chosen identity card refers to X, it has the same chosen value as you paid the Unveil cost during the resolution of The Wearer of Masks’ ability.",
-                "Any \"[when/as] [this identity] is unveiled\" abilities of the chosen identity card will work if The Wearer of Masks is unveiled. Any \"[when/as] [this identity] is turned face up\" abilities of the chosen identity card will work if The Wearer of Masks is turned face up or unveiled.",
-                "When The Wearer of Masks is turned face down, its copy effect wears off. While it’s face down, it’s a Traitor identity card that can be turned face up for an unveil cost of {0}."
+                "Any \"When [this identity] is unveiled\" or \"As [this identity] is unveiled\" abilities of the copied identity card will trigger and apply if The Wearer of Masks is unveiled.",
+                "If the copied identity card has an X in its abilities, X is 0.",
+                "The Wearer of Masks stays a Traitor. It cannot become another identity type this way.",
+                "When The Wearer of Masks is turned face down, its copy effect wears off. While it’s face down, it’s a Traitor identity card that can be turned face up for an unveil cost of {X}."
             ]
         },
         {
-            "id": 28,
+            "id": 32,
             "name": "The Ambitious Queen",
             "name_anchor": "the-ambitious-queen",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-ambitious-queen",
@@ -680,15 +792,15 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil—Pay 2 life, Exile a card from your hand. (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Ambitious Queen is unveiled, counter target spell.",
+            "text": "Unveil—Pay 1 life, Exile a nonland card from your hand. (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Ambitious Queen is unveiled, counter target noncreature spell.",
             "flavor": "",
             "artist": "88grzes (Grzegorz Rutkowski) @ DeviantArt",
             "rulings": [
-                "You can’t pay the unveil cost if you have no cards in hand or if your life total is less than 2."
+                "You can’t pay the unveil cost if you have no cards in hand or if your life total is less than 1."
             ]
         },
         {
-            "id": 29,
+            "id": 33,
             "name": "The Beastmaster",
             "name_anchor": "the-beastmaster",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-beastmaster",
@@ -701,7 +813,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil {5} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Beastmaster is unveiled, up to two target players each creates two 4/4 green Beast creature tokens.",
+            "text": "Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Beastmaster is unveiled, up to two target players each create two 4/4 red and green Beast creature tokens with trample.",
             "flavor": "",
             "artist": "Smolin (Nick Avallone) @ DeviantArt",
             "rulings": [
@@ -709,7 +821,7 @@
             ]
         },
         {
-            "id": 30,
+            "id": 34,
             "name": "The Bio-Engineer",
             "name_anchor": "the-bio-engineer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-bio-engineer",
@@ -722,7 +834,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "M",
-            "text": "Unveil—Sacrifice a nonland permanent.|When The Bio-Engineer is unveiled, you get {a}{a}{a}{a}{a}{a} (six nut counters).|{2}, Pay {a}: Put a +1/+1 counter on target creature. That creature becomes an artifact in addition to its other types.|{3}, Pay {a}{a}: Gain control of target artifact.",
+            "text": "Unveil—Sacrifice a nontoken permanent.|When The Bio-Engineer is unveiled, you get {a}{a}{a}{a}{a}{a} (six nut counters).|{1}, Pay {a}: Put a +1/+1 counter on target creature. That creature becomes an artifact in addition to its other types.|{2}, Pay {a}{a}: Gain control of target artifact.",
             "flavor": "",
             "artist": "Ushihachi",
             "rulings": [
@@ -733,14 +845,42 @@
                 "If you gain control of a permanent another player owns, and that player leaves the game, the permanent will also leave the game.",
                 "{a} is the nut symbol. It represents one nut counter.",
                 "Nut counters are a kind of counter that a player may have. They’re not associated with specific permanents. (Other kinds of counters that players may have include poison, energy and experience.)",
-                "Keep careful track of how many nut counters the Leader player has. You may do so by keeping a running count on paper, by using a die on that card, or by any other clear and mutually agreeable method.",
+                "Keep careful track of how many nut counters the player has. You may do so by keeping a running count on paper, by using a die on that card, or by any other clear and mutually agreeable method.",
                 "If an effect says you get one or more {a}, you get that many nut counters. To pay one or more {a}, you lose that many nut counters. Any effects that interact with counters a player gets, has, or loses can interact with nut counters.",
                 "Nut counters aren’t mana. They don’t go away as steps, phases, and turns end, and effects that add mana \"of any type\" to your mana pool can’t give you nut counters.",
                 "You can’t pay more nut counters than you have."
             ]
         },
         {
-            "id": 31,
+            "id": 35,
+            "name": "The Chaos Wielder",
+            "name_anchor": "the-chaos-wielder",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-chaos-wielder",
+            "cost": "",
+            "cmc": 0,
+            "color": "red",
+            "type": "Identity — Assassin",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Assassin"
+            },
+            "rarity": "U",
+            "text": "Unveil {2} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Chaos Wielder is unveiled, choose a card type. Until end of turn, spells you cast of the chosen type have cascade.",
+            "flavor": "",
+            "artist": "ericbraddock @ DeviantArt",
+            "rulings": [
+                "Cascade triggers when you cast the spell, meaning that it resolves before that spell. If you end up casting the exiled card, it will go on the stack above the spell with cascade.",
+                "When the cascade ability resolves, you must exile cards. The only optional part of the ability is whether or not you cast the last card exiled.",
+                "If a spell with cascade is countered, the cascade ability will still resolve normally.",
+                "You exile the cards face up. All players will be able to see them.",
+                "If you cast a card \"without paying its mana cost,\" you can’t choose to cast it for any alternative costs. You can, however, pay additional costs. If the card has any mandatory additional costs, you must pay those to cast the card.",
+                "If the card has {X} in its mana cost, you must choose 0 as the value of X when casting it without paying its mana cost.",
+                "Due to a 2021 rules change to cascade, not only do you stop exiling cards if you exile a nonland card with lesser mana value than the spell with cascade, but the resulting spell you cast must also have lesser mana value. Previously, in cases where a card’s mana value differed from the resulting spell, such as with some modal double-faced cards or cards with an Adventure, you could cast a spell with a higher mana value than the exiled card.",
+                "The mana value of a split card is determined by the combined mana cost of its two halves. If cascade allows you to cast a split card, you may cast either half but not both halves."
+            ]
+        },
+        {
+            "id": 36,
             "name": "The Corpse Snatcher",
             "name_anchor": "the-corpse-snatcher",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-corpse-snatcher",
@@ -753,7 +893,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "R",
-            "text": "Unveil {4}|When The Corpse Snatcher is unveiled, each player mills two cards. When each player does, put a creature card from a graveyard onto the battlefield under target player’s control. That creature is a black Zombie in addition to its other colors and types.",
+            "text": "Unveil {4}|When The Corpse Snatcher is unveiled, each player mills two cards. When one or more cards are milled this way, put a creature card from a graveyard onto the battlefield under target player’s control. That creature is a black Zombie in addition to its other colors and types.",
             "flavor": "",
             "artist": "rk post",
             "rulings": [
@@ -762,7 +902,7 @@
             ]
         },
         {
-            "id": 32,
+            "id": 37,
             "name": "The Demon",
             "name_anchor": "the-demon",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-demon",
@@ -775,15 +915,15 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Demon is unveiled, search your library for a card, put that card into your hand, then shuffle.",
+            "text": "Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Demon is unveiled, target player searches their library for a card, puts that card into their hand, then shuffles.",
             "flavor": "",
             "artist": "KipcaHT @ DeviantArt",
             "rulings": [
-                "No extra rules information."
+                "Although the targeted player doesn’t need to find a card if they don’t want to, that player must shuffle their library."
             ]
         },
         {
-            "id": 33,
+            "id": 38,
             "name": "The Depths Caller",
             "name_anchor": "the-depths-caller",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-depths-caller",
@@ -796,16 +936,21 @@
                 "subtype": "Assassin"
             },
             "rarity": "M",
-            "text": "Unveil {X}{3}|When The Depths Caller is unveiled, choose a permanent type. Search your library for a card of the chosen type with mana value no more than X plus the number of permanents of that type you control, put it onto the battlefield, then shuffle.",
+            "text": "Unveil {X}{3}|When The Depths Caller is unveiled, choose a permanent type and tap any number of untapped permanents of that type you control. Search your library for a card of the chosen type with mana value no more than X plus the number of permanents tapped this way, put it onto the battlefield tapped, then shuffle.",
             "flavor": "",
             "artist": "Gerald Brom",
             "rulings": [
                 "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
-                "Once The Depths Caller’s unveiling triggered ability begins to resolve, no players may take other actions until it’s done. Notably, players can’t try to destroy your permanents after you’ve chosen a type."
+                "Once The Depths Caller’s unveiling triggered ability begins to resolve, no players may take other actions until it’s done. Notably, players can’t try to destroy your permanents after you’ve chosen a type.",
+                "If a card in a player’s library has {X} in its mana cost, X is considered to be 0.",
+                "You can tap any untapped creature you control, even one you haven’t controlled continuously since the beginning of your most recent turn.",
+                "Tapping an untapped creature that’s attacking or blocking won’t cause that creature to stop attacking or blocking.",
+                "Tapping an artifact won’t cause its abilities to stop applying unless those abilities say so.",
+                "Equipment attached to a creature doesn’t become tapped when that creature becomes tapped, and tapping that Equipment doesn’t cause the creature to become tapped."
             ]
         },
         {
-            "id": 34,
+            "id": 39,
             "name": "The Madwoman",
             "name_anchor": "the-madwoman",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-madwoman",
@@ -818,7 +963,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "R",
-            "text": "Unveil {5}|When The Madwoman is unveiled, tap up to two target creatures. Each of those creatures deals damage equal to its power to its controller. Prevent all combat damage that would be dealt to and dealt by those creatures this turn.",
+            "text": "Unveil {4}|When The Madwoman is unveiled, tap up to two target creatures. Each of those creatures deals damage equal to its power to its controller. Prevent all combat damage that would be dealt to and dealt by those creatures this turn.",
             "flavor": "",
             "artist": "Anna Ignatieva",
             "rulings": [
@@ -826,7 +971,7 @@
             ]
         },
         {
-            "id": 35,
+            "id": 40,
             "name": "The Necromancer",
             "name_anchor": "the-necromancer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-necromancer",
@@ -839,7 +984,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "R",
-            "text": "Unveil {7}|When The Necromancer is unveiled, if it’s your turn, for each player, you may put up to one target creature card from that player’s graveyard onto the battlefield under your control.",
+            "text": "Unveil {6}|When The Necromancer is unveiled, if it’s your turn, for each player, you may put up to one target creature card from that player’s graveyard onto the battlefield under your control.",
             "flavor": "",
             "artist": "Athayar (Nicolas Vallée) @ DeviantArt",
             "rulings": [
@@ -848,7 +993,37 @@
             ]
         },
         {
-            "id": 36,
+            "id": 41,
+            "name": "The Physician",
+            "name_anchor": "the-physician",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-physician",
+            "cost": "",
+            "cmc": 0,
+            "color": "red",
+            "type": "Identity — Assassin",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Assassin"
+            },
+            "rarity": "R",
+            "text": "Unveil {X}|When The Physician is unveiled, any number of target players each get twice X plus four rad counters. (At the beginning of those player’s precombat main phase, if they have any rad counters, they mill that many cards. For each nonland card milled this way, they lose 1 life and a rad counter.)",
+            "flavor": "",
+            "artist": "gameriuxlt @ DeviantArt",
+            "rulings": [
+                "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
+                "You add the four rad counters after multiplying X. E.g. if X is 3, all targeted players get 2×3+4 = 6+4 = 10 rad counters.",
+                "Rad counters are a kind of counter that a player may have. They’re not associated with any specific permanents.",
+                "Keep track of how many rad counters each player has. Potential ways to track this include writing them down on paper or using dice, but any method that is clear and mutually agreeable is fine.",
+                "Rad counters don’t go away as steps, phases, or turns end. They only go away when an effect instructs a player to remove rad counters from themselves.",
+                "There is an inherent triggered ability associated with having rad counters. This triggered ability has no source and is controlled by the active player. The full text of this ability is \"At the beginning of the precombat main phase of a player with rad counters, that player mills cards equal to the number of rad counters they have. For each nonland card milled this way, that player loses 1 life and removes one rad counter from themselves.\"",
+                "In a game using the shared team turns option, such as an Archenemy or Two-Headed Giant game, the inherent triggered ability associated with rad counters triggers once for each player on the active team that has rad counters. Each instance of that ability is controlled by one of those players.",
+                "Any effects (such as proliferate) that interact with counters a player gets, has, or loses can interact with rad counters.",
+                "The cards are milled all at once, which means abilities that trigger \"whenever one or more nonland cards are milled\" will trigger exactly once as long as at least one nonland card was milled.",
+                "If a player has fewer cards remaining in their library than the number of rad counters they have when the triggered ability resolves, they’ll mill as many cards as they can."
+            ]
+        },
+        {
+            "id": 42,
             "name": "The Pyromancer",
             "name_anchor": "the-pyromancer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-pyromancer",
@@ -860,8 +1035,8 @@
                 "supertype": "Identity",
                 "subtype": "Assassin"
             },
-            "rarity": "U",
-            "text": "Unveil {7} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Pyromancer is unveiled, it deals 6 damage to target player and each creature and planeswalker they control. If a creature is dealt damage this way, it loses indestructible until end of turn.",
+            "rarity": "R",
+            "text": "Unveil {6}|When The Pyromancer is unveiled, if it’s your turn, it deals 6 damage to target player and each creature and planeswalker they control. If a creature is dealt damage this way, it loses indestructible until end of turn.",
             "flavor": "",
             "artist": "Andantonius (Jon Neimeister) @ DeviantArt",
             "rulings": [
@@ -872,7 +1047,7 @@
             ]
         },
         {
-            "id": 37,
+            "id": 43,
             "name": "The Rebel General",
             "name_anchor": "the-rebel-general",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-rebel-general",
@@ -885,7 +1060,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "R",
-            "text": "Unveil {6}|When The Rebel General is unveiled, if it’s your main phase, for each other player, gain control of up to one target permanent that player controls until end of turn. Untap those permanents. They gain haste until end of turn.",
+            "text": "Unveil {5}|When The Rebel General is unveiled, if it’s your turn, for each non-Leader player, gain control of up to one target permanent that player controls until end of turn. Untap those permanents. They gain haste until end of turn.",
             "flavor": "",
             "artist": "larbesta @ DeviantArt",
             "rulings": [
@@ -893,7 +1068,7 @@
             ]
         },
         {
-            "id": 38,
+            "id": 44,
             "name": "The Seer",
             "name_anchor": "the-seer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-seer",
@@ -906,10 +1081,11 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil {X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Seer is unveiled, choose any target, shuffle your library, then scry X. Reveal the top card of your library and put it into your hand. The Seer deals damage equal to twice that card’s mana value to that permanent or player.",
+            "text": "Unveil {X} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Seer is unveiled, shuffle, then scry X. Reveal the top card of your library and put it into your hand. When you reveal a nonland card this way, The Seer deals damage equal to twice that card’s mana value to any target.",
             "flavor": "",
             "artist": "DM7 (Martin MeKenzie) @ DeviantArt",
             "rulings": [
+                "The Seer’s unveiling triggered ability goes on the stack without a target. When you reveal a nonland card during its resolution, its reflexive triggered ability triggers and you pick a target to be dealt damage. You’ll know the mana value of the revealed nonland card and how much damage will be dealt as you choose your target.",
                 "The X in the unveiling triggered ability has the same value as the X paid in the Unveil ability. This is pretty easy to derive since there is no other source of X.",
                 "If X is 0, you won’t scry at all. Any abilities that trigger whenever you scry won’t trigger.",
                 "Once The Seer’s unveiling triggered ability begins to resolve, no player may take other actions until it’s done. Notably, opponents can’t try to change your library after you scry but before you reveal the top card of your library.",
@@ -919,7 +1095,7 @@
             ]
         },
         {
-            "id": 39,
+            "id": 45,
             "name": "The Shapeshifting Slayer",
             "name_anchor": "the-shapeshifting-slayer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-shapeshifting-slayer",
@@ -932,13 +1108,13 @@
                 "subtype": "Assassin"
             },
             "rarity": "M",
-            "text": "Unveil {6}|When The Shapeshifting Slayer is unveiled, if it’s your main phase, choose a creature on the battlefield or a creature card in any zone other than a player’s hand or library. Create a token that’s a copy of it. That token gains menace, trample, and haste.",
+            "text": "Unveil {5}|When The Shapeshifting Slayer is unveiled, if it’s your turn, choose a creature on the battlefield or a creature card in any zone other than a player’s hand or library. Create a token that’s a copy of it. That token gains menace, trample, and haste.",
             "flavor": "",
             "artist": "Matjosh (Andrius Matijosius) @ DeviantArt",
             "rulings": [
                 "The Shapeshifting Slayer unveiling triggered ability doesn’t target the chosen creature.",
                 "Other zones are graveyard, battlefield, stack, exile, ante, and command.",
-                "As the token is created, it check the printed values of the creature it’s copying — or, if that creature is itself a token, the original characteristics of that token as stated by the effect that put it onto the battlefield — as well as any copy effects that have been applied to it. It won’t copy counters on the creature, nor will it copy other effects that have changed the creature’s power, toughness, types, color, or so on.",
+                "As the token is created, it checks the printed values of the creature it’s copying — or, if that creature is itself a token, the original characteristics of that token as stated by the effect that put it onto the battlefield — as well as any copy effects that have been applied to it. It won’t copy counters on the creature, nor will it copy other effects that have changed the creature’s power, toughness, types, color, or so on.",
                 "If the copied creature has {X} in its mana cost, that X is considered to be 0.",
                 "If the chosen creature is copying something else (for example, if the chosen creature is a Clone), then the Shapeshifting’s token enters the battlefield as whatever the chosen creature copied.",
                 "If the chosen creature is a token, the Shapeshifting’s token copies the original characteristics of that token as stated by the effect that put the token onto the battlefield.",
@@ -946,7 +1122,7 @@
             ]
         },
         {
-            "id": 40,
+            "id": 46,
             "name": "The Sigil Mage",
             "name_anchor": "the-sigil-mage",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-sigil-mage",
@@ -959,7 +1135,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil {6} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Sigil Mage is unveiled, you may cast up to two target instant or sorcery cards from graveyards without paying their mana costs.",
+            "text": "Unveil {5} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Sigil Mage is unveiled, you may cast up to two target instant or sorcery cards from graveyards without paying their mana costs.",
             "flavor": "",
             "artist": "Peter Orullian",
             "rulings": [
@@ -975,7 +1151,7 @@
             ]
         },
         {
-            "id": 41,
+            "id": 47,
             "name": "The Sorceress",
             "name_anchor": "the-sorceress",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-sorceress",
@@ -988,7 +1164,7 @@
                 "subtype": "Assassin"
             },
             "rarity": "U",
-            "text": "Unveil {4} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Sorceress is unveiled, you may choose new targets for target instant or sorcery spell. Then copy that spell. You may choose new targets for the copy.",
+            "text": "Unveil {3} (Start the game with this identity face down in the command zone. Turn it face up any time for its unveil cost.)|When The Sorceress is unveiled, you may choose new targets for target instant or sorcery spell. Then copy that spell. You may choose new targets for the copy.",
             "flavor": "",
             "artist": "Bluefley (Marc Brunet)",
             "rulings": [
@@ -1002,7 +1178,31 @@
             ]
         },
         {
-            "id": 42,
+            "id": 48,
+            "name": "The Villain",
+            "name_anchor": "the-villain",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-villain",
+            "cost": "",
+            "cmc": 0,
+            "color": "red",
+            "type": "Identity — Assassin",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Assassin"
+            },
+            "rarity": "R",
+            "text": "Unveil {5}|When The Villain is unveiled, if it’s your turn, target opponent faces a villainous choice — They sacrifice half the nonland permanents they control, rounded up, or they lose half their life, rounded up. At the beginning of your next upkeep, they face that choice an additional time. (They can make the same or different choices.)",
+            "flavor": "",
+            "artist": "sbraithwaite @ DeviantArt",
+            "rulings": [
+                "When a player faces a villainous choice, they first choose one of the two options, then all actions in the chosen option are performed.",
+                "A player facing a villainous choice can always choose either option, even if one or both of the options are impossible. For example, if one of the options is to sacrifice a creature, a player who controls no creatures can still choose that option.",
+                "If a player attempts to halve a negative life total, they halve 0. This means that the life total stays the same. A life total of -10 would remain -10.",
+                "All abilities that trigger while The Villain’s unveiling triggered ability is resolving are put on the stack after it is finished resolving. All such abilities controlled by the player whose turn it is are put on the stack first, then those controlled by the next player in turn order, and so on. For each player, they can put their abilities on the stack in the order of their choice. Abilities don’t have to be put on the stack in the order in which they triggered."
+            ]
+        },
+        {
+            "id": 49,
             "name": "The War Shaman",
             "name_anchor": "the-war-shaman",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-war-shaman",
@@ -1015,36 +1215,15 @@
                 "subtype": "Assassin"
             },
             "rarity": "R",
-            "text": "Unveil {6}|When The War Shaman is unveiled, destroy up to two target noncreature permanents. If it’s your turn, create an X/X red Elemental creature token, where X is the total mana value of the permanents destroyed this way.",
+            "text": "Unveil {5}|When The War Shaman is unveiled, destroy up to two target nonland permanents. If none of them were creatures, create an X/X red Elemental creature token, where X is the total mana value of the permanents destroyed this way.",
             "flavor": "",
             "artist": "Bob Khel @ DeviantArt",
             "rulings": [
-                "The unveiling triggered ability is countered and you get no tokens if the permanents are illegal targets on resolution."
+                "The War Shaman’s unveiling triggered ability is countered and you get no token if the permanents are illegal targets on resolution."
             ]
         },
         {
-            "id": 43,
-            "name": "The Witch",
-            "name_anchor": "the-witch",
-            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-witch",
-            "cost": "",
-            "cmc": 0,
-            "color": "red",
-            "type": "Identity — Assassin",
-            "types": {
-                "supertype": "Identity",
-                "subtype": "Assassin"
-            },
-            "rarity": "R",
-            "text": "Unveil {4}|When The Witch is unveiled, choose any number of target opponents. They each reveal their hand. For each of those players, you may choose a nonland card from their graveyard or hand and exile it.",
-            "flavor": "",
-            "artist": "Pervandr (Andrei Pervukhin) @ DeviantArt",
-            "rulings": [
-                "No extra rules information."
-            ]
-        },
-        {
-            "id": 44,
+            "id": 50,
             "name": "The Blood Empress",
             "name_anchor": "the-blood-empress",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-blood-empress",
@@ -1057,15 +1236,15 @@
                 "subtype": "Leader"
             },
             "rarity": "U",
-            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Whenever one or more creatures an opponent controls die, you may pay {1}. If you do, choose one —|• Create a 1/1 colorless Spirit creature token.|• Tap or untap target nonland permanent.|• Each opponent loses 2 life and you gain 2 life.|• Scry 2.",
+            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Whenever one or more creatures your opponents control leave the battlefield, choose two. Do this only once each turn.|• Create a 0/1 black Thrull creature token.|• Create two Blood tokens.|• Tap or untap target permanent.|• Target opponent loses 2 life and you gain 2life.",
             "flavor": "",
             "artist": "rkpost",
             "rulings": [
-                "The Blood Empress’s ability triggers once for each time creatures are put into a single opponent’s graveyard, no matter how many cards are put at once."
+                "If multiple creatures leave the battlefield at the same time, The Blood Empress’s ability will trigger only once."
             ]
         },
         {
-            "id": 45,
+            "id": 51,
             "name": "The Chaos Bringer",
             "name_anchor": "the-chaos-bringer",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-chaos-bringer",
@@ -1077,16 +1256,18 @@
                 "supertype": "Identity",
                 "subtype": "Leader"
             },
-            "rarity": "U",
-            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|At the beginning of your upkeep, roll a d6.|1 — Do nothing.|2 — Scry 1.|3 — You gain 3 life.|4 — Create a 0/1 white Goat creature token.|5 — Create a Treasure token.|6 — You may roll again two more times.",
+            "rarity": "M",
+            "text": "At the beginning of your end step, roll a six-sided die, then roll an additional six-sided die for each player who has lost the game.|1 — Create a 0/1 white Goat creature token.|2 or 3 — Scry X, where X is the result.|4 or 5 — Create your choice of a Clue token, a Food token, or a Treasure token.|6 — Create a Clue token, a Food token, and a Treasure token.",
             "flavor": "",
             "artist": "One Vox",
             "rulings": [
-                "You roll a die as The Chaos Bringer’s ability resolves. No player may take actions between seeing the result of the roll and completing the ability’s resolution."
+                "The Chaos Bringer’s triggered ability counts every player who has lost, no matter how the player lost the game: due to a state-based action (having 0 or less life, trying to draw a card from an empty library, having 10 or more poison counters), because of a spell or effect that states they lose the game, because your awesome might has left them with no choice other than concession, or for any other reason.",
+                "You roll a die as The Chaos Bringer’s ability resolves. No player may take actions between seeing the result of the roll and completing the ability’s resolution. No player gets priority between each die’s resolution.",
+                "You apply each die’s result independently (you don’t add them together)."
             ]
         },
         {
-            "id": 46,
+            "id": 52,
             "name": "The Corrupted Regent",
             "name_anchor": "the-corrupted-regent",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-corrupted-regent",
@@ -1098,7 +1279,7 @@
                 "supertype": "Identity",
                 "subtype": "Leader"
             },
-            "rarity": "M",
+            "rarity": "R",
             "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|At the beginning of your draw step, you may draw an additional card. If you do, choose a card in your hand drawn this turn. Pay 3 life or put that card on top of your library.",
             "flavor": "",
             "artist": "ArchLimit (Leo Li) @ DeviantArt",
@@ -1112,7 +1293,31 @@
             ]
         },
         {
-            "id": 47,
+            "id": 53,
+            "name": "The Debt Collector",
+            "name_anchor": "the-debt-collector",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-debt-collector",
+            "cost": "",
+            "cmc": 0,
+            "color": "multicolor",
+            "type": "Identity — Leader",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Leader"
+            },
+            "rarity": "M",
+            "text": "At the beginning of your upkeep, each player loses 1 life for each debt counter among identity cards they control. You gain life equal to the life lost this way.|At the beginning of your end step, target player other than you draws a card and puts a debt counter on an identity card they control.|Whenever a player loses the game, draw a card for each debt counter among identity cards they controlled.",
+            "flavor": "",
+            "artist": "Grafitart @ CGHUB",
+            "rulings": [
+                "The Debt Collector’s last ability will trigger no matter how a player loses the game: due to a state-based action (as a result of having a life total of 0 or less, trying to draw a card from an empty library, or having ten poison counters), a spell or ability that says that player loses the game, a concession, or a game loss awarded by a judge.",
+                "In a multiplayer game using the limited range of influence option (such as a Grand Melee game), if a spell or ability says that you win the game, it instead causes all of your opponents within your range of influence to lose the game. This is another way by which The Debt Collector’s last ability can trigger.",
+                "Turning an identity card face up or face down won’t remove the counters on it.",
+                "Counters on identity cards cannot be proliferated because identity cards aren’t permanents."
+            ]
+        },
+        {
+            "id": 54,
             "name": "The Gathering",
             "name_anchor": "the-gathering",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-gathering",
@@ -1125,7 +1330,7 @@
                 "subtype": "Leader"
             },
             "rarity": "M",
-            "text": "At the beginning of your upkeep, you may choose one that hasn’t been chosen —|• White — You gain 8 life.|• Blue — Draw two cards.|• Black — Destroy target creature or planeswalker.|• Red — Create three 1/1 red Goblin creature tokens.|• Green — Destroy target artifact, enchantment, or land.",
+            "text": "At the beginning of your upkeep, you may choose one that hasn’t been chosen —|• White — Create four 1/1 white Soldier creature tokens.|• Blue — Scry {4}, then draw two cards.|• Black — Return target creature card from your graveyard to the battlefield.|• Red — The Gathering deals 4 damage divided as you choose among any number of targets.|• Green — Destroy target noncreature permanent.",
             "flavor": "",
             "artist": "HarryBuddhaPalm (Justin Reed) @ DeviantArt",
             "rulings": [
@@ -1134,11 +1339,12 @@
                 "The phrase \"that hasn’t been chosen\" refers only to that specific The Gathering.",
                 "It doesn’t matter who has chosen any particular mode. For example, say you control The Gathering and have chosen the first three modes. If an opponent gains control of The Gathering, that player can choose only the fourth or fifth mode.",
                 "In some very unusual situations, you may not be able to choose a mode, either because all modes have previously been chosen or the only remaining modes require targets and there are no legal targets available. In this case, the ability is simply removed from the stack with no effect.",
-                "Keep careful track of which modes the Leader player has already chosen. You may do so by keeping a running count on paper, by using colored counters on that card, by using one basic land card of each color under that card, or by any other clear and mutually agreeable method."
+                "Keep careful track of which modes the Leader player has already chosen. You may do so by keeping a running count on paper, by using colored counters on that card, by using one basic land card of each color under that card, or by any other clear and mutually agreeable method.",
+                "For the red mode, you choose how many targets the ability has and how the damage is divided as you put the ability on the stack. Each target must receive at least 1 damage. If some of the targets are illegal targets as the ability tries to resolve, the original division of damage still applies but no damage is dealt to the illegal targets. If all targets are illegal, the ability doesn’t resolve."
             ]
         },
         {
-            "id": 48,
+            "id": 55,
             "name": "Her Seedborn Highness",
             "name_anchor": "her-seedborn-highness",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=her-seedborn-highness",
@@ -1151,7 +1357,7 @@
                 "subtype": "Leader"
             },
             "rarity": "U",
-            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Start the game with a number of seed counters on Her Seedborn Highness equal to the number of players.|{3}, Remove a seed counter from Her Seedborn Highness: Untap all permanents you control. Activate only once each turn.",
+            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Start the game with a number of seed counters on Her Seedborn Highness equal to the number of players.|{2}, Remove a seed counter from Her Seedborn Highness: Untap all permanents you control. Activate only once each turn.",
             "flavor": "",
             "artist": "Jason Engle @ DeviantArt",
             "rulings": [
@@ -1159,7 +1365,7 @@
             ]
         },
         {
-            "id": 49,
+            "id": 56,
             "name": "His Beloved Majesty",
             "name_anchor": "his-beloved-majesty",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=his-beloved-majesty",
@@ -1181,7 +1387,7 @@
             ]
         },
         {
-            "id": 50,
+            "id": 57,
             "name": "The King over the Scrapyard",
             "name_anchor": "the-king-over-the-scrapyard",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-king-over-the-scrapyard",
@@ -1194,15 +1400,44 @@
                 "subtype": "Leader"
             },
             "rarity": "R",
-            "text": "Whenever a spell or ability an opponent controls destroys or exiles a nontoken permanent you control, create a Treasure token. (It’s an artifact with “{T}, Sacrifice this artifact: Add one mana of any color.”)|Sacrifice three Treasures: Target player draws a card.",
+            "text": "Whenever a creature you control dies, if it was attacking or blocking, create a Junk token or a Treasure token.  (A Junk is an artifact with “{T}, Sacrifice this artifact: Exile the top card of your library. You may play that card this turn. Activate only as a sorcery.”)|Whenever a spell or ability an opponent controls causes a nontoken permanent you control to leave the battlefield, create a Junk token and a Treasure token.",
             "flavor": "",
             "artist": "Ralph Horsley @ DeviantArt",
             "rulings": [
-                "A spell or ability destroys or exiles a permanent only if that spell or ability specifically contains the word \"destroy\" or \"exile\" in its text. The following won’t cause The King over the Scrapyard to trigger: If a spell or ability an opponent controls deals lethal damage to a creature you control, causes you to sacrifice a permanent, removes all loyalty counters from a planeswalker you control, or causes an ability you control to trigger (and then that ability destroys or exiles a permanent you control)."
+                "The King over the Scrapyard’s first ability triggers for each attacking or blocking creature you control that dies. For each of them, you can choose to either create a Junk token or a Treasure token on resolution, but not both tokens.",
+                "The King over the Scrapyard’s second ability triggers only on spells and abilities that directly causes a nontoken permanent to leave the battlefield. The following won’t cause The King over the Scrapyard’s second ability to trigger: If a spell or ability an opponent controls deals lethal damage to a creature you control, removes all loyalty counters from a planeswalker you control, or causes an ability you control to trigger (and then that ability destroys or exiles a permanent you control)."
             ]
         },
         {
-            "id": 51,
+            "id": 58,
+            "name": "The Lich Queen",
+            "name_anchor": "the-lich-queen",
+            "uri": "https://mtgtreachery.net/rules/oracle/?card=the-lich-queen",
+            "cost": "",
+            "cmc": 0,
+            "color": "multicolor",
+            "type": "Identity — Leader",
+            "types": {
+                "supertype": "Identity",
+                "subtype": "Leader"
+            },
+            "rarity": "M",
+            "text": "Start the game with a number of grave counters on The Lich Queen equal to the number of players.|At the beginning of your upkeep, surveil 1.|Remove a grave counter from The Lich Queen: You may play target card from your graveyard this turn. If an instant or sorcery spell cast this way would be put into your graveyard, exile it instead. If it’s a permanent card, it enters with a finality counter on it. Activate only once each turn.",
+            "flavor": "",
+            "artist": "DavidBlac @ DeviantArt",
+            "rulings": [
+                "You pay all costs and follow all normal timing rules for spells cast and lands played using the permission granted by The Lich Queen’s last ability.",
+                "If an instant or sorcery card you cast this way is countered, it will be exiled.",
+                "If an instant or sorcery card you cast this way goes to a zone other than exile or a graveyard, perhaps because one of its abilities says to put it into its owner’s hand, it won’t be exiled. This is true even if that same card would be put into a graveyard later in the turn.",
+                "Finality counters work on any permanent, not only creatures. If a permanent with a finality counter on it would be put into a graveyard from the battlefield, exile it instead.",
+                "Finality counters don’t stop permanents from going to zones other than the graveyard from the battlefield. For example, if a permanent with a finality counter on it would be put into its owner’s hand from the battlefield, it does so normally.",
+                "Finality counters aren’t keyword counters, and a finality counter doesn’t give any abilities to the permanent it’s on. If that permanent loses its abilities and then would go to a graveyard, it will still be exiled instead.",
+                "Multiple finality counters on a single permanent are redundant.",
+                "Counters on identity cards cannot be proliferated because identity cards aren’t permanents."
+            ]
+        },
+        {
+            "id": 59,
             "name": "The Old Ruler",
             "name_anchor": "the-old-ruler",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-old-ruler",
@@ -1215,15 +1450,20 @@
                 "subtype": "Leader"
             },
             "rarity": "U",
-            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Your starting life total is increased by 15.|Your starting hand size and your maximum hand size are each increased by one.|At the beginning of your first upkeep, create three Treasure tokens.",
+            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Your starting life total is increased by 20.|Your starting hand size and your maximum hand size are each increased by one.|At the beginning of your first upkeep, create a Blood token, a Clue token, a Food token, a Map token, and a Treasure token.",
             "flavor": "",
             "artist": "AnthonyFoti (Tony Foti) @ DeviantArt",
             "rulings": [
-                "Even though your starting hand size is increased by one, nothing else about the pregame procedure changes. If you don’t take two or more mulligans in a multiplayer game, you won’t be able to \"scry\" before the game starts."
+                "Even though your starting hand size is increased by one, nothing else about the pregame procedure changes.",
+                "A Blood token is an artifact with \"{1}, {T}, Discard a card, Sacrifice this token: Draw a card.\"",
+                "A Clue token is an artifact with \"{2}, Sacrifice this token: Draw a card.\"",
+                "A Food token is an artifact with \"{2}, {T}, Sacrifice this token: You gain 3 life.\"",
+                "A Map token is an artifact with \"{1}, {T}, Sacrifice this token: Target creature you control explores. Activate only as a sorcery. (Reveal the top card of your library. Put that card into your hand if it’s a land. Otherwise, put a +1/+1 counter on that creature, then put the card back or put it into your graveyard.)\"",
+                "A Treasure token is an artifact with \"{T}, Sacrifice this token: Add one mana of any color.\""
             ]
         },
         {
-            "id": 52,
+            "id": 60,
             "name": "The Queen of Light",
             "name_anchor": "the-queen-of-light",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-queen-of-light",
@@ -1246,7 +1486,7 @@
             ]
         },
         {
-            "id": 53,
+            "id": 61,
             "name": "The Twin Princesses",
             "name_anchor": "the-twin-princesses",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-twin-princesses",
@@ -1259,7 +1499,7 @@
                 "subtype": "Leader"
             },
             "rarity": "R",
-            "text": "{2}: Copy target activated or triggered ability you control. You may choose new targets for the copy. Activate only once each turn. (Mana abilities can’t be targeted.)",
+            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|{2}: Copy target activated or triggered ability you control. You may choose new targets for the copy. Activate only once each turn. (Mana abilities can’t be targeted.)",
             "flavor": "",
             "artist": "phoenixlu @ DeviantArt",
             "rulings": [
@@ -1267,7 +1507,7 @@
                 "Triggered abilities use the word \"when,\" \"whenever,\" or \"at.\" They’re often written as \"[Trigger condition], [effect].\" Some keyword abilities, such as prowess and fabricate, are triggered abilities and will have \"when,\" \"whenever,\" or \"at\" in their reminder text.",
                 "The Twin Princess’ ability targets an activated or triggered ability that was activated or has triggered and is on the stack. It creates another instance of that ability on the stack. It doesn’t cause any object to gain an ability.",
                 "The source of the copy is the same as the source of the original ability.",
-                "If the activated or triggered ability is modal (that is, if it says, “Choose one —” or similar), the mode is copied and can’t be changed.",
+                "If the activated or triggered ability is modal (that is, if it says, \"Choose one —\" or similar), the mode is copied and can’t be changed.",
                 "If the activated or triggered ability divides damage or distributes counters among a number of targets (for example, the ability of Bogardan Hellkite), the division and number of targets can’t be changed. If you choose new targets, you must choose the same number of targets.",
                 "Any choices made when the activated or triggered ability resolves won’t have been made yet when it’s copied. Any such choices will be made separately when the copy resolves. If the activated or triggered ability asks you to pay a cost (such as that of Frenzied Goblin), you pay that cost for the copy.",
                 "If a triggered ability is linked to a second ability, copies of that triggered ability are also linked to that second ability. If the second ability refers to \"the exiled card,\" it refers to all cards exiled by the triggered ability and the copy. For example, if Oblivion Ring’s enters-the-battlefield ability is copied and two permanents are exiled, they both return when Oblivion Ring leaves the battlefield.",
@@ -1276,7 +1516,7 @@
             ]
         },
         {
-            "id": 54,
+            "id": 62,
             "name": "The Void Tyrant",
             "name_anchor": "the-void-tyrant",
             "uri": "https://mtgtreachery.net/rules/oracle/?card=the-void-tyrant",
@@ -1288,8 +1528,8 @@
                 "supertype": "Identity",
                 "subtype": "Leader"
             },
-            "rarity": "R",
-            "text": "Start the game with a number of void counters on The Void Tyrant equal to half the number of players, rounded down.|{3}, Remove a void counter from The Void Tyrant: Counter target spell or ability from a nonidentity source. (Mana abilities can’t be targeted.)",
+            "rarity": "U",
+            "text": "(Start the game with this identity face up in the command zone. You are the starting player.)|Start the game with a number of void counters on The Void Tyrant equal to half the number of players, rounded down.|{2}, Remove a void counter from The Void Tyrant: Counter target spell or ability from a nonidentity source. (Mana abilities can’t be targeted.)",
             "flavor": "",
             "artist": "Grivetart (Bastien Grivet) @ DeviantArt",
             "rulings": [
