@@ -38,24 +38,8 @@ func main() {
 	fmt.Print("Press Enter to continue or Ctrl+C to cancel...")
 	fmt.Scanln()
 
-	// Load the cards JSON - try multiple paths
-	possiblePaths := []string{
-		"../../docs/external/treachery-cards.json",
-		"../../../docs/external/treachery-cards.json",
-		os.Getenv("PRJ_ROOT") + "/docs/external/treachery-cards.json",
-	}
-
-	var jsonData []byte
-	var err error
-
-	for _, path := range possiblePaths {
-		jsonData, err = os.ReadFile(path)
-		if err == nil {
-			fmt.Printf("Found treachery-cards.json at: %s\n", path)
-			break
-		}
-	}
-
+	// Load the cards JSON from the current directory
+	jsonData, err := os.ReadFile("treachery-cards.json")
 	if err != nil {
 		fmt.Printf("Error reading treachery-cards.json: %v\n", err)
 		return
@@ -67,12 +51,9 @@ func main() {
 		return
 	}
 
-	// Create output directory - use absolute path to avoid confusion
-	outputDir := filepath.Join(os.Getenv("PRJ_ROOT"), "nix/app/static/images/cards")
-	if outputDir == "/nix/app/static/images/cards" {
-		// Fallback if PRJ_ROOT not set
-		outputDir = "../../static/images/cards"
-	}
+	// Create output directory in the current working directory.
+	// The Nix build script will move this to the correct final location.
+	outputDir := "cards"
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		fmt.Printf("Error creating directory: %v\n", err)
 		return
