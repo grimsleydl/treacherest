@@ -57,4 +57,6 @@ digest.txt
 nix/app/static/images/
 .gemini/
 /agents/agent-logs/
+/agents/analysis/
 /nix/app/scripts/static/images
+node_modules/
