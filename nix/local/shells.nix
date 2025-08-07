@@ -63,7 +63,7 @@ in {
         name = "dev";
         help = "Start development server with hot reload";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           templ generate --watch --proxy="http://localhost:8080" --open-browser=false &
           air
         '';
@@ -71,13 +71,13 @@ in {
       {
         name = "build-templ";
         help = "Generate Go code from templ templates";
-        command = "cd nix/app && templ generate";
+        command = "cd $PRJ_ROOT/nix/app && templ generate";
       }
       {
         name = "update-deps";
         help = "Update Go dependencies and regenerate gomod2nix.toml";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           go mod tidy
           gomod2nix generate
           echo "Dependencies updated!"
@@ -87,7 +87,7 @@ in {
         name = "import-deps";
         help = "Import Go dependencies from cache to speed up builds";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           gomod2nix import
           echo "Dependencies imported from Go cache!"
         '';
@@ -96,7 +96,7 @@ in {
         name = "run";
         help = "Run the server (builds templates first)";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           templ generate
           go run cmd/server/main.go
         '';
@@ -105,7 +105,7 @@ in {
         name = "build";
         help = "Build the application";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           templ generate
           go build -o bin/server cmd/server/main.go
           echo "Built server at nix/app/bin/server"
@@ -115,7 +115,7 @@ in {
         name = "test";
         help = "Run all tests";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           go test ./...
         '';
       }
@@ -123,7 +123,7 @@ in {
         name = "test-all";
         help = "Run all tests with coverage";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           go test -v -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
           echo "Coverage report generated at coverage.html"
@@ -133,7 +133,7 @@ in {
         name = "fmt";
         help = "Format Go and templ code";
         command = ''
-          cd nix/app
+          cd $PRJ_ROOT/nix/app
           go fmt ./...
           templ fmt .
           echo "Code formatted!"
