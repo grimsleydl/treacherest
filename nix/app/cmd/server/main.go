@@ -47,6 +47,8 @@ func main() {
 	r.Post("/room/{code}/config/toggle", h.ToggleRole)
 	r.Post("/room/{code}/config/count", h.UpdateRoleCount)
 	r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
+	r.Post("/room/{code}/config/hide-distribution", h.UpdateHideDistribution)
+	r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 	r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 	r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
 	r.Post("/room/{code}/config/player-count/increment", h.IncrementPlayerCount)
