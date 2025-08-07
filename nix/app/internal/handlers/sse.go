@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
@@ -53,8 +52,27 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	defer h.eventBus.Unsubscribe(roomCode, events)
 
 	// Don't send initial render - page already has correct content
-	// SSE will only send updates when events occur
-	log.Printf("📡 SSE connection ready for room %s, waiting for events", roomCode)
+	// But DO send initial validation state to ensure UI is in sync
+	roleService := game.NewRoleConfigService(h.config)
+	validationState := room.GetValidationState(roleService)
+	
+	err = sse.MarshalAndMergeSignals(map[string]interface{}{
+		"canStartGame": validationState.CanStart,
+		"validationMessage": validationState.ValidationMessage,
+		"canAutoScale": validationState.CanAutoScale,
+		"autoScaleDetails": validationState.AutoScaleDetails,
+		"requiredRoles": validationState.RequiredRoles,
+		"configuredRoles": validationState.ConfiguredRoles,
+		// Ensure button is not in loading state on initial connect
+		"isStarting": false,
+		"startError": "",
+	})
+	
+	if err != nil {
+		log.Printf("❌ Failed to send initial validation state: %v", err)
+	}
+	
+	log.Printf("📡 SSE connection ready for room %s with validation state v%d", roomCode, validationState.Version)
 
 	// Set up a heartbeat to detect stale connections
 	heartbeat := time.NewTicker(30 * time.Second)
@@ -94,7 +112,8 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 						log.Printf("📡 Player no longer in room %s, closing SSE", roomCode)
 						return
 					}
-					h.renderLobby(sse, room, player)
+					// Use the new helper that includes validation state
+					h.sendLobbyUpdate(sse, room, player)
 				} else {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
 					return
@@ -114,13 +133,29 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("🎮 Game event '%s' received in lobby SSE - closing connection for room %s", event.Type, roomCode)
 				return
 			case "role_config_updated":
-				// Role config was updated - just send the updated role config component
+				// Role config was updated - send both the component and validation state
 				log.Printf("🎯 Role config updated for room %s", roomCode)
+				room, _ = h.store.GetRoom(roomCode)
+				
+				// Send the role config component
 				component := components.RoleConfigurationNew(room, h.config, h.cardService)
 				html := renderToString(component)
 				sse.MergeFragments(html,
 					datastar.WithSelector("#role-config"),
 					datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+				
+				// CRITICAL: Also update validation state since role config affects start ability
+				roleService := game.NewRoleConfigService(h.config)
+				validationState := room.GetValidationState(roleService)
+				
+				sse.MarshalAndMergeSignals(map[string]interface{}{
+					"canStartGame": validationState.CanStart,
+					"validationMessage": validationState.ValidationMessage,
+					"canAutoScale": validationState.CanAutoScale,
+					"autoScaleDetails": validationState.AutoScaleDetails,
+					"requiredRoles": validationState.RequiredRoles,
+					"configuredRoles": validationState.ConfiguredRoles,
+				})
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
@@ -198,6 +233,39 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// sendLobbyUpdate sends a consistent lobby update with validation state
+// This is the helper function that ensures SSE updates use the same validation logic
+func (h *Handler) sendLobbyUpdate(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) error {
+	// CRITICAL: Always use GetValidationState for consistency
+	roleService := game.NewRoleConfigService(h.config)
+	validationState := room.GetValidationState(roleService)
+	
+	// First send the HTML fragment
+	log.Printf("DEBUG: sendLobbyUpdate calling renderLobby for room %s", room.Code)
+	h.renderLobby(sse, room, player)
+	
+	// Then send the validation signals to keep UI in sync
+	err := sse.MarshalAndMergeSignals(map[string]interface{}{
+		"canStartGame": validationState.CanStart,
+		"validationMessage": validationState.ValidationMessage,
+		"canAutoScale": validationState.CanAutoScale,
+		"autoScaleDetails": validationState.AutoScaleDetails,
+		"requiredRoles": validationState.RequiredRoles,
+		"configuredRoles": validationState.ConfiguredRoles,
+		// Reset error state on updates
+		"isStarting": false,
+		"startError": "",
+	})
+	
+	if err != nil {
+		log.Printf("❌ Failed to update validation signals: %v", err)
+		return err
+	}
+	
+	log.Printf("✅ Sent lobby update with validation state v%d for room %s", validationState.Version, room.Code)
+	return nil
+}
+
 // renderLobby renders the lobby content (without SSE trigger)
 func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
 	// Only render lobby if room is in lobby state
@@ -212,27 +280,19 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	// Render to string
 	html := renderToString(component)
 
-	// Wrap content in the full container structure to preserve DOM hierarchy during morph
-	wrappedHTML := `<div id="lobby-container" class="container"><div id="lobby-content">` + html + `</div></div>`
-
-	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
-
-	// Enhanced debug logging to understand the exact HTML being sent
-	log.Printf("🔍 Raw LobbyContent HTML (first 150 chars): %.150s...", html)
-	log.Printf("🔍 Wrapped HTML structure check - has lobby-container: %v", strings.Contains(wrappedHTML, `id="lobby-container"`))
-	log.Printf("🔍 Wrapped HTML structure check - has lobby-content: %v", strings.Contains(wrappedHTML, `id="lobby-content"`))
+	log.Printf("📝 Rendered lobby HTML length: %d chars", len(html))
 
 	// Debug: show first 200 chars of rendered HTML
-	if len(wrappedHTML) > 200 {
-		log.Printf("📝 HTML preview: %s...", wrappedHTML[:200])
+	if len(html) > 200 {
+		log.Printf("📝 HTML preview: %s...", html[:200])
 	} else {
-		log.Printf("📝 Full HTML: %s", wrappedHTML)
+		log.Printf("📝 Full HTML: %s", html)
 	}
 
-	// Send fragment with full container structure
-	// Target the container and morph will preserve the entire DOM hierarchy
-	sse.MergeFragments(wrappedHTML,
-		datastar.WithSelector("#lobby-container"),
+	// Send fragment directly to #lobby-content
+	// This preserves the DOM structure (lobby-container stays intact)
+	sse.MergeFragments(html,
+		datastar.WithSelector("#lobby-content"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 	log.Printf("✅ Sent lobby fragment update for room %s", room.Code)
 }
@@ -360,6 +420,19 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					h.renderHostDashboard(sse, room, player)
+					
+					// Also send validation state for host dashboard  
+					roleService := game.NewRoleConfigService(h.config)
+					validationState := room.GetValidationState(roleService)
+					
+					sse.MarshalAndMergeSignals(map[string]interface{}{
+						"canStartGame": validationState.CanStart,
+						"validationMessage": validationState.ValidationMessage,
+						"canAutoScale": validationState.CanAutoScale,
+						"autoScaleDetails": validationState.AutoScaleDetails,
+						"requiredRoles": validationState.RequiredRoles,
+						"configuredRoles": validationState.ConfiguredRoles,
+					})
 				}
 			case "game_started":
 				// Update dashboard to show countdown state

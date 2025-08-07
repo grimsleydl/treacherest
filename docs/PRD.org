@@ -201,6 +201,8 @@ The game progresses through clearly defined states:
 ** Phase 2: Enhanced Gameplay
 - [ ] Life counter integration (20 starting life)
 - [ ] Custom role configurations
+  - Ability to disable/enable roles from the "pool" of available roles.
+  - Ability to select the number of each role in the game.
 - [ ] Spectator mode
 - [ ] Game replay system
 - [ ] Chat/messaging system with role-based channels
