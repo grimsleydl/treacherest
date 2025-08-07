@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* DaisyUI Plugin - using v4 syntax from northstar */
+@plugin "daisyui";
+
+/* Custom Treacherest theme matching current colors exactly */
+@theme {
+  /* Base colors from current inline CSS */
+  --color-treacher-bg: #1a1a2e;
+  --color-treacher-secondary: #16213e;
+  --color-treacher-border: #0f3460;
+  --color-treacher-accent: #e94560;
+  --color-treacher-text: #eeeeee;
+  
+  /* Map to Tailwind color system */
+  --color-primary: #e94560;
+  --color-secondary: #0f3460;
+  --color-accent: #ffd700;
+  --color-base-100: #1a1a2e;
+  --color-base-200: #16213e;
+  --color-base-300: #0f3460;
+}
+
+@layer utilities {
+  /* Preserve exact room code styling */
+  .room-code-display {
+    @apply text-5xl font-bold tracking-[0.2em] text-primary;
+  }
+  
+  /* Game-specific utilities */
+  .text-shadow-game {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-base-300;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary rounded;
+  }
+}
+
+@layer components {
+  /* Temporary compatibility classes during migration */
+  .player-card-compat {
+    @apply p-3 bg-base-200 rounded;
+  }
+  
+  .player-card-compat.current {
+    @apply bg-base-300 ring-2 ring-primary;
+  }
+}
