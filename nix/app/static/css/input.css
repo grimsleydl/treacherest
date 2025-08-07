@@ -2,26 +2,11 @@
 
 /* DaisyUI Plugin - using v4 syntax from northstar */
 @plugin "daisyui" {
-  themes: night --default, dracula, synthwave, treacherest;
+  themes: dracula --default, night, synthwave, cyberpunk, valentine, cupcake, retro, forest, aqua, pastel, acid, caramellatte, abyss, silk, coffee, winter, nord;
 }
 
-/* Custom Treacherest theme matching current colors exactly */
-@theme {
-  /* Base colors from current inline CSS */
-  --color-treacher-bg: #1a1a2e;
-  --color-treacher-secondary: #16213e;
-  --color-treacher-border: #0f3460;
-  --color-treacher-accent: #e94560;
-  --color-treacher-text: #eeeeee;
-  
-  /* Map to Tailwind color system */
-  --color-primary: #e94560;
-  --color-secondary: #0f3460;
-  --color-accent: #ffd700;
-  --color-base-100: #1a1a2e;
-  --color-base-200: #16213e;
-  --color-base-300: #0f3460;
-}
+/* Theme colors are now handled by DaisyUI's theme system */
+/* No custom color overrides - let themes control all colors */
 
 @layer utilities {
   /* Preserve exact room code styling */
@@ -94,5 +79,43 @@
   /* Smooth linear animation (no easing) */
   .countdown-linear > *::before {
     transition: all 0.3s linear !important;
+  }
+  
+  /* Role configuration specific styles */
+  .role-configuration {
+    @apply bg-base-200 p-4 rounded-lg shadow-lg max-w-md mx-auto;
+  }
+
+  .role-configuration h3, .role-configuration h4 {
+    @apply text-xl font-bold mb-2 text-primary;
+  }
+
+  .player-count-config, .preset-selector, .advanced-options {
+    @apply mb-4;
+  }
+
+  .player-count-config label, .preset-selector label, .advanced-options label {
+    @apply font-semibold;
+  }
+
+  .player-range, .preset-selector select, .advanced-options .option-item {
+    @apply bg-base-300 p-2 rounded;
+  }
+
+  .option-item {
+    @apply flex items-center gap-2;
+  }
+
+  .option-description {
+    @apply text-sm text-base-content/60;
+  }
+
+  .role-settings {
+    @apply mt-4;
+  }
+
+
+  .validation-messages {
+    @apply mt-4 text-error;
   }
 }
