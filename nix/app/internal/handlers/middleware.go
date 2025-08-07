@@ -15,45 +15,45 @@ var allowedSSEParams = map[string]bool{
 var allowedDatastarSignals = map[string]bool{
 	// Theme signal
 	"theme": true,
-	
+
 	// Lobby/start button signals
-	"isStarting": true,
-	"startError": true,
-	"canStartGame": true,
+	"isStarting":        true,
+	"startError":        true,
+	"canStartGame":      true,
 	"validationMessage": true,
-	"canAutoScale": true,
-	"autoScaleDetails": true,
-	"requiredRoles": true,
-	"configuredRoles": true,
-	
+	"canAutoScale":      true,
+	"autoScaleDetails":  true,
+	"requiredRoles":     true,
+	"configuredRoles":   true,
+
 	// Role configuration signals
-	"cardId": true,
+	"cardId":      true,
 	"cardChecked": true,
-	"roleType": true,
-	"roleCount": true,
-	"action": true,
-	
+	"roleType":    true,
+	"roleCount":   true,
+	"action":      true,
+
 	// Accordion UI state
-	"accordionLeader": true,
+	"accordionLeader":   true,
 	"accordionGuardian": true,
 	"accordionAssassin": true,
-	"accordionTraitor": true,
-	
+	"accordionTraitor":  true,
+
 	// Game settings
-	"allowLeaderless": true,
+	"allowLeaderless":      true,
 	"hideRoleDistribution": true,
-	"fullyRandomRoles": true,
-	
+	"fullyRandomRoles":     true,
+
 	// Loading states
-	"updatingLeaderless": true,
+	"updatingLeaderless":       true,
 	"updatingHideDistribution": true,
-	"updatingFullyRandom": true,
-	
+	"updatingFullyRandom":      true,
+
 	// Game signals
 	"countdown": true,
-	
+
 	// Host dashboard
-	"qrCode": true,
+	"qrCode":   true,
 	"hostMode": true,
 }
 
@@ -94,7 +94,7 @@ func ValidateSSERequest(next http.HandlerFunc) http.HandlerFunc {
 					http.Error(w, "Datastar state too large", http.StatusBadRequest)
 					return
 				}
-				
+
 				// Parse and validate the JSON structure
 				if values[0] != "" { // Empty is OK
 					var signals map[string]interface{}
@@ -102,11 +102,12 @@ func ValidateSSERequest(next http.HandlerFunc) http.HandlerFunc {
 						http.Error(w, "Invalid datastar JSON", http.StatusBadRequest)
 						return
 					}
-					
+
 					// Validate each signal name
 					for signalName := range signals {
 						if !allowedDatastarSignals[signalName] {
 							http.Error(w, "Invalid signal in datastar", http.StatusBadRequest)
+							http.Error(w, signalName, http.StatusBadRequest)
 							return
 						}
 					}

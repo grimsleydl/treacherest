@@ -73,7 +73,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
-	
+
 	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		// Check if store is available
 		if s == nil {
@@ -81,22 +81,22 @@ func main() {
 			w.Write([]byte("Store not ready"))
 			return
 		}
-		
+
 		// In production, you might check:
 		// - Database connections
 		// - External service availability
 		// - Cache connections
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
-	
+
 	// Static files
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	// Start server with production configuration
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
-	
+
 	// Create custom server with production settings
 	server := &http.Server{
 		Addr:         addr,
@@ -118,17 +118,17 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	
+
 	log.Println("Shutting down server...")
-	
+
 	// Create shutdown context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
-	
+
 	// Attempt graceful shutdown
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
-	
+
 	log.Println("Server gracefully stopped")
 }
