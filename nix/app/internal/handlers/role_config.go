@@ -180,7 +180,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists {
 		leaderCount = leaderConfig.Count
 	}
-	
+
 	log.Printf("📊 UpdateLeaderlessGame state change for room %s:", roomCode)
 	log.Printf("  - Previous AllowLeaderlessGame: %v", previousState)
 	log.Printf("  - New AllowLeaderlessGame: %v", body.AllowLeaderless)
@@ -251,7 +251,6 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 			datastar.WithSelector("#role-validation"))
 		return
 	}
-
 
 	// Get the type config
 	typeConfig, exists := room.RoleConfig.RoleTypes[roleType]
@@ -403,7 +402,6 @@ func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
 	if maxPlayers > h.config.Server.MaxPlayersPerRoom {
 		maxPlayers = h.config.Server.MaxPlayersPerRoom
 	}
-
 
 	room.RoleConfig.MinPlayers = minPlayers
 	room.RoleConfig.MaxPlayers = maxPlayers
@@ -624,7 +622,7 @@ func (h *Handler) sendRoleValidationNew(w http.ResponseWriter, r *http.Request, 
 func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	log.Printf("📤 sendUpdatedRoleConfigUI called for room %s", room.Code)
 	sse := datastar.NewSSE(w, r)
-	
+
 	// Log current state
 	leaderCount := 0
 	if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists {
@@ -632,35 +630,325 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 	}
 	log.Printf("  - Current AllowLeaderlessGame: %v", room.RoleConfig.AllowLeaderlessGame)
 	log.Printf("  - Current Leader count: %d", leaderCount)
-	
+
+	// Create player count display data
+	playerCountDisplay := h.createPlayerCountDisplay(room)
+
 	// Re-render just the role configuration component
-	component := components.RoleConfigurationNew(room, h.config, h.cardService)
+	component := components.RoleConfigurationNew(room, h.config, h.cardService, playerCountDisplay)
 	html := renderToString(component)
-	
+
 	log.Printf("  - Sending role config update with selector #role-config")
-	
+
 	// Send the role config fragment
 	sse.MergeFragments(html,
 		datastar.WithSelector("#role-config"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-	
+
 	// Also update validation state
 	roleService := game.NewRoleConfigService(h.config)
 	validationState := room.GetValidationState(roleService)
-	
+
 	log.Printf("  - Validation state: CanStart=%v, Message=%s", validationState.CanStart, validationState.ValidationMessage)
-	
+
 	signals := map[string]interface{}{
-		"canStartGame": validationState.CanStart,
-		"validationMessage": validationState.ValidationMessage,
-		"canAutoScale": validationState.CanAutoScale,
-		"autoScaleDetails": validationState.AutoScaleDetails,
-		"requiredRoles": validationState.RequiredRoles,
-		"configuredRoles": validationState.ConfiguredRoles,
-		"updatingLeaderless": false, // Reset loading state
-		"allowLeaderless": room.RoleConfig.AllowLeaderlessGame, // Sync checkbox state
+		"canStartGame":       validationState.CanStart,
+		"validationMessage":  validationState.ValidationMessage,
+		"canAutoScale":       validationState.CanAutoScale,
+		"autoScaleDetails":   validationState.AutoScaleDetails,
+		"requiredRoles":      validationState.RequiredRoles,
+		"configuredRoles":    validationState.ConfiguredRoles,
+		"updatingLeaderless": false,                               // Reset loading state
+		"allowLeaderless":    room.RoleConfig.AllowLeaderlessGame, // Sync checkbox state
 	}
-	
+
 	log.Printf("  - Sending signals (with allowLeaderless): %+v", signals)
 	sse.MarshalAndMergeSignals(signals)
+}
+
+func (h *Handler) createPlayerCountDisplay(room *game.Room) components.PlayerCountDisplay {
+	// Use RoleConfig.MaxPlayers which represents the current game size
+	currentPlayerCount := room.RoleConfig.MaxPlayers
+	canDecrement := currentPlayerCount > h.config.Server.MinPlayersPerRoom && currentPlayerCount > len(room.Players)
+	canIncrement := currentPlayerCount < h.config.Server.MaxPlayersPerRoom
+
+	// Build tooltips
+	incrementTooltip := "Increase player count"
+	decrementTooltip := "Decrease player count"
+
+	if !canIncrement {
+		incrementTooltip = "Maximum player count reached"
+	} else if room.RoleConfig.PresetName == "custom" {
+		// Calculate which role would be added
+		roleToAdd := h.calculateRoleAdjustment(room, true)
+		if roleToAdd != "" {
+			incrementTooltip = fmt.Sprintf("Will add 1 %s", roleToAdd)
+		}
+	}
+
+	if !canDecrement {
+		if currentPlayerCount <= h.config.Server.MinPlayersPerRoom {
+			decrementTooltip = "Minimum player count reached"
+		} else if currentPlayerCount <= len(room.Players) {
+			decrementTooltip = fmt.Sprintf("Cannot reduce below %d connected players", len(room.Players))
+		}
+	} else if room.RoleConfig.PresetName == "custom" {
+		// Calculate which role would be removed
+		roleToRemove := h.calculateRoleAdjustment(room, false)
+		if roleToRemove != "" {
+			decrementTooltip = fmt.Sprintf("Will remove 1 %s", roleToRemove)
+		}
+	}
+
+	return components.PlayerCountDisplay{
+		IncrementTooltip: incrementTooltip,
+		DecrementTooltip: decrementTooltip,
+		CanIncrement:     canIncrement,
+		CanDecrement:     canDecrement,
+	}
+}
+
+func (h *Handler) calculateRoleAdjustment(room *game.Room, increment bool) string {
+	config := room.RoleConfig
+
+	// For preset mode, return empty (no specific role preview)
+	if config.PresetName != "custom" {
+		return ""
+	}
+
+	// Build map of roles that can be adjusted
+	roleCounts := make(map[string]int)
+	roleTypes := []string{}
+
+	// Always include Guardian, Assassin, Traitor
+	for _, role := range []string{"Guardian", "Assassin", "Traitor"} {
+		if typeConfig, exists := config.RoleTypes[role]; exists {
+			roleCounts[role] = typeConfig.Count
+			roleTypes = append(roleTypes, role)
+		}
+	}
+
+	// Include Leader only if count > 1
+	if leaderConfig, exists := config.RoleTypes["Leader"]; exists && leaderConfig.Count > 1 {
+		roleCounts["Leader"] = leaderConfig.Count
+		roleTypes = append(roleTypes, "Leader")
+	}
+
+	// Calculate average (excluding roles not in calculation)
+	total := 0
+	for _, count := range roleCounts {
+		total += count
+	}
+
+	if len(roleCounts) == 0 {
+		return ""
+	}
+
+	avg := float64(total) / float64(len(roleCounts))
+
+	if increment {
+		// Find most underrepresented role
+		maxDeviation := 0.0
+		roleToAdd := ""
+
+		for _, role := range roleTypes {
+			deviation := avg - float64(roleCounts[role])
+			if deviation > maxDeviation || (deviation == maxDeviation && role == "Guardian") {
+				maxDeviation = deviation
+				roleToAdd = role
+			}
+		}
+
+		return roleToAdd
+	} else {
+		// Find most overrepresented role that can be safely reduced
+		maxDeviation := 0.0
+		roleToRemove := ""
+
+		for _, role := range roleTypes {
+			count := roleCounts[role]
+			canReduce := true
+
+			// Check minimum constraints
+			switch role {
+			case "Leader":
+				canReduce = count > 1
+			case "Assassin":
+				canReduce = count > 1
+			default:
+				canReduce = count > 0
+			}
+
+			if canReduce {
+				deviation := float64(count) - avg
+				if deviation > maxDeviation {
+					maxDeviation = deviation
+					roleToRemove = role
+				}
+			}
+		}
+
+		return roleToRemove
+	}
+}
+
+// IncrementPlayerCount increments the player count for a room
+func (h *Handler) IncrementPlayerCount(w http.ResponseWriter, r *http.Request) {
+	h.updatePlayerCount(w, r, "increment")
+}
+
+// DecrementPlayerCount decrements the player count for a room
+func (h *Handler) DecrementPlayerCount(w http.ResponseWriter, r *http.Request) {
+	h.updatePlayerCount(w, r, "decrement")
+}
+
+// updatePlayerCount handles the actual player count update logic
+func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, action string) {
+	roomCode := chi.URLParam(r, "code")
+
+	// Get room
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		sse := datastar.NewSSE(w, r)
+		sse.MergeFragments(`<div class="alert alert-error">Room not found</div>`,
+			datastar.WithSelector("#role-validation"))
+		return
+	}
+
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		sse := datastar.NewSSE(w, r)
+		sse.MergeFragments(`<div class="alert alert-error">Unauthorized</div>`,
+			datastar.WithSelector("#role-validation"))
+		return
+	}
+
+	// Validate action
+	currentPlayerCount := room.RoleConfig.MaxPlayers
+
+	switch action {
+	case "increment":
+		if currentPlayerCount >= h.config.Server.MaxPlayersPerRoom {
+			sse := datastar.NewSSE(w, r)
+			sse.MergeFragments(`<div class="alert alert-error">Maximum player count reached</div>`,
+				datastar.WithSelector("#role-validation"))
+			return
+		}
+		room.RoleConfig.MaxPlayers++
+
+	case "decrement":
+		if currentPlayerCount <= h.config.Server.MinPlayersPerRoom {
+			sse := datastar.NewSSE(w, r)
+			sse.MergeFragments(`<div class="alert alert-error">Minimum player count reached</div>`,
+				datastar.WithSelector("#role-validation"))
+			return
+		}
+
+		// Check connected players constraint
+		if currentPlayerCount <= len(room.Players) {
+			sse := datastar.NewSSE(w, r)
+			sse.MergeFragments(fmt.Sprintf(`<div class="alert alert-error">Cannot reduce below %d connected players</div>`, len(room.Players)),
+				datastar.WithSelector("#role-validation"))
+			return
+		}
+
+		room.RoleConfig.MaxPlayers--
+
+	default:
+		log.Printf("ERROR: Invalid action '%s' for player count update", action)
+		return
+	}
+
+	// Now adjust role counts based on mode
+	if room.RoleConfig.PresetName != "custom" {
+		// Apply preset for new player count
+		h.applyPresetForPlayerCount(room)
+	} else {
+		// Smart rebalancing for custom mode
+		h.rebalanceCustomRoles(room, action == "increment")
+	}
+
+	// Update room
+	h.store.UpdateRoom(room)
+
+	// Publish event
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	// Send updated UI
+	h.sendUpdatedRoleConfigUI(w, r, room)
+}
+
+func (h *Handler) applyPresetForPlayerCount(room *game.Room) {
+	presetName := room.RoleConfig.PresetName
+	playerCount := room.RoleConfig.MaxPlayers
+
+	// Get preset distribution
+	preset, exists := h.config.Roles.Presets[presetName]
+	if !exists {
+		log.Printf("ERROR: Preset '%s' not found", presetName)
+		return
+	}
+
+	distribution, exists := preset.Distributions[playerCount]
+	if !exists {
+		log.Printf("ERROR: No distribution for %d players in preset '%s'", playerCount, presetName)
+		return
+	}
+
+	// Apply distribution
+	if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists {
+		leaderConfig.Count = distribution["leader"]
+	}
+	if guardianConfig, exists := room.RoleConfig.RoleTypes["Guardian"]; exists {
+		guardianConfig.Count = distribution["guardian"]
+	}
+	if assassinConfig, exists := room.RoleConfig.RoleTypes["Assassin"]; exists {
+		assassinConfig.Count = distribution["assassin"]
+	}
+	if traitorConfig, exists := room.RoleConfig.RoleTypes["Traitor"]; exists {
+		traitorConfig.Count = distribution["traitor"]
+	}
+}
+
+func (h *Handler) rebalanceCustomRoles(room *game.Room, increment bool) {
+	// Use the same logic as calculateRoleAdjustment to determine which role to adjust
+	roleToAdjust := h.calculateRoleAdjustment(room, increment)
+
+	if roleToAdjust == "" {
+		// Fallback: adjust the first available role
+		if increment {
+			roleToAdjust = "Guardian"
+		} else {
+			// Find a role that can be decremented
+			for _, role := range []string{"Traitor", "Guardian", "Assassin", "Leader"} {
+				if config, exists := room.RoleConfig.RoleTypes[role]; exists {
+					switch role {
+					case "Leader", "Assassin":
+						if config.Count > 1 {
+							roleToAdjust = role
+							break
+						}
+					default:
+						if config.Count > 0 {
+							roleToAdjust = role
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Apply the adjustment
+	if roleConfig, exists := room.RoleConfig.RoleTypes[roleToAdjust]; exists {
+		if increment {
+			roleConfig.Count++
+		} else {
+			roleConfig.Count--
+		}
+	}
 }
