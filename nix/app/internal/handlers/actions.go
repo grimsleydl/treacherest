@@ -5,6 +5,7 @@ import (
 	datastar "github.com/starfederation/datastar/sdk/go"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 	"treacherest/internal/game"
 )
@@ -99,10 +100,12 @@ func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Clear cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "player_" + room.Code,
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "player_" + room.Code,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	// Notify other players
@@ -112,8 +115,18 @@ func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	// Redirect to home
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// Check if this is an AJAX request (from datastar)
+	if r.Header.Get("X-Requested-With") == "XMLHttpRequest" || strings.Contains(r.Header.Get("Accept"), "text/event-stream") {
+		// Use datastar to redirect
+		sse := datastar.NewSSE(w, r)
+		sse.ExecuteScript("window.location.href = '/'")
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
+	} else {
+		// Normal redirect for regular requests
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
 }
 
 // runCountdown runs the countdown timer
