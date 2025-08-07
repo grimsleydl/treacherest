@@ -121,68 +121,55 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 			</div>
 		</div>
 	} else {
-		<div class="join-item border border-base-300
-					grid grid-cols-5 grid-rows-1
-					auto-cols-max w-full
-					">
-			<div class="grid grid-cols-1 grid-rows-3">
-				<!-- Left controls - wider buttons -->
-					<button
-						class="btn btn-primary
-							   row-start-1
-							   "
-						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
-					>+</button>
-					<span class="text-lg font-bold my-1 row-start-2 text-center">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
-					<button 
-						class="btn btn-primary
-							   row-start-3
-							   "
-						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
-						disabled?={ typeConfig.Count == 0 }
-					>-</button>
-			</div>
-
-				<!-- Accordion part -->
-				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4 transition-all duration-100">
-					<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } id={ fmt.Sprintf("role-accordion-%s", typeName) }
-						   data-bind={ fmt.Sprintf("accordion%s", typeName) }
-						   class="peer/roletype sr-only"
-					/>
-					<label for={ fmt.Sprintf("role-accordion-%s", typeName) } class=" absolute inset-0 z-10 collapse-title h-full font-bold items-center p-8
-							   peer-checked/roletype:static
-							   peer-checked/roletype:h-auto
-							   peer-checked/roletype:z-auto
-							   peer-checked/roletype:bg-transparent hover:bg-base-300
-							   transition
-							   peer-checked/roletype:delay-100
-							   ">
-						{ typeName }s
-						if typeConfig.Count > countEnabledCards(typeConfig) {
-							<span class="text-warning ml-2 text-sm">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
-						} else if typeConfig.Count > 0 {
-							<span class="text-success ml-2">✓</span>
+		<div class="join-item border border-base-300">
+			<!-- Accordion with integrated controls -->
+			<div class="collapse collapse-arrow duration-100">
+				<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } id={ fmt.Sprintf("role-accordion-%s", typeName) }
+					   data-bind={ fmt.Sprintf("accordion%s", typeName) }
+				/>
+				<div class="collapse-title font-bold flex items-center gap-4">
+					<!-- Controls on the left side of the title -->
+					<div class="flex flex-col items-center gap-1 relative z-10">
+						<button
+							class="btn btn-primary relative z-20"
+							data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
+							onclick="event.stopPropagation()"
+						>+</button>
+						<span class="text-lg font-bold">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
+						<button 
+							class="btn btn-primary relative z-20"
+							data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
+							disabled?={ typeConfig.Count == 0 }
+							onclick="event.stopPropagation()"
+						>-</button>
+					</div>
+					<!-- Role name and status -->
+					<span>{ typeName }s</span>
+					if typeConfig.Count > countEnabledCards(typeConfig) {
+						<span class="text-warning ml-2 text-sm">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
+					} else if typeConfig.Count > 0 {
+						<span class="text-success ml-2">✓</span>
+					}
+				</div>
+				<div class="collapse-content">
+					<div class="space-y-2">
+						for _, card := range cards {
+							<div class="form-control">
+								<label class="label cursor-pointer justify-start gap-2">
+									<input
+										type="checkbox"
+										class="toggle"
+										id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
+										checked?={ typeConfig.EnabledCards[card.Name] }
+										data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
+									/>
+									<span class="label-text">{ card.Name }</span>
+								</label>
+							</div>
 						}
-					</label>
-					<div class="collapse-content">
-						<div class="space-y-2 pt-2" data-show={ fmt.Sprintf("$accordion%s", typeName) }>
-							for _, card := range cards {
-								<div class="form-control">
-									<label class="label cursor-pointer justify-start gap-2">
-										<input
-											type="checkbox"
-											class="toggle"
-											id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
-											checked?={ typeConfig.EnabledCards[card.Name] }
-											data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
-										/>
-										<span class="label-text">{ card.Name }</span>
-									</label>
-								</div>
-							}
-						</div>
 					</div>
 				</div>
+			</div>
 		</div>
 	}
 }
