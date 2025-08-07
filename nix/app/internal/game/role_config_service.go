@@ -138,11 +138,6 @@ func (s *RoleConfigService) CreateDefaultConfiguration() *RoleConfiguration {
 		}
 	}
 
-	// Set default leader count
-	if roleConfig.RoleTypes["Leader"] != nil {
-		roleConfig.RoleTypes["Leader"].Count = 1
-	}
-
 	return roleConfig
 }
 

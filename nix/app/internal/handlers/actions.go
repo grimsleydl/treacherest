@@ -244,6 +244,7 @@ func (h *Handler) runCountdown(room *game.Room) {
 	for i := 5; i > 0; i-- {
 		room.CountdownRemaining = i
 		h.store.UpdateRoom(room)
+		log.Printf("⏰ Publishing countdown_update for room %s: %d", room.Code, i)
 
 		h.eventBus.Publish(Event{
 			Type:     "countdown_update",
