@@ -16,8 +16,16 @@ func main() {
 		port = "8080"
 	}
 	addr := ":" + port
+	
+	// Create custom server with no idle timeout for SSE connections
+	server := &http.Server{
+		Addr:        addr,
+		Handler:     handler,
+		IdleTimeout: 0, // Disable idle timeout to keep SSE connections alive
+	}
+	
 	log.Printf("Starting server on %s", addr)
-	if err := http.ListenAndServe(addr, handler); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

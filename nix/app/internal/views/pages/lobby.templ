@@ -12,9 +12,12 @@ templ LobbyPage(room *game.Room, currentPlayer *game.Player) {
 }
 
 templ LobbyBody(room *game.Room, currentPlayer *game.Player) {
-	<div id="lobby-container" data-on-load={ "@get('/sse/lobby/" + room.Code + "')" } class="container">
-		<div id="lobby-content">
-			@LobbyContent(room, currentPlayer)
+	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
+	<div data-on-load={ "@get('/sse/lobby/" + room.Code + "')" }>
+		<div id="lobby-container" class="container">
+			<div id="lobby-content">
+				@LobbyContent(room, currentPlayer)
+			</div>
 		</div>
 	</div>
 }
