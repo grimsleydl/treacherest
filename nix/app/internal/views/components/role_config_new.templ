@@ -29,7 +29,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 		id="role-config"
 		class="role-configuration"
 		data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
-		data-signals__ifmissing={ fmt.Sprintf(`{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false, allowLeaderless: %t, hideRoleDistribution: %t, fullyRandomRoles: %t, enableAutoScale: true, updatingLeaderless: false, updatingHideDistribution: false, updatingFullyRandom: false}`, room.RoleConfig.AllowLeaderlessGame, room.RoleConfig.HideRoleDistribution, room.RoleConfig.FullyRandomRoles) }
+		data-signals__ifmissing={ fmt.Sprintf(`{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false, allowLeaderless: %t, hideRoleDistribution: %t, fullyRandomRoles: %t, updatingLeaderless: false, updatingHideDistribution: false, updatingFullyRandom: false}`, room.RoleConfig.AllowLeaderlessGame, room.RoleConfig.HideRoleDistribution, room.RoleConfig.FullyRandomRoles) }
 	>
 		<h3>Game Configuration</h3>
 		// Player count settings
@@ -125,27 +125,9 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					<span data-show="$updatingFullyRandom" class="loading loading-spinner loading-xs ml-2"></span>
 				</label>
 			</div>
-			// Auto-scale toggle - only show for preset configurations
+			// Show auto-scale info for preset configurations
 			if room.RoleConfig.PresetName != "custom" {
-				<div
-					class="option-item"
-					data-show="$canAutoScale"
-					data-attr-title="$autoScaleDetails"
-				>
-					<input
-						type="checkbox"
-						id="enable-auto-scale"
-						checked?={ true }
-						data-bind="enableAutoScale"
-						data-attr-disabled="!$canAutoScale"
-					/>
-					<label for="enable-auto-scale">
-						Auto-scale roles for player count
-						<span class="option-description">({ room.RoleConfig.PresetName } preset will adjust roles automatically)</span>
-					</label>
-				</div>
-				// Show auto-scale details when relevant
-				<div class="auto-scale-info" data-show="$canAutoScale && $autoScaleDetails">
+				<div class="auto-scale-info" data-show="$autoScaleDetails">
 					<span class="info-icon">ℹ️</span>
 					<span data-text="$autoScaleDetails" class="text-sm"></span>
 				</div>
