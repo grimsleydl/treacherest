@@ -12,7 +12,7 @@ type SortedRole struct {
 }
 
 templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig, sortedRoles []SortedRole) {
-	<div id="role-config" class="role-configuration">
+	<div id="role-config" class="role-configuration" data-signals="{roleName: '', enabled: false}">
 		<h3>Game Configuration</h3>
 		
 		// Player count settings
@@ -50,20 +50,18 @@ templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig, sortedRoles [
 			<h4>Roles</h4>
 			for _, role := range sortedRoles {
 				<div class="role-item" data-role={ role.Name }>
-					<form id={ "toggle-form-" + role.Name } data-on-change={ "@post('/room/" + room.Code + "/config/toggle', {contentType: 'form'})" }>
-						<div class="role-header">
-							<input 
-								type="checkbox" 
-								id={ "role-" + role.Name }
-								name={ "role-" + role.Name }
-								checked?={ room.RoleConfig.EnabledRoles[role.Name] }
-							/>
-							<label for={ "role-" + role.Name }>
-								{ role.Definition.DisplayName }
-								<span class="role-category">({ role.Definition.Category })</span>
-							</label>
-						</div>
-					</form>
+					<div class="role-header">
+						<input 
+							type="checkbox" 
+							id={ "role-" + role.Name }
+							checked?={ room.RoleConfig.EnabledRoles[role.Name] }
+							data-on-change={ fmt.Sprintf(`$roleName = '%s'; $enabled = evt.target.checked; @post('/room/%s/config/toggle')`, role.Name, room.Code) }
+						/>
+						<label for={ "role-" + role.Name }>
+							{ role.Definition.DisplayName }
+							<span class="role-category">({ role.Definition.Category })</span>
+						</label>
+					</div>
 					if room.RoleConfig.EnabledRoles[role.Name] {
 						<form id={ "count-form-" + role.Name } data-on-change={ "@post('/room/" + room.Code + "/config/count', {contentType: 'form'})" }>
 							<div class="role-count">

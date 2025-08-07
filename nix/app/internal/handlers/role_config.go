@@ -6,6 +6,7 @@ import (
 	"strings"
 	"fmt"
 	"time"
+	"encoding/json"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
 	"github.com/go-chi/chi/v5"
@@ -79,40 +80,38 @@ func (h *Handler) ToggleRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Parse form data - handle both multipart and urlencoded
-	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-		r.ParseMultipartForm(32 << 20) // 32MB max
-	} else {
-		r.ParseForm()
+	// Parse JSON body with signals
+	var signals struct {
+		RoleName string `json:"roleName"`
+		Enabled  bool   `json:"enabled"`
 	}
 	
-	// Find which role was toggled
-	var roleName string
-	for key := range r.Form {
-		if strings.HasPrefix(key, "role-") {
-			roleName = strings.TrimPrefix(key, "role-")
-			break
-		}
+	if err := json.NewDecoder(r.Body).Decode(&signals); err != nil {
+		http.Error(w, "Invalid request body: " + err.Error(), http.StatusBadRequest)
+		return
 	}
 	
-	if roleName == "" {
+	if signals.RoleName == "" {
 		http.Error(w, "Role name required", http.StatusBadRequest)
 		return
 	}
 	
-	// Toggle role
-	if room.RoleConfig.EnabledRoles[roleName] {
-		room.RoleConfig.EnabledRoles[roleName] = false
-		delete(room.RoleConfig.RoleCounts, roleName)
-	} else {
-		room.RoleConfig.EnabledRoles[roleName] = true
-		// Set default count
-		if roleDef, exists := h.config.Roles.Available[roleName]; exists {
-			room.RoleConfig.RoleCounts[roleName] = roleDef.MinCount
-			if roleDef.MinCount == 0 {
-				room.RoleConfig.RoleCounts[roleName] = 1
+	// Update role state based on the explicit enabled value
+	room.RoleConfig.EnabledRoles[signals.RoleName] = signals.Enabled
+	
+	if signals.Enabled {
+		// Set default count if enabling
+		if _, exists := room.RoleConfig.RoleCounts[signals.RoleName]; !exists {
+			if roleDef, exists := h.config.Roles.Available[signals.RoleName]; exists {
+				room.RoleConfig.RoleCounts[signals.RoleName] = roleDef.MinCount
+				if roleDef.MinCount == 0 {
+					room.RoleConfig.RoleCounts[signals.RoleName] = 1
+				}
 			}
 		}
+	} else {
+		// Remove count if disabling
+		delete(room.RoleConfig.RoleCounts, signals.RoleName)
 	}
 	
 	// Mark as custom since user modified it
@@ -130,7 +129,28 @@ func (h *Handler) ToggleRole(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 	
-	// Send validation update
+	// Re-render the entire role configuration component
+	sse := datastar.NewSSE(w, r)
+	roleService := game.NewRoleConfigService(h.config)
+	tempSortedRoles := roleService.GetSortedRoles()
+	
+	// Convert to components.SortedRole type
+	sortedRoles := make([]components.SortedRole, len(tempSortedRoles))
+	for i, role := range tempSortedRoles {
+		sortedRoles[i] = components.SortedRole{
+			Name:       role.Name,
+			Definition: role.Definition,
+		}
+	}
+	
+	component := components.RoleConfiguration(room, h.config, sortedRoles)
+	html := renderToString(component)
+	
+	sse.MergeFragments(html,
+		datastar.WithSelector("#role-config"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	
+	// Also send validation update
 	h.sendRoleValidation(w, r, room)
 }
 
