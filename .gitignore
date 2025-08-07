@@ -46,3 +46,8 @@ server
 /.go/
 /.claude/
 /docs/external/
+
+# Playwright test outputs
+test-results/
+playwright-report/
+playwright/.cache/
