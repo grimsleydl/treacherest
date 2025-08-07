@@ -48,8 +48,13 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	sse := datastar.NewSSE(w, r)
 
 	// Subscribe to events
+	playerID := player.ID // Capture player ID for defer
 	events := h.eventBus.Subscribe(roomCode)
-	defer h.eventBus.Unsubscribe(roomCode, events)
+	log.Printf("📡 DEBUG: Player %s subscribed to events for room %s", playerID, roomCode)
+	defer func() {
+		h.eventBus.Unsubscribe(roomCode, events)
+		log.Printf("📡 DEBUG: Player %s unsubscribed from room %s", playerID, roomCode)
+	}()
 
 	// Don't send initial render - page already has correct content
 	// But DO send initial validation state to ensure UI is in sync
@@ -102,18 +107,27 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 
 			switch event.Type {
 			case "player_joined", "player_left", "player_updated":
+				log.Printf("📡 DEBUG: StreamLobby received %s event for room %s, player %s", event.Type, roomCode, player.ID)
 				// Re-render lobby only if still in lobby state
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
+					log.Printf("📡 DEBUG: Room is in lobby state, current players: %d", len(room.Players))
+					for pid, p := range room.Players {
+						log.Printf("📡 DEBUG:   - Player %s: %s", pid, p.Name)
+					}
+					
 					// Refresh player reference in case it was updated
+					originalPlayerID := player.ID
 					player = room.GetPlayer(player.ID)
 					if player == nil {
 						// Player was removed, close SSE connection gracefully
-						log.Printf("📡 Player no longer in room %s, closing SSE", roomCode)
+						log.Printf("📡 Player %s no longer in room %s, closing SSE", originalPlayerID, roomCode)
 						return
 					}
-					// Use the new helper that includes validation state
-					h.sendLobbyUpdate(sse, room, player)
+					// For player events, only send player list update (not the entire lobby)
+					log.Printf("📤 DEBUG: Sending player list update to player %s in room %s", player.ID, roomCode)
+					h.sendPlayerListUpdate(sse, room, player)
+					log.Printf("📤 DEBUG: Player list update sent successfully to player %s", player.ID)
 				} else {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
 					return
@@ -285,6 +299,24 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// sendPlayerListUpdate sends only the player list card - minimal update for player join/leave
+func (h *Handler) sendPlayerListUpdate(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
+	log.Printf("📤 Sending minimal player list update for room %s", room.Code)
+	
+	// Render just the player list card
+	component := pages.LobbyPlayerList(room, player)
+	html := renderToString(component)
+	
+	log.Printf("📝 Player list HTML length: %d chars (was 5MB before!)", len(html))
+	
+	// Send fragment targeting the player list card
+	sse.MergeFragments(html,
+		datastar.WithSelector("#player-list-card"),
+		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+		
+	log.Printf("✅ Sent minimal player list update for room %s", room.Code)
+}
+
 // sendLobbyUpdate sends a consistent lobby update with validation state
 // This is the helper function that ensures SSE updates use the same validation logic
 func (h *Handler) sendLobbyUpdate(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) error {
@@ -293,7 +325,8 @@ func (h *Handler) sendLobbyUpdate(sse *datastar.ServerSentEventGenerator, room *
 	validationState := room.GetValidationState(roleService)
 
 	// First send the HTML fragment
-	log.Printf("DEBUG: sendLobbyUpdate calling renderLobby for room %s", room.Code)
+	log.Printf("📤 DEBUG: sendLobbyUpdate called for player %s in room %s", player.ID, room.Code)
+	log.Printf("📤 DEBUG: sendLobbyUpdate calling renderLobby for room %s", room.Code)
 	h.renderLobby(sse, room, player)
 
 	// Then send the validation signals to keep UI in sync
@@ -327,6 +360,12 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	}
 
 	log.Printf("🎨 Rendering lobby content for room %s with %d players", room.Code, len(room.Players))
+	log.Printf("🎨 DEBUG: Room player details:")
+	for pid, p := range room.Players {
+		log.Printf("🎨 DEBUG:   - Player %s: %s (Host: %v)", pid, p.Name, p.IsHost)
+	}
+	log.Printf("🎨 DEBUG: Active player count: %d", room.GetActivePlayerCount())
+	
 	component := pages.LobbyContent(room, player, h.config, h.cardService)
 
 	// Render to string
@@ -343,10 +382,11 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 
 	// Send fragment directly to #lobby-content
 	// This preserves the DOM structure (lobby-container stays intact)
+	log.Printf("📤 DEBUG: Sending fragment with selector #lobby-content, merge mode: morph")
 	sse.MergeFragments(html,
 		datastar.WithSelector("#lobby-content"),
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-	log.Printf("✅ Sent lobby fragment update for room %s", room.Code)
+	log.Printf("✅ Sent lobby fragment update for room %s to player %s", room.Code, player.ID)
 }
 
 // renderGame renders the game content (without wrapper to prevent re-triggering data-on-load)
