@@ -4,15 +4,22 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+	// Create CardService with fail-fast initialization
+	cardService, err := game.NewCardService()
+	if err != nil {
+		log.Fatal("Failed to initialize card service: ", err)
+	}
+	
 	// Create store and handler
 	s := store.NewMemoryStore()
-	h := handlers.New(s)
+	h := handlers.New(s, cardService)
 	
 	// Set up routes
 	r := chi.NewRouter()
