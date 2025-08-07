@@ -3,11 +3,13 @@ module treacherest
 go 1.24.3
 
 require (
-	github.com/a-h/templ v0.3.898
+	github.com/a-h/templ v0.3.906
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-rod/rod v0.116.2
 	github.com/starfederation/datastar v1.0.0-beta.11
 	github.com/stretchr/testify v1.10.0
+	github.com/yeqown/go-qrcode/v2 v2.2.5
+	github.com/yeqown/go-qrcode/writer/standard v1.3.0
 )
 
 require (
@@ -24,8 +26,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/samber/lo v1.51.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/yeqown/go-qrcode/v2 v2.2.5 // indirect
-	github.com/yeqown/go-qrcode/writer/standard v1.3.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	github.com/ysmood/fetchup v0.2.4 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
