@@ -26,11 +26,7 @@ func LoadConfig(configPath string) (*ServerConfig, error) {
 	if configPath != "" {
 		v.SetConfigFile(configPath)
 	} else {
-		v.AddConfigPath("/app/config")      // Container default location
-		v.AddConfigPath("./configs")         // Project root configs directory
-		v.AddConfigPath("./config")          // Legacy location
-		v.AddConfigPath(".")
-		v.AddConfigPath("/etc/treacherest")  // System location
+		v.SetConfigFile("/app/server.yaml")
 	}
 
 	// Enable environment variable binding
