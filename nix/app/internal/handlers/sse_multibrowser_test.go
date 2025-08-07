@@ -190,9 +190,10 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 						return
 					case <-ticker.C:
 						body := w.Body.String()
-						// Look for countdown numbers in the response
+						// Look for countdown numbers in the data-signals attribute
 						for i := 1; i <= 5; i++ {
-							marker := fmt.Sprintf("Revealing roles in %d...", i)
+							// Look for data-signals with countdown value (HTML escaped quotes)
+							marker := fmt.Sprintf(`data-signals="{&#34;countdown&#34;: %d}"`, i)
 							if strings.Contains(body, marker) {
 								// Check if we already recorded this
 								found := false
@@ -750,7 +751,7 @@ func setupSSETestRouter(h *Handler) *chi.Mux {
 
 	// Page routes
 	router.Get("/room/{code}", h.JoinRoom)
-	router.Post("/join-room", h.JoinRoomPost)  // New POST endpoint
+	router.Post("/join-room", h.JoinRoomPost) // New POST endpoint
 	router.Get("/game/{code}", h.GamePage)
 
 	// SSE routes

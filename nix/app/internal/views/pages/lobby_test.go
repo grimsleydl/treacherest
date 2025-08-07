@@ -31,7 +31,7 @@ func TestLobbyPage(t *testing.T) {
 
 	room.Players[player1.ID] = player1
 	room.Players[player2.ID] = player2
-	
+
 	// Set player1 as the first player (simulating room creator)
 	player1.JoinedAt = room.CreatedAt
 

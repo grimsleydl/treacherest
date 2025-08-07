@@ -11,7 +11,7 @@ import (
 	"treacherest/internal/game"
 
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/sdk/go"
+	datastar "github.com/starfederation/datastar-go/datastar"
 )
 
 func TestHandler_StreamLobby(t *testing.T) {

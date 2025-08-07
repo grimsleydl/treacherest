@@ -17,7 +17,7 @@ func TestSetupServer(t *testing.T) {
 	os.Setenv("PORT", "8080")
 	defer os.Unsetenv("HOST")
 	defer os.Unsetenv("PORT")
-	
+
 	// Create the server
 	handler := SetupServer()
 

@@ -105,9 +105,9 @@ func TestValidateSSERequest_EdgeCases(t *testing.T) {
 	t.Run("empty datastar parameter", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/sse/test?datastar=", nil)
 		w := httptest.NewRecorder()
-		
+
 		handler(w, req)
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -115,12 +115,12 @@ func TestValidateSSERequest_EdgeCases(t *testing.T) {
 		// Simulate a real Datastar query parameter with nested JSON
 		complexJSON := `{"theme":"dark","isStarting":false,"canStartGame":true,"validationMessage":"","cardId":"card123","accordionLeader":false}`
 		encodedJSON := "datastar=" + strings.ReplaceAll(strings.ReplaceAll(complexJSON, `"`, "%22"), ":", "%3A")
-		
+
 		req := httptest.NewRequest("GET", "/sse/test?"+encodedJSON, nil)
 		w := httptest.NewRecorder()
-		
+
 		handler(w, req)
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -128,12 +128,12 @@ func TestValidateSSERequest_EdgeCases(t *testing.T) {
 		// Try to inject an unauthorized signal
 		invalidJSON := `{"theme":"dark","isStarting":false,"maliciousSignal":"hack"}`
 		encodedJSON := "datastar=" + strings.ReplaceAll(strings.ReplaceAll(invalidJSON, `"`, "%22"), ":", "%3A")
-		
+
 		req := httptest.NewRequest("GET", "/sse/test?"+encodedJSON, nil)
 		w := httptest.NewRecorder()
-		
+
 		handler(w, req)
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "Invalid signal in datastar")
 	})
@@ -142,21 +142,21 @@ func TestValidateSSERequest_EdgeCases(t *testing.T) {
 		// Test with many valid signals
 		validJSON := `{"theme":"dark","isStarting":false,"canStartGame":true,"countdown":5,"accordionLeader":true,"allowLeaderless":false,"qrCode":"test"}`
 		encodedJSON := "datastar=" + url.QueryEscape(validJSON)
-		
+
 		req := httptest.NewRequest("GET", "/sse/test?"+encodedJSON, nil)
 		w := httptest.NewRecorder()
-		
+
 		handler(w, req)
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("datastar with invalid JSON", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/sse/test?datastar=%7Binvalid%20json", nil)
 		w := httptest.NewRecorder()
-		
+
 		handler(w, req)
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "Invalid datastar JSON")
 	})
