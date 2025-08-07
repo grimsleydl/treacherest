@@ -5,20 +5,31 @@ import (
 	"encoding/hex"
 	"net/http"
 	"sync"
+	"treacherest/internal/game"
 	"treacherest/internal/store"
 )
 
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
-	store    *store.MemoryStore
-	eventBus *EventBus
+	store       *store.MemoryStore
+	eventBus    *EventBus
+	cardService *game.CardService
 }
 
 // New creates a new handler
 func New(store *store.MemoryStore) *Handler {
+	// Create CardService
+	cardService, err := game.NewCardService()
+	if err != nil {
+		// Log error but continue with nil cardService for now
+		// In production, this should probably return an error
+		cardService = nil
+	}
+
 	return &Handler{
-		store:    store,
-		eventBus: NewEventBus(),
+		store:       store,
+		eventBus:    NewEventBus(),
+		cardService: cardService,
 	}
 }
 

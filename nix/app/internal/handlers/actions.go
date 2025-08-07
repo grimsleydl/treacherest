@@ -47,7 +47,13 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 
 	// Assign roles
 	players := room.GetPlayers()
-	game.AssignRoles(players)
+	if h.cardService != nil {
+		game.AssignRoles(players, h.cardService)
+	} else {
+		log.Printf("❌ CardService is nil, cannot assign roles")
+		http.Error(w, "Internal server error: CardService not available", http.StatusInternalServerError)
+		return
+	}
 
 	// Update game state
 	room.State = game.StateCountdown
