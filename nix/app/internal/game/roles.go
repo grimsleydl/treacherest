@@ -53,7 +53,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			}
 		}
 	} else if roleService != nil && roleConfig != nil {
-    // For preset-based games, get the distribution from the service (which can auto-scale)
+		// For preset-based games, get the distribution from the service (which can auto-scale)
 		dist, err := roleService.GetDistributionForPlayerCount(roleConfig, count)
 		if err == nil {
 			roleDistribution = dist
@@ -69,7 +69,6 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			}
 		}
 	}
-	
 
 	// Assign cards based on role distribution
 	playerIndex := 0
@@ -83,8 +82,15 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 		RoleTraitor:  cardService.Traitors,
 	}
 
-	for roleType, neededCount := range roleDistribution {
-		if neededCount == 0 {
+	// Create ordered list of role types to ensure consistent assignment order
+	// Leaders should always be assigned first when not allowing leaderless games
+	roleOrder := []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor}
+	
+	// If allowing leaderless games, process in any order
+	// Otherwise, ensure leaders are assigned first
+	for _, roleType := range roleOrder {
+		neededCount, exists := roleDistribution[roleType]
+		if !exists || neededCount == 0 {
 			continue
 		}
 
@@ -105,6 +111,10 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			}
 		}
 		
+		// If no available cards for this role type, skip
+		if len(availableCards) == 0 {
+			continue
+		}
 
 		// Shuffle available cards
 		shuffledCards := make([]*Card, len(availableCards))
@@ -116,7 +126,12 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 		// Assign cards to players
 		cardsAssigned := 0
 		for _, card := range shuffledCards {
-			if playerIndex >= len(shuffled) || cardsAssigned >= neededCount {
+			if playerIndex >= len(shuffled) {
+				// We've assigned roles to all players, stop processing
+				goto done
+			}
+			if cardsAssigned >= neededCount {
+				// We've assigned enough of this role type
 				break
 			}
 
@@ -137,6 +152,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			cardsAssigned++
 		}
 	}
+done:
 }
 
 // AssignRolesLegacy uses the old hardcoded role distribution
@@ -168,15 +184,23 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 	usedCards := make(map[*Card]bool)
 
 	// Assign cards based on role distribution
+	// Use ordered iteration to ensure leaders are assigned first
+	roleOrder := []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor}
 	playerIndex := 0
-	for roleType, count := range roleDistribution {
+	
+	for _, roleType := range roleOrder {
+		count, exists := roleDistribution[roleType]
+		if !exists || count == 0 {
+			continue
+		}
+		
 		// Get random cards for this role type
 		cards := cardService.GetRandomCards(roleType, count)
 
 		// Assign cards to players
 		for _, card := range cards {
 			if playerIndex >= len(shuffled) {
-				break
+				goto doneLegacy
 			}
 
 			// Skip if card already used (shouldn't happen with GetRandomCards, but be safe)
@@ -195,6 +219,7 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 			playerIndex++
 		}
 	}
+doneLegacy:
 }
 
 // getRoleDistribution returns the role distribution based on player count
