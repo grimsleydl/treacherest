@@ -351,6 +351,125 @@ templ Base(title string) {
 				border-radius: 4px;
 				color: #00ff00;
 			}
+			
+			/* New Role Configuration Styles */
+			.role-type-section {
+				margin-bottom: 1rem;
+				border: 1px solid #333;
+				border-radius: 6px;
+				overflow: hidden;
+				background: rgba(0, 0, 0, 0.2);
+			}
+			
+			.role-type-header {
+				background: rgba(0, 0, 0, 0.4);
+				padding: 1rem;
+				display: flex;
+				align-items: center;
+				cursor: pointer;
+				transition: background 0.2s;
+				user-select: none;
+			}
+			
+			.role-type-header:hover {
+				background: rgba(0, 0, 0, 0.6);
+			}
+			
+			.role-type-toggle {
+				margin-right: 0.5rem;
+				transition: transform 0.2s;
+				font-size: 0.9rem;
+			}
+			
+			.role-type-toggle.expanded {
+				transform: rotate(90deg);
+			}
+			
+			.role-type-name {
+				font-weight: bold;
+				font-size: 1.1rem;
+			}
+			
+			.role-type-count {
+				margin-left: auto;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+			
+			.role-type-count input[type="number"] {
+				width: 60px;
+				padding: 0.25rem;
+				font-size: 1rem;
+				text-align: center;
+			}
+			
+			.role-type-warning {
+				color: #ffd700;
+				font-size: 0.9rem;
+				margin-left: 0.5rem;
+			}
+			
+			.role-type-ok {
+				color: #00ff00;
+				font-size: 1.2rem;
+				margin-left: 0.5rem;
+			}
+			
+			.role-cards-list {
+				padding: 1rem;
+				background: rgba(0, 0, 0, 0.2);
+				max-height: 300px;
+				overflow-y: auto;
+				display: none;
+			}
+			
+			.role-cards-list.show {
+				display: block;
+			}
+			
+			.role-card-item {
+				padding: 0.5rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				transition: background 0.2s;
+				border-radius: 4px;
+			}
+			
+			.role-card-item:hover {
+				background: rgba(255, 255, 255, 0.05);
+			}
+			
+			.role-card-item input[type="checkbox"] {
+				width: auto;
+				margin: 0;
+			}
+			
+			.role-card-item label {
+				flex: 1;
+				cursor: pointer;
+				margin: 0;
+			}
+			
+			/* Scrollbar styling for card lists */
+			.role-cards-list::-webkit-scrollbar {
+				width: 8px;
+			}
+			
+			.role-cards-list::-webkit-scrollbar-track {
+				background: rgba(0, 0, 0, 0.3);
+				border-radius: 4px;
+			}
+			
+			.role-cards-list::-webkit-scrollbar-thumb {
+				background: #0f3460;
+				border-radius: 4px;
+			}
+			
+			.role-cards-list::-webkit-scrollbar-thumb:hover {
+				background: #e94560;
+			}
 		</style>
 		</head>
 		<body>
