@@ -16,23 +16,23 @@ func TestGamePage(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		MaxPlayers: 8,
 	}
-	
+
 	role := &game.Role{
 		Name:        "Villager",
 		Description: "A regular villager trying to survive",
 	}
-	
+
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Test Player",
 		Role: role,
 	}
-	
+
 	room.Players[player.ID] = player
 
 	t.Run("renders game page structure", func(t *testing.T) {
 		component := GamePage(room, player)
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
@@ -43,7 +43,7 @@ func TestGamePage(t *testing.T) {
 
 	t.Run("shows player role", func(t *testing.T) {
 		component := GamePage(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Your Role: Villager").
 			AssertContains("A regular villager trying to survive")
@@ -52,9 +52,9 @@ func TestGamePage(t *testing.T) {
 	t.Run("shows countdown state", func(t *testing.T) {
 		room.State = game.StateCountdown
 		room.CountdownRemaining = 3
-		
+
 		component := GamePage(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Revealing roles in 3...")
 	})
@@ -62,8 +62,8 @@ func TestGamePage(t *testing.T) {
 	t.Run("shows player list", func(t *testing.T) {
 		// Reset room state
 		room.State = game.StatePlaying
-		
-		// Add more players  
+
+		// Add more players
 		revealedPlayer := &game.Player{
 			ID:           "p2",
 			Name:         "Revealed Player",
@@ -71,9 +71,9 @@ func TestGamePage(t *testing.T) {
 			Role:         game.GuardianRole,
 		}
 		room.Players[revealedPlayer.ID] = revealedPlayer
-		
+
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Test Player").
 			AssertContains("Revealed Player").
@@ -90,20 +90,20 @@ func TestGameBody(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		MaxPlayers: 8,
 	}
-	
+
 	assassinRole := game.AssassinRole
-	
+
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Assassin Player",
 		Role: assassinRole,
 	}
-	
+
 	room.Players[player.ID] = player
 
 	t.Run("renders game body fragment", func(t *testing.T) {
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertHasElementWithID("game-container").
@@ -112,7 +112,7 @@ func TestGameBody(t *testing.T) {
 
 	t.Run("shows win condition", func(t *testing.T) {
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Win Condition:").
 			AssertContains("Win if the Leader is eliminated")
@@ -127,9 +127,9 @@ func TestGameBody(t *testing.T) {
 		}
 		room.Players[leaderPlayer.ID] = leaderPlayer
 		room.LeaderRevealed = true
-		
+
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Leader: Leader Player")
 	})
@@ -142,9 +142,9 @@ func TestGameBody(t *testing.T) {
 			RoleRevealed: false,
 		}
 		room.Players[hiddenPlayer.ID] = hiddenPlayer
-		
+
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertContains("Hidden Player").
 			AssertNotContains("Guardian") // Role should not be shown
@@ -152,7 +152,7 @@ func TestGameBody(t *testing.T) {
 
 	t.Run("shows role class styling", func(t *testing.T) {
 		component := GameBody(room, player)
-		
+
 		renderer.Render(component).
 			AssertHasClass("role-card").
 			AssertHasClass("assassin")

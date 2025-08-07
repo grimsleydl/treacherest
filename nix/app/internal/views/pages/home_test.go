@@ -10,7 +10,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("renders home page structure", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
@@ -21,7 +21,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has create room form", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertHasElement("form").
 			AssertFormAction("/room/new").
@@ -33,7 +33,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has room code input", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertHasElementWithID("roomCode").
 			AssertContains(`pattern="[A-Za-z0-9]{5}"`).
@@ -42,7 +42,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has join room section", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertContains("Join Room").
 			AssertContains("Join Existing Game").
@@ -51,7 +51,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has proper styling", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertHasClass("container").
 			AssertHasElement("style")
@@ -59,7 +59,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has form submit handler", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertContains(`data-on-submit`).
 			AssertContains(`evt.preventDefault()`)
@@ -67,7 +67,7 @@ func TestHomePage(t *testing.T) {
 
 	t.Run("has two forms", func(t *testing.T) {
 		component := Home()
-		
+
 		renderer.Render(component).
 			AssertElementCount("form", 2).
 			AssertContains("Create Room").
