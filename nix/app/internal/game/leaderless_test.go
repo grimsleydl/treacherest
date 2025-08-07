@@ -10,15 +10,19 @@ import (
 func TestLeaderlessGameConfiguration(t *testing.T) {
 	cfg := config.DefaultConfig()
 	service := NewRoleConfigService(cfg)
+	cardService := createMockCardService()
+	service.SetCardService(cardService)
 
 	t.Run("allows leaderless configuration when enabled", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"guardian": true, "traitor": true},
-			RoleCounts:          map[string]int{"guardian": 2, "traitor": 1},
 			MinPlayers:          3,
 			MaxPlayers:          3,
 			AllowLeaderlessGame: true,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
+				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		err := service.ValidateConfiguration(roleConfig)
@@ -28,11 +32,13 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 	t.Run("rejects leaderless configuration when disabled", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"guardian": true, "traitor": true},
-			RoleCounts:          map[string]int{"guardian": 2, "traitor": 1},
 			MinPlayers:          3,
 			MaxPlayers:          3,
 			AllowLeaderlessGame: false,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
+				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		err := service.ValidateConfiguration(roleConfig)
@@ -43,11 +49,14 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 	t.Run("allows leader with leaderless enabled", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"leader": true, "guardian": true, "traitor": true},
-			RoleCounts:          map[string]int{"leader": 1, "guardian": 1, "traitor": 1},
 			MinPlayers:          3,
 			MaxPlayers:          3,
 			AllowLeaderlessGame: true,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Leader": {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+				"Guardian": {Count: 1, EnabledCards: map[string]bool{"The Bodyguard": true}},
+				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		err := service.ValidateConfiguration(roleConfig)
@@ -57,11 +66,12 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 	t.Run("rejects multiple leaders even with leaderless enabled", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"leader": true},
-			RoleCounts:          map[string]int{"leader": 2},
 			MinPlayers:          2,
 			MaxPlayers:          2,
 			AllowLeaderlessGame: true,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Leader": {Count: 2, EnabledCards: map[string]bool{"The Usurper": true, "The Rightful Heir": true}},
+			},
 		}
 
 		err := service.ValidateConfiguration(roleConfig)
@@ -77,11 +87,14 @@ func TestLeaderlessRoleDistribution(t *testing.T) {
 	t.Run("distributes roles without leader", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"guardian": true, "assassin": true, "traitor": true},
-			RoleCounts:          map[string]int{"guardian": 2, "assassin": 1, "traitor": 1},
 			MinPlayers:          4,
 			MaxPlayers:          4,
 			AllowLeaderlessGame: true,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
+				"Assassin": {Count: 1, EnabledCards: map[string]bool{"The Assassin": true}},
+				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		distribution, err := service.GetDistributionForPlayerCount(roleConfig, 4)
@@ -96,11 +109,12 @@ func TestLeaderlessRoleDistribution(t *testing.T) {
 	t.Run("does not auto-add leader when leaderless allowed", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"traitor": true},
-			RoleCounts:          map[string]int{"traitor": 2},
 			MinPlayers:          2,
 			MaxPlayers:          2,
 			AllowLeaderlessGame: true,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Traitor": {Count: 2, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		distribution, err := service.GetDistributionForPlayerCount(roleConfig, 2)
@@ -113,11 +127,12 @@ func TestLeaderlessRoleDistribution(t *testing.T) {
 	t.Run("auto-adds leader when leaderless not allowed", func(t *testing.T) {
 		roleConfig := &RoleConfiguration{
 			PresetName:          "custom",
-			EnabledRoles:        map[string]bool{"traitor": true},
-			RoleCounts:          map[string]int{"traitor": 1},
 			MinPlayers:          2,
 			MaxPlayers:          2,
 			AllowLeaderlessGame: false,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+			},
 		}
 
 		distribution, err := service.GetDistributionForPlayerCount(roleConfig, 2)

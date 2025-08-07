@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+
 func TestUpdateRolePreset(t *testing.T) {
 	// Create test config
 	cfg := config.DefaultConfig()
@@ -31,7 +32,9 @@ func TestUpdateRolePreset(t *testing.T) {
 
 	// Create handler
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	cardService := createMockCardService()
+	s.SetCardService(cardService)
+	h := New(s, cardService, cfg)
 
 	// Create a test room with a player
 	room := &game.Room{
@@ -40,11 +43,10 @@ func TestUpdateRolePreset(t *testing.T) {
 		Players:    make(map[string]*game.Player),
 		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
-			PresetName:   "custom",
-			EnabledRoles: make(map[string]bool),
-			RoleCounts:   make(map[string]int),
-			MinPlayers:   1,
-			MaxPlayers:   8,
+			PresetName: "custom",
+			MinPlayers: 1,
+			MaxPlayers: 8,
+			RoleTypes:  make(map[string]*game.RoleTypeConfig),
 		},
 	}
 	
@@ -130,13 +132,16 @@ func TestUpdateRolePreset(t *testing.T) {
 	}
 }
 
-func TestToggleRole(t *testing.T) {
+// Commented out - tests for deprecated ToggleRole handler
+/* func TestToggleRole(t *testing.T) {
 	// Create test config
 	cfg := config.DefaultConfig()
 
 	// Create handler
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	cardService := createMockCardService()
+	s.SetCardService(cardService)
+	h := New(s, cardService, cfg)
 
 	// Create a test room
 	room := &game.Room{
@@ -146,15 +151,11 @@ func TestToggleRole(t *testing.T) {
 		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
 			PresetName: "custom",
-			EnabledRoles: map[string]bool{
-				"leader":   true,
-				"guardian": false,
-			},
-			RoleCounts: map[string]int{
-				"leader": 1,
-			},
 			MinPlayers: 1,
 			MaxPlayers: 8,
+			RoleTypes: map[string]*game.RoleTypeConfig{
+				"Leader": {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+			},
 		},
 	}
 	
@@ -229,15 +230,18 @@ func TestToggleRole(t *testing.T) {
 			}
 		})
 	}
-}
+} */
 
-func TestUpdateRoleCount(t *testing.T) {
+// Commented out - tests for deprecated UpdateRoleCount handler
+/* func TestUpdateRoleCount(t *testing.T) {
 	// Create test config
 	cfg := config.DefaultConfig()
 
 	// Create handler
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	cardService := createMockCardService()
+	s.SetCardService(cardService)
+	h := New(s, cardService, cfg)
 
 	// Create a test room
 	room := &game.Room{
@@ -331,7 +335,7 @@ func TestUpdateRoleCount(t *testing.T) {
 			}
 		})
 	}
-}
+} */
 
 func TestIsRoomCreator(t *testing.T) {
 	// Create handler

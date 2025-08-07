@@ -287,6 +287,8 @@ func TestRoleConfigService_ValidateConfiguration(t *testing.T) {
 	}
 
 	service := NewRoleConfigService(cfg)
+	cardService := createMockCardService()
+	service.SetCardService(cardService)
 
 	tests := []struct {
 		name       string
@@ -296,41 +298,31 @@ func TestRoleConfigService_ValidateConfiguration(t *testing.T) {
 		{
 			name: "valid configuration",
 			roleConfig: &RoleConfiguration{
-				EnabledRoles: map[string]bool{
-					"leader":   true,
-					"guardian": true,
-				},
-				RoleCounts: map[string]int{
-					"leader":   1,
-					"guardian": 2,
-				},
 				MinPlayers: 3,
 				MaxPlayers: 3,
+				RoleTypes: map[string]*RoleTypeConfig{
+					"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+					"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
+				},
 			},
 			wantValid:  true,
 		},
 		{
 			name: "missing required role",
 			roleConfig: &RoleConfiguration{
-				EnabledRoles: map[string]bool{
-					"guardian": true,
-				},
-				RoleCounts: map[string]int{
-					"guardian": 2,
-				},
 				MinPlayers: 2,
 				MaxPlayers: 2,
+				RoleTypes: map[string]*RoleTypeConfig{
+					"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true}},
+				},
 			},
 			wantValid:  false, // leader is required
 		},
 		{
 			name: "invalid role count",
 			roleConfig: &RoleConfiguration{
-				EnabledRoles: map[string]bool{
-					"leader": true,
-				},
-				RoleCounts: map[string]int{
-					"leader": 2, // max is 1
+				RoleTypes: map[string]*RoleTypeConfig{
+					"Leader": {Count: 2, EnabledCards: map[string]bool{"The Usurper": true}}, // max is 1
 				},
 				MinPlayers: 2,
 				MaxPlayers: 2,
@@ -365,13 +357,13 @@ func TestRoleConfigService_CreateFromPreset_InitializesRoleCounts(t *testing.T) 
 				},
 				"guardian": {
 					DisplayName: "Guardian",
-					Category:    "Good",
+					Category:    "Guardian",
 					MinCount:    0,
 					MaxCount:    10,
 				},
 				"assassin": {
 					DisplayName: "Assassin",
-					Category:    "Evil",
+					Category:    "Assassin",
 					MinCount:    2,
 					MaxCount:    5,
 				},
@@ -393,75 +385,98 @@ func TestRoleConfigService_CreateFromPreset_InitializesRoleCounts(t *testing.T) 
 	}
 
 	service := NewRoleConfigService(cfg)
+	cardService := createMockCardService()
+	service.SetCardService(cardService)
 
-	// Test preset creation initializes counts based on MinCount
-	result, err := service.CreateFromPreset("test-preset", 10)
+	// Test preset creation with matching player count
+	result, err := service.CreateFromPreset("test-preset", 5)
 	if err != nil {
 		t.Fatalf("CreateFromPreset() error = %v", err)
 	}
 
-	// Check leader has MinCount of 1
-	if count, exists := result.RoleCounts["leader"]; !exists || count != 1 {
-		t.Errorf("expected leader count to be 1 (MinCount), got %d (exists: %v)", count, exists)
+	// Check leader has the preset count (1 for 5 players)
+	if result.RoleTypes["Leader"] == nil || result.RoleTypes["Leader"].Count != 1 {
+		t.Errorf("expected leader count to be 1, got %v", result.RoleTypes["Leader"])
+	}
+	
+	// Check guardian has the preset count (3 for 5 players)
+	if result.RoleTypes["Guardian"] == nil || result.RoleTypes["Guardian"].Count != 3 {
+		t.Errorf("expected guardian count to be 3, got %v", result.RoleTypes["Guardian"])
+	}
+	
+	// Check assassin has the preset count (1 for 5 players)
+	if result.RoleTypes["Assassin"] == nil || result.RoleTypes["Assassin"].Count != 1 {
+		t.Errorf("expected assassin count to be 1, got %v", result.RoleTypes["Assassin"])
 	}
 
-	// Check guardian has default count of 1 (MinCount is 0)
-	if count, exists := result.RoleCounts["guardian"]; !exists || count != 1 {
-		t.Errorf("expected guardian count to be 1 (default), got %d (exists: %v)", count, exists)
+	// Check all role types are initialized with EnabledCards
+	if result.RoleTypes["Leader"] == nil || len(result.RoleTypes["Leader"].EnabledCards) == 0 {
+		t.Errorf("expected Leader to have enabled cards, got %v", result.RoleTypes["Leader"])
+	}
+	if result.RoleTypes["Guardian"] == nil || len(result.RoleTypes["Guardian"].EnabledCards) == 0 {
+		t.Errorf("expected Guardian to have enabled cards, got %v", result.RoleTypes["Guardian"])
+	}
+	if result.RoleTypes["Assassin"] == nil || len(result.RoleTypes["Assassin"].EnabledCards) == 0 {
+		t.Errorf("expected Assassin to have enabled cards, got %v", result.RoleTypes["Assassin"])
 	}
 
-	// Check assassin has MinCount of 2
-	if count, exists := result.RoleCounts["assassin"]; !exists || count != 2 {
-		t.Errorf("expected assassin count to be 2 (MinCount), got %d (exists: %v)", count, exists)
+	// Check that all cards are enabled by default
+	if result.RoleTypes["Leader"] != nil {
+		for _, card := range cardService.Leaders {
+			if !result.RoleTypes["Leader"].EnabledCards[card.Name] {
+				t.Errorf("expected card %s to be enabled", card.Name)
+			}
+		}
 	}
 }
 
-func TestRoleConfigService_CreateCustomConfiguration_RespectsMinCount(t *testing.T) {
-	cfg := &config.ServerConfig{
-		Server: config.ServerSettings{
-			MaxPlayersPerRoom: 20,
-			MinPlayersPerRoom: 1,
-		},
-		Roles: config.RolesConfig{
-			Available: map[string]config.RoleDefinition{
-				"leader": {
-					DisplayName: "Leader",
-					MinCount:    1,
-					MaxCount:    1,
-				},
-				"guardian": {
-					DisplayName: "Guardian",
-					MinCount:    0,
-					MaxCount:    10,
-				},
-			},
-		},
-	}
+// Commented out - CreateCustomConfiguration method no longer exists in new architecture
+// func TestRoleConfigService_CreateCustomConfiguration_RespectsMinCount(t *testing.T) {
+// 	cfg := &config.ServerConfig{
+// 		Server: config.ServerSettings{
+// 			MaxPlayersPerRoom: 20,
+// 			MinPlayersPerRoom: 1,
+// 		},
+// 		Roles: config.RolesConfig{
+// 			Available: map[string]config.RoleDefinition{
+// 				"leader": {
+// 					DisplayName: "Leader",
+// 					MinCount:    1,
+// 					MaxCount:    1,
+// 				},
+// 				"guardian": {
+// 					DisplayName: "Guardian",
+// 					MinCount:    0,
+// 					MaxCount:    10,
+// 				},
+// 			},
+// 		},
+// 	}
 
-	service := NewRoleConfigService(cfg)
+// 	service := NewRoleConfigService(cfg)
 
-	// Test with invalid counts (below MinCount)
-	enabledRoles := map[string]bool{
-		"leader":   true,
-		"guardian": true,
-	}
-	roleCounts := map[string]int{
-		"leader":   0, // Invalid: below MinCount of 1
-		"guardian": 0, // Will be set to default 1
-	}
+// 	// Test with invalid counts (below MinCount)
+// 	enabledRoles := map[string]bool{
+// 		"leader":   true,
+// 		"guardian": true,
+// 	}
+// 	roleCounts := map[string]int{
+// 		"leader":   0, // Invalid: below MinCount of 1
+// 		"guardian": 0, // Will be set to default 1
+// 	}
 
-	result, err := service.CreateCustomConfiguration(enabledRoles, roleCounts)
-	if err != nil {
-		t.Fatalf("CreateCustomConfiguration() error = %v", err)
-	}
+// 	result, err := service.CreateCustomConfiguration(enabledRoles, roleCounts)
+// 	if err != nil {
+// 		t.Fatalf("CreateCustomConfiguration() error = %v", err)
+// 	}
 
-	// Check leader was fixed to MinCount of 1
-	if count := result.RoleCounts["leader"]; count != 1 {
-		t.Errorf("expected leader count to be fixed to 1 (MinCount), got %d", count)
-	}
+// 	// Check leader was fixed to MinCount of 1
+// 	if count := result.RoleCounts["leader"]; count != 1 {
+// 		t.Errorf("expected leader count to be fixed to 1 (MinCount), got %d", count)
+// 	}
 
-	// Check guardian was set to default 1
-	if count := result.RoleCounts["guardian"]; count != 1 {
-		t.Errorf("expected guardian count to be 1 (default), got %d", count)
-	}
-}
+// 	// Check guardian was set to default 1
+// 	if count := result.RoleCounts["guardian"]; count != 1 {
+// 		t.Errorf("expected guardian count to be 1 (default), got %d", count)
+// 	}
+// }

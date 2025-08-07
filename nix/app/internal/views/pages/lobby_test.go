@@ -2,7 +2,9 @@ package pages
 
 import (
 	"testing"
+	"treacherest"
 	"treacherest/internal/game"
+	"treacherest/internal/config"
 	"treacherest/internal/testhelpers"
 )
 
@@ -30,8 +32,15 @@ func TestLobbyPage(t *testing.T) {
 	room.Players[player1.ID] = player1
 	room.Players[player2.ID] = player2
 
+	// Create config and card service
+	cfg := config.DefaultConfig()
+	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("Failed to create card service: %v", err)
+	}
+
 	t.Run("renders lobby page structure", func(t *testing.T) {
-		component := LobbyPage(room, player1)
+		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertNotEmpty().
@@ -42,14 +51,14 @@ func TestLobbyPage(t *testing.T) {
 	})
 
 	t.Run("shows SSE connection", func(t *testing.T) {
-		component := LobbyPage(room, player1)
+		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains(`data-on-load="@get(&#39;/sse/lobby/TEST1&#39;)"`)
 	})
 
 	t.Run("renders player list", func(t *testing.T) {
-		component := LobbyPage(room, player1)
+		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains("Players (2)").
@@ -66,7 +75,7 @@ func TestLobbyPage(t *testing.T) {
 			MaxPlayers: 4,
 		}
 
-		component := LobbyPage(emptyRoom, player1)
+		component := LobbyPage(emptyRoom, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains("Need at least 1 player to start")
@@ -74,7 +83,7 @@ func TestLobbyPage(t *testing.T) {
 
 	t.Run("shows start button when enough players", func(t *testing.T) {
 		// Room already has 2 players (player1 and player2), which is >= 1
-		component := LobbyPage(room, player1)
+		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains("Start Game").
@@ -82,7 +91,7 @@ func TestLobbyPage(t *testing.T) {
 	})
 
 	t.Run("shows leave button", func(t *testing.T) {
-		component := LobbyPage(room, player1)
+		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains("Leave Room").
@@ -107,8 +116,15 @@ func TestLobbyBody(t *testing.T) {
 
 	room.Players[player.ID] = player
 
+	// Create config and card service
+	cfg := config.DefaultConfig()
+	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("Failed to create card service: %v", err)
+	}
+
 	t.Run("renders lobby body fragment", func(t *testing.T) {
-		component := LobbyBody(room, player)
+		component := LobbyBody(room, player, cfg, cardService)
 
 		renderer.Render(component).
 			AssertNotEmpty().
@@ -117,7 +133,7 @@ func TestLobbyBody(t *testing.T) {
 	})
 
 	t.Run("shows minimum players message", func(t *testing.T) {
-		component := LobbyBody(room, player)
+		component := LobbyBody(room, player, cfg, cardService)
 
 		renderer.Render(component).
 			AssertContains("Start Game")
@@ -126,7 +142,7 @@ func TestLobbyBody(t *testing.T) {
 	t.Run("enables start button when enough players", func(t *testing.T) {
 		// Room already has 1 player which is enough to start
 
-		component := LobbyBody(room, player)
+		component := LobbyBody(room, player, cfg, cardService)
 
 		renderer.Render(component).
 			AssertNotContains("Need at least").
