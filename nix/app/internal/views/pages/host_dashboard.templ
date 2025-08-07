@@ -1,0 +1,219 @@
+package pages
+
+import (
+	"treacherest/internal/game"
+	"treacherest/internal/views/layouts"
+)
+
+templ HostDashboardLobby(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard") {
+		<style>
+			/* Tablet-optimized responsive styles */
+			.host-dashboard {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 2rem;
+				height: calc(100vh - 2rem);
+				padding: 1rem;
+			}
+			
+			@media (max-width: 768px) {
+				.host-dashboard {
+					grid-template-columns: 1fr;
+					height: auto;
+				}
+			}
+			
+			.qr-section {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				background: #16213e;
+				border-radius: 12px;
+				padding: 2rem;
+			}
+			
+			.qr-code-container {
+				background: white;
+				padding: 1rem;
+				border-radius: 8px;
+				margin-bottom: 1rem;
+			}
+			
+			.qr-code-container img {
+				display: block;
+				width: 300px;
+				height: 300px;
+				max-width: 100%;
+				height: auto;
+			}
+			
+			.players-section {
+				background: #16213e;
+				border-radius: 12px;
+				padding: 2rem;
+				overflow-y: auto;
+			}
+			
+			.room-code-large {
+				font-size: 3rem;
+				font-weight: bold;
+				letter-spacing: 0.3em;
+				color: #e94560;
+				margin-bottom: 1rem;
+			}
+			
+			.join-instruction {
+				font-size: 1.2rem;
+				color: #aaa;
+				text-align: center;
+				margin-bottom: 2rem;
+			}
+			
+			.player-count {
+				font-size: 1.5rem;
+				margin-bottom: 1rem;
+				color: #e94560;
+			}
+			
+			.host-player-list {
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+			}
+			
+			.host-player-item {
+				background: #0f3460;
+				padding: 1.5rem;
+				border-radius: 8px;
+				font-size: 1.3rem;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			
+			.player-number {
+				background: #e94560;
+				color: white;
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-weight: bold;
+				margin-right: 1rem;
+			}
+			
+			.start-button-container {
+				margin-top: 2rem;
+				text-align: center;
+			}
+			
+			.start-button-container button {
+				width: 100%;
+				font-size: 1.5rem;
+				padding: 1.2rem;
+			}
+		</style>
+		@HostDashboardBody(room, player)
+	}
+}
+
+templ HostDashboardBody(room *game.Room, player *game.Player) {
+	// Wrapper div with data-on-load that never gets morphed
+	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" }>
+		<div id="host-dashboard-container" class="host-dashboard">
+			<div id="host-dashboard-content">
+				@HostDashboardContent(room, player)
+			</div>
+		</div>
+	</div>
+}
+
+templ HostDashboardContent(room *game.Room, player *game.Player) {
+	<div class="qr-section">
+		<h1>Scan to Join</h1>
+		<div class="room-code-large">{ room.Code }</div>
+		<div class="qr-code-container">
+			<!-- QR code will be generated and inserted here -->
+			<div style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
+				QR Code Placeholder
+			</div>
+		</div>
+		<div class="join-instruction">
+			Players can scan this code<br/>or enter the room code
+		</div>
+	</div>
+	
+	<div class="players-section">
+		<h2>Players in Room</h2>
+		<div class="player-count">{ len(room.Players) } connected</div>
+		
+		<div id="player-list" class="host-player-list">
+			for i, player := range room.GetPlayers() {
+				<div class="host-player-item">
+					<div style="display: flex; align-items: center;">
+						<div class="player-number">{ i + 1 }</div>
+						<span>{ player.Name }</span>
+					</div>
+				</div>
+			}
+		</div>
+		
+		<div class="start-button-container">
+			if len(room.Players) >= 1 {
+				<button data-on-click={ "@post('/host/" + room.Code + "/start')" }>
+					Start Game
+				</button>
+			} else {
+				<button disabled>
+					Waiting for players...
+				</button>
+			}
+		</div>
+	</div>
+}
+
+// Placeholder for countdown state
+templ HostDashboardCountdown(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard - Starting") {
+		<div class="container" style="text-align: center; padding-top: 4rem;">
+			<h1>Game Starting...</h1>
+			<div class="countdown">5</div>
+			<p>Get ready!</p>
+		</div>
+	}
+}
+
+// Placeholder for playing state
+templ HostDashboardPlaying(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard - Game") {
+		<div class="container">
+			<h1>Game in Progress</h1>
+			<div class="room-code">{ room.Code }</div>
+			<div class="player-list">
+				<h2>Players</h2>
+				for _, p := range room.GetPlayers() {
+					<div class="player">
+						{ p.Name }
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
+
+// Placeholder for ended state
+templ HostDashboardEnded(room *game.Room, player *game.Player) {
+	@layouts.Base("Host Dashboard - Game Over") {
+		<div class="container" style="text-align: center;">
+			<h1>Game Over</h1>
+			<div class="room-code">{ room.Code }</div>
+			<button data-on-click="@post('/room/new')" style="margin-top: 2rem;">
+				Start New Game
+			</button>
+		</div>
+	}
+}
