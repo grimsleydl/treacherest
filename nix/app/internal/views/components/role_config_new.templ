@@ -76,6 +76,12 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					}
 				</select>
 			</form>
+			// Show auto-scale info for preset configurations
+			if room.RoleConfig.PresetName != "custom" {
+				<div class="text-xs text-gray-500 mt-1">
+					Preset auto-scales roles based on player count
+				</div>
+			}
 		</div>
 		// Advanced options
 		<div class="advanced-options">
@@ -125,13 +131,6 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					<span data-show="$updatingFullyRandom" class="loading loading-spinner loading-xs ml-2"></span>
 				</label>
 			</div>
-			// Show auto-scale info for preset configurations
-			if room.RoleConfig.PresetName != "custom" {
-				<div class="auto-scale-info" data-show="$autoScaleDetails">
-					<span class="info-icon">ℹ️</span>
-					<span data-text="$autoScaleDetails" class="text-sm"></span>
-				</div>
-			}
 		</div>
 		// Role types with collapsible sections
 		<div class="role-settings">
