@@ -8,15 +8,14 @@ import (
 // CardModal renders a DaisyUI modal using the hidden checkbox method
 templ CardModal(card *game.Card) {
 	<!-- Hidden checkbox to control modal state -->
-	<input type="checkbox" id={ fmt.Sprintf("card-modal-%d", card.ID) } class="modal-toggle" />
-	
+	<input type="checkbox" id={ fmt.Sprintf("card-modal-%d", card.ID) } class="modal-toggle"/>
 	<div class="modal modal-bottom sm:modal-middle" role="dialog">
 		<div class="modal-box max-w-md p-4">
 			<h3 class="font-bold text-lg mb-4 text-center">{ card.Name }</h3>
 			<div class="flex justify-center">
-				<img 
-					src={ card.Base64Image } 
-					alt={ card.Name } 
+				<img
+					src={ card.Base64Image }
+					alt={ card.Name }
 					class="rounded-lg shadow-lg max-w-full h-auto"
 				/>
 			</div>
@@ -31,7 +30,7 @@ templ CardModal(card *game.Card) {
 
 // CardWithModal renders a card name as a label that opens a modal
 templ CardWithModal(card *game.Card, extraClasses string) {
-	<label 
+	<label
 		for={ fmt.Sprintf("card-modal-%d", card.ID) }
 		class={ fmt.Sprintf("cursor-pointer hover:underline %s", extraClasses) }
 	>
