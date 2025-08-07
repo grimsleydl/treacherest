@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"sort"
 	"treacherest/internal/config"
 )
 
@@ -48,6 +49,20 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 		}
 	}
 
+	// Initialize role counts based on MinCount from role definitions
+	for role, enabled := range roleConfig.EnabledRoles {
+		if enabled {
+			if roleDef, exists := s.config.Roles.Available[role]; exists {
+				if roleDef.MinCount > 0 {
+					roleConfig.RoleCounts[role] = roleDef.MinCount
+				} else {
+					// Default to 1 for enabled roles without MinCount
+					roleConfig.RoleCounts[role] = 1
+				}
+			}
+		}
+	}
+
 	return roleConfig, nil
 }
 
@@ -60,14 +75,39 @@ func (s *RoleConfigService) CreateCustomConfiguration(enabledRoles map[string]bo
 		}
 	}
 
-	// Calculate min/max players based on role counts
+	// Ensure role counts respect MinCount
+	adjustedRoleCounts := make(map[string]int)
+	for role, enabled := range enabledRoles {
+		if enabled {
+			providedCount, hasCount := roleCounts[role]
+			roleDef, _ := s.config.GetRoleDefinition(role)
+			
+			if !hasCount || providedCount < roleDef.MinCount {
+				// Use MinCount if not provided or less than minimum
+				if roleDef.MinCount > 0 {
+					adjustedRoleCounts[role] = roleDef.MinCount
+				} else {
+					// Default to 1 for enabled roles
+					adjustedRoleCounts[role] = 1
+				}
+			} else if providedCount == 0 && roleDef.MinCount == 0 {
+				// Special case: if provided 0 for a role with MinCount 0, still default to 1
+				// This ensures enabled roles always have at least 1 count
+				adjustedRoleCounts[role] = 1
+			} else {
+				// Use provided count if valid
+				adjustedRoleCounts[role] = providedCount
+			}
+		}
+	}
+
+	// Calculate min/max players based on adjusted role counts
 	minPlayers := 0
 	maxPlayers := 0
 	
-	for role, count := range roleCounts {
+	for role, count := range adjustedRoleCounts {
 		if enabledRoles[role] && count > 0 {
-			roleDef, _ := s.config.GetRoleDefinition(role)
-			minPlayers += roleDef.MinCount
+			minPlayers += count
 			maxPlayers += count
 		}
 	}
@@ -85,7 +125,7 @@ func (s *RoleConfigService) CreateCustomConfiguration(enabledRoles map[string]bo
 	return &RoleConfiguration{
 		PresetName:   "custom",
 		EnabledRoles: enabledRoles,
-		RoleCounts:   roleCounts,
+		RoleCounts:   adjustedRoleCounts,
 		MinPlayers:   minPlayers,
 		MaxPlayers:   maxPlayers,
 	}, nil
@@ -247,4 +287,69 @@ func abs(n int) int {
 		return -n
 	}
 	return n
+}
+
+// GetSortedRoles returns role definitions in a consistent sorted order
+// Order: Leader roles first (always revealed), then by category, then alphabetical
+func (s *RoleConfigService) GetSortedRoles() []struct {
+	Name       string
+	Definition config.RoleDefinition
+} {
+	var roles []struct {
+		Name       string
+		Definition config.RoleDefinition
+	}
+
+	// Collect all roles
+	for name, def := range s.config.Roles.Available {
+		roles = append(roles, struct {
+			Name       string
+			Definition config.RoleDefinition
+		}{Name: name, Definition: def})
+	}
+
+	// Sort roles: Leader first, then by category, then by display name
+	sort.Slice(roles, func(i, j int) bool {
+		// Leader always comes first
+		if roles[i].Definition.AlwaysRevealed && !roles[j].Definition.AlwaysRevealed {
+			return true
+		}
+		if !roles[i].Definition.AlwaysRevealed && roles[j].Definition.AlwaysRevealed {
+			return false
+		}
+
+		// Then sort by category
+		if roles[i].Definition.Category != roles[j].Definition.Category {
+			// Define category order
+			categoryOrder := map[string]int{
+				"Leader":   1,
+				"Good":     2,
+				"Guardian": 3,
+				"Evil":     4,
+				"Traitor":  5,
+				"Assassin": 6,
+			}
+			
+			orderI, hasI := categoryOrder[roles[i].Definition.Category]
+			orderJ, hasJ := categoryOrder[roles[j].Definition.Category]
+			
+			if hasI && hasJ {
+				return orderI < orderJ
+			}
+			if hasI {
+				return true
+			}
+			if hasJ {
+				return false
+			}
+			
+			// Fallback to alphabetical by category
+			return roles[i].Definition.Category < roles[j].Definition.Category
+		}
+
+		// Finally sort by display name
+		return roles[i].Definition.DisplayName < roles[j].Definition.DisplayName
+	})
+
+	return roles
 }

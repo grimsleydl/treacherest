@@ -8,24 +8,24 @@ import (
 	"time"
 )
 
-templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
+templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	@layouts.Base("Lobby") {
-		@LobbyBody(room, currentPlayer, cfg)
+		@LobbyBody(room, currentPlayer, cfg, sortedRoles)
 	}
 }
 
-templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
+templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
 	<div data-on-load={ "@get('/sse/lobby/" + room.Code + "')" }>
 		<div id="lobby-container" class="container">
 			<div id="lobby-content">
-				@LobbyContent(room, currentPlayer, cfg)
+				@LobbyContent(room, currentPlayer, cfg, sortedRoles)
 			</div>
 		</div>
 	</div>
 }
 
-templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig) {
+templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	<h1>Game Lobby</h1>
 	<div class="room-code">{ room.Code }</div>
 	<div class="player-list">
@@ -39,7 +39,7 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.Serv
 	
 	// Show role configuration for the first player if no host is present
 	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) && room.RoleConfig != nil {
-		@components.RoleConfiguration(room, cfg)
+		@components.RoleConfiguration(room, cfg, sortedRoles)
 	}
 	
 	if room.GetActivePlayerCount() >= 1 {

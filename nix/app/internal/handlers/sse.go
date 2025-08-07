@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 	"treacherest/internal/game"
+	"treacherest/internal/views/components"
 	"treacherest/internal/views/pages"
 )
 
@@ -197,8 +198,18 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		return
 	}
 
+	// Get sorted roles for stable display
+	sortedRoles := h.roleConfigService.GetSortedRoles()
+	var templateRoles []components.SortedRole
+	for _, role := range sortedRoles {
+		templateRoles = append(templateRoles, components.SortedRole{
+			Name:       role.Name,
+			Definition: role.Definition,
+		})
+	}
+
 	log.Printf("🎨 Rendering lobby content for room %s with %d players", room.Code, len(room.Players))
-	component := pages.LobbyContent(room, player, h.config)
+	component := pages.LobbyContent(room, player, h.config, templateRoles)
 
 	// Render to string
 	html := renderToString(component)
@@ -382,7 +393,19 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	// Choose the appropriate template based on game state
 	switch room.State {
 	case game.StateLobby:
-		component = pages.HostDashboardContent(room, player, h.config)
+		// Get sorted roles for stable display
+		sortedRoles := h.roleConfigService.GetSortedRoles()
+		
+		// Convert to template-friendly format
+		var templateRoles []components.SortedRole
+		for _, role := range sortedRoles {
+			templateRoles = append(templateRoles, components.SortedRole{
+				Name:       role.Name,
+				Definition: role.Definition,
+			})
+		}
+		
+		component = pages.HostDashboardContent(room, player, h.config, templateRoles)
 	case game.StateCountdown:
 		component = pages.HostDashboardCountdown(room, player)
 	case game.StatePlaying:
@@ -390,7 +413,16 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	case game.StateEnded:
 		component = pages.HostDashboardEnded(room, player)
 	default:
-		component = pages.HostDashboardContent(room, player, h.config)
+		// Get sorted roles for default case too
+		sortedRoles := h.roleConfigService.GetSortedRoles()
+		var templateRoles []components.SortedRole
+		for _, role := range sortedRoles {
+			templateRoles = append(templateRoles, components.SortedRole{
+				Name:       role.Name,
+				Definition: role.Definition,
+			})
+		}
+		component = pages.HostDashboardContent(room, player, h.config, templateRoles)
 	}
 
 	// Render to string

@@ -58,11 +58,17 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 // GetRoom retrieves a room by code
 func (s *MemoryStore) GetRoom(code string) (*game.Room, error) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	room, exists := s.rooms[code]
+	s.mu.RUnlock()
+	
 	if !exists {
 		return nil, fmt.Errorf("room %s not found", code)
+	}
+
+	// Validate and fix role configuration if needed
+	if s.validateAndFixRoleConfig(room) {
+		// Save the fixed configuration
+		s.UpdateRoom(room)
 	}
 
 	return room, nil
@@ -88,4 +94,48 @@ func generateRoomCode() string {
 	}
 
 	return string(b)
+}
+
+// validateAndFixRoleConfig checks and fixes invalid role configurations
+// Returns true if any fixes were made
+func (s *MemoryStore) validateAndFixRoleConfig(room *game.Room) bool {
+	if room.RoleConfig == nil {
+		return false
+	}
+
+	fixed := false
+
+	// Check each enabled role has proper count
+	for role, enabled := range room.RoleConfig.EnabledRoles {
+		if !enabled {
+			continue
+		}
+
+		count, hasCount := room.RoleConfig.RoleCounts[role]
+		if roleDef, exists := s.config.Roles.Available[role]; exists {
+			// Fix missing or invalid counts
+			if !hasCount || count < roleDef.MinCount {
+				if roleDef.MinCount > 0 {
+					room.RoleConfig.RoleCounts[role] = roleDef.MinCount
+				} else {
+					room.RoleConfig.RoleCounts[role] = 1
+				}
+				fixed = true
+				// Log the fix for debugging
+				fmt.Printf("Fixed role %s count from %d to %d in room %s\n", 
+					role, count, room.RoleConfig.RoleCounts[role], room.Code)
+			}
+		}
+	}
+
+	// Specifically check for leader role
+	if room.RoleConfig.EnabledRoles["leader"] {
+		if count, exists := room.RoleConfig.RoleCounts["leader"]; !exists || count < 1 {
+			room.RoleConfig.RoleCounts["leader"] = 1
+			fixed = true
+			fmt.Printf("Fixed missing leader in room %s\n", room.Code)
+		}
+	}
+
+	return fixed
 }

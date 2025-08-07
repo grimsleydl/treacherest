@@ -8,7 +8,7 @@ import (
 	"treacherest/internal/config"
 )
 
-templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	@layouts.Base("Host Dashboard") {
 		<style>
 			/* Tablet-optimized responsive styles */
@@ -120,22 +120,22 @@ templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.Serve
 				padding: 1.2rem;
 			}
 		</style>
-		@HostDashboardBody(room, player, cfg)
+		@HostDashboardBody(room, player, cfg, sortedRoles)
 	}
 }
 
-templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	// Wrapper div with data-on-load that never gets morphed
 	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } data-signals="{qrCode: ''}">
 		<div id="host-dashboard-container" class="host-dashboard">
 			<div id="host-dashboard-content">
-				@HostDashboardContent(room, player, cfg)
+				@HostDashboardContent(room, player, cfg, sortedRoles)
 			</div>
 		</div>
 	</div>
 }
 
-templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	<div class="qr-section">
 		<h1>Scan to Join</h1>
 		<div class="room-code-large">{ room.Code }</div>
@@ -185,7 +185,7 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 	</div>
 	// Role configuration section - only for host
 	if room.RoleConfig != nil {
-		@components.RoleConfiguration(room, cfg)
+		@components.RoleConfiguration(room, cfg, sortedRoles)
 	}
 }
 
@@ -226,20 +226,20 @@ templ HostDashboardEnded(room *game.Room, player *game.Player) {
 }
 
 // Full page versions for direct navigation (not SSE updates)
-templ HostDashboardCountdownPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardCountdownPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	@layouts.Base("Host Dashboard - Starting") {
-		@HostDashboardBody(room, player, cfg)
+		@HostDashboardBody(room, player, cfg, sortedRoles)
 	}
 }
 
-templ HostDashboardPlayingPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardPlayingPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	@layouts.Base("Host Dashboard - Game") {
-		@HostDashboardBody(room, player, cfg)
+		@HostDashboardBody(room, player, cfg, sortedRoles)
 	}
 }
 
-templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.ServerConfig) {
+templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, sortedRoles []components.SortedRole) {
 	@layouts.Base("Host Dashboard - Game Over") {
-		@HostDashboardBody(room, player, cfg)
+		@HostDashboardBody(room, player, cfg, sortedRoles)
 	}
 }
