@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 	"encoding/json"
 	"treacherest/internal/game"
@@ -270,21 +272,50 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Parse JSON body
-	var body struct {
-		RoleType string `json:"roleType"`
-		CardName string `json:"cardName"`
-		Enabled  bool   `json:"enabled"`
-	}
+	// Parse JSON body with signal variables
+	var body map[string]interface{}
 	
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("ERROR: Failed to decode body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	
+	// Extract values from the map
+	cardId, _ := body["cardId"].(string)
+	enabled, _ := body["cardChecked"].(bool)
+	
+	// Parse the card ID: "card-{roleType}-{cardAnchor}"
+	parts := strings.Split(cardId, "-")
+	if len(parts) < 3 || parts[0] != "card" {
+		log.Printf("ERROR: Invalid card ID format: %s", cardId)
+		http.Error(w, "Invalid card ID format", http.StatusBadRequest)
+		return
+	}
+	
+	roleType := parts[1]
+	cardAnchor := strings.Join(parts[2:], "-") // Handle card names with hyphens
+	
+	// Find the card name from the anchor
+	var cardName string
+	cards := h.getCardsForRoleType(roleType)
+	for _, card := range cards {
+		if card.NameAnchor == cardAnchor {
+			cardName = card.Name
+			break
+		}
+	}
+	
+	if cardName == "" {
+		log.Printf("ERROR: Card not found for anchor: '%s' in role type: '%s'", cardAnchor, roleType)
+		http.Error(w, "Card not found", http.StatusBadRequest)
+		return
+	}
+	
 	// Validate role type exists
-	typeConfig, exists := room.RoleConfig.RoleTypes[body.RoleType]
+	typeConfig, exists := room.RoleConfig.RoleTypes[roleType]
 	if !exists {
+		log.Printf("ERROR: Invalid role type received: '%s'", roleType)
 		http.Error(w, "Invalid role type", http.StatusBadRequest)
 		return
 	}
@@ -295,7 +326,7 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Update card state
-	typeConfig.EnabledCards[body.CardName] = body.Enabled
+	typeConfig.EnabledCards[cardName] = enabled
 	room.RoleConfig.PresetName = "custom"
 	
 	h.store.UpdateRoom(room)
@@ -343,6 +374,139 @@ func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
 	
 	room.RoleConfig.MinPlayers = minPlayers
 	room.RoleConfig.MaxPlayers = maxPlayers
+}
+
+// ToggleRoleCardFast handles card toggle with minimal response
+func (h *Handler) ToggleRoleCardFast(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Get data from headers
+	roleType := r.Header.Get("X-Role-Type")
+	cardAnchor := r.Header.Get("X-Card-Anchor")
+	enabled := r.Header.Get("X-Enabled") == "true"
+	
+	// Find the card name from the anchor
+	var cardName string
+	cards := h.getCardsForRoleType(roleType)
+	for _, card := range cards {
+		if card.NameAnchor == cardAnchor {
+			cardName = card.Name
+			break
+		}
+	}
+	
+	if cardName == "" {
+		http.Error(w, "Card not found", http.StatusBadRequest)
+		return
+	}
+	
+	// Validate role type exists
+	typeConfig, exists := room.RoleConfig.RoleTypes[roleType]
+	if !exists {
+		http.Error(w, "Invalid role type", http.StatusBadRequest)
+		return
+	}
+	
+	// Check if EnabledCards is nil and initialize if needed
+	if typeConfig.EnabledCards == nil {
+		typeConfig.EnabledCards = make(map[string]bool)
+	}
+	
+	// Update card state
+	typeConfig.EnabledCards[cardName] = enabled
+	room.RoleConfig.PresetName = "custom"
+	
+	h.store.UpdateRoom(room)
+	
+	// Don't publish events, just send minimal response
+	sse := datastar.NewSSE(w, r)
+	
+	// Send empty response to acknowledge
+	sse.ExecuteScript("// OK")
+}
+
+// ToggleRoleCardOptimistic handles card toggle with optimistic updates
+func (h *Handler) ToggleRoleCardOptimistic(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Parse JSON body
+	var body struct {
+		RoleType string `json:"roleType"`
+		CardName string `json:"cardName"`
+		Enabled  bool   `json:"enabled"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	// Validate role type exists
+	typeConfig, exists := room.RoleConfig.RoleTypes[body.RoleType]
+	if !exists {
+		http.Error(w, "Invalid role type", http.StatusBadRequest)
+		return
+	}
+	
+	// Check if EnabledCards is nil and initialize if needed
+	if typeConfig.EnabledCards == nil {
+		typeConfig.EnabledCards = make(map[string]bool)
+	}
+	
+	// Update card state
+	typeConfig.EnabledCards[body.CardName] = body.Enabled
+	room.RoleConfig.PresetName = "custom"
+	
+	h.store.UpdateRoom(room)
+	
+	// Send only validation update (checkbox already updated optimistically)
+	h.sendRoleValidationNew(w, r, room)
+	
+	// If other players are watching, notify them
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+}
+
+func (h *Handler) getCardsForRoleType(roleType string) []*game.Card {
+	switch roleType {
+	case "Leader":
+		return h.cardService.Leaders
+	case "Guardian":
+		return h.cardService.Guardians
+	case "Assassin":
+		return h.cardService.Assassins
+	case "Traitor":
+		return h.cardService.Traitors
+	default:
+		return nil
+	}
 }
 
 func (h *Handler) sendRoleValidationNew(w http.ResponseWriter, r *http.Request, room *game.Room) {

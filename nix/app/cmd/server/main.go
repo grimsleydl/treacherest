@@ -51,6 +51,8 @@ func main() {
 	// New role configuration endpoints
 	r.Post("/room/{code}/config/role-type-count", h.UpdateRoleTypeCount)
 	r.Post("/room/{code}/config/card-toggle", h.ToggleRoleCard)
+	r.Post("/room/{code}/config/card-toggle-fast", h.ToggleRoleCardFast)
+	r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
 	
 	// SSE routes
 	r.Get("/sse/lobby/{code}", h.StreamLobby)
