@@ -1,0 +1,107 @@
+package components
+
+import (
+	"treacherest/internal/config"
+	"treacherest/internal/game"
+	"fmt"
+)
+
+templ RoleConfiguration(room *game.Room, cfg *config.ServerConfig) {
+	<div id="role-config" class="role-configuration">
+		<h3>Game Configuration</h3>
+		
+		// Player count settings
+		<div class="player-count-config">
+			<label>Player Count Range:</label>
+			<div class="player-range">
+				<span>Min: { fmt.Sprintf("%d", room.RoleConfig.MinPlayers) }</span>
+				<span>Max: { fmt.Sprintf("%d", room.RoleConfig.MaxPlayers) }</span>
+			</div>
+		</div>
+
+		// Preset selector
+		<div class="preset-selector">
+			<form id="preset-form" data-on-change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
+				<label for="role-preset">Role Preset:</label>
+				<select 
+					id="role-preset" 
+					name="preset"
+				>
+					<option value="custom" selected?={ room.RoleConfig.PresetName == "custom" }>Custom</option>
+					for presetName := range cfg.Roles.Presets {
+						<option value={ presetName } selected?={ room.RoleConfig.PresetName == presetName }>
+							{ presetName }
+						</option>
+					}
+				</select>
+			</form>
+		</div>
+
+		// Role toggles and counts
+		<div class="role-settings">
+			<h4>Roles</h4>
+			for roleName, roleDef := range cfg.Roles.Available {
+				<div class="role-item" data-role={ roleName }>
+					<form id={ "toggle-form-" + roleName } data-on-change={ "@post('/room/" + room.Code + "/config/toggle', {contentType: 'form'})" }>
+						<div class="role-header">
+							<input 
+								type="checkbox" 
+								id={ "role-" + roleName }
+								name={ "role-" + roleName }
+								checked?={ room.RoleConfig.EnabledRoles[roleName] }
+							/>
+							<label for={ "role-" + roleName }>
+								{ roleDef.DisplayName }
+								<span class="role-category">({ roleDef.Category })</span>
+							</label>
+						</div>
+					</form>
+					if room.RoleConfig.EnabledRoles[roleName] {
+						<form id={ "count-form-" + roleName } data-on-change={ "@post('/room/" + room.Code + "/config/count', {contentType: 'form'})" }>
+							<div class="role-count">
+								<label>Count:</label>
+								<input 
+									type="number" 
+									name={ "count-" + roleName }
+									value={ fmt.Sprintf("%d", room.RoleConfig.RoleCounts[roleName]) }
+									min={ fmt.Sprintf("%d", roleDef.MinCount) }
+									max={ fmt.Sprintf("%d", roleDef.MaxCount) }
+								/>
+								if roleDef.MinCount > 0 {
+									<span class="role-constraint">Required</span>
+								}
+							</div>
+						</form>
+					}
+				</div>
+			}
+		</div>
+
+		// Validation messages
+		<div id="role-validation" class="validation-messages">
+			// Validation messages will be inserted here via SSE
+		</div>
+	</div>
+}
+
+templ RoleValidation(errors []string, warnings []string) {
+	if len(errors) > 0 {
+		<div class="validation-errors">
+			for _, err := range errors {
+				<div class="error">❌ { err }</div>
+			}
+		</div>
+	}
+	if len(warnings) > 0 {
+		<div class="validation-warnings">
+			for _, warn := range warnings {
+				<div class="warning">⚠️ { warn }</div>
+			}
+		</div>
+	}
+	if len(errors) == 0 && len(warnings) == 0 {
+		<div class="validation-success">
+			✅ Configuration is valid
+		</div>
+	}
+}

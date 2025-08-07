@@ -435,7 +435,7 @@ func (h *EnhancedHandler) StreamGameEnhanced(w http.ResponseWriter, r *http.Requ
 
 // renderLobbyWithID renders the lobby body with an event ID
 func (h *EnhancedHandler) renderLobbyWithID(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player, eventID string) {
-	component := pages.LobbyBody(room, player)
+	component := pages.LobbyBody(room, player, h.config)
 
 	// Render to string
 	html := renderToString(component)

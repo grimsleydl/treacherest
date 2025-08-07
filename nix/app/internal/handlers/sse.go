@@ -82,7 +82,7 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
 
 			switch event.Type {
-			case "player_joined", "player_left", "player_updated":
+			case "player_joined", "player_left", "player_updated", "role_config_updated":
 				// Re-render lobby only if still in lobby state
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
@@ -198,7 +198,7 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	}
 
 	log.Printf("🎨 Rendering lobby content for room %s with %d players", room.Code, len(room.Players))
-	component := pages.LobbyContent(room, player)
+	component := pages.LobbyContent(room, player, h.config)
 
 	// Render to string
 	html := renderToString(component)
@@ -339,8 +339,8 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
 
 			switch event.Type {
-			case "player_joined", "player_left", "player_updated":
-				// Re-render host dashboard for player changes
+			case "player_joined", "player_left", "player_updated", "role_config_updated":
+				// Re-render host dashboard for player changes or role config updates
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
 					// Refresh player reference in case it was updated
@@ -382,7 +382,7 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	// Choose the appropriate template based on game state
 	switch room.State {
 	case game.StateLobby:
-		component = pages.HostDashboardContent(room, player)
+		component = pages.HostDashboardContent(room, player, h.config)
 	case game.StateCountdown:
 		component = pages.HostDashboardCountdown(room, player)
 	case game.StatePlaying:
@@ -390,7 +390,7 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	case game.StateEnded:
 		component = pages.HostDashboardEnded(room, player)
 	default:
-		component = pages.HostDashboardContent(room, player)
+		component = pages.HostDashboardContent(room, player, h.config)
 	}
 
 	// Render to string
