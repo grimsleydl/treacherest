@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"math/big"
 	"net/http"
 	"sync"
 	"treacherest/internal/config"
@@ -88,9 +89,12 @@ func (eb *EventBus) Publish(event Event) {
 	eb.mu.RLock()
 	defer eb.mu.RUnlock()
 
-	for _, ch := range eb.subscribers[event.RoomCode] {
+	subscribers := eb.subscribers[event.RoomCode]
+	
+	for _, ch := range subscribers {
 		select {
 		case ch <- event:
+			// Event sent successfully
 		default:
 			// Channel full, skip
 		}
@@ -126,4 +130,15 @@ func generatePlayerID() string {
 	b := make([]byte, 8)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// generateRandomName generates a random 5-character lowercase name
+func generateRandomName() string {
+	const letters = "abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, 5)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		b[i] = letters[n.Int64()]
+	}
+	return string(b)
 }

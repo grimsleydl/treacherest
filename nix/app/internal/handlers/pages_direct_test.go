@@ -146,26 +146,31 @@ func TestJoinRoomDirect(t *testing.T) {
 		}
 	})
 
-	t.Run("joins room with name parameter", func(t *testing.T) {
+	t.Run("joins room via POST", func(t *testing.T) {
 		// Create a room
 		room, _ := h.Store().CreateRoom()
-
-		req := httptest.NewRequest("GET", "/room/"+room.Code+"?name=NewPlayer", nil)
-		w := httptest.NewRecorder()
-
-		// Set up chi context
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("code", room.Code)
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		// Subscribe to events to verify player_joined is published
 		events := h.eventBus.Subscribe(room.Code)
 		defer h.eventBus.Unsubscribe(room.Code, events)
 
-		h.JoinRoom(w, req)
+		// Join via POST
+		formData := "room_code=" + room.Code + "&player_name=NewPlayer"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
 
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
+		h.JoinRoomPost(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303 (redirect), got %d", w.Code)
+		}
+
+		// Check redirect location
+		location := w.Header().Get("Location")
+		expectedLocation := "/room/" + room.Code
+		if location != expectedLocation {
+			t.Errorf("expected redirect to %s, got %s", expectedLocation, location)
 		}
 
 		// Verify player was added
@@ -198,7 +203,7 @@ func TestJoinRoomDirect(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error when room is full", func(t *testing.T) {
+	t.Run("returns error when room is full via POST", func(t *testing.T) {
 		// Create a full room
 		room, _ := h.Store().CreateRoom()
 		room.MaxPlayers = 2
@@ -209,15 +214,13 @@ func TestJoinRoomDirect(t *testing.T) {
 		room.AddPlayer(player2)
 		h.Store().UpdateRoom(room)
 
-		req := httptest.NewRequest("GET", "/room/"+room.Code+"?name=NewPlayer", nil)
+		// Try to join via POST
+		formData := "room_code=" + room.Code + "&player_name=NewPlayer"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		w := httptest.NewRecorder()
 
-		// Set up chi context
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("code", room.Code)
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		h.JoinRoom(w, req)
+		h.JoinRoomPost(w, req)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)

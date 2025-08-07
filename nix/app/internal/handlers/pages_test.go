@@ -96,7 +96,7 @@ func TestHandler_CreateRoom(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error when player name is empty", func(t *testing.T) {
+	t.Run("generates random name when player name is empty", func(t *testing.T) {
 		h := newTestHandler()
 
 		form := url.Values{}
@@ -109,13 +109,39 @@ func TestHandler_CreateRoom(t *testing.T) {
 		h.CreateRoom(w, req)
 
 		resp := w.Result()
-		if resp.StatusCode != http.StatusBadRequest {
-			t.Errorf("expected status 400, got %d", resp.StatusCode)
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", resp.StatusCode)
 		}
 
-		body := w.Body.String()
-		if !strings.Contains(body, "Player name is required") {
-			t.Errorf("expected error message about player name, got %s", body)
+		// Extract room code from location
+		location := resp.Header.Get("Location")
+		roomCode := strings.TrimPrefix(location, "/room/")
+
+		// Verify room was created with player having generated name
+		room, err := h.store.GetRoom(roomCode)
+		if err != nil {
+			t.Fatalf("room not found in store: %v", err)
+		}
+
+		if len(room.Players) != 1 {
+			t.Errorf("expected 1 player in room, got %d", len(room.Players))
+		}
+
+		// Get the first player from the map
+		var player *game.Player
+		for _, p := range room.Players {
+			player = p
+			break
+		}
+		if len(player.Name) != 5 {
+			t.Errorf("expected generated name to be 5 characters, got %d", len(player.Name))
+		}
+
+		// Check all characters are lowercase letters
+		for _, ch := range player.Name {
+			if ch < 'a' || ch > 'z' {
+				t.Errorf("expected all lowercase letters, got '%c' in name '%s'", ch, player.Name)
+			}
 		}
 	})
 
