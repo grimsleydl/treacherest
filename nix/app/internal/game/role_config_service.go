@@ -145,7 +145,17 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 			// Convert string map to RoleType map
 			result := make(map[RoleType]int)
 			for role, count := range dist {
-				result[RoleType(role)] = count
+				// Map lowercase role names to RoleType constants
+				switch role {
+				case "leader":
+					result[RoleLeader] = count
+				case "guardian":
+					result[RoleGuardian] = count
+				case "assassin":
+					result[RoleAssassin] = count
+				case "traitor":
+					result[RoleTraitor] = count
+				}
 			}
 			return result, nil
 		}
@@ -168,7 +178,17 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 			// Start with the base distribution
 			totalRoles := 0
 			for role, count := range dist {
-				result[RoleType(role)] = count
+				// Map lowercase role names to RoleType constants
+				switch role {
+				case "leader":
+					result[RoleLeader] = count
+				case "guardian":
+					result[RoleGuardian] = count
+				case "assassin":
+					result[RoleAssassin] = count
+				case "traitor":
+					result[RoleTraitor] = count
+				}
 				totalRoles += count
 			}
 
@@ -195,13 +215,23 @@ func (s *RoleConfigService) GetDistributionForPlayerCount(config *RoleConfigurat
 
 	for role, count := range config.RoleCounts {
 		if config.EnabledRoles[role] && count > 0 {
-			result[RoleType(role)] = count
+			// Map lowercase role names to RoleType constants
+			switch role {
+			case "leader":
+				result[RoleLeader] = count
+			case "guardian":
+				result[RoleGuardian] = count
+			case "assassin":
+				result[RoleAssassin] = count
+			case "traitor":
+				result[RoleTraitor] = count
+			}
 			totalRoles += count
 		}
 	}
 
-	// Ensure we have at least one leader
-	if result[RoleLeader] == 0 {
+	// Ensure we have at least one leader (unless leaderless games are allowed)
+	if result[RoleLeader] == 0 && !config.AllowLeaderlessGame {
 		result[RoleLeader] = 1
 		totalRoles++
 	}
@@ -247,8 +277,11 @@ func (s *RoleConfigService) ValidateConfiguration(config *RoleConfiguration) err
 
 		if role == "leader" {
 			hasLeader = true
-			if count != 1 {
+			if count != 1 && !config.AllowLeaderlessGame {
 				return fmt.Errorf("must have exactly 1 leader, got %d", count)
+			}
+			if count > 1 {
+				return fmt.Errorf("cannot have more than 1 leader, got %d", count)
 			}
 		}
 
@@ -264,7 +297,7 @@ func (s *RoleConfigService) ValidateConfiguration(config *RoleConfiguration) err
 		totalMaxRoles += count
 	}
 
-	if !hasLeader {
+	if !hasLeader && !config.AllowLeaderlessGame {
 		return fmt.Errorf("must have a leader role")
 	}
 

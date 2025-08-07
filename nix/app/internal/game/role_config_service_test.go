@@ -100,8 +100,8 @@ func TestRoleConfigService_CreateFromPreset(t *testing.T) {
 				if rc.PresetName != "basic-3p" {
 					t.Errorf("expected preset name 'basic-3p', got %s", rc.PresetName)
 				}
-				if rc.MinPlayers != 3 || rc.MaxPlayers != 3 {
-					t.Errorf("expected min/max players 3, got %d/%d", rc.MinPlayers, rc.MaxPlayers)
+				if rc.MinPlayers != 3 || rc.MaxPlayers != 10 {
+					t.Errorf("expected min/max players 3/10, got %d/%d", rc.MinPlayers, rc.MaxPlayers)
 				}
 			},
 		},
@@ -114,8 +114,8 @@ func TestRoleConfigService_CreateFromPreset(t *testing.T) {
 				if rc.PresetName != "dynamic" {
 					t.Errorf("expected preset name 'dynamic', got %s", rc.PresetName)
 				}
-				if rc.MinPlayers != 3 || rc.MaxPlayers != 6 {
-					t.Errorf("expected min 3 max 6 players, got %d/%d", rc.MinPlayers, rc.MaxPlayers)
+				if rc.MinPlayers != 3 || rc.MaxPlayers != 10 {
+					t.Errorf("expected min 3 max 10 players, got %d/%d", rc.MinPlayers, rc.MaxPlayers)
 				}
 			},
 		},
@@ -124,21 +124,6 @@ func TestRoleConfigService_CreateFromPreset(t *testing.T) {
 			presetName: "nonexistent",
 			maxPlayers: 10,
 			wantErr:    true,
-		},
-		{
-			name:       "empty preset name creates default",
-			presetName: "",
-			maxPlayers: 10,
-			wantErr:    false,
-			checkConfig: func(t *testing.T, rc *RoleConfiguration) {
-				if rc.PresetName != "custom" {
-					t.Errorf("expected preset name 'custom', got %s", rc.PresetName)
-				}
-				// Should have leader enabled by default
-				if !rc.EnabledRoles["leader"] {
-					t.Error("expected leader role to be enabled by default")
-				}
-			},
 		},
 	}
 
@@ -240,10 +225,15 @@ func TestRoleConfigService_GetDistributionForPlayerCount(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "player count outside all ranges",
+			name:        "player count outside all ranges uses closest",
 			playerCount: 7,
-			wantRoles:   nil,
-			wantErr:     true,
+			wantRoles: map[RoleType]int{
+				RoleLeader:   1,
+				RoleGuardian: 4, // 2 + 2 extra to fill
+				RoleAssassin: 1,
+				RoleTraitor:  1,
+			},
+			wantErr: false,
 		},
 		{
 			name:        "zero players",

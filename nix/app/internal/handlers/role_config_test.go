@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,14 +18,13 @@ import (
 func TestUpdateRolePreset(t *testing.T) {
 	// Create test config
 	cfg := config.DefaultConfig()
-	cfg.Roles.Presets = map[string]map[string]config.RoleDistribution{
-		"test-preset": {
-			"3": {
-				Roles: map[string]int{
-					"leader":   1,
-					"guardian": 1,
-					"traitor":  1,
-				},
+	cfg.Roles.Presets["test-preset"] = config.Preset{
+		Name: "Test Preset",
+		Distributions: map[int]map[string]int{
+			3: {
+				"leader":   1,
+				"guardian": 1,
+				"traitor":  1,
 			},
 		},
 	}
@@ -37,8 +37,8 @@ func TestUpdateRolePreset(t *testing.T) {
 	room := &game.Room{
 		Code:       "TEST1",
 		MaxPlayers: 8,
-		Players:    make(map[string]*Player),
-		State:      game.StateWaiting,
+		Players:    make(map[string]*game.Player),
+		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
 			PresetName:   "custom",
 			EnabledRoles: make(map[string]bool),
@@ -55,7 +55,7 @@ func TestUpdateRolePreset(t *testing.T) {
 		JoinedAt: time.Now(),
 	}
 	room.Players[player.ID] = player
-	s.CreateRoom(room)
+	s.UpdateRoom(room)
 
 	tests := []struct {
 		name       string
@@ -106,7 +106,7 @@ func TestUpdateRolePreset(t *testing.T) {
 			// Add route params
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("code", "TEST1")
-			req = req.WithContext(chi.RouteContext(req.Context(), rctx))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Create response recorder
 			rr := httptest.NewRecorder()
@@ -142,8 +142,8 @@ func TestToggleRole(t *testing.T) {
 	room := &game.Room{
 		Code:       "TEST2",
 		MaxPlayers: 8,
-		Players:    make(map[string]*Player),
-		State:      game.StateWaiting,
+		Players:    make(map[string]*game.Player),
+		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
 			PresetName: "custom",
 			EnabledRoles: map[string]bool{
@@ -165,7 +165,7 @@ func TestToggleRole(t *testing.T) {
 		JoinedAt: time.Now(),
 	}
 	room.Players[player.ID] = player
-	s.CreateRoom(room)
+	s.UpdateRoom(room)
 
 	tests := []struct {
 		name         string
@@ -204,7 +204,7 @@ func TestToggleRole(t *testing.T) {
 			// Add route params
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("code", "TEST2")
-			req = req.WithContext(chi.RouteContext(req.Context(), rctx))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Create response recorder
 			rr := httptest.NewRecorder()
@@ -243,8 +243,8 @@ func TestUpdateRoleCount(t *testing.T) {
 	room := &game.Room{
 		Code:       "TEST3",
 		MaxPlayers: 8,
-		Players:    make(map[string]*Player),
-		State:      game.StateWaiting,
+		Players:    make(map[string]*game.Player),
+		State:      game.StateLobby,
 		RoleConfig: &game.RoleConfiguration{
 			PresetName: "custom",
 			EnabledRoles: map[string]bool{
@@ -265,7 +265,7 @@ func TestUpdateRoleCount(t *testing.T) {
 		JoinedAt: time.Now(),
 	}
 	room.Players[player.ID] = player
-	s.CreateRoom(room)
+	s.UpdateRoom(room)
 
 	tests := []struct {
 		name      string
@@ -310,7 +310,7 @@ func TestUpdateRoleCount(t *testing.T) {
 			// Add route params
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("code", "TEST3")
-			req = req.WithContext(chi.RouteContext(req.Context(), rctx))
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			// Create response recorder
 			rr := httptest.NewRecorder()
@@ -342,7 +342,7 @@ func TestIsRoomCreator(t *testing.T) {
 	// Test with host mode
 	hostRoom := &game.Room{
 		Code:    "HOST1",
-		Players: make(map[string]*Player),
+		Players: make(map[string]*game.Player),
 	}
 	host := &game.Player{
 		ID:       "host1",
@@ -360,7 +360,7 @@ func TestIsRoomCreator(t *testing.T) {
 	// Test with non-host mode (first player)
 	nonHostRoom := &game.Room{
 		Code:    "NOHOST1",
-		Players: make(map[string]*Player),
+		Players: make(map[string]*game.Player),
 	}
 	firstPlayer := &game.Player{
 		ID:       "first1",

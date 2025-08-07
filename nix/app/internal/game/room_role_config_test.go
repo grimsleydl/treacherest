@@ -11,7 +11,7 @@ func TestRoom_RoleConfiguration(t *testing.T) {
 		Code:       "TEST1",
 		MaxPlayers: 8,
 		Players:    make(map[string]*Player),
-		State:      StateWaiting,
+		State:      StateLobby,
 		RoleConfig: &RoleConfiguration{
 			PresetName: "custom",
 			EnabledRoles: map[string]bool{
@@ -48,6 +48,10 @@ func TestRoom_RoleConfiguration(t *testing.T) {
 func TestAssignRolesWithConfig(t *testing.T) {
 	// Create test configuration
 	cfg := &config.ServerConfig{
+		Server: config.ServerSettings{
+			MaxPlayersPerRoom: 20,
+			MinPlayersPerRoom: 1,
+		},
 		Roles: config.RolesConfig{
 			Available: map[string]config.RoleDefinition{
 				"leader": {
@@ -69,10 +73,12 @@ func TestAssignRolesWithConfig(t *testing.T) {
 					MaxCount:    10,
 				},
 			},
-			Presets: map[string]map[string]config.RoleDistribution{
+			Presets: map[string]config.Preset{
 				"basic-3p": {
-					"3": {
-						Roles: map[string]int{
+					Name:        "Basic 3 Player",
+					Description: "Basic 3 player game",
+					Distributions: map[int]map[string]int{
+						3: {
 							"leader":   1,
 							"guardian": 1,
 							"traitor":  1,
@@ -85,17 +91,18 @@ func TestAssignRolesWithConfig(t *testing.T) {
 
 	// Create card service with test cards
 	cardService := &CardService{
-		cardsByRole: map[RoleType][]*Card{
-			RoleLeader: {
-				{Name: "Test Leader", RoleType: "Leader"},
-			},
-			RoleGuardian: {
-				{Name: "Test Guardian 1", RoleType: "Guardian"},
-				{Name: "Test Guardian 2", RoleType: "Guardian"},
-			},
-			RoleTraitor: {
-				{Name: "Test Traitor", RoleType: "Traitor"},
-			},
+		Leaders: []*Card{
+			{ID: 1, Name: "Test Leader", Types: CardTypes{Subtype: "Leader"}},
+		},
+		Guardians: []*Card{
+			{ID: 2, Name: "Test Guardian 1", Types: CardTypes{Subtype: "Guardian"}},
+			{ID: 3, Name: "Test Guardian 2", Types: CardTypes{Subtype: "Guardian"}},
+		},
+		Traitors: []*Card{
+			{ID: 4, Name: "Test Traitor", Types: CardTypes{Subtype: "Traitor"}},
+		},
+		Assassins: []*Card{
+			{ID: 5, Name: "Test Assassin", Types: CardTypes{Subtype: "Assassin"}},
 		},
 	}
 
@@ -107,6 +114,7 @@ func TestAssignRolesWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create role config: %v", err)
 	}
+	
 
 	// Create test players
 	players := []*Player{
@@ -117,6 +125,7 @@ func TestAssignRolesWithConfig(t *testing.T) {
 
 	// Assign roles
 	AssignRolesWithConfig(players, cardService, roleConfig, roleService)
+	
 
 	// Verify all players have roles
 	for _, player := range players {
@@ -165,13 +174,11 @@ func TestAssignRolesWithConfig(t *testing.T) {
 func TestAssignRolesWithConfig_HostExclusion(t *testing.T) {
 	// Create minimal card service
 	cardService := &CardService{
-		cardsByRole: map[RoleType][]*Card{
-			RoleLeader: {
-				{Name: "Test Leader", RoleType: "Leader"},
-			},
-			RoleGuardian: {
-				{Name: "Test Guardian", RoleType: "Guardian"},
-			},
+		Leaders: []*Card{
+			{ID: 1, Name: "Test Leader", Types: CardTypes{Subtype: "Leader"}},
+		},
+		Guardians: []*Card{
+			{ID: 2, Name: "Test Guardian", Types: CardTypes{Subtype: "Guardian"}},
 		},
 	}
 
