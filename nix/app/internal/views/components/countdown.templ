@@ -4,23 +4,76 @@ import (
 	"fmt"
 )
 
-// CountdownDisplay is a reusable countdown component that binds to the $countdown signal
+// CountdownDisplay is a reusable countdown component using DaisyUI countdown styling
 templ CountdownDisplay(initialValue int) {
-	<div class="countdown-container" style="text-align: center; padding: 2rem 0;">
-		<h1 style="font-size: 2rem; margin-bottom: 1rem;">Game Starting...</h1>
-		<div class="countdown-value" style="font-size: 5rem; font-weight: bold; color: #e94560; margin: 2rem 0;">
-			<span data-text="$countdown">{ fmt.Sprint(initialValue) }</span>
+	<div class="flex flex-col items-center justify-center p-8">
+		<h1 class="text-3xl font-bold mb-4">Game Starting...</h1>
+		<div class="text-6xl font-mono">
+			<span class="countdown countdown-fast">
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+			</span>
 		</div>
-		<p style="font-size: 1.2rem; color: #718096;">Get ready!</p>
+		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
 	</div>
 }
 
-// CountdownDisplayWithMessage allows custom message
+// CountdownDisplayWithMessage allows custom message with DaisyUI countdown
 templ CountdownDisplayWithMessage(initialValue int, message string) {
-	<div class="countdown-container" style="text-align: center; padding: 2rem 0;">
-		<h1 style="font-size: 2rem; margin-bottom: 1rem;">
-			{ message } <span data-text="$countdown" style="font-size: 5rem; font-weight: bold; color: #e94560;">{ fmt.Sprint(initialValue) }</span>...
-		</h1>
-		<p style="font-size: 1.2rem; color: #718096; margin-top: 2rem;">Get ready!</p>
+	<div class="flex flex-col items-center justify-center p-8">
+		<h1 class="text-3xl font-bold mb-4">{ message }</h1>
+		<div class="text-6xl font-mono">
+			<span class="countdown countdown-fast">
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+			</span>
+		</div>
+		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
 	</div>
 }
+
+// CountdownLarge is a larger countdown display with seconds label
+templ CountdownLarge(initialValue int) {
+	<div class="flex flex-col items-center justify-center p-8 gap-4">
+		<h1 class="text-4xl font-bold">Game Starting</h1>
+		<div class="flex gap-2 text-8xl font-mono">
+			<span class="countdown">
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+			</span>
+			<span class="text-4xl self-end mb-4">seconds</span>
+		</div>
+	</div>
+}
+
+// CountdownWithBox displays countdown in a box style like DaisyUI examples
+templ CountdownWithBox(initialValue int, label string) {
+	<div class="flex flex-col gap-2 items-center">
+		<span class="countdown font-mono text-6xl">
+			<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+		</span>
+		<span class="text-sm opacity-70">{ label }</span>
+	</div>
+}
+
+// CountdownWithSpeed allows custom animation speed
+// speed can be "fast" (0.25s), "normal" (0.5s), "slow" (1s), or empty for default
+templ CountdownWithSpeed(initialValue int, message string, speed string) {
+	<div class="flex flex-col items-center justify-center p-8">
+		<h1 class="text-3xl font-bold mb-4">{ message }</h1>
+		<div class="text-6xl font-mono">
+			<span class={ "countdown", fmt.Sprintf("countdown-%s", speed) }>
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+			</span>
+		</div>
+		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
+	</div>
+}
+
+// CountdownInline for inline countdown displays with custom duration
+templ CountdownInline(initialValue int, animationMs int) {
+	<span class="countdown font-mono text-4xl">
+		<span 
+			style={ fmt.Sprintf("--value:%d; --animation-duration:%dms", initialValue, animationMs) } 
+			data-attr-style={ fmt.Sprintf("'--value:' + $countdown + '; --animation-duration:%dms'", animationMs) }
+		></span>
+	</span>
+}
+
