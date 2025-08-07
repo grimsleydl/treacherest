@@ -2,6 +2,7 @@ package pages
 
 import (
 	"fmt"
+	"strings"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
 	"treacherest/internal/views/layouts"
@@ -31,25 +32,32 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 		} else {
 			<div class="flex flex-col items-center gap-8 p-4">
 				if currentPlayer.Role != nil {
-					<div class={ "card bg-base-200 shadow-xl max-w-md w-full", getRoleClass(string(currentPlayer.Role.GetRoleType())) }>
-						<figure class="relative">
+					<div 
+						class={ "card bg-base-200 shadow-xl max-w-md w-full", getRoleClass(string(currentPlayer.Role.GetRoleType())) }
+						style="max-width: 28rem; margin: 0 auto; background: #f3f4f6; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);"
+					>
+						<figure class="relative" style="margin: 0;">
 							<img
 								src={ currentPlayer.Role.GetImageBase64() }
 								alt={ currentPlayer.Role.Name }
 								class="w-full h-auto"
+								style="width: 100%; height: auto; display: block;"
+								onerror="this.style.display='none'"
 							/>
 						</figure>
-						<div class="card-body">
-							<h2 class="card-title text-2xl">{ currentPlayer.Role.Name }</h2>
-							<div class="flex gap-2 mb-4">
-								<div class="badge badge-primary">{ currentPlayer.Role.Type }</div>
-								<div class="badge badge-secondary">{ currentPlayer.Role.Rarity }</div>
+						<div class="card-body" style="padding: 1.5rem;">
+							<h2 class="card-title text-2xl" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">{ currentPlayer.Role.Name }</h2>
+							<div class="flex gap-2 mb-4" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+								<div class="badge badge-primary" style="padding: 0.25rem 0.75rem; background: #3b82f6; color: white; border-radius: 0.375rem; font-size: 0.875rem;">{ currentPlayer.Role.Type }</div>
+								<div class="badge badge-secondary" style="padding: 0.25rem 0.75rem; background: #8b5cf6; color: white; border-radius: 0.375rem; font-size: 0.875rem;">{ currentPlayer.Role.Rarity }</div>
 							</div>
-							<p class="italic text-base-content/80">{ currentPlayer.Role.Text }</p>
-							<div class="divider"></div>
-							<div class="space-y-2">
-								<p class="text-sm"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
-								<p class="text-xs text-base-content/60"><em>Art by { currentPlayer.Role.Artist }</em></p>
+							<div class="text-base-content/80" style="color: #4b5563; margin-bottom: 1rem;">
+								@FormatCardText(currentPlayer.Role.Text)
+							</div>
+							<div class="divider" style="height: 1px; background: #e5e7eb; margin: 1rem 0;"></div>
+							<div class="space-y-2" style="margin-top: 1rem;">
+								<p class="text-sm" style="font-size: 0.875rem;"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
+								<p class="text-xs text-base-content/60" style="font-size: 0.75rem; color: #6b7280;"><em>Art by { currentPlayer.Role.Artist }</em></p>
 							</div>
 						</div>
 					</div>
@@ -90,5 +98,28 @@ func getRoleClass(roleType string) string {
 		return "border-4 border-secondary shadow-lg"
 	default:
 		return ""
+	}
+}
+
+// FormatCardText formats card text similar to Scryfall's oracle text:
+// - Converts | to line breaks
+// - Italicizes text in parentheses (reminder text)
+templ FormatCardText(text string) {
+	for i, line := range FormatCardTextToLines(text) {
+		<div class={ templ.KV("mb-2", i < len(FormatCardTextToLines(text))-1) }>
+			for _, part := range line.Parts {
+				if part.IsMana {
+					<i class={ "ms ms-" + strings.ToLower(part.ManaSymbol), "ms-cost" }></i>
+				} else if part.Italic {
+					<span class="italic" style="font-style: italic;">
+						@templ.Raw(escapeHTMLKeepUnicode(part.Text))
+					</span>
+				} else {
+					<span>
+						@templ.Raw(escapeHTMLKeepUnicode(part.Text))
+					</span>
+				}
+			}
+		</div>
 	}
 }
