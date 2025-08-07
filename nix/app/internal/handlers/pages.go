@@ -86,21 +86,9 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	// Show join form
 	playerName := r.URL.Query().Get("name")
 	if playerName == "" {
-		// TODO: Show join form
-		w.Write([]byte(`
-			<html>
-			<body style="background: #1a1a2e; color: #eee; font-family: sans-serif;">
-				<div style="max-width: 400px; margin: 100px auto; text-align: center;">
-					<h1>Join Room ` + roomCode + `</h1>
-					<form method="GET">
-						<input type="text" name="name" placeholder="Enter your name" required 
-							   style="padding: 10px; font-size: 16px; width: 200px;">
-						<button type="submit" style="padding: 10px 20px; font-size: 16px;">Join</button>
-					</form>
-				</div>
-			</body>
-			</html>
-		`))
+		// Show join form using Templ template
+		component := pages.Join(roomCode, "")
+		component.Render(r.Context(), w)
 		return
 	}
 

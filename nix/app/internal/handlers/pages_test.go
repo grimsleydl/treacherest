@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -158,10 +159,42 @@ func TestHandler_CreateRoom(t *testing.T) {
 }
 
 func TestHandler_JoinRoom(t *testing.T) {
-	// This test would require mocking chi.URLParam, which is complex
-	// For now, we'll focus on unit testing the handler logic
-	// Integration tests will cover the full flow
-	t.Skip("JoinRoom requires chi router context - will be covered in integration tests")
+	t.Run("renders join form when no name provided", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+		
+		// Create a room first
+		room, _ := h.store.CreateRoom()
+		roomCode := room.Code
+		
+		// Create a router to properly handle URL params
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+		
+		req := httptest.NewRequest("GET", "/room/"+roomCode, nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+		
+		body := w.Body.String()
+		// Verify the Templ template is rendered
+		if !strings.Contains(body, "Join Room "+roomCode) {
+			t.Error("expected join form with room code")
+		}
+		if !strings.Contains(body, `name="name"`) {
+			t.Error("expected name input field")
+		}
+		if !strings.Contains(body, "Enter your name") {
+			t.Error("expected placeholder text")
+		}
+		if !strings.Contains(body, `data-store="{}"`) {
+			t.Error("expected datastar attributes")
+		}
+	})
 }
 
 func TestHandler_GamePage(t *testing.T) {
