@@ -18,7 +18,7 @@ type CardDisplay struct {
 }
 
 templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0}">
+	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}">
 		<h3>Game Configuration</h3>
 		// Player count settings
 		<div class="player-count-config">
@@ -49,7 +49,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			</form>
 		</div>
 		// Advanced options
-		<div class="advanced-options" data-signals__ifmissing={ fmt.Sprintf(`{allowLeaderless: %t}`, room.RoleConfig.AllowLeaderlessGame) }>
+		<div class="advanced-options" data-signals__ifmissing={ fmt.Sprintf(`{allowLeaderless: %t, enableAutoScale: true, updatingLeaderless: false}`, room.RoleConfig.AllowLeaderlessGame) }>
 			<h4>Advanced Options</h4>
 			<div class="option-item">
 				<input
@@ -57,13 +57,40 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					id="allow-leaderless"
 					checked?={ room.RoleConfig.AllowLeaderlessGame }
 					data-bind="allowLeaderless"
-					data-on-change={ fmt.Sprintf(`(!$allowLeaderless || confirm('Enable leaderless games? This will allow games where all roles are hidden.')) && @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: $allowLeaderless})})`, room.Code) }
+					data-attr-disabled="$updatingLeaderless"
+					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowed: $allowLeaderless})})`, room.Code) }
 				/>
 				<label for="allow-leaderless">
 					Allow Leaderless Games
 					<span class="option-description">(Enables games without a Leader role)</span>
+					<span data-show="$updatingLeaderless" class="loading loading-spinner loading-xs ml-2"></span>
 				</label>
 			</div>
+			
+			// Auto-scale toggle - only show for preset configurations
+			if room.RoleConfig.PresetName != "custom" {
+				<div class="option-item" 
+					data-show="$canAutoScale"
+					data-attr-title="$autoScaleDetails">
+					<input
+						type="checkbox"
+						id="enable-auto-scale"
+						checked?={ true }
+						data-bind="enableAutoScale"
+						data-attr-disabled="!$canAutoScale"
+					/>
+					<label for="enable-auto-scale">
+						Auto-scale roles for player count
+						<span class="option-description">({ room.RoleConfig.PresetName } preset will adjust roles automatically)</span>
+					</label>
+				</div>
+				
+				// Show auto-scale details when relevant
+				<div class="auto-scale-info" data-show="$canAutoScale && $autoScaleDetails">
+					<span class="info-icon">ℹ️</span>
+					<span data-text="$autoScaleDetails" class="text-sm"></span>
+				</div>
+			}
 		</div>
 		// Role types with collapsible sections
 		<div class="role-settings" data-signals__ifmissing="{Leader_expanded: false, Guardian_expanded: false, Assassin_expanded: false, Traitor_expanded: false}">
@@ -89,23 +116,29 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 			</div>
 		</div>
 	} else {
-		<div class="role-type-section" data-signals__ifmissing={ fmt.Sprintf(`{%s_count: %d}`, typeName, typeConfig.Count) }>
-			<div
-				class="role-type-header"
-				data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }
-			>
-				<span class="role-type-toggle" data-class-expanded={ fmt.Sprintf(`$%s_expanded`, typeName) }>▶</span>
-				<span class="role-type-name">{ typeName }s</span>
-				<div class="role-type-count">
+		<div class="role-type-section">
+			<div class="role-type-header-row">
+				// Clickable section
+				<div
+					class="role-type-header-clickable"
+					data-on-click={ fmt.Sprintf(`$%s_expanded = !$%s_expanded`, typeName, typeName) }
+				>
+					<span class="role-type-toggle" data-class-expanded={ fmt.Sprintf(`$%s_expanded`, typeName) }>▶</span>
+					<span class="role-type-name">{ typeName }s</span>
+				</div>
+				// Non-clickable section
+				<div class="role-type-controls">
 					<label>Count:</label>
-					<input
-						type="number"
-						data-bind={ fmt.Sprintf(`%s_count`, typeName) }
-						min="0"
-						max="10"
-						data-on-change={ fmt.Sprintf(`$roleType = '%s'; $roleCount = parseInt($%s_count); @post('/room/%s/config/role-type-count')`, typeName, typeName, room.Code) }
-						onclick="event.stopPropagation()"
-					/>
+					<button 
+						class="btn btn-xs"
+						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
+						disabled?={ typeConfig.Count == 0 }
+					>-</button>
+					<span class="role-count mx-2">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
+					<button 
+						class="btn btn-xs"
+						data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
+					>+</button>
 					if typeConfig.Count > 0 {
 						@RoleTypeStatus(typeName, typeConfig)
 					}
