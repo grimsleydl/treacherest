@@ -1,0 +1,339 @@
+#+TITLE: MTG Treacherest - Product Requirements Document
+#+DATE: 2025-06-15
+
+* Executive Summary
+
+MTG Treacherest is a real-time, web-based social deduction game inspired by Magic: The Gathering. Players assume secret roles (supertypes of: Leader, Guardian, Traitor, Assassin with various special abilities depending on which role of each Supertype) and work to achieve their faction's victory conditions through deduction, deception, and strategic reveals.
+
+**CRITICAL**: This implementation MUST adhere to the official MTG Treachery specifications found at:
+- Official rules and cards: https://mtgtreachery.net/en/
+- Comprehensive card data: docs/external/treachery-cards.json
+- Comprehensive rules: https://mtgtreachery.net/rules/cr/
+
+The application prioritizes mobile and tablet experiences while maintaining full desktop compatibility. Built with Go, Templ, and Datastar, it delivers real-time updates through Server-Sent Events (SSE) without requiring page refreshes.
+
+* Product Vision
+
+** Mission Statement
+Create a platform players can organize and manage games of MTG Treacherest in a simple, browser-based format that works seamlessly across all devices.
+
+** Core Values
+- *Real-time Experience*: No manual refreshing required
+- *Mobile-First Design*: Optimized for phones and tablets
+- *Zero Installation*: Pure web experience, no apps needed
+- *Privacy-Focused*: No tracking cookies or adtech
+- *Community-Driven*: Open to contributions and feedback
+
+* User Personas
+
+** The Casual Player
+- Wants quick, fun games with friends
+- Values easy game creation and joining
+- Needs simple, intuitive controls
+- Appreciates being able to share game links
+
+** The Game Host
+- Organizes regular game nights
+- Needs flexible player counts (2-60 players)
+- Wants to monitor games without participating
+- Values QR codes for easy tablet/e-reader setup
+
+** The Strategic Player
+- Focuses on win rates and optimal strategies
+- Wants detailed game statistics
+- Values role balance and fair gameplay
+- Interested in cross-game performance tracking
+
+* Technical Architecture
+
+** Technology Stack
+- *Backend*: Go with Chi router
+- *Templating*: Templ (type-safe Go templates)
+- *Frontend Reactivity*: Datastar (SSE-based reactivity)
+- *Real-time Updates*: Server-Sent Events (SSE)
+- *Development Environment*: Nix with hot reload
+- *Testing*: Go standard library + Chromium browser tests
+
+** Key Components
+- Session management with HTTP-only cookies
+- Event bus for real-time game state propagation
+- In-memory game state (future: Redis for persistence)
+- Stateless request handling with SSE for updates
+
+* Core Features
+
+** 1. Game Creation and Management
+
+*** 1.1 Room Creation
+- Create game with customizable player count (2-60)
+- Auto-generated 5-character room codes (e.g., "4W47G")
+- Configurable maximum players
+- Optional "Host Mode" for non-participating organizers
+
+*** 1.2 Joining Games
+- Multiple join methods:
+  - Direct URL sharing (e.g., /game/4W47G)
+  - Quick join from active games list
+  - Manual room code entry
+- Name customization on join
+- Automatic session creation for new players
+
+*** 1.3 Lobby System
+- Real-time player list updates
+- Minimum 2 players to start
+- Game state indicators (lobby/playing/ended)
+- Start game button for any player (no host privileges)
+
+** 2. Gameplay Mechanics
+
+*** 2.1 Role System
+Four distinct roles with unique win conditions:
+
+**** Leader (1 per game)
+- Win condition: Survive and eliminate all threats
+- Special ability: Authority to direct investigations
+- Revealed on death: Game may end
+
+**** Guardian (multiple)
+- Win condition: Protect the Leader
+- Special ability: Hidden identity
+- Works with: Leader and other Guardians
+
+**** Traitor (multiple)
+- Win condition: Eliminate all other players
+- Special ability: Independent operator
+- Special ability: Hidden identity
+- Can work with: Assassins (conditionally). Must be last player standing.
+
+**** Assassin (multiple)  
+- Win condition: Eliminate the Leader
+- Special ability: Hidden identity
+- May work alone or with Traitors
+
+*** 2.2 Role Distribution Algorithm
+- Guaranteed 1 Leader per game
+- 2-3 players: 1 Leader, 1 Guardian, 0-1 Traitor
+- 4-7 players: 1 Leader, 2-3 Guardians, 1-2 Traitors, 0-1 Assassin
+- 8+ players: Balanced distribution maintaining ~40% good, ~60% evil
+- Tuneable distribution, pre-tuned distributions and sets of roles
+
+*** 2.3 Game Actions
+- *Reveal Role*: One-time action to show identity
+- *Counter Management*: Track tokens/counters associated with your role
+- *Token System*: Additional resource tracking
+- *Private Role View*: See your role without revealing
+
+*** 2.4 Game State Transitions
+The game progresses through clearly defined states:
+
+**** Lobby State
+- Players join the room
+- Real-time player list updates
+- Minimum 4 players required to start
+- Any player can initiate game start
+- Maximum 8 players per room
+
+**** Countdown State
+- Triggered when game starts
+- 5-second countdown timer
+- Roles are assigned randomly
+- Players prepare for role reveal
+- No actions available during countdown
+
+**** Playing State
+- Roles revealed to individual players
+- Leader identity public to all
+- Players can reveal roles strategically
+- Counter/token management active
+- Game continues until win condition met
+
+**** Ended State
+- Win condition achieved
+- Final results displayed
+- Option to return to lobby
+- Game archived for history
+
+** 3. Real-Time Features
+
+*** 3.1 Server-Sent Events (SSE)
+- Automatic game state synchronization
+- Player join/leave notifications
+- Role reveal updates
+- Counter/token changes
+- No polling or manual refresh needed
+
+*** 3.2 Datastar Integration
+- Reactive UI updates via data-* attributes
+- Signal-based state management
+- Declarative event handling
+- Efficient fragment merging
+
+** 4. User Interface
+
+*** 4.1 Responsive Design
+- Mobile-first approach
+- Touch-friendly buttons and controls
+- Readable text at all screen sizes
+- Optimized for portrait orientation
+
+*** 4.2 Game States
+- *Home*: Welcome screen with create/join options
+- *Lobby*: Active games list and creation
+- *Game Room*: Main gameplay interface
+- *Results*: End game statistics (future)
+
+*** 4.3 Accessibility
+- Proper tab order navigation
+- Alt text for all images
+- High contrast design
+- Large touch targets for mobile
+
+* Planned Features
+** Phase 0: Core architecture (Current)
+
+** Phase 1: Core Improvements
+- [ ] Player name input for direct URL joins
+- [ ] MTG-themed visual design
+- [ ] Improved lobby UX with better game creation/join flow
+- [ ] Host mode with QR code display
+- [ ] Life tracking, game end conditions, and win detection
+
+** Phase 2: Enhanced Gameplay
+- [ ] Life counter integration (20 starting life)
+- [ ] Custom role configurations
+- [ ] Spectator mode
+- [ ] Game replay system
+- [ ] Chat/messaging system with role-based channels
+
+** Phase 3: Statistics & Analytics
+- [ ] Personal statistics dashboard
+- [ ] Role win rate tracking
+- [ ] Game history
+- [ ] Leaderboards (optional)
+- [ ] Anonymous gameplay analytics
+
+** Phase 4: External Integrations
+- [ ] MTG card references and tooltips
+- [ ] Scryfall API integration for flavor
+- [ ] Discord/Slack notifications
+- [ ] Custom rule variants
+
+* User Flows
+
+** Creating a Game
+1. User visits homepage
+2. Clicks "Create Game"
+3. Optionally sets player count (default: 6)
+4. Enters player name
+5. System generates room code
+6. Redirected to game room
+7. Share link or room code with friends
+
+** Joining via Direct Link
+1. User clicks shared link
+2. System creates session
+3. If game is in lobby:
+   - Show join interface with name input
+   - User enters name and joins
+4. If game is active:
+   - Show spectator view (future)
+   - Cannot join mid-game
+
+** Gameplay Flow
+1. Players join lobby
+2. Any player starts game (minimum 2)
+3. Roles distributed secretly
+4. Players view private roles
+5. Game begins
+6. Players may reveal roles strategically
+7. Use counters/tokens to track suspicions
+8. Game ends when win condition met
+
+* Data Models
+
+** Game
+- ID: Unique 5-character code
+- State: lobby/playing/ended
+- Players: Map of Player objects
+- MaxPlayers: 2-60
+- CreatedAt: Timestamp
+- LastActivity: For cleanup
+
+** Player
+- ID: UUID
+- Name: Display name
+- Role: Leader/Guardian/Traitor/Assassin
+- Revealed: Boolean
+- Active: Connection status
+- Counters: Integer (resource tracking)
+- Tokens: Integer (resource tracking)
+
+** Session
+- PlayerID: UUID
+- CreatedAt: Timestamp
+- LastSeen: Timestamp
+
+* Security & Privacy
+
+** Security Measures
+- HTTP-only session cookies
+- CSRF protection (future)
+- Input sanitization
+- Rate limiting (future)
+- No password/account system
+
+** Privacy Commitment
+- No tracking cookies
+- No third-party analytics
+- Anonymous game statistics only
+- No personal data storage
+- Optional donation support only
+
+* Performance Requirements
+
+** Response Times
+- Page load: <1 second
+- SSE updates: <100ms latency
+- Game actions: <200ms response
+
+** Scalability
+- Support 100 concurrent games
+- 600 concurrent players (100 games × 6 avg players)
+- Horizontal scaling ready
+
+** Reliability
+- Automatic reconnection for SSE
+- Graceful degradation
+- Game state recovery
+- 24-hour automatic cleanup
+
+* Deployment Strategy
+
+** Container Deployment
+- Docker/Podman compatible
+- Single binary with assets
+- Environment variable configuration
+- Health check endpoints
+
+* Development Practices
+
+** Code Organization
+- Clean architecture principles
+- Separation of concerns
+- Comprehensive test coverage
+- Documentation-first approach
+
+** Testing Strategy
+- Unit tests for game logic
+- Integration tests for API
+- Browser automation tests
+- SSE connection testing
+- Load testing (future)
+
+** Contributing Guidelines
+- Open source collaboration
+- Issue templates
+- PR review process
+- Code of conduct
+- Clear documentation
+
