@@ -201,7 +201,7 @@ func TestCanStartValidation(t *testing.T) {
 		wantErr    string
 	}{
 		{
-			name: "Should allow start with more players than roles",
+			name: "Should not allow start with more players than roles (CanStart doesn't support autoscaling)",
 			room: &Room{
 				State:   StateLobby,
 				Players: map[string]*Player{
@@ -213,6 +213,9 @@ func TestCanStartValidation(t *testing.T) {
 					"6": {ID: "6", Name: "Player 6"},
 				},
 				RoleConfig: &RoleConfiguration{
+					PresetName: "standard", // Presets support autoscaling in GetValidationState, but not CanStart
+					MinPlayers: 1,
+					MaxPlayers: 6,
 					RoleTypes: map[string]*RoleTypeConfig{
 						"Leader":   {Count: 1},
 						"Guardian": {Count: 1},
@@ -221,7 +224,7 @@ func TestCanStartValidation(t *testing.T) {
 					},
 				},
 			},
-			canStart: true, // Currently returns true, but should it?
+			canStart: false, // CanStart() doesn't handle autoscaling
 		},
 		{
 			name: "Should not require leader if leaderless allowed",
