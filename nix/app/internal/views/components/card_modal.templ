@@ -10,7 +10,7 @@ templ CardModal(card *game.Card) {
 	<!-- Hidden checkbox to control modal state -->
 	<input type="checkbox" id={ fmt.Sprintf("card-modal-%d", card.ID) } class="modal-toggle"/>
 	<div class="modal modal-bottom sm:modal-middle" role="dialog">
-		<div class="modal-box max-w-md p-4">
+		<div class="modal-box bg-base-100 max-w-md p-4">
 			<h3 class="font-bold text-lg mb-4 text-center">{ card.Name }</h3>
 			<div class="flex justify-center">
 				<img
@@ -24,7 +24,7 @@ templ CardModal(card *game.Card) {
 			</div>
 		</div>
 		<!-- Click outside to close -->
-		<label class="modal-backdrop bg-black/50" for={ fmt.Sprintf("card-modal-%d", card.ID) }>Close</label>
+		<label class="modal-backdrop" for={ fmt.Sprintf("card-modal-%d", card.ID) }>Close</label>
 	</div>
 }
 
