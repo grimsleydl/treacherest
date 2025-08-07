@@ -79,7 +79,7 @@ func (r *Room) CanStart() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	return len(r.Players) >= 4 && r.State == StateLobby
+	return len(r.Players) >= 1 && r.State == StateLobby
 }
 
 // GetLeader returns the player with the Leader role

@@ -78,6 +78,12 @@ func AssignRoles(players []*Player) {
 // getRoleDistribution returns the role distribution based on player count
 func getRoleDistribution(playerCount int) []*Role {
 	switch playerCount {
+	case 1:
+		return []*Role{LeaderRole}
+	case 2:
+		return []*Role{LeaderRole, TraitorRole}
+	case 3:
+		return []*Role{LeaderRole, GuardianRole, TraitorRole}
 	case 4:
 		return []*Role{LeaderRole, GuardianRole, GuardianRole, TraitorRole}
 	case 5:
@@ -89,7 +95,15 @@ func getRoleDistribution(playerCount int) []*Role {
 	case 8:
 		return []*Role{LeaderRole, GuardianRole, GuardianRole, GuardianRole, AssassinRole, AssassinRole, TraitorRole, TraitorRole}
 	default:
-		// Fallback for edge cases
-		return []*Role{LeaderRole}
+		// Fallback for edge cases - just assign Leader role to everyone
+		roles := make([]*Role, playerCount)
+		for i := range roles {
+			if i == 0 {
+				roles[i] = LeaderRole
+			} else {
+				roles[i] = GuardianRole
+			}
+		}
+		return roles
 	}
 }
