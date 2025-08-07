@@ -40,8 +40,9 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 
 	// Check if game can start
 	if !room.CanStart() {
-		log.Printf("❌ Room cannot start: state=%s, players=%d", room.State, len(room.Players))
-		http.Error(w, "Cannot start game", http.StatusBadRequest)
+		validationError := room.GetStartValidationError()
+		log.Printf("❌ Room cannot start: %s", validationError)
+		http.Error(w, validationError, http.StatusBadRequest)
 		return
 	}
 
