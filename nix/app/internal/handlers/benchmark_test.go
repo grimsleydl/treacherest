@@ -20,7 +20,7 @@ import (
 // BenchmarkRoomCreation benchmarks the time to create a new room
 func BenchmarkRoomCreation(b *testing.B) {
 	s := store.NewMemoryStore()
-	h := New(s)
+	h := New(s, createMockCardService())
 
 	// Create a form request
 	form := url.Values{}
@@ -45,7 +45,7 @@ func BenchmarkRoomCreation(b *testing.B) {
 // BenchmarkJoinRoom benchmarks the time to join an existing room
 func BenchmarkJoinRoom(b *testing.B) {
 	s := store.NewMemoryStore()
-	h := New(s)
+	h := New(s, createMockCardService())
 
 	// Create a room first
 	room, _ := s.CreateRoom()
@@ -89,7 +89,7 @@ func BenchmarkSSEBroadcast(b *testing.B) {
 	for _, numClients := range testCases {
 		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
 			s := store.NewMemoryStore()
-			h := New(s)
+			h := New(s, createMockCardService())
 
 			// Create a room with players
 			room, _ := s.CreateRoom()
@@ -144,7 +144,7 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 	for _, numClients := range testCases {
 		b.Run(fmt.Sprintf("%d_concurrent", numClients), func(b *testing.B) {
 			s := store.NewMemoryStore()
-			h := New(s)
+			h := New(s, createMockCardService())
 
 			// Create multiple rooms
 			numRooms := numClients / 10 // Average 10 clients per room
@@ -217,7 +217,7 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 			runtime.ReadMemStats(&m1)
 
 			s := store.NewMemoryStore()
-			h := New(s)
+			h := New(s, createMockCardService())
 
 			rooms := make([]*game.Room, b.N)
 

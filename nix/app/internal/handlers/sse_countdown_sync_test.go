@@ -16,7 +16,7 @@ import (
 
 // TestMultipleBrowsersCountdownSync tests that multiple browsers all receive countdown updates
 func TestMultipleBrowsersCountdownSync(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create room with 3 players
 	room, _ := h.store.CreateRoom()
@@ -114,7 +114,7 @@ func TestMultipleBrowsersCountdownSync(t *testing.T) {
 
 // TestLateJoinerDuringCountdown tests a player joining during countdown
 func TestLateJoinerDuringCountdown(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create room with 1 player
 	room, _ := h.store.CreateRoom()
@@ -168,7 +168,7 @@ func TestLateJoinerDuringCountdown(t *testing.T) {
 
 // TestSSEReconnectionHandling tests that SSE connections handle reconnection properly
 func TestSSEReconnectionHandling(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create room and player
 	room, _ := h.store.CreateRoom()
@@ -207,7 +207,7 @@ func TestSSETimeoutMiddleware(t *testing.T) {
 	// This test would need to be done at the router level
 	// to properly test the middleware impact
 
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	// Note: SetupServer() not available in test context, using handler directly
 
 	// Create room

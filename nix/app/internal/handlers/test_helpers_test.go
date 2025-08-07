@@ -13,7 +13,8 @@ func mockLeaderCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Leader",
 		},
-		Text: "Test Leader Card",
+		Text:        "Test Leader Card",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -25,7 +26,8 @@ func mockGuardianCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Guardian",
 		},
-		Text: "Test Guardian Card",
+		Text:        "Test Guardian Card",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -37,7 +39,8 @@ func mockAssassinCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Assassin",
 		},
-		Text: "Test Assassin Card",
+		Text:        "Test Assassin Card",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
 	}
 }
 
@@ -49,6 +52,25 @@ func mockTraitorCard() *game.Card {
 			Supertype: "Creature",
 			Subtype:   "Traitor",
 		},
-		Text: "Test Traitor Card",
+		Text:        "Test Traitor Card",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
+	}
+}
+
+// createMockCardService creates a CardService with minimal data for testing
+func createMockCardService() *game.CardService {
+	return &game.CardService{
+		Leaders: []*game.Card{
+			mockLeaderCard(),
+		},
+		Guardians: []*game.Card{
+			mockGuardianCard(),
+		},
+		Assassins: []*game.Card{
+			mockAssassinCard(),
+		},
+		Traitors: []*game.Card{
+			mockTraitorCard(),
+		},
 	}
 }

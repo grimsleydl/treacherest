@@ -21,7 +21,7 @@ func TestSSEConnectionPersistence(t *testing.T) {
 	}
 
 	// Create handler and server
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -129,7 +129,7 @@ func TestSSEConnectionSurvives70Seconds(t *testing.T) {
 		t.Skip("Skipping long-running browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -208,7 +208,7 @@ func TestNoTargetsFoundError(t *testing.T) {
 		t.Skip("Skipping browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -285,7 +285,7 @@ func TestNoSSEConnectionExhaustionDuringCountdown(t *testing.T) {
 	}
 
 	// Create handler and server
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()
@@ -437,7 +437,7 @@ func TestPlayerReconnectionDuringCountdown(t *testing.T) {
 		t.Skip("Skipping browser test in short mode")
 	}
 
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 	router := setupTestRouter(h)
 	ts := httptest.NewServer(router)
 	defer ts.Close()

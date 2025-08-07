@@ -22,7 +22,7 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 	}
 
 	// Create handler with in-memory store
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create test server
 	router := setupTestRouter(h)
@@ -140,7 +140,7 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	}
 
 	// Create handler with in-memory store
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create test server
 	router := setupTestRouter(h)

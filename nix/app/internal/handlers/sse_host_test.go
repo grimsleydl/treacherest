@@ -22,7 +22,7 @@ import (
 func TestStreamHost(t *testing.T) {
 	// Create test handler
 	gameStore := store.NewMemoryStore()
-	h := New(gameStore)
+	h := New(gameStore, createMockCardService())
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()
@@ -103,7 +103,7 @@ func TestStreamHost(t *testing.T) {
 func TestStreamHostUnauthorized(t *testing.T) {
 	// Create test handler
 	gameStore := store.NewMemoryStore()
-	h := New(gameStore)
+	h := New(gameStore, createMockCardService())
 
 	// Create a room with regular player
 	room, err := gameStore.CreateRoom()
@@ -168,7 +168,7 @@ func TestStreamHostUnauthorized(t *testing.T) {
 func TestStreamHostPlayerUpdates(t *testing.T) {
 	// Create test handler
 	gameStore := store.NewMemoryStore()
-	h := New(gameStore)
+	h := New(gameStore, createMockCardService())
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()

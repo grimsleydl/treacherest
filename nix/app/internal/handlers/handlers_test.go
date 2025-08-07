@@ -11,7 +11,7 @@ import (
 
 func TestNew(t *testing.T) {
 	memStore := store.NewMemoryStore()
-	handler := New(memStore)
+	handler := New(memStore, createMockCardService())
 
 	if handler == nil {
 		t.Fatal("New returned nil handler")

@@ -7,7 +7,7 @@ import (
 
 func TestHandler_Store(t *testing.T) {
 	memStore := store.NewMemoryStore()
-	handler := New(memStore)
+	handler := New(memStore, createMockCardService())
 
 	// Test that Store() returns the same store
 	if handler.Store() != memStore {

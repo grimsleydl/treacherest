@@ -17,7 +17,7 @@ import (
 // TestSSEConnectionExhaustionFixed verifies that the game page doesn't create multiple SSE connections during countdown
 func TestSSEConnectionExhaustionFixed(t *testing.T) {
 	// Create handler and server
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create room with players
 	room, _ := h.store.CreateRoom()
@@ -79,7 +79,7 @@ func TestSSEConnectionExhaustionFixed(t *testing.T) {
 
 // TestGameTemplateStructure verifies the game template has the correct structure
 func TestGameTemplateStructure(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	// Create a game room
 	room, _ := h.store.CreateRoom()

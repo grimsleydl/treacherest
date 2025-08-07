@@ -27,7 +27,7 @@ type IntegrationTestHelper struct {
 // NewIntegrationTestHelper creates a new integration test helper
 func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
 	gameStore := store.NewMemoryStore()
-	h := New(gameStore)
+	h := New(gameStore, createMockCardService())
 
 	// Set up router with all routes
 	r := chi.NewRouter()

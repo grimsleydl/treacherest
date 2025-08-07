@@ -16,13 +16,31 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+// createMockCardService creates a CardService with minimal data for testing
+func createMockCardService() *game.CardService {
+	return &game.CardService{
+		Leaders: []*game.Card{
+			{ID: 1, Name: "Test Leader", Types: game.CardTypes{Subtype: "Leader"}, Base64Image: "data:image/jpeg;base64,test"},
+		},
+		Guardians: []*game.Card{
+			{ID: 2, Name: "Test Guardian", Types: game.CardTypes{Subtype: "Guardian"}, Base64Image: "data:image/jpeg;base64,test"},
+		},
+		Assassins: []*game.Card{
+			{ID: 3, Name: "Test Assassin", Types: game.CardTypes{Subtype: "Assassin"}, Base64Image: "data:image/jpeg;base64,test"},
+		},
+		Traitors: []*game.Card{
+			{ID: 4, Name: "Test Traitor", Types: game.CardTypes{Subtype: "Traitor"}, Base64Image: "data:image/jpeg;base64,test"},
+		},
+	}
+}
+
 // setupTestRouter creates a test router with all routes configured
 func setupTestRouter() (*chi.Mux, *handlers.Handler) {
 	// Initialize in-memory store
 	gameStore := store.NewMemoryStore()
 
 	// Initialize handlers
-	h := handlers.New(gameStore)
+	h := handlers.New(gameStore, createMockCardService())
 
 	// Set up router
 	r := chi.NewRouter()
@@ -318,7 +336,7 @@ func TestMainFunction(t *testing.T) {
 			t.Fatal("failed to create store")
 		}
 
-		h := handlers.New(gameStore)
+		h := handlers.New(gameStore, createMockCardService())
 		if h == nil {
 			t.Fatal("failed to create handlers")
 		}

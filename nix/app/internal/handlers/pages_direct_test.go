@@ -14,7 +14,7 @@ import (
 )
 
 func TestJoinRoomDirect(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	t.Run("shows join form when no name provided", func(t *testing.T) {
 		// Create a room
@@ -227,7 +227,7 @@ func TestJoinRoomDirect(t *testing.T) {
 }
 
 func TestGamePageDirect(t *testing.T) {
-	h := New(store.NewMemoryStore())
+	h := New(store.NewMemoryStore(), createMockCardService())
 
 	t.Run("returns 404 for invalid room", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/game/INVALID", nil)
