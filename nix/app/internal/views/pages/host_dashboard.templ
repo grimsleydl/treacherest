@@ -123,7 +123,7 @@ templ HostDashboardLobby(room *game.Room, player *game.Player) {
 
 templ HostDashboardBody(room *game.Room, player *game.Player) {
 	// Wrapper div with data-on-load that never gets morphed
-	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" }>
+	<div data-on-load={ "@get('/sse/host/" + room.Code + "')" } data-signals="{qrCode: ''}">
 		<div id="host-dashboard-container" class="host-dashboard">
 			<div id="host-dashboard-content">
 				@HostDashboardContent(room, player)
@@ -140,16 +140,12 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 			<!-- QR code will be generated and inserted here -->
 			<img
 				id="qr-code-img"
-				src=""
+				data-attr-src="$qrCode"
+				data-show="$qrCode != ''"
 				alt="QR Code"
-				style="display: none;"
-				data-on-qrcode="$qrCode => { 
-					this.src = $qrCode; 
-					this.style.display = 'block'; 
-					document.getElementById('qr-placeholder').style.display = 'none';
-				}"
+				style="width: 300px; height: 300px;"
 			/>
-			<div id="qr-placeholder" style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
+			<div id="qr-placeholder" data-show="$qrCode == ''" style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
 				Generating QR Code...
 			</div>
 		</div>
