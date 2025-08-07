@@ -50,7 +50,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<div class="player-list">
 					<h2>Players</h2>
-					for _, player := range room.GetPlayers() {
+					for _, player := range room.GetActivePlayers() {
 						<div class="player">
 							<span>{ player.Name }</span>
 							if player.RoleRevealed {

@@ -26,14 +26,14 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player) {
 	<h1>Game Lobby</h1>
 	<div class="room-code">{ room.Code }</div>
 	<div class="player-list">
-		<h2>Players ({ len(room.Players) })</h2>
-		for _, player := range room.GetPlayers() {
+		<h2>Players ({ room.GetActivePlayerCount() })</h2>
+		for _, player := range room.GetActivePlayers() {
 			<div class={ "player", templ.KV("current", player.ID == currentPlayer.ID) }>
 				{ player.Name }
 			</div>
 		}
 	</div>
-	if len(room.Players) >= 1 {
+	if room.GetActivePlayerCount() >= 1 {
 		<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
 			Start Game
 		</button>

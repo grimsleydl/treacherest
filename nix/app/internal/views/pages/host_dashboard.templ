@@ -136,23 +136,34 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 	<div class="qr-section">
 		<h1>Scan to Join</h1>
 		<div class="room-code-large">{ room.Code }</div>
-		<div class="qr-code-container">
+		<div class="qr-code-container" id="qr-code-container">
 			<!-- QR code will be generated and inserted here -->
-			<div style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
-				QR Code Placeholder
+			<img
+				id="qr-code-img"
+				src=""
+				alt="QR Code"
+				style="display: none;"
+				data-on-qrcode="$qrCode => { 
+					this.src = $qrCode; 
+					this.style.display = 'block'; 
+					document.getElementById('qr-placeholder').style.display = 'none';
+				}"
+			/>
+			<div id="qr-placeholder" style="width: 300px; height: 300px; background: #0f3460; display: flex; align-items: center; justify-content: center; color: #aaa;">
+				Generating QR Code...
 			</div>
 		</div>
 		<div class="join-instruction">
-			Players can scan this code<br/>or enter the room code
+			Players can scan this code
+			<br/>
+			or enter the room code
 		</div>
 	</div>
-	
 	<div class="players-section">
 		<h2>Players in Room</h2>
-		<div class="player-count">{ len(room.Players) } connected</div>
-		
+		<div class="player-count">{ room.GetActivePlayerCount() } connected</div>
 		<div id="player-list" class="host-player-list">
-			for i, player := range room.GetPlayers() {
+			for i, player := range room.GetActivePlayers() {
 				<div class="host-player-item">
 					<div style="display: flex; align-items: center;">
 						<div class="player-number">{ i + 1 }</div>
@@ -161,9 +172,8 @@ templ HostDashboardContent(room *game.Room, player *game.Player) {
 				</div>
 			}
 		</div>
-		
 		<div class="start-button-container">
-			if len(room.Players) >= 1 {
+			if room.GetActivePlayerCount() >= 1 {
 				<button data-on-click={ "@post('/host/" + room.Code + "/start')" }>
 					Start Game
 				</button>
@@ -195,7 +205,7 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 			<div class="room-code">{ room.Code }</div>
 			<div class="player-list">
 				<h2>Players</h2>
-				for _, p := range room.GetPlayers() {
+				for _, p := range room.GetActivePlayers() {
 					<div class="player">
 						{ p.Name }
 					</div>
