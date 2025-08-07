@@ -150,14 +150,20 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
-		http.Error(w, "Room not found", http.StatusNotFound)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingLeaderless": false,
+		})
 		return
 	}
 
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingLeaderless": false,
+		})
 		return
 	}
 
@@ -168,7 +174,11 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// Send SSE response to reset loading state
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingLeaderless": false,
+		})
 		return
 	}
 
@@ -198,6 +208,9 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateLeaderlessGame completed for room %s", roomCode)
+
+	// Send immediate SSE response to reset loading state
+	h.sendUpdatedRoleConfigUI(w, r, room)
 
 	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
@@ -994,14 +1007,20 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
-		http.Error(w, "Room not found", http.StatusNotFound)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingHideDistribution": false,
+		})
 		return
 	}
 
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingHideDistribution": false,
+		})
 		return
 	}
 
@@ -1009,7 +1028,10 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	var body map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingHideDistribution": false,
+		})
 		return
 	}
 
@@ -1020,7 +1042,10 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 		hide, ok = body["hide"].(bool)
 		if !ok {
 			log.Printf("❌ Could not find a valid 'hide' or 'hideRoleDistribution' boolean in request for room %s", roomCode)
-			http.Error(w, "Invalid data format", http.StatusBadRequest)
+			sse := datastar.NewSSE(w, r)
+			sse.MarshalAndMergeSignals(map[string]interface{}{
+				"updatingHideDistribution": false,
+			})
 			return
 		}
 	}
@@ -1043,6 +1068,9 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateHideDistribution completed for room %s", roomCode)
 
+	// Send immediate SSE response to reset loading state
+	h.sendUpdatedRoleConfigUI(w, r, room)
+
 	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
 		Type:     "role_config_updated",
@@ -1059,14 +1087,20 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
-		http.Error(w, "Room not found", http.StatusNotFound)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingFullyRandom": false,
+		})
 		return
 	}
 
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingFullyRandom": false,
+		})
 		return
 	}
 
@@ -1074,7 +1108,10 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	var body map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		sse := datastar.NewSSE(w, r)
+		sse.MarshalAndMergeSignals(map[string]interface{}{
+			"updatingFullyRandom": false,
+		})
 		return
 	}
 
@@ -1085,7 +1122,10 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 		random, ok = body["random"].(bool)
 		if !ok {
 			log.Printf("❌ Could not find a valid 'random' or 'fullyRandomRoles' boolean in request for room %s", roomCode)
-			http.Error(w, "Invalid data format", http.StatusBadRequest)
+			sse := datastar.NewSSE(w, r)
+			sse.MarshalAndMergeSignals(map[string]interface{}{
+				"updatingFullyRandom": false,
+			})
 			return
 		}
 	}
@@ -1107,6 +1147,9 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 	log.Printf("✅ UpdateFullyRandom completed for room %s", roomCode)
+
+	// Send immediate SSE response to reset loading state
+	h.sendUpdatedRoleConfigUI(w, r, room)
 
 	// Notify all players - SSE handlers will take care of sending UI updates to all connected clients
 	h.eventBus.Publish(Event{
