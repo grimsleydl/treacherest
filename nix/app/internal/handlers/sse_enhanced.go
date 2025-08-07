@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/sdk/go"
+	datastar "github.com/starfederation/datastar-go/datastar"
 	"net/http"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
@@ -441,9 +441,8 @@ func (h *EnhancedHandler) renderLobbyWithID(sse *datastar.ServerSentEventGenerat
 	html := renderToString(component)
 
 	// Send as fragment with morph mode and explicit selector
-	sse.MergeFragments(html,
-		datastar.WithSelector("#lobby-container"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#lobby-container"))
 }
 
 // renderGameWithID renders the game body with an event ID
@@ -454,7 +453,6 @@ func (h *EnhancedHandler) renderGameWithID(sse *datastar.ServerSentEventGenerato
 	html := renderToString(component)
 
 	// Send as fragment with morph mode and explicit selector
-	sse.MergeFragments(html,
-		datastar.WithSelector("#game-container"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#game-container"))
 }
