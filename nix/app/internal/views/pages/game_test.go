@@ -6,6 +6,43 @@ import (
 	"treacherest/internal/testhelpers"
 )
 
+// Helper functions to create mock cards for testing
+func mockLeaderCard() *game.Card {
+	return &game.Card{
+		ID:   1,
+		Name: "Test Leader",
+		Types: game.CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Leader",
+		},
+		Text: "Test Leader Card",
+	}
+}
+
+func mockGuardianCard() *game.Card {
+	return &game.Card{
+		ID:   2,
+		Name: "Test Guardian",
+		Types: game.CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Guardian",
+		},
+		Text: "Test Guardian Card",
+	}
+}
+
+func mockAssassinCard() *game.Card {
+	return &game.Card{
+		ID:   3,
+		Name: "Test Assassin",
+		Types: game.CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Assassin",
+		},
+		Text: "Test Assassin Card",
+	}
+}
+
 func TestGamePage(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 
@@ -17,15 +54,10 @@ func TestGamePage(t *testing.T) {
 		MaxPlayers: 4,
 	}
 
-	role := &game.Role{
-		Name:        "Villager",
-		Description: "A regular villager trying to survive",
-	}
-
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Test Player",
-		Role: role,
+		Role: mockGuardianCard(),
 	}
 
 	room.Players[player.ID] = player
@@ -68,7 +100,7 @@ func TestGamePage(t *testing.T) {
 			ID:           "p2",
 			Name:         "Revealed Player",
 			RoleRevealed: true,
-			Role:         game.GuardianRole,
+			Role:         mockGuardianCard(),
 		}
 		room.Players[revealedPlayer.ID] = revealedPlayer
 
@@ -91,12 +123,10 @@ func TestGameBody(t *testing.T) {
 		MaxPlayers: 4,
 	}
 
-	assassinRole := game.AssassinRole
-
 	player := &game.Player{
 		ID:   "p1",
 		Name: "Assassin Player",
-		Role: assassinRole,
+		Role: mockAssassinCard(),
 	}
 
 	room.Players[player.ID] = player
@@ -122,7 +152,7 @@ func TestGameBody(t *testing.T) {
 		leaderPlayer := &game.Player{
 			ID:           "p2",
 			Name:         "Leader Player",
-			Role:         game.LeaderRole,
+			Role:         mockLeaderCard(),
 			RoleRevealed: true,
 		}
 		room.Players[leaderPlayer.ID] = leaderPlayer
@@ -138,7 +168,7 @@ func TestGameBody(t *testing.T) {
 		hiddenPlayer := &game.Player{
 			ID:           "p3",
 			Name:         "Hidden Player",
-			Role:         game.GuardianRole,
+			Role:         mockGuardianCard(),
 			RoleRevealed: false,
 		}
 		room.Players[hiddenPlayer.ID] = hiddenPlayer
