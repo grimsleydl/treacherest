@@ -98,7 +98,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 	// Create ordered list of role types to ensure consistent assignment order
 	// Leaders should always be assigned first when not allowing leaderless games
 	roleOrder := []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor}
-	
+
 	// If allowing leaderless games, process in any order
 	// Otherwise, ensure leaders are assigned first
 	for _, roleType := range roleOrder {
@@ -123,7 +123,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 				availableCards = append(availableCards, card)
 			}
 		}
-		
+
 		// If no available cards for this role type, skip
 		if len(availableCards) == 0 {
 			continue
@@ -200,13 +200,13 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 	// Use ordered iteration to ensure leaders are assigned first
 	roleOrder := []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor}
 	playerIndex := 0
-	
+
 	for _, roleType := range roleOrder {
 		count, exists := roleDistribution[roleType]
 		if !exists || count == 0 {
 			continue
 		}
-		
+
 		// Get random cards for this role type
 		cards := cardService.GetRandomCards(roleType, count)
 
@@ -303,11 +303,11 @@ func getRoleDistribution(playerCount int) map[RoleType]int {
 func handleHiddenDistribution(shuffled []*Player, cardService *CardService, roleConfig *RoleConfiguration, roleService *RoleConfigService) {
 	// Get available presets
 	presets := []string{"standard", "assassination", "guardian"}
-	
+
 	// Randomly select a preset
 	selectedPreset := presets[rand.Intn(len(presets))]
 	log.Printf("🎲 Hidden distribution mode: randomly selected preset '%s' for %d players", selectedPreset, len(shuffled))
-	
+
 	// Create a temporary role config with the selected preset
 	tempConfig, err := roleService.CreateFromPreset(selectedPreset, len(shuffled))
 	if err != nil {
@@ -323,7 +323,7 @@ func handleHiddenDistribution(shuffled []*Player, cardService *CardService, role
 		assignRolesFromDistribution(shuffled, cardService, fallbackDistribution, roleConfig)
 		return
 	}
-	
+
 	// Build role distribution from the preset
 	roleDistribution := make(map[RoleType]int)
 	for roleTypeName, typeConfig := range tempConfig.RoleTypes {
@@ -331,7 +331,7 @@ func handleHiddenDistribution(shuffled []*Player, cardService *CardService, role
 			roleDistribution[RoleType(roleTypeName)] = typeConfig.Count
 		}
 	}
-	
+
 	// Apply the distribution
 	assignRolesFromDistribution(shuffled, cardService, roleDistribution, roleConfig)
 }
@@ -340,24 +340,24 @@ func handleHiddenDistribution(shuffled []*Player, cardService *CardService, role
 func handleFullyRandomDistribution(shuffled []*Player, cardService *CardService, roleConfig *RoleConfiguration) {
 	count := len(shuffled)
 	log.Printf("🎲 Fully random distribution mode for %d players", count)
-	
+
 	// Ensure at least 1 leader unless leaderless is allowed
 	minLeaders := 0
 	if !roleConfig.AllowLeaderlessGame {
 		minLeaders = 1
 	}
-	
+
 	// Build a pool of all available role types
 	rolePool := []RoleType{}
-	
+
 	// Add required leaders
 	for i := 0; i < minLeaders; i++ {
 		rolePool = append(rolePool, RoleLeader)
 	}
-	
+
 	// Calculate remaining slots
 	remainingSlots := count - minLeaders
-	
+
 	// Define role types and their weights for random selection
 	// Weights ensure reasonable distribution
 	roleWeights := map[RoleType]int{
@@ -366,7 +366,7 @@ func handleFullyRandomDistribution(shuffled []*Player, cardService *CardService,
 		RoleAssassin: 2, // Medium frequency
 		RoleTraitor:  1, // Less common
 	}
-	
+
 	// Build weighted pool
 	weightedPool := []RoleType{}
 	for role, weight := range roleWeights {
@@ -374,27 +374,27 @@ func handleFullyRandomDistribution(shuffled []*Player, cardService *CardService,
 			weightedPool = append(weightedPool, role)
 		}
 	}
-	
+
 	// Fill remaining slots randomly
 	for i := 0; i < remainingSlots; i++ {
 		randomRole := weightedPool[rand.Intn(len(weightedPool))]
 		rolePool = append(rolePool, randomRole)
 	}
-	
+
 	// Shuffle the role pool
 	rand.Shuffle(len(rolePool), func(i, j int) {
 		rolePool[i], rolePool[j] = rolePool[j], rolePool[i]
 	})
-	
+
 	// Count distribution for logging
 	distribution := make(map[RoleType]int)
 	for _, role := range rolePool {
 		distribution[role]++
 	}
-	
+
 	log.Printf("🎲 Generated distribution: Leaders=%d, Guardians=%d, Assassins=%d, Traitors=%d",
 		distribution[RoleLeader], distribution[RoleGuardian], distribution[RoleAssassin], distribution[RoleTraitor])
-	
+
 	// Apply the distribution
 	assignRolesFromDistribution(shuffled, cardService, distribution, roleConfig)
 }
@@ -408,17 +408,17 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 		RoleAssassin: cardService.Assassins,
 		RoleTraitor:  cardService.Traitors,
 	}
-	
+
 	// Create ordered list of role types
 	roleOrder := []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor}
-	
+
 	playerIndex := 0
 	for _, roleType := range roleOrder {
 		neededCount, exists := roleDistribution[roleType]
 		if !exists || neededCount == 0 {
 			continue
 		}
-		
+
 		// Get enabled cards for this role type
 		var enabledCardNames map[string]bool
 		if roleConfig != nil && roleConfig.RoleTypes != nil {
@@ -426,7 +426,7 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 				enabledCardNames = typeConfig.EnabledCards
 			}
 		}
-		
+
 		// Filter cards to only include enabled ones
 		availableCards := make([]*Card, 0)
 		for _, card := range categoryToCards[roleType] {
@@ -434,19 +434,19 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 				availableCards = append(availableCards, card)
 			}
 		}
-		
+
 		// If no available cards for this role type, use all cards
 		if len(availableCards) == 0 {
 			availableCards = categoryToCards[roleType]
 		}
-		
+
 		// Shuffle available cards
 		shuffledCards := make([]*Card, len(availableCards))
 		copy(shuffledCards, availableCards)
 		rand.Shuffle(len(shuffledCards), func(i, j int) {
 			shuffledCards[i], shuffledCards[j] = shuffledCards[j], shuffledCards[i]
 		})
-		
+
 		// Assign cards to players
 		for i := 0; i < neededCount && playerIndex < len(shuffled); i++ {
 			// Use modulo to reuse cards if needed

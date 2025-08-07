@@ -186,7 +186,7 @@ func (r *Room) CanStart() bool {
 		// Count total configured roles
 		totalRoles := 0
 		hasLeader := false
-		
+
 		for roleType, typeConfig := range r.RoleConfig.RoleTypes {
 			if typeConfig.Count > 0 {
 				totalRoles += typeConfig.Count
@@ -238,7 +238,7 @@ func (r *Room) GetStartValidationError() string {
 		// Count total configured roles
 		totalRoles := 0
 		hasLeader := false
-		
+
 		for roleType, typeConfig := range r.RoleConfig.RoleTypes {
 			if typeConfig.Count > 0 {
 				totalRoles += typeConfig.Count
@@ -348,7 +348,7 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 	version := r.ValidationVersion
 	timestamp := r.LastValidatedAt
 	r.mu.Unlock()
-	
+
 	state := ValidationState{
 		Version:           version,
 		Timestamp:         timestamp,
@@ -356,7 +356,7 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 		ValidationMessage: "",
 		CanAutoScale:      false,
 	}
-	
+
 	// Check basic requirements
 	activeCount := r.GetActivePlayerCount()
 	if activeCount < 1 {
@@ -364,19 +364,19 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 		state.ValidationMessage = "Need at least 1 player to start"
 		return state
 	}
-	
+
 	// Must be in lobby state
 	if r.State != StateLobby {
 		state.CanStart = false
 		state.ValidationMessage = "Game is not in lobby state"
 		return state
 	}
-	
+
 	// Check role configuration
 	if r.RoleConfig != nil {
 		totalRoles := 0
 		hasLeader := false
-		
+
 		for roleType, config := range r.RoleConfig.RoleTypes {
 			if config.Count > 0 {
 				totalRoles += config.Count
@@ -385,10 +385,10 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 				}
 			}
 		}
-		
+
 		state.ConfiguredRoles = totalRoles
 		state.RequiredRoles = activeCount
-		
+
 		// Check if we have enough roles
 		if totalRoles < activeCount {
 			// Check if auto-scaling can help
@@ -396,7 +396,7 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 				canScale, details := roleService.CanAutoScale(r.RoleConfig, activeCount)
 				state.CanAutoScale = canScale
 				state.AutoScaleDetails = details
-				
+
 				if canScale {
 					state.CanStart = true
 					state.ValidationMessage = fmt.Sprintf("Will auto-scale roles from %d to %d players", totalRoles, activeCount)
@@ -412,13 +412,13 @@ func (r *Room) GetValidationState(roleService *RoleConfigService) ValidationStat
 				}
 			}
 		}
-		
+
 		// Check leader requirement
 		if !hasLeader && !r.RoleConfig.AllowLeaderlessGame && state.CanStart {
 			state.CanStart = false
 			state.ValidationMessage = "Leader role is required (or enable leaderless games)"
 		}
 	}
-	
+
 	return state
 }

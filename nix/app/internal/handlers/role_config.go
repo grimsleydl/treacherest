@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	datastar "github.com/starfederation/datastar/sdk/go"
+	datastar "github.com/starfederation/datastar-go/datastar"
 	"log"
 	"net/http"
 	"strings"
@@ -151,7 +151,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingLeaderless": false,
 		})
 		return
@@ -161,7 +161,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingLeaderless": false,
 		})
 		return
@@ -176,7 +176,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
 		// Send SSE response to reset loading state
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingLeaderless": false,
 		})
 		return
@@ -220,7 +220,6 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-
 func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	// Deprecated - use sendRoleValidationNew
 	h.sendRoleValidationNew(w, r, room)
@@ -247,7 +246,7 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 	if err != nil {
 		// Return error fragment
 		sse := datastar.NewSSE(w, r)
-		sse.MergeFragments(`<div class="alert alert-error">Room not found</div>`,
+		sse.PatchElements(`<div class="alert alert-error">Room not found</div>`,
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -256,7 +255,7 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 	if !h.isRoomCreator(r, room) {
 		// Return error fragment
 		sse := datastar.NewSSE(w, r)
-		sse.MergeFragments(`<div class="alert alert-error">Unauthorized</div>`,
+		sse.PatchElements(`<div class="alert alert-error">Unauthorized</div>`,
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -266,7 +265,7 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 	if !exists {
 		// Return error fragment
 		sse := datastar.NewSSE(w, r)
-		sse.MergeFragments(fmt.Sprintf(`<div class="alert alert-error">Invalid role type: %s</div>`, roleType),
+		sse.PatchElements(fmt.Sprintf(`<div class="alert alert-error">Invalid role type: %s</div>`, roleType),
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -631,9 +630,8 @@ func (h *Handler) sendRoleValidationNew(w http.ResponseWriter, r *http.Request, 
 		html = `<div id="role-validation" class="validation-messages"></div>`
 	}
 
-	sse.MergeFragments(html,
-		datastar.WithSelector("#role-validation"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#role-validation"))
 }
 
 func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request, room *game.Room) {
@@ -658,9 +656,8 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 	log.Printf("  - Sending role config update with selector #role-config")
 
 	// Send the role config fragment
-	sse.MergeFragments(html,
-		datastar.WithSelector("#role-config"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+	sse.PatchElements(html,
+		datastar.WithSelector("#role-config"))
 
 	// Also update validation state
 	roleService := game.NewRoleConfigService(h.config)
@@ -689,16 +686,16 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 		"autoScaleDetails":         autoScaleDetails,
 		"requiredRoles":            validationState.RequiredRoles,
 		"configuredRoles":          validationState.ConfiguredRoles,
-		"updatingLeaderless":       false,                                 // Reset loading state
-		"updatingHideDistribution": false,                                 // Reset loading state
-		"updatingFullyRandom":      false,                                 // Reset loading state
-		"allowLeaderless":          room.RoleConfig.AllowLeaderlessGame,   // Sync checkbox state
-		"hideRoleDistribution":     room.RoleConfig.HideRoleDistribution,  // Sync checkbox state
-		"fullyRandomRoles":         room.RoleConfig.FullyRandomRoles,      // Sync checkbox state
+		"updatingLeaderless":       false,                                // Reset loading state
+		"updatingHideDistribution": false,                                // Reset loading state
+		"updatingFullyRandom":      false,                                // Reset loading state
+		"allowLeaderless":          room.RoleConfig.AllowLeaderlessGame,  // Sync checkbox state
+		"hideRoleDistribution":     room.RoleConfig.HideRoleDistribution, // Sync checkbox state
+		"fullyRandomRoles":         room.RoleConfig.FullyRandomRoles,     // Sync checkbox state
 	}
 
 	log.Printf("  - Sending signals: %+v", signals)
-	sse.MarshalAndMergeSignals(signals)
+	sse.MarshalAndPatchSignals(signals)
 }
 
 func (h *Handler) createPlayerCountDisplay(room *game.Room) components.PlayerCountDisplay {
@@ -849,7 +846,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		sse := datastar.NewSSE(w, r)
-		sse.MergeFragments(`<div class="alert alert-error">Room not found</div>`,
+		sse.PatchElements(`<div class="alert alert-error">Room not found</div>`,
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -857,7 +854,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		sse := datastar.NewSSE(w, r)
-		sse.MergeFragments(`<div class="alert alert-error">Unauthorized</div>`,
+		sse.PatchElements(`<div class="alert alert-error">Unauthorized</div>`,
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -869,7 +866,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	case "increment":
 		if currentPlayerCount >= h.config.Server.MaxPlayersPerRoom {
 			sse := datastar.NewSSE(w, r)
-			sse.MergeFragments(`<div class="alert alert-error">Maximum player count reached</div>`,
+			sse.PatchElements(`<div class="alert alert-error">Maximum player count reached</div>`,
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -878,7 +875,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	case "decrement":
 		if currentPlayerCount <= h.config.Server.MinPlayersPerRoom {
 			sse := datastar.NewSSE(w, r)
-			sse.MergeFragments(`<div class="alert alert-error">Minimum player count reached</div>`,
+			sse.PatchElements(`<div class="alert alert-error">Minimum player count reached</div>`,
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -886,7 +883,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 		// Check connected players constraint
 		if currentPlayerCount <= len(room.Players) {
 			sse := datastar.NewSSE(w, r)
-			sse.MergeFragments(fmt.Sprintf(`<div class="alert alert-error">Cannot reduce below %d connected players</div>`, len(room.Players)),
+			sse.PatchElements(fmt.Sprintf(`<div class="alert alert-error">Cannot reduce below %d connected players</div>`, len(room.Players)),
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -1008,7 +1005,7 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingHideDistribution": false,
 		})
 		return
@@ -1018,7 +1015,7 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingHideDistribution": false,
 		})
 		return
@@ -1029,7 +1026,7 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingHideDistribution": false,
 		})
 		return
@@ -1043,7 +1040,7 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 		if !ok {
 			log.Printf("❌ Could not find a valid 'hide' or 'hideRoleDistribution' boolean in request for room %s", roomCode)
 			sse := datastar.NewSSE(w, r)
-			sse.MarshalAndMergeSignals(map[string]interface{}{
+			sse.MarshalAndPatchSignals(map[string]interface{}{
 				"updatingHideDistribution": false,
 			})
 			return
@@ -1088,7 +1085,7 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("❌ Room not found: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingFullyRandom": false,
 		})
 		return
@@ -1098,7 +1095,7 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	if !h.isRoomCreator(r, room) {
 		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingFullyRandom": false,
 		})
 		return
@@ -1109,7 +1106,7 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
 		sse := datastar.NewSSE(w, r)
-		sse.MarshalAndMergeSignals(map[string]interface{}{
+		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingFullyRandom": false,
 		})
 		return
@@ -1123,7 +1120,7 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			log.Printf("❌ Could not find a valid 'random' or 'fullyRandomRoles' boolean in request for room %s", roomCode)
 			sse := datastar.NewSSE(w, r)
-			sse.MarshalAndMergeSignals(map[string]interface{}{
+			sse.MarshalAndPatchSignals(map[string]interface{}{
 				"updatingFullyRandom": false,
 			})
 			return
