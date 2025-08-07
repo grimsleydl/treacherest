@@ -13,7 +13,6 @@ import (
 	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
-	"treacherest/internal/views/components"
 	"treacherest/internal/views/pages"
 )
 
@@ -436,16 +435,7 @@ func (h *EnhancedHandler) StreamGameEnhanced(w http.ResponseWriter, r *http.Requ
 
 // renderLobbyWithID renders the lobby body with an event ID
 func (h *EnhancedHandler) renderLobbyWithID(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player, eventID string) {
-	// Get sorted roles for stable display
-	sortedRoles := h.roleConfigService.GetSortedRoles()
-	var templateRoles []components.SortedRole
-	for _, role := range sortedRoles {
-		templateRoles = append(templateRoles, components.SortedRole{
-			Name:       role.Name,
-			Definition: role.Definition,
-		})
-	}
-	component := pages.LobbyBody(room, player, h.config, templateRoles)
+	component := pages.LobbyBody(room, player, h.config, h.cardService)
 
 	// Render to string
 	html := renderToString(component)

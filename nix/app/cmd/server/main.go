@@ -28,6 +28,7 @@ func main() {
 	
 	// Create store and handler with configuration
 	s := store.NewMemoryStore(cfg)
+	s.SetCardService(cardService)
 	h := handlers.New(s, cardService, cfg)
 	
 	// Set up routes
@@ -46,6 +47,10 @@ func main() {
 	r.Post("/room/{code}/config/toggle", h.ToggleRole)
 	r.Post("/room/{code}/config/count", h.UpdateRoleCount)
 	r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
+	
+	// New role configuration endpoints
+	r.Post("/room/{code}/config/role-type-count", h.UpdateRoleTypeCount)
+	r.Post("/room/{code}/config/card-toggle", h.ToggleRoleCard)
 	
 	// SSE routes
 	r.Get("/sse/lobby/{code}", h.StreamLobby)

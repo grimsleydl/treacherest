@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
-	"strings"
 	"fmt"
 	"time"
 	"encoding/json"
@@ -42,8 +40,7 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 		room.RoleConfig.PresetName = "custom"
 	} else {
 		// Load preset configuration
-		roleService := game.NewRoleConfigService(h.config)
-		newConfig, err := roleService.CreateFromPreset(presetName, room.MaxPlayers)
+		newConfig, err := h.roleConfigService.CreateFromPreset(presetName, room.MaxPlayers)
 		if err != nil {
 			http.Error(w, "Invalid preset", http.StatusBadRequest)
 			return
@@ -80,147 +77,14 @@ func (h *Handler) ToggleRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Parse JSON body with signals
-	var signals struct {
-		RoleName string `json:"roleName"`
-		Enabled  bool   `json:"enabled"`
-	}
-	
-	if err := json.NewDecoder(r.Body).Decode(&signals); err != nil {
-		http.Error(w, "Invalid request body: " + err.Error(), http.StatusBadRequest)
-		return
-	}
-	
-	if signals.RoleName == "" {
-		http.Error(w, "Role name required", http.StatusBadRequest)
-		return
-	}
-	
-	// Update role state based on the explicit enabled value
-	room.RoleConfig.EnabledRoles[signals.RoleName] = signals.Enabled
-	
-	if signals.Enabled {
-		// Set default count if enabling
-		if _, exists := room.RoleConfig.RoleCounts[signals.RoleName]; !exists {
-			if roleDef, exists := h.config.Roles.Available[signals.RoleName]; exists {
-				room.RoleConfig.RoleCounts[signals.RoleName] = roleDef.MinCount
-				if roleDef.MinCount == 0 {
-					room.RoleConfig.RoleCounts[signals.RoleName] = 1
-				}
-			}
-		}
-	} else {
-		// Remove count if disabling
-		delete(room.RoleConfig.RoleCounts, signals.RoleName)
-	}
-	
-	// Mark as custom since user modified it
-	room.RoleConfig.PresetName = "custom"
-	
-	// Update min/max players based on enabled roles
-	h.updatePlayerLimits(room)
-	
-	h.store.UpdateRoom(room)
-	
-	// Notify all players
-	h.eventBus.Publish(Event{
-		Type:     "role_config_updated", 
-		RoomCode: room.Code,
-		Data:     room,
-	})
-	
-	// Re-render the entire role configuration component
-	sse := datastar.NewSSE(w, r)
-	roleService := game.NewRoleConfigService(h.config)
-	tempSortedRoles := roleService.GetSortedRoles()
-	
-	// Convert to components.SortedRole type
-	sortedRoles := make([]components.SortedRole, len(tempSortedRoles))
-	for i, role := range tempSortedRoles {
-		sortedRoles[i] = components.SortedRole{
-			Name:       role.Name,
-			Definition: role.Definition,
-		}
-	}
-	
-	component := components.RoleConfiguration(room, h.config, sortedRoles)
-	html := renderToString(component)
-	
-	sse.MergeFragments(html,
-		datastar.WithSelector("#role-config"),
-		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
-	
-	// Also send validation update
-	h.sendRoleValidation(w, r, room)
+	// This endpoint is deprecated - use UpdateRoleTypeCount and ToggleRoleCard instead
+	http.Error(w, "This endpoint is deprecated", http.StatusBadRequest)
 }
 
 // UpdateRoleCount updates the count for a specific role
 func (h *Handler) UpdateRoleCount(w http.ResponseWriter, r *http.Request) {
-	roomCode := chi.URLParam(r, "code")
-	
-	room, err := h.store.GetRoom(roomCode)
-	if err != nil {
-		http.Error(w, "Room not found", http.StatusNotFound)
-		return
-	}
-	
-	// Verify player is room creator
-	if !h.isRoomCreator(r, room) {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-	
-	// Parse form data - handle both multipart and urlencoded
-	if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-		r.ParseMultipartForm(32 << 20) // 32MB max
-	} else {
-		r.ParseForm()
-	}
-	
-	// Find role name and count
-	var roleName string
-	var count int
-	for key, values := range r.Form {
-		if strings.HasPrefix(key, "count-") && len(values) > 0 {
-			roleName = strings.TrimPrefix(key, "count-")
-			count, _ = strconv.Atoi(values[0])
-			break
-		}
-	}
-	
-	if roleName == "" {
-		http.Error(w, "Role name required", http.StatusBadRequest)
-		return
-	}
-	
-	// Validate count against role constraints
-	if roleDef, exists := h.config.Roles.Available[roleName]; exists {
-		if count < roleDef.MinCount {
-			count = roleDef.MinCount
-		}
-		if count > roleDef.MaxCount {
-			count = roleDef.MaxCount
-		}
-	}
-	
-	// Update count
-	room.RoleConfig.RoleCounts[roleName] = count
-	room.RoleConfig.PresetName = "custom"
-	
-	// Update min/max players based on role counts
-	h.updatePlayerLimits(room)
-	
-	h.store.UpdateRoom(room)
-	
-	// Notify all players
-	h.eventBus.Publish(Event{
-		Type:     "role_config_updated",
-		RoomCode: room.Code,
-		Data:     room,
-	})
-	
-	// Send validation update
-	h.sendRoleValidation(w, r, room)
+	// This endpoint is deprecated - use UpdateRoleTypeCount instead
+	http.Error(w, "This endpoint is deprecated", http.StatusBadRequest)
 }
 
 // Helper functions
@@ -269,42 +133,8 @@ func (h *Handler) isRoomCreator(r *http.Request, room *game.Room) bool {
 }
 
 func (h *Handler) updatePlayerLimits(room *game.Room) {
-	// Calculate total roles needed
-	totalRoles := 0
-	
-	for roleName, enabled := range room.RoleConfig.EnabledRoles {
-		if !enabled {
-			continue
-		}
-		
-		count := room.RoleConfig.RoleCounts[roleName]
-		totalRoles += count
-	}
-	
-	// Min players is the total roles needed (or server minimum)
-	minPlayers := totalRoles
-	if minPlayers < h.config.Server.MinPlayersPerRoom {
-		minPlayers = h.config.Server.MinPlayersPerRoom
-	}
-	
-	// Max players should be at least min players, up to server maximum
-	maxPlayers := totalRoles
-	if maxPlayers < minPlayers {
-		maxPlayers = minPlayers
-	}
-	if maxPlayers > h.config.Server.MaxPlayersPerRoom {
-		maxPlayers = h.config.Server.MaxPlayersPerRoom
-	}
-	
-	// For presets, we might want to allow flexibility for more players
-	// This allows the game to scale up with more of certain roles
-	if room.RoleConfig.PresetName != "custom" && maxPlayers < h.config.Server.MaxPlayersPerRoom {
-		// Allow scaling up to max server limit for presets
-		maxPlayers = h.config.Server.MaxPlayersPerRoom
-	}
-	
-	room.RoleConfig.MinPlayers = minPlayers
-	room.RoleConfig.MaxPlayers = maxPlayers
+	// Deprecated - use updatePlayerLimitsNew
+	h.updatePlayerLimitsNew(room)
 }
 
 // UpdateLeaderlessGame updates the leaderless game setting for a room
@@ -336,11 +166,12 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	// Update the setting
 	room.RoleConfig.AllowLeaderlessGame = body.Allowed
 	
-	// If disabling leaderless games and leader is not enabled, enable it
-	if !body.Allowed && !room.RoleConfig.EnabledRoles["leader"] {
-		room.RoleConfig.EnabledRoles["leader"] = true
-		room.RoleConfig.RoleCounts["leader"] = 1
-		room.RoleConfig.PresetName = "custom"
+	// If disabling leaderless games and leader count is 0, set it to 1
+	if !body.Allowed {
+		if leaderConfig, exists := room.RoleConfig.RoleTypes["Leader"]; exists && leaderConfig.Count == 0 {
+			leaderConfig.Count = 1
+			room.RoleConfig.PresetName = "custom"
+		}
 	}
 	
 	h.store.UpdateRoom(room)
@@ -354,19 +185,7 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 	
 	// Re-render the entire role configuration component
 	sse := datastar.NewSSE(w, r)
-	roleService := game.NewRoleConfigService(h.config)
-	tempSortedRoles := roleService.GetSortedRoles()
-	
-	// Convert to components.SortedRole type
-	sortedRoles := make([]components.SortedRole, len(tempSortedRoles))
-	for i, role := range tempSortedRoles {
-		sortedRoles[i] = components.SortedRole{
-			Name:       role.Name,
-			Definition: role.Definition,
-		}
-	}
-	
-	component := components.RoleConfiguration(room, h.config, sortedRoles)
+	component := components.RoleConfigurationNew(room, h.config, h.cardService)
 	html := renderToString(component)
 	
 	sse.MergeFragments(html,
@@ -378,20 +197,178 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, room *game.Room) {
+	// Deprecated - use sendRoleValidationNew
+	h.sendRoleValidationNew(w, r, room)
+}
+
+// UpdateRoleTypeCount updates the count for a specific role type
+func (h *Handler) UpdateRoleTypeCount(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Parse JSON body
+	var body struct {
+		RoleType string `json:"roleType"`
+		Count    int    `json:"count"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	// Validate role type exists
+	if _, exists := room.RoleConfig.RoleTypes[body.RoleType]; !exists {
+		http.Error(w, "Invalid role type", http.StatusBadRequest)
+		return
+	}
+	
+	// Update count
+	room.RoleConfig.RoleTypes[body.RoleType].Count = body.Count
+	room.RoleConfig.PresetName = "custom"
+	
+	// Update min/max players based on role counts
+	h.updatePlayerLimitsNew(room)
+	
+	h.store.UpdateRoom(room)
+	
+	// Notify all players
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+	
+	// Send validation update
+	h.sendRoleValidationNew(w, r, room)
+}
+
+// ToggleRoleCard enables/disables a specific role card
+func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Parse JSON body
+	var body struct {
+		RoleType string `json:"roleType"`
+		CardName string `json:"cardName"`
+		Enabled  bool   `json:"enabled"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	// Validate role type exists
+	typeConfig, exists := room.RoleConfig.RoleTypes[body.RoleType]
+	if !exists {
+		http.Error(w, "Invalid role type", http.StatusBadRequest)
+		return
+	}
+	
+	// Update card state
+	typeConfig.EnabledCards[body.CardName] = body.Enabled
+	room.RoleConfig.PresetName = "custom"
+	
+	h.store.UpdateRoom(room)
+	
+	// Notify all players
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+	
+	// Send validation update
+	h.sendRoleValidationNew(w, r, room)
+}
+
+func (h *Handler) updatePlayerLimitsNew(room *game.Room) {
+	// Calculate total roles needed
+	totalRoles := 0
+	
+	for _, typeConfig := range room.RoleConfig.RoleTypes {
+		totalRoles += typeConfig.Count
+	}
+	
+	// Min players is the total roles needed (or server minimum)
+	minPlayers := totalRoles
+	if minPlayers < h.config.Server.MinPlayersPerRoom {
+		minPlayers = h.config.Server.MinPlayersPerRoom
+	}
+	
+	// Max players should be at least min players, up to server maximum
+	maxPlayers := totalRoles
+	if maxPlayers < minPlayers {
+		maxPlayers = minPlayers
+	}
+	if maxPlayers > h.config.Server.MaxPlayersPerRoom {
+		maxPlayers = h.config.Server.MaxPlayersPerRoom
+	}
+	
+	// For presets, we might want to allow flexibility for more players
+	// This allows the game to scale up with more of certain roles
+	if room.RoleConfig.PresetName != "custom" && maxPlayers < h.config.Server.MaxPlayersPerRoom {
+		// Allow scaling up to max server limit for presets
+		maxPlayers = h.config.Server.MaxPlayersPerRoom
+	}
+	
+	room.RoleConfig.MinPlayers = minPlayers
+	room.RoleConfig.MaxPlayers = maxPlayers
+}
+
+func (h *Handler) sendRoleValidationNew(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	errors := []string{}
 	warnings := []string{}
 	
 	// Validate role configuration
 	totalRoles := 0
 	hasLeader := false
-	for roleName, enabled := range room.RoleConfig.EnabledRoles {
-		if !enabled {
+	
+	for roleType, typeConfig := range room.RoleConfig.RoleTypes {
+		if typeConfig.Count == 0 {
 			continue
 		}
-		count := room.RoleConfig.RoleCounts[roleName]
-		totalRoles += count
 		
-		if roleName == "leader" && count > 0 {
+		// Count enabled cards
+		enabledCount := 0
+		for _, enabled := range typeConfig.EnabledCards {
+			if enabled {
+				enabledCount++
+			}
+		}
+		
+		// Check if we have enough enabled cards
+		if typeConfig.Count > enabledCount {
+			errors = append(errors, fmt.Sprintf("%s: need %d cards but only %d are enabled", roleType, typeConfig.Count, enabledCount))
+		}
+		
+		totalRoles += typeConfig.Count
+		
+		if roleType == "Leader" && typeConfig.Count > 0 {
 			hasLeader = true
 		}
 	}
@@ -421,8 +398,21 @@ func (h *Handler) sendRoleValidation(w http.ResponseWriter, r *http.Request, roo
 	
 	// Send validation component via SSE
 	sse := datastar.NewSSE(w, r)
-	component := components.RoleValidation(errors, warnings)
-	html := renderToString(component)
+	
+	// Build validation HTML directly
+	var html string
+	if len(errors) > 0 || len(warnings) > 0 {
+		html = `<div id="role-validation" class="validation-messages">`
+		for _, err := range errors {
+			html += `<div class="validation-error">❌ ` + err + `</div>`
+		}
+		for _, warn := range warnings {
+			html += `<div class="validation-warning">⚠️ ` + warn + `</div>`
+		}
+		html += `</div>`
+	} else {
+		html = `<div id="role-validation" class="validation-messages"></div>`
+	}
 	
 	sse.MergeFragments(html, 
 		datastar.WithSelector("#role-validation"),
