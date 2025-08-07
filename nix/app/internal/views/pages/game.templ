@@ -29,43 +29,49 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 		if room.State == game.StateCountdown {
 			@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
 		} else {
-			<div class="role-view">
+			<div class="flex flex-col items-center gap-8 p-4">
 				if currentPlayer.Role != nil {
-					<div class={ "role-card", getRoleClass(string(currentPlayer.Role.GetRoleType())) }>
-						<div class="card-image-container">
+					<div class={ "card bg-base-200 shadow-xl max-w-md w-full", getRoleClass(string(currentPlayer.Role.GetRoleType())) }>
+						<figure class="relative">
 							<img
 								src={ currentPlayer.Role.GetImageBase64() }
 								alt={ currentPlayer.Role.Name }
-								class="card-image"
+								class="w-full h-auto"
 							/>
-						</div>
-						<div class="card-details">
-							<h2>{ currentPlayer.Role.Name }</h2>
-							<div class="card-type">{ currentPlayer.Role.Type }</div>
-							<div class="card-rarity">{ currentPlayer.Role.Rarity }</div>
-							<div class="card-text">{ currentPlayer.Role.Text }</div>
-							<div class="card-meta">
-								<p><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
-								<p class="card-artist"><em>Art by { currentPlayer.Role.Artist }</em></p>
+						</figure>
+						<div class="card-body">
+							<h2 class="card-title text-2xl">{ currentPlayer.Role.Name }</h2>
+							<div class="flex gap-2 mb-4">
+								<div class="badge badge-primary">{ currentPlayer.Role.Type }</div>
+								<div class="badge badge-secondary">{ currentPlayer.Role.Rarity }</div>
+							</div>
+							<p class="italic text-base-content/80">{ currentPlayer.Role.Text }</p>
+							<div class="divider"></div>
+							<div class="space-y-2">
+								<p class="text-sm"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
+								<p class="text-xs text-base-content/60"><em>Art by { currentPlayer.Role.Artist }</em></p>
 							</div>
 						</div>
 					</div>
 				}
 				if leader := room.GetLeader(); leader != nil && currentPlayer.Role != nil && (currentPlayer.Role.GetRoleType() == game.RoleLeader || room.LeaderRevealed) {
-					<div class="leader-info">
-						<h3>Leader: { leader.Name }</h3>
+					<div class="alert alert-warning max-w-md w-full">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+						<span class="text-lg font-bold">Leader: { leader.Name }</span>
 					</div>
 				}
-				<div class="player-list">
-					<h2>Players</h2>
-					for _, player := range room.GetActivePlayers() {
-						<div class="player">
-							<span>{ player.Name }</span>
-							if player.RoleRevealed {
-								<span class="role">{ player.Role.Name }</span>
-							}
-						</div>
-					}
+				<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
+					<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
+					<div class="space-y-2">
+						for _, player := range room.GetActivePlayers() {
+							<div class="flex justify-between items-center p-2 rounded hover:bg-base-300 transition-colors">
+								<span>{ player.Name }</span>
+								if player.RoleRevealed {
+									<span class="badge badge-sm">{ player.Role.Name }</span>
+								}
+							</div>
+						}
+					</div>
 				</div>
 			</div>
 		}
@@ -75,13 +81,13 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 func getRoleClass(roleType string) string {
 	switch roleType {
 	case string(game.RoleLeader):
-		return "leader"
+		return "border-4 border-warning shadow-lg"
 	case string(game.RoleGuardian):
-		return "guardian"
+		return "border-4 border-info shadow-lg"
 	case string(game.RoleAssassin):
-		return "assassin"
+		return "border-4 border-error shadow-lg"
 	case string(game.RoleTraitor):
-		return "traitor"
+		return "border-4 border-secondary shadow-lg"
 	default:
 		return ""
 	}
