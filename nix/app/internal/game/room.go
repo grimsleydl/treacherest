@@ -88,7 +88,7 @@ func (r *Room) GetLeader() *Player {
 	defer r.mu.RUnlock()
 
 	for _, p := range r.Players {
-		if p.Role != nil && p.Role.Type == RoleLeader {
+		if p.Role != nil && p.Role.GetRoleType() == RoleLeader {
 			return p
 		}
 	}
