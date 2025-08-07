@@ -19,6 +19,13 @@ This file provides guidance to Claude Code when working with this repository.
 ## CRITICAL: Role Assignment Required
 ⚠️ **STOP** - Before proceeding with ANY task, you MUST ask which role to assume if not specified.
 
+## CRITICAL: Playwright MCP Testing Requirements
+⚠️ **MANDATORY** - When using Playwright MCP for browser testing:
+1. **ALWAYS use a sub-agent** when using Playwright MCP - never use it directly
+2. **ALWAYS test user interface changes** using Playwright MCP before committing
+3. Deploy sub-agents with clear instructions for browser automation tasks
+4. Ensure sub-agents verify both functionality and visual correctness
+
 ## Project Overview
 **Name**: Treacherest
 **Type**: Real-time multiplayer game application
@@ -223,6 +230,16 @@ Before proposing any commit:
 1. **NEVER change merge modes** - Always use `morph` mode for SSE fragments
 2. **Always include wrapper elements** - When sending SSE fragments, include the target element in the fragment to preserve DOM structure
 3. **Example**: To update `#lobby-content`, send `<div id="lobby-content">...</div>` and target the parent `#lobby-container`
+4. **Prevent SSE connection exhaustion** - Separate wrapper with `data-on-load` from morphable content:
+   ```templ
+   // Wrapper div with data-on-load (never morphed)
+   templ GameBody(room *game.Room, player *game.Player) {
+       <div data-on-load={ "@get('/sse/game/" + room.Code + "')" }>
+           @GameContent(room, player)  // Only this gets morphed
+       </div>
+   }
+   ```
+   This prevents `data-on-load` re-evaluation during DOM morphing which causes connection exhaustion
 
 ### Game Development Patterns
 1. **State Management**
