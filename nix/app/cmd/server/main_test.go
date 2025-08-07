@@ -66,6 +66,7 @@ func setupTestRouter() (*chi.Mux, *handlers.Handler) {
 	r.Get("/", h.Home)
 	r.Post("/room/new", h.CreateRoom)
 	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/join-room", h.JoinRoomPost)
 	r.Post("/room/{code}/start", h.StartGame)
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Get("/game/{code}", h.GamePage)
@@ -150,14 +151,43 @@ func TestJoinRoomHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("GET /room/{code}?name=Player joins room", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/room/"+room.Code+"?name=New+Player", nil)
+	t.Run("GET /room/{code} shows join form", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/room/"+room.Code, nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		// Check that join form is shown
+		body := w.Body.String()
+		if !strings.Contains(body, "Join Game Room") {
+			t.Error("expected join form in response")
+		}
+		if !strings.Contains(body, room.Code) {
+			t.Error("expected room code in response")
+		}
+	})
+
+	t.Run("POST /join-room joins room", func(t *testing.T) {
+		formData := "room_code=" + room.Code + "&player_name=New+Player"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", w.Code)
+		}
+
+		// Check redirect location
+		location := w.Header().Get("Location")
+		expectedLocation := "/room/" + room.Code
+		if location != expectedLocation {
+			t.Errorf("expected redirect to %s, got %s", expectedLocation, location)
 		}
 
 		// Check that player was added
