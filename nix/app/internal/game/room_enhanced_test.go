@@ -283,18 +283,18 @@ func TestRoom_GetPlayers(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if p1FromSlice == nil {
 		t.Fatal("Could not find player p1 in returned slice")
 	}
-	
+
 	// Modifying the player through the slice should affect the original
 	p1FromSlice.Name = "Modified"
 	originalPlayer := room.GetPlayer("p1")
 	if originalPlayer.Name != "Modified" {
 		t.Error("GetPlayers returns player pointers for real-time updates")
 	}
-	
+
 	// Reset the name for cleanliness
 	p1FromSlice.Name = "Alice"
 }
@@ -367,7 +367,7 @@ func TestRoom_EdgeCases(t *testing.T) {
 
 	t.Run("can't start with wrong state", func(t *testing.T) {
 		states := []GameState{StateCountdown, StatePlaying, StateEnded}
-		
+
 		for _, state := range states {
 			room := &Room{
 				Code:       "EDGE2",
