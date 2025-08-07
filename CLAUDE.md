@@ -219,6 +219,11 @@ Before proposing any commit:
 
 ## Project-Specific Guidelines
 
+### CRITICAL: Datastar SSE Rules
+1. **NEVER change merge modes** - Always use `morph` mode for SSE fragments
+2. **Always include wrapper elements** - When sending SSE fragments, include the target element in the fragment to preserve DOM structure
+3. **Example**: To update `#lobby-content`, send `<div id="lobby-content">...</div>` and target the parent `#lobby-container`
+
 ### Game Development Patterns
 1. **State Management**
    - Use server-side events 
