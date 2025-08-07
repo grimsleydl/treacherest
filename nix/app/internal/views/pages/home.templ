@@ -1,0 +1,38 @@
+package pages
+
+import "treacherest/internal/views/layouts"
+
+templ Home() {
+	@layouts.Base("Welcome") {
+		<body>
+			<div class="container">
+				<h1>MTG Treacherest</h1>
+				<p>A game of deception and hidden roles</p>
+				<div style="display: flex; flex-direction: column; gap: 2rem; margin-top: 3rem;">
+					<div>
+						<h2>Create a New Game</h2>
+						<form action="/room/new" method="POST">
+							<input type="text" name="playerName" placeholder="Enter your name" required/>
+							<button type="submit" style="margin-top: 1rem;">Create Room</button>
+						</form>
+					</div>
+					<div>
+						<h2>Join Existing Game</h2>
+						<form data-on-submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()">
+							<input
+								type="text"
+								id="roomCode"
+								placeholder="Enter room code (e.g., ABC12)"
+								pattern="[A-Za-z0-9]{5}"
+								maxlength="5"
+								required
+								style="text-transform: uppercase;"
+							/>
+							<button type="submit" style="margin-top: 1rem;">Join Room</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</body>
+	}
+}
