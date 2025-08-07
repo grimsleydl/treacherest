@@ -18,7 +18,9 @@ type CardDisplay struct {
 }
 
 templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}">
+	<div id="role-config" class="role-configuration" data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
+		 data-signals__ifmissing="{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false}"
+			>
 		<h3>Game Configuration</h3>
 		// Player count settings
 		<div class="player-count-config">
@@ -142,9 +144,19 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 			</div>
 
 				<!-- Accordion part -->
-				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4">
-					<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } class="peer" id={ fmt.Sprintf("role-accordion-%s", typeName) } />
-					<label for={ fmt.Sprintf("role-accordion-%s", typeName) } class="collapse-title h-full font-bold items-center px-3">
+				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4 transition-all duration-200">
+					<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } id={ fmt.Sprintf("role-accordion-%s", typeName) }
+						   data-bind={ fmt.Sprintf("accordion%s", typeName) }
+						   class="peer/roletype sr-only"
+					/>
+					<label for={ fmt.Sprintf("role-accordion-%s", typeName) } class=" absolute inset-0 z-10 collapse-title h-full font-bold items-center p-8
+							   peer-checked/roletype:static
+							   peer-checked/roletype:h-auto
+							   peer-checked/roletype:z-auto
+							   peer-checked/roletype:bg-transparent hover:bg-base-300
+							   transition
+							   peer-checked/roletype:delay-200
+							   ">
 						{ typeName }s
 						if typeConfig.Count > countEnabledCards(typeConfig) {
 							<span class="text-warning ml-2 text-sm">⚠️ { fmt.Sprintf("%d of %d cards enabled", countEnabledCards(typeConfig), typeConfig.Count) }</span>
