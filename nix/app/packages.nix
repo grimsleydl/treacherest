@@ -91,15 +91,6 @@ in {
       # Copy JS files if any
       mkdir -p $out/static/js
       cp ./static/js/* $out/static/js/ 2>/dev/null || true
-      
-      # Create wrapper with proper path expansion
-      mv $out/bin/server $out/bin/.server-wrapped
-      cat > $out/bin/server << EOF
-      #!/bin/sh
-      cd "$out"
-      exec "$out/bin/.server-wrapped" "\$@"
-      EOF
-      chmod +x $out/bin/server
     '';
     
     meta = with lib; {
