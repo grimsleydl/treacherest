@@ -49,6 +49,8 @@ func main() {
 	r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
 	r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 	r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
+	r.Post("/room/{code}/config/player-count/increment", h.IncrementPlayerCount)
+	r.Post("/room/{code}/config/player-count/decrement", h.DecrementPlayerCount)
 
 	// New role configuration endpoints
 	r.Post("/room/{code}/config/card-toggle", h.ToggleRoleCard)
