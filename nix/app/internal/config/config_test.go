@@ -8,6 +8,10 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	// Set required environment variables
+	t.Setenv("HOST", "localhost")
+	t.Setenv("PORT", "8080")
+	
 	// Test loading default config when file doesn't exist
 	t.Run("LoadDefaultWhenMissing", func(t *testing.T) {
 		config, err := LoadConfig("nonexistent.yaml")
@@ -81,6 +85,10 @@ roles:
 }
 
 func TestConfigValidation(t *testing.T) {
+	// Set required environment variables
+	t.Setenv("HOST", "localhost")
+	t.Setenv("PORT", "8080")
+	
 	tests := []struct {
 		name      string
 		config    *ServerConfig

@@ -25,7 +25,7 @@ func TestMainSubprocess(t *testing.T) {
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestMainSubprocess")
-		cmd.Env = append(os.Environ(), "BE_SUBPROCESS=1")
+		cmd.Env = append(os.Environ(), "BE_SUBPROCESS=1", "HOST=localhost", "PORT=8080")
 
 		// Capture output
 		stdout, err := cmd.StdoutPipe()
@@ -83,7 +83,7 @@ func TestMainSubprocess(t *testing.T) {
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestMainSubprocess")
-		cmd.Env = append(os.Environ(), "BE_SUBPROCESS=1", "PORT=8081")
+		cmd.Env = append(os.Environ(), "BE_SUBPROCESS=1", "HOST=localhost", "PORT=8081")
 
 		// Capture output
 		stdout, err := cmd.StdoutPipe()
@@ -147,7 +147,7 @@ func TestMainFunctionErrors(t *testing.T) {
 
 	t.Run("invalid port", func(t *testing.T) {
 		cmd := exec.Command(os.Args[0], "-test.run=TestMainFunctionErrors")
-		cmd.Env = append(os.Environ(), "BE_SUBPROCESS_ERROR=1")
+		cmd.Env = append(os.Environ(), "BE_SUBPROCESS_ERROR=1", "HOST=localhost")
 
 		output, err := cmd.CombinedOutput()
 		if err == nil {

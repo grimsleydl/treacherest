@@ -12,6 +12,12 @@ import (
 )
 
 func TestSetupServer(t *testing.T) {
+	// Set required environment variables for testing
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "8080")
+	defer os.Unsetenv("HOST")
+	defer os.Unsetenv("PORT")
+	
 	// Create the server
 	handler := SetupServer()
 
@@ -28,7 +34,7 @@ func TestSetupServer(t *testing.T) {
 		{"GET", "/", http.StatusOK},
 		{"GET", "/room/INVALID", http.StatusNotFound},
 		{"GET", "/game/INVALID", http.StatusNotFound},
-		{"POST", "/room/new", http.StatusBadRequest},    // No player name
+		{"POST", "/room/new", http.StatusSeeOther},      // Creates room with auto-generated name
 		{"GET", "/static/test.js", http.StatusNotFound}, // No actual file
 	}
 
@@ -127,18 +133,16 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("recovery middleware", func(t *testing.T) {
 		// Create a handler that panics
-		panicPath := "/panic-test"
-		mux := http.NewServeMux()
-		mux.HandleFunc(panicPath, func(w http.ResponseWriter, r *http.Request) {
+		panicHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic("test panic")
 		})
 
-		// Wrap with the same middleware stack
+		// Wrap with recoverer middleware
 		r := chi.NewRouter()
 		r.Use(middleware.Recoverer)
-		r.Mount("/", mux)
+		r.Get("/panic-test", panicHandler)
 
-		req := httptest.NewRequest("GET", panicPath, nil)
+		req := httptest.NewRequest("GET", "/panic-test", nil)
 		w := httptest.NewRecorder()
 
 		// Should not panic due to recoverer

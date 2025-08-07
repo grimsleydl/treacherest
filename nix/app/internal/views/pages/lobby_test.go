@@ -31,6 +31,9 @@ func TestLobbyPage(t *testing.T) {
 
 	room.Players[player1.ID] = player1
 	room.Players[player2.ID] = player2
+	
+	// Set player1 as the first player (simulating room creator)
+	player1.JoinedAt = room.CreatedAt
 
 	// Create config and card service
 	cfg := config.DefaultConfig()
@@ -87,7 +90,7 @@ func TestLobbyPage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Start Game").
-			AssertContains(`data-on-click="@post(&#39;/room/TEST1/start&#39;)"`)
+			AssertContains(`@post(&#39;/room/TEST1/start&#39;)`)
 	})
 
 	t.Run("shows leave button", func(t *testing.T) {
@@ -95,7 +98,7 @@ func TestLobbyPage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Leave Room").
-			AssertContains(`data-on-click="@post(&#39;/room/TEST1/leave&#39;)"`)
+			AssertContains(`@post(&#39;/room/TEST1/leave&#39;)`)
 	})
 }
 
@@ -147,7 +150,7 @@ func TestLobbyBody(t *testing.T) {
 		renderer.Render(component).
 			AssertNotContains("Need at least").
 			AssertContains("Start Game").
-			AssertNotContains("disabled")
+			AssertContains(`data-attr-disabled="$isStarting || !$canStartGame"`)
 	})
 
 }

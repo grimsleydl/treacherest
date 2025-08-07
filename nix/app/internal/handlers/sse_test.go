@@ -371,8 +371,8 @@ func TestSSEHelpers(t *testing.T) {
 		if !strings.Contains(body, "data:") {
 			t.Error("expected SSE data in response")
 		}
-		if !strings.Contains(body, "lobby-container") {
-			t.Error("expected lobby-container selector in response")
+		if !strings.Contains(body, "lobby-content") {
+			t.Error("expected lobby-content selector in response")
 		}
 	})
 

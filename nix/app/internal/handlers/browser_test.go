@@ -19,6 +19,9 @@ func TestLobbySSEMultiplePlayers(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
+	
+	// Skip if Chrome is not available
+	skipIfNoBrowser(t)
 
 	// Create handler with in-memory store
 	h := newTestHandler()
@@ -137,6 +140,9 @@ func TestLobbyDOMStructurePreservation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping browser test in short mode")
 	}
+	
+	// Skip if Chrome is not available
+	skipIfNoBrowser(t)
 
 	// Create handler with in-memory store
 	h := newTestHandler()

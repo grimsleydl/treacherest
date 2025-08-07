@@ -8,6 +8,10 @@ import (
 )
 
 func TestDefaultGameSize(t *testing.T) {
+	// Set required environment variables
+	t.Setenv("HOST", "localhost")
+	t.Setenv("PORT", "8080")
+	
 	// Load the configuration
 	cfg, err := config.LoadConfig("../../config/server.yaml")
 	if err != nil {
