@@ -74,14 +74,14 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 			sse.MergeFragments("", datastar.WithSelector("body"))
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
-			
+
 			// Check room state first - if game started, close immediately
 			currentRoom, err := h.store.GetRoom(roomCode)
 			if err == nil && (currentRoom.State == game.StateCountdown || currentRoom.State == game.StatePlaying) {
 				log.Printf("🎮 Room %s is in game state, closing lobby SSE", roomCode)
 				return
 			}
-			
+
 			switch event.Type {
 			case "player_joined", "player_left":
 				// Re-render lobby only if still in lobby state
@@ -162,18 +162,18 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		log.Printf("🚫 Attempted to render lobby for room %s in state %s", room.Code, room.State)
 		return
 	}
-	
+
 	log.Printf("🎨 Rendering lobby content for room %s with %d players", room.Code, len(room.Players))
 	component := pages.LobbyContent(room, player)
 
 	// Render to string
 	html := renderToString(component)
-	
+
 	// Wrap in lobby-content div to ensure structure exists
 	wrappedHTML := `<div id="lobby-content">` + html + `</div>`
-	
+
 	log.Printf("📝 Rendered lobby HTML length: %d chars", len(wrappedHTML))
-	
+
 	// Debug: show first 200 chars of rendered HTML
 	if len(wrappedHTML) > 200 {
 		log.Printf("📝 HTML preview: %s...", wrappedHTML[:200])
@@ -188,7 +188,6 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
 	log.Printf("✅ Sent lobby fragment update for room %s", room.Code)
 }
-
 
 // renderGame renders the game body
 func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
