@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"treacherest/internal/game"
 	"treacherest/internal/store"
 )
 
@@ -198,6 +199,104 @@ func TestHandler_JoinRoom(t *testing.T) {
 }
 
 func TestHandler_GamePage(t *testing.T) {
-	// Similar to JoinRoom, requires chi router context
-	t.Skip("GamePage requires chi router context - will be covered in integration tests")
+	t.Run("shows game page for player in game", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+		
+		// Create a room with a player
+		room, _ := h.store.CreateRoom()
+		player := game.NewPlayer("p1", "Test Player", "session1")
+		player.Role = &game.Role{Name: "Villager"}
+		room.AddPlayer(player)
+		room.State = game.StatePlaying
+		h.store.UpdateRoom(room)
+		
+		// Create a router to handle URL params
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+		
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: player.ID,
+		})
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+		
+		body := w.Body.String()
+		// Verify game page content - check for data-star or data- attributes
+		if !strings.Contains(body, "data-") {
+			t.Error("expected data attributes in game page")
+		}
+		// Verify it's HTML content
+		if len(body) == 0 {
+			t.Error("expected non-empty game page body")
+		}
+	})
+	
+	t.Run("returns 404 for non-existent room", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+		
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+		
+		req := httptest.NewRequest("GET", "/game/XXXXX", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		resp := w.Result()
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+	})
+	
+	t.Run("returns 401 when no player cookie", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+		
+		// Create a room
+		room, _ := h.store.CreateRoom()
+		
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+		
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		resp := w.Result()
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		}
+	})
+	
+	t.Run("returns 401 when player not in room", func(t *testing.T) {
+		h := New(store.NewMemoryStore())
+		
+		// Create a room
+		room, _ := h.store.CreateRoom()
+		
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+		
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: "nonexistent-player",
+		})
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		resp := w.Result()
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		}
+	})
 }
