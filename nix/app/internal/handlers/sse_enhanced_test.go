@@ -79,7 +79,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("handles empty event store", func(t *testing.T) {
 		es := NewEventStore(5)
-		
+
 		events := es.GetEventsSince("ROOM1", "any-id")
 		if events != nil {
 			t.Errorf("expected nil for empty store, got %v", events)
@@ -146,12 +146,12 @@ func TestConnectionTracker(t *testing.T) {
 		var wg sync.WaitGroup
 		for i := 0; i < 10; i++ {
 			wg.Add(2)
-			
+
 			go func() {
 				defer wg.Done()
 				ct.AddConnection(roomCode)
 			}()
-			
+
 			go func() {
 				defer wg.Done()
 				time.Sleep(10 * time.Millisecond)
