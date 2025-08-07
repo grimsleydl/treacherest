@@ -468,7 +468,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 	events := h.eventBus.Subscribe(roomCode)
 	defer h.eventBus.Unsubscribe(roomCode, events)
 
-	log.Printf("📡 Host SSE connection ready for room %s, waiting for events", roomCode)
+	log.Printf("📡 Host SSE connection ready for room %s, waiting for events (subscriber channel: %p)", roomCode, events)
 
 	// Set up a heartbeat to detect stale connections
 	heartbeat := time.NewTicker(30 * time.Second)
