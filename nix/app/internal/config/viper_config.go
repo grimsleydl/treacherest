@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -16,13 +17,20 @@ func LoadConfig(configPath string) (*ServerConfig, error) {
 	v.SetConfigName("server")
 	v.SetConfigType("yaml")
 
+	// Check for CONFIG_PATH environment variable first
+	if envPath := os.Getenv("CONFIG_PATH"); envPath != "" && configPath == "" {
+		configPath = envPath
+	}
+
 	// Add config paths
 	if configPath != "" {
 		v.SetConfigFile(configPath)
 	} else {
-		v.AddConfigPath("./config")
+		v.AddConfigPath("/app/config")      // Container default location
+		v.AddConfigPath("./configs")         // Project root configs directory
+		v.AddConfigPath("./config")          // Legacy location
 		v.AddConfigPath(".")
-		v.AddConfigPath("/etc/treacherest")
+		v.AddConfigPath("/etc/treacherest")  // System location
 	}
 
 	// Enable environment variable binding
@@ -125,8 +133,11 @@ func InitViper() *viper.Viper {
 	// Set config details
 	v.SetConfigName("server")
 	v.SetConfigType("yaml")
+	v.AddConfigPath("/app/config")
+	v.AddConfigPath("./configs")
 	v.AddConfigPath("./config")
 	v.AddConfigPath(".")
+	v.AddConfigPath("/etc/treacherest")
 
 	// Enable environment variables
 	v.AutomaticEnv()
