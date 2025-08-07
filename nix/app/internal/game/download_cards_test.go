@@ -17,10 +17,10 @@ func TestCardIDMapping(t *testing.T) {
 		filepath.Join(os.Getenv("PRJ_ROOT"), "docs/external/treachery-cards.json"),
 		"/workspace/docs/external/treachery-cards.json",
 	}
-	
+
 	var jsonData []byte
 	var err error
-	
+
 	for _, path := range possiblePaths {
 		jsonData, err = os.ReadFile(path)
 		if err == nil {
@@ -91,7 +91,7 @@ func TestCardIDMapping(t *testing.T) {
 		fileName := fmt.Sprintf("%03d - %s - %s.jpg", found.ID, found.Types.Subtype, found.Name)
 		encodedFileName := url.PathEscape(fileName)
 		actualURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
-		
+
 		if actualURL != tc.expected {
 			t.Errorf("Card %d: URL mismatch\nExpected: %s\nActual:   %s", tc.id, tc.expected, actualURL)
 		}

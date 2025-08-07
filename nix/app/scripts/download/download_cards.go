@@ -37,17 +37,17 @@ func main() {
 	fmt.Println()
 	fmt.Print("Press Enter to continue or Ctrl+C to cancel...")
 	fmt.Scanln()
-	
+
 	// Load the cards JSON - try multiple paths
 	possiblePaths := []string{
 		"../../docs/external/treachery-cards.json",
 		"../../../docs/external/treachery-cards.json",
 		os.Getenv("PRJ_ROOT") + "/docs/external/treachery-cards.json",
 	}
-	
+
 	var jsonData []byte
 	var err error
-	
+
 	for _, path := range possiblePaths {
 		jsonData, err = os.ReadFile(path)
 		if err == nil {
@@ -55,7 +55,7 @@ func main() {
 			break
 		}
 	}
-	
+
 	if err != nil {
 		fmt.Printf("Error reading treachery-cards.json: %v\n", err)
 		return
@@ -77,7 +77,7 @@ func main() {
 		fmt.Printf("Error creating directory: %v\n", err)
 		return
 	}
-	
+
 	absPath, _ := filepath.Abs(outputDir)
 	fmt.Printf("Images will be saved to: %s\n\n", absPath)
 
@@ -92,7 +92,7 @@ func main() {
 		fileName := fmt.Sprintf("%03d - %s - %s.jpg", card.ID, role, card.Name)
 		encodedFileName := url.PathEscape(fileName)
 		imageURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
-		
+
 		outputPath := filepath.Join(outputDir, fmt.Sprintf("%d.jpg", card.ID))
 
 		// Check if file already exists
@@ -111,7 +111,7 @@ func main() {
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
-		
+
 		// Download the image
 		resp, err := client.Do(req)
 		if err != nil {

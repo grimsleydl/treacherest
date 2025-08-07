@@ -110,7 +110,6 @@ func TestAssignRolesWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create role config: %v", err)
 	}
-	
 
 	// Create test players
 	players := []*Player{
@@ -121,7 +120,6 @@ func TestAssignRolesWithConfig(t *testing.T) {
 
 	// Assign roles
 	AssignRolesWithConfig(players, cardService, roleConfig, roleService)
-	
 
 	// Verify all players have roles
 	for _, player := range players {

@@ -1,10 +1,10 @@
 package game
 
 import (
-	"testing"
-	"treacherest/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
+	"treacherest/internal/config"
 )
 
 func TestLeaderlessGameConfiguration(t *testing.T) {
@@ -21,7 +21,7 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 			AllowLeaderlessGame: true,
 			RoleTypes: map[string]*RoleTypeConfig{
 				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
-				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
 			},
 		}
 
@@ -37,7 +37,7 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 			AllowLeaderlessGame: false,
 			RoleTypes: map[string]*RoleTypeConfig{
 				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
-				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
 			},
 		}
 
@@ -53,9 +53,9 @@ func TestLeaderlessGameConfiguration(t *testing.T) {
 			MaxPlayers:          3,
 			AllowLeaderlessGame: true,
 			RoleTypes: map[string]*RoleTypeConfig{
-				"Leader": {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
+				"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Usurper": true}},
 				"Guardian": {Count: 1, EnabledCards: map[string]bool{"The Bodyguard": true}},
-				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
 			},
 		}
 
@@ -93,7 +93,7 @@ func TestLeaderlessRoleDistribution(t *testing.T) {
 			RoleTypes: map[string]*RoleTypeConfig{
 				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Knight": true}},
 				"Assassin": {Count: 1, EnabledCards: map[string]bool{"The Assassin": true}},
-				"Traitor": {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
+				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Cultist": true}},
 			},
 		}
 

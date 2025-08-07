@@ -30,7 +30,7 @@ func main() {
 		{28, "The Ambitious Queen", "Assassin"},
 		{17, "The Banisher", "Traitor"},
 	}
-	
+
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -40,7 +40,7 @@ func main() {
 		fileName := fmt.Sprintf("%03d - %s - %s.jpg", card.ID, card.Role, card.Name)
 		encodedFileName := url.PathEscape(fileName)
 		imageURL := fmt.Sprintf("https://mtgtreachery.net/images/cards/en/trd/%s", encodedFileName)
-		
+
 		outputPath := filepath.Join(outputDir, fmt.Sprintf("%d.jpg", card.ID))
 
 		// Check if file already exists
@@ -58,7 +58,7 @@ func main() {
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
-		
+
 		// Download the image
 		resp, err := client.Do(req)
 		if err != nil {

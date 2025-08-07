@@ -67,7 +67,7 @@ func (s *MemoryStore) GetRoom(code string) (*game.Room, error) {
 	s.mu.RLock()
 	room, exists := s.rooms[code]
 	s.mu.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("room %s not found", code)
 	}

@@ -92,14 +92,14 @@ func (c *Card) GetLeaderlessWinCondition() string {
 func (c *Card) IsLeaderDependent() bool {
 	// List of cards that specifically reference the Leader
 	leaderDependentCards := map[string]bool{
-		"The Golem":        true,
-		"The Great Martyr": true,
-		"The Oracle":       true,
-		"The Quellmaster":  true,
-		"The Metamorph":    true,
+		"The Golem":         true,
+		"The Great Martyr":  true,
+		"The Oracle":        true,
+		"The Quellmaster":   true,
+		"The Metamorph":     true,
 		"The Puppet Master": true,
 	}
-	
+
 	return leaderDependentCards[c.Name]
 }
 
