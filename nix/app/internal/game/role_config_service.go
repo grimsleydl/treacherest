@@ -426,7 +426,7 @@ func (s *RoleConfigService) CanAutoScale(config *RoleConfiguration, targetPlayer
 
 	// Check if the preset has a distribution for the target player count
 	if _, hasExact := preset.Distributions[targetPlayerCount]; hasExact {
-		details := fmt.Sprintf("Can scale from %d to %d players using %s preset", currentTotal, targetPlayerCount, config.PresetName)
+		details := fmt.Sprintf("Can scale using %s preset", config.PresetName)
 		log.Printf("  - Result: true, Details: %s", details)
 		return true, details
 	}
