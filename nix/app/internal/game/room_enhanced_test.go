@@ -12,18 +12,16 @@ func TestRoom_StateTransitions(t *testing.T) {
 			Code:       "TEST1",
 			State:      StateLobby,
 			Players:    make(map[string]*Player),
-			MaxPlayers: 8,
+			MaxPlayers: 4,
 		}
 
-		// Add 4 players
-		for i := 0; i < 4; i++ {
-			player := NewPlayer(string(rune('a'+i)), "Player", "session")
-			room.AddPlayer(player)
-		}
+		// Add 1 player (minimum to start)
+		player := NewPlayer("a", "Player", "session")
+		room.AddPlayer(player)
 
 		// Verify we can start
 		if !room.CanStart() {
-			t.Error("Should be able to start with 4 players")
+			t.Error("Should be able to start with 1 player")
 		}
 
 		// Transition to countdown
@@ -81,7 +79,7 @@ func TestRoom_StateTransitions(t *testing.T) {
 			Code:       "TEST3",
 			State:      StatePlaying,
 			Players:    make(map[string]*Player),
-			MaxPlayers: 8,
+			MaxPlayers: 4,
 			StartedAt:  time.Now(),
 		}
 
@@ -143,7 +141,7 @@ func TestRoom_ConcurrentAccess(t *testing.T) {
 			Code:       "CONC2",
 			State:      StateLobby,
 			Players:    make(map[string]*Player),
-			MaxPlayers: 8,
+			MaxPlayers: 4,
 		}
 
 		// Add some initial players
@@ -305,7 +303,7 @@ func TestRoom_GetLeader(t *testing.T) {
 			Code:       "LEAD1",
 			State:      StatePlaying,
 			Players:    make(map[string]*Player),
-			MaxPlayers: 8,
+			MaxPlayers: 4,
 		}
 
 		// Add players without roles
@@ -325,7 +323,7 @@ func TestRoom_GetLeader(t *testing.T) {
 			Code:       "LEAD2",
 			State:      StatePlaying,
 			Players:    make(map[string]*Player),
-			MaxPlayers: 8,
+			MaxPlayers: 4,
 		}
 
 		// Add players with roles
@@ -373,14 +371,12 @@ func TestRoom_EdgeCases(t *testing.T) {
 				Code:       "EDGE2",
 				State:      state,
 				Players:    make(map[string]*Player),
-				MaxPlayers: 8,
+				MaxPlayers: 4,
 			}
 
-			// Add enough players
-			for i := 0; i < 4; i++ {
-				player := NewPlayer(string(rune('a'+i)), "Player", "session")
-				room.AddPlayer(player)
-			}
+			// Add 1 player (enough to start)
+			player := NewPlayer("a", "Player", "session")
+			room.AddPlayer(player)
 
 			if room.CanStart() {
 				t.Errorf("Should not be able to start in %v state", state)

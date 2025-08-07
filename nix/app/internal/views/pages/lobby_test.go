@@ -52,7 +52,7 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(room, player1)
 
 		renderer.Render(component).
-			AssertContains("Players (2/8)").
+			AssertContains("Players (2)").
 			AssertContains("Player One").
 			AssertContains("Player Two")
 	})
@@ -113,25 +113,18 @@ func TestLobbyBody(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertHasElementWithID("lobby-container").
-			AssertContains("Players (1/4)")
+			AssertContains("Players (1)")
 	})
 
 	t.Run("shows minimum players message", func(t *testing.T) {
 		component := LobbyBody(room, player)
 
 		renderer.Render(component).
-			AssertContains("Need at least 4 players to start")
+			AssertContains("Start Game")
 	})
 
 	t.Run("enables start button when enough players", func(t *testing.T) {
-		// Add more players
-		for i := 2; i <= 4; i++ {
-			p := &game.Player{
-				ID:   string(rune('p' + i)),
-				Name: "Player " + string(rune('0'+i)),
-			}
-			room.Players[p.ID] = p
-		}
+		// Room already has 1 player which is enough to start
 
 		component := LobbyBody(room, player)
 

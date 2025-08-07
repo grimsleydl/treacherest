@@ -14,7 +14,7 @@ func TestGamePage(t *testing.T) {
 		Code:       "GAME1",
 		State:      game.StatePlaying,
 		Players:    make(map[string]*game.Player),
-		MaxPlayers: 8,
+		MaxPlayers: 4,
 	}
 
 	role := &game.Role{
@@ -88,7 +88,7 @@ func TestGameBody(t *testing.T) {
 		Code:       "BODY1",
 		State:      game.StatePlaying,
 		Players:    make(map[string]*game.Player),
-		MaxPlayers: 8,
+		MaxPlayers: 4,
 	}
 
 	assassinRole := game.AssassinRole

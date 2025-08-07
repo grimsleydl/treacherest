@@ -70,8 +70,8 @@ func TestCreateRoom(t *testing.T) {
 			t.Errorf("expected empty players map, got %d players", len(room.Players))
 		}
 
-		if room.MaxPlayers != 8 {
-			t.Errorf("expected max players 8, got %d", room.MaxPlayers)
+		if room.MaxPlayers != 4 {
+			t.Errorf("expected max players 4, got %d", room.MaxPlayers)
 		}
 
 		if room.CreatedAt.IsZero() {
@@ -220,7 +220,7 @@ func TestUpdateRoom(t *testing.T) {
 			State:      game.StatePlaying,
 			Players:    make(map[string]*game.Player),
 			CreatedAt:  time.Now(),
-			MaxPlayers: 6,
+			MaxPlayers: 4,
 		}
 
 		err := store.UpdateRoom(room)
