@@ -96,8 +96,13 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing SSE", roomCode)
 				return
 			}
-			// Heartbeat - just check if connection is still alive
-			// The datastar SSE library handles keepalive internally
+			
+			// Send keepalive ping to prevent browser timeout
+			// Browsers may close idle SSE connections after 2-5 minutes
+			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+				log.Printf("📡 Keepalive failed for room %s: %v - closing connection", roomCode, err)
+				return
+			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
 
@@ -249,11 +254,21 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		h.renderGame(sse, room, player)
 	}
 
+	// Set up a heartbeat to prevent browser timeouts
+	heartbeat := time.NewTicker(30 * time.Second)
+	defer heartbeat.Stop()
+
 	// Stream updates
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-heartbeat.C:
+			// Send keepalive ping to prevent browser timeout
+			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+				log.Printf("📡 Keepalive failed for game room %s: %v - closing connection", roomCode, err)
+				return
+			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for game %s: %s", roomCode, event.Type)
 			switch event.Type {
@@ -520,8 +535,12 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing host SSE", roomCode)
 				return
 			}
-			// Heartbeat - just check if connection is still alive
-			// The datastar SSE library handles keepalive internally
+			
+			// Send keepalive ping to prevent browser timeout
+			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+				log.Printf("📡 Keepalive failed for host room %s: %v - closing connection", roomCode, err)
+				return
+			}
 		case event := <-events:
 			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
 
