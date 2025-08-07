@@ -35,6 +35,7 @@ go.work.sum
 .idea
 
 air
+server
 
 # nixago: ignore-linked-files
 /lefthook.yml
