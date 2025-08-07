@@ -129,17 +129,17 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 				// Non-clickable section
 				<div class="role-type-controls flex items-center gap-4">
 					<div class="tooltip tooltip-top" data-tip={ fmt.Sprintf("Number of %s roles", typeName) }>
-						<div class="flex flex-col items-center">
+						<div class="btn-group">
 							<button 
-								class="btn btn-xs btn-square"
-								data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
-							>+</button>
-							<span class="role-count my-1 font-bold">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
-							<button 
-								class="btn btn-xs btn-square"
+								class="btn btn-sm btn-primary"
 								data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
 								disabled?={ typeConfig.Count == 0 }
 							>-</button>
+							<button class="btn btn-sm btn-ghost cursor-default">{ fmt.Sprintf("%d", typeConfig.Count) }</button>
+							<button 
+								class="btn btn-sm btn-primary"
+								data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
+							>+</button>
 						</div>
 					</div>
 					if typeConfig.Count > 0 {

@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 /* DaisyUI Plugin - using v4 syntax from northstar */
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: night --default, dracula, synthwave, treacherest;
+}
 
 /* Custom Treacherest theme matching current colors exactly */
 @theme {
