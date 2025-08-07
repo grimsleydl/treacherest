@@ -21,6 +21,28 @@ type ServerSettings struct {
 	DefaultGameSize   int           `yaml:"defaultGameSize"`
 	RoomCodeLength    int           `yaml:"roomCodeLength"`
 	RoomTimeout       time.Duration `yaml:"roomTimeout"`
+	
+	// Server settings
+	Port              string        `yaml:"port" envconfig:"PORT" required:"true"`
+	Host              string        `yaml:"host" envconfig:"HOST" required:"true"`
+	ReadTimeout       time.Duration `yaml:"readTimeout" envconfig:"READ_TIMEOUT" default:"15s"`
+	WriteTimeout      time.Duration `yaml:"writeTimeout" envconfig:"WRITE_TIMEOUT" default:"15s"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"IDLE_TIMEOUT" default:"0s"` // 0 for SSE support
+	ShutdownTimeout   time.Duration `yaml:"shutdownTimeout" envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
+	
+	// Rate limiting (using golang.org/x/time/rate)
+	RateLimit         float64       `yaml:"rateLimit" envconfig:"RATE_LIMIT" default:"10"`        // requests per second
+	RateLimitBurst    int           `yaml:"rateLimitBurst" envconfig:"RATE_LIMIT_BURST" default:"20"` // burst size
+	
+	// Request limits
+	MaxRequestSize    int64         `yaml:"maxRequestSize" envconfig:"MAX_REQUEST_SIZE" default:"1048576"` // 1MB
+	MaxSSEConnections int           `yaml:"maxSSEConnections" envconfig:"MAX_SSE_CONNECTIONS" default:"1000"`
+	
+	// Monitoring
+	EnableMetrics     bool          `yaml:"enableMetrics" envconfig:"ENABLE_METRICS" default:"false"`
+	MetricsPort       string        `yaml:"metricsPort" envconfig:"METRICS_PORT"` // No default - must be set if metrics enabled
+	LogLevel          string        `yaml:"logLevel" envconfig:"LOG_LEVEL" default:"info"`
+	LogFormat         string        `yaml:"logFormat" envconfig:"LOG_FORMAT" default:"text"`
 }
 
 // RolesConfig contains role definitions and presets
@@ -45,35 +67,81 @@ type Preset struct {
 	Distributions map[int]map[string]int `yaml:"distributions"`
 }
 
-// LoadConfig loads the server configuration from a YAML file
+// LoadConfig loads the server configuration from a YAML file and environment variables
 func LoadConfig(path string) (*ServerConfig, error) {
-	// If no path provided, use default
+	// Start with default config
+	config := DefaultConfig()
+	
+	// If path provided, load from YAML file
 	if path == "" {
 		path = "config/server.yaml"
 	}
-
-	// Read the file
+	
+	// Try to read the file
 	data, err := os.ReadFile(path)
-	if err != nil {
-		// If file doesn't exist, return default config
-		if os.IsNotExist(err) {
-			return DefaultConfig(), nil
+	if err == nil {
+		// Parse YAML if file exists
+		if err := yaml.Unmarshal(data, config); err != nil {
+			return nil, fmt.Errorf("failed to parse YAML: %w", err)
 		}
+	} else if !os.IsNotExist(err) {
+		// Return error if it's not just a missing file
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
-
-	// Parse YAML
-	var config ServerConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
-	}
+	
+	// Override with environment variables
+	loadFromEnv(config)
 
 	// Validate configuration
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	return &config, nil
+	return config, nil
+}
+
+// loadFromEnv loads configuration from environment variables
+func loadFromEnv(cfg *ServerConfig) {
+	// Check each environment variable and override if set
+	if port := os.Getenv("PORT"); port != "" {
+		cfg.Server.Port = port
+	}
+	if host := os.Getenv("HOST"); host != "" {
+		cfg.Server.Host = host
+	}
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		cfg.Server.LogLevel = logLevel
+	}
+	if logFormat := os.Getenv("LOG_FORMAT"); logFormat != "" {
+		cfg.Server.LogFormat = logFormat
+	}
+	
+	// Parse numeric values
+	if rateLimit := os.Getenv("RATE_LIMIT"); rateLimit != "" {
+		if val, err := fmt.Sscanf(rateLimit, "%f", &cfg.Server.RateLimit); err == nil && val == 1 {
+			// Successfully parsed
+		}
+	}
+	if burst := os.Getenv("RATE_LIMIT_BURST"); burst != "" {
+		if val, err := fmt.Sscanf(burst, "%d", &cfg.Server.RateLimitBurst); err == nil && val == 1 {
+			// Successfully parsed
+		}
+	}
+	if maxReq := os.Getenv("MAX_REQUEST_SIZE"); maxReq != "" {
+		if val, err := fmt.Sscanf(maxReq, "%d", &cfg.Server.MaxRequestSize); err == nil && val == 1 {
+			// Successfully parsed
+		}
+	}
+	if maxSSE := os.Getenv("MAX_SSE_CONNECTIONS"); maxSSE != "" {
+		if val, err := fmt.Sscanf(maxSSE, "%d", &cfg.Server.MaxSSEConnections); err == nil && val == 1 {
+			// Successfully parsed
+		}
+	}
+	
+	// Parse boolean values
+	if metrics := os.Getenv("ENABLE_METRICS"); metrics == "true" {
+		cfg.Server.EnableMetrics = true
+	}
 }
 
 // DefaultConfig returns a default configuration
@@ -85,6 +153,28 @@ func DefaultConfig() *ServerConfig {
 			DefaultGameSize:   5,
 			RoomCodeLength:    5,
 			RoomTimeout:       24 * time.Hour,
+			
+			// Server defaults
+			Port:              "", // Must be set via env
+			Host:              "", // Must be set via env
+			ReadTimeout:       15 * time.Second,
+			WriteTimeout:      15 * time.Second,
+			IdleTimeout:       0, // 0 for SSE support
+			ShutdownTimeout:   30 * time.Second,
+			
+			// Rate limiting defaults
+			RateLimit:         10, // 10 requests per second
+			RateLimitBurst:    20,
+			
+			// Request limits
+			MaxRequestSize:    1048576, // 1MB
+			MaxSSEConnections: 1000,
+			
+			// Monitoring defaults
+			EnableMetrics:     false,
+			MetricsPort:       "", // Must be set if metrics enabled
+			LogLevel:          "info",
+			LogFormat:         "text",
 		},
 		Roles: RolesConfig{
 			Available: map[string]RoleDefinition{
@@ -136,6 +226,19 @@ func DefaultConfig() *ServerConfig {
 
 // Validate checks if the configuration is valid
 func (c *ServerConfig) Validate() error {
+	// Required fields
+	if c.Server.Port == "" {
+		return fmt.Errorf("PORT environment variable must be set")
+	}
+	if c.Server.Host == "" {
+		return fmt.Errorf("HOST environment variable must be set")
+	}
+	
+	// If metrics are enabled, port must be set
+	if c.Server.EnableMetrics && c.Server.MetricsPort == "" {
+		return fmt.Errorf("METRICS_PORT must be set when ENABLE_METRICS is true")
+	}
+	
 	if c.Server.MaxPlayersPerRoom < 1 {
 		return fmt.Errorf("maxPlayersPerRoom must be at least 1")
 	}
