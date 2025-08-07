@@ -289,6 +289,11 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Check if EnabledCards is nil and initialize if needed
+	if typeConfig.EnabledCards == nil {
+		typeConfig.EnabledCards = make(map[string]bool)
+	}
+	
 	// Update card state
 	typeConfig.EnabledCards[body.CardName] = body.Enabled
 	room.RoleConfig.PresetName = "custom"
