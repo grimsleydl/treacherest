@@ -43,13 +43,13 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.Serv
 	}
 	
 	if room.GetActivePlayerCount() >= 1 {
-		<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
+		<button class="btn btn-primary btn-lg" data-on-click={ "@post('/room/" + room.Code + "/start')" }>
 			Start Game
 		</button>
 	} else {
 		<p>Need at least 1 player to start</p>
 	}
-	<button data-on-click={ "@post('/room/" + room.Code + "/leave')" } style="margin-top: 1rem;">
+	<button class="btn btn-error mt-4" data-on-click={ "@post('/room/" + room.Code + "/leave')" }>
 		Leave Room
 	</button>
 }
