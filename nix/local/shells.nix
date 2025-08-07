@@ -16,6 +16,7 @@ They conveniently also generate config files in their startup hook.
       inputs.gomod2nix.overlays.default
     ];
   };
+  lib = pkgs.lib;
 
   # Create Go environment for the app
   goEnv = pkgs.mkGoEnv {
@@ -50,9 +51,14 @@ in {
 
       # templ for template compilation
       templ
-      
+
       # Lightweight alternative - just chromedriver for basic browser automation
       chromedriver
+
+      # Playwright with priority to resolve conflicts
+      nodejs_22 # Match the version playwright expects
+      (lib.hiPrio playwright-driver) # Give playwright high priority
+      (lib.hiPrio playwright-test)   # Give playwright-test high priority
     ];
 
     commands = [
@@ -141,7 +147,30 @@ in {
           echo "Code formatted!"
         '';
       }
-
+      {
+        name = "test-playwright";
+        help = "Run Playwright browser tests";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          playwright test
+        '';
+      }
+      {
+        name = "test-playwright-ui";
+        help = "Run Playwright tests with UI mode";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          playwright test --ui
+        '';
+      }
+      {
+        name = "test-playwright-debug";
+        help = "Run Playwright tests in debug mode";
+        command = ''
+          cd $PRJ_ROOT/nix/app
+          playwright test --debug
+        '';
+      }
     ];
 
     env = [
@@ -153,6 +182,23 @@ in {
         name = "GOCACHE";
         eval = "$(pwd)/.go/cache";
       }
+      # Playwright environment variables for Nix
+      {
+        name = "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS";
+        value = "true";
+      }
+      {
+        name = "PLAYWRIGHT_BROWSERS_PATH";
+        eval = "${pkgs.playwright-driver.browsers}";
+      }
+      {
+        name = "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD";
+        value = "1";
+      }
+      {
+        name = "PLAYWRIGHT_NODEJS_PATH";
+        eval = "${pkgs.nodejs_22}/bin/node";
+      }
     ];
 
     devshell.startup.treacherest-startup.text = ''
@@ -161,14 +207,23 @@ in {
       echo "🃏 Treacherest Go Development Environment"
       echo ""
       echo "Available commands:"
-      echo "  dev         - Start development server with hot reload"
-      echo "  run         - Run the server (builds templates first)"
-      echo "  build       - Build the application"
-      echo "  test-all    - Run all tests"
-      echo "  test-coverage - Run tests with coverage report"
-      echo "  fmt         - Format Go and templ code"
-      echo "  build-templ - Generate Go code from templ templates"
-      echo "  update-deps - Update Go dependencies"
+      echo "  dev              - Start development server with hot reload"
+      echo "  run              - Run the server (builds templates first)"
+      echo "  build            - Build the application"
+      echo "  test-all         - Run all Go tests"
+      echo "  test-coverage    - Run Go tests with coverage report"
+      echo "  test-playwright  - Run Playwright browser tests"
+      echo "  test-playwright-ui - Run Playwright tests with UI mode"
+      echo "  test-playwright-debug - Run Playwright tests in debug mode"
+      echo "  fmt              - Format Go and templ code"
+      echo "  build-templ      - Generate Go code from templ templates"
+      echo "  update-deps      - Update Go dependencies"
+      echo ""
+      echo "Playwright environment configured:"
+      echo "  PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
+      echo "  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=$PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD"
+      echo "  Node.js: $(node --version)"
+      echo "  Priority conflict resolved with lib.hiPrio"
       echo ""
     '';
   };

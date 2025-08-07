@@ -1,0 +1,14 @@
+{
+  "name": "treacherest-tests",
+  "version": "1.0.0",
+  "description": "Playwright tests for Treacherest game",
+  "scripts": {
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "test:playwright:debug": "playwright test --debug",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
