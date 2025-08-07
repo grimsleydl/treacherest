@@ -58,7 +58,7 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 	<div id="error-container">
 		// This will be populated by SSE fragments when errors occur
 	</div>
-	<div class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
+	<div id="player-list-card" class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
 		<div class="card-body">
 			<h2 class="card-title">Players ({ room.GetActivePlayerCount() })</h2>
 			<div class="divide-y divide-base-300">

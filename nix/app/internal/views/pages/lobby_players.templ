@@ -1,0 +1,26 @@
+package pages
+
+import (
+	"treacherest/internal/game"
+)
+
+// LobbyPlayerList renders just the player list card - used for player join/leave updates
+templ LobbyPlayerList(room *game.Room, currentPlayer *game.Player) {
+	<div id="player-list-card" class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
+		<div class="card-body">
+			<h2 class="card-title">Players ({ room.GetActivePlayerCount() })</h2>
+			<div class="divide-y divide-base-300">
+				for _, player := range room.GetActivePlayers() {
+					<div class="py-3 flex items-center justify-between">
+						<span class={ templ.KV("font-bold text-primary", player.ID == currentPlayer.ID) }>
+							{ player.Name }
+						</span>
+						if player.ID == currentPlayer.ID {
+							<span class="badge badge-primary badge-sm">You</span>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}
