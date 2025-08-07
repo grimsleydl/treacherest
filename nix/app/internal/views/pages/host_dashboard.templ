@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"fmt"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
@@ -198,10 +197,8 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 
 // Countdown state content for SSE updates
 templ HostDashboardCountdown(room *game.Room, player *game.Player) {
-	<div class="container" style="text-align: center; padding-top: 4rem;">
-		<h1>Game Starting...</h1>
-		<div class="countdown" style="font-size: 5rem; font-weight: bold; color: #e94560; margin: 2rem 0;">{ fmt.Sprint(room.CountdownRemaining) }</div>
-		<p>Get ready!</p>
+	<div class="container" style="padding-top: 4rem;">
+		@components.CountdownDisplay(room.CountdownRemaining)
 	</div>
 }
 
