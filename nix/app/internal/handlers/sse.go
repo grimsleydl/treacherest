@@ -133,29 +133,37 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("🎮 Game event '%s' received in lobby SSE - closing connection for room %s", event.Type, roomCode)
 				return
 			case "role_config_updated":
-				// Role config was updated - send both the component and validation state
+				// Role config was updated - send updates appropriately based on player type
 				log.Printf("🎯 Role config updated for room %s", roomCode)
 				room, _ = h.store.GetRoom(roomCode)
 				
-				// Send the role config component
-				component := components.RoleConfigurationNew(room, h.config, h.cardService)
-				html := renderToString(component)
-				sse.MergeFragments(html,
-					datastar.WithSelector("#role-config"),
-					datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+				// Check if current player can control the game
+				canControl := !hasHost(room) && player.ID == getFirstPlayerID(room)
 				
-				// CRITICAL: Also update validation state since role config affects start ability
-				roleService := game.NewRoleConfigService(h.config)
-				validationState := room.GetValidationState(roleService)
-				
-				sse.MarshalAndMergeSignals(map[string]interface{}{
-					"canStartGame": validationState.CanStart,
-					"validationMessage": validationState.ValidationMessage,
-					"canAutoScale": validationState.CanAutoScale,
-					"autoScaleDetails": validationState.AutoScaleDetails,
-					"requiredRoles": validationState.RequiredRoles,
-					"configuredRoles": validationState.ConfiguredRoles,
-				})
+				if canControl {
+					// Send the role config component only to controlling players
+					component := components.RoleConfigurationNew(room, h.config, h.cardService)
+					html := renderToString(component)
+					sse.MergeFragments(html,
+						datastar.WithSelector("#role-config"),
+						datastar.WithMergeMode(datastar.FragmentMergeModeMorph))
+					
+					// Also update validation state for controlling players
+					roleService := game.NewRoleConfigService(h.config)
+					validationState := room.GetValidationState(roleService)
+					
+					sse.MarshalAndMergeSignals(map[string]interface{}{
+						"canStartGame": validationState.CanStart,
+						"validationMessage": validationState.ValidationMessage,
+						"canAutoScale": validationState.CanAutoScale,
+						"autoScaleDetails": validationState.AutoScaleDetails,
+						"requiredRoles": validationState.RequiredRoles,
+						"configuredRoles": validationState.ConfiguredRoles,
+					})
+				} else {
+					// Non-controlling players don't need role config updates
+					log.Printf("📡 Skipping role config update for non-controlling player %s in room %s", player.ID, roomCode)
+				}
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
@@ -553,4 +561,32 @@ func getBaseURL(r *http.Request) string {
 	}
 
 	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
+// Helper function to check if there's a host in the room
+func hasHost(room *game.Room) bool {
+	for _, player := range room.Players {
+		if player.IsHost {
+			return true
+		}
+	}
+	return false
+}
+
+// Helper function to get the first player ID (room creator)
+func getFirstPlayerID(room *game.Room) string {
+	var firstPlayer *game.Player
+	var firstJoinTime time.Time
+
+	for _, player := range room.Players {
+		if !player.IsHost && (firstPlayer == nil || player.JoinedAt.Before(firstJoinTime)) {
+			firstPlayer = player
+			firstJoinTime = player.JoinedAt
+		}
+	}
+
+	if firstPlayer != nil {
+		return firstPlayer.ID
+	}
+	return ""
 }
