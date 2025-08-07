@@ -53,6 +53,7 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		room.RoleConfig = newConfig
+		log.Printf("📊 Preset '%s' applied for room %s. New player count: %d", presetName, roomCode, room.RoleConfig.MaxPlayers)
 	}
 
 	h.store.UpdateRoom(room)
@@ -652,17 +653,21 @@ func (h *Handler) sendUpdatedRoleConfigUI(w http.ResponseWriter, r *http.Request
 	log.Printf("  - Validation state: CanStart=%v, Message=%s", validationState.CanStart, validationState.ValidationMessage)
 
 	signals := map[string]interface{}{
-		"canStartGame":       validationState.CanStart,
-		"validationMessage":  validationState.ValidationMessage,
-		"canAutoScale":       validationState.CanAutoScale,
-		"autoScaleDetails":   validationState.AutoScaleDetails,
-		"requiredRoles":      validationState.RequiredRoles,
-		"configuredRoles":    validationState.ConfiguredRoles,
-		"updatingLeaderless": false,                               // Reset loading state
-		"allowLeaderless":    room.RoleConfig.AllowLeaderlessGame, // Sync checkbox state
+		"canStartGame":             validationState.CanStart,
+		"validationMessage":        validationState.ValidationMessage,
+		"canAutoScale":             validationState.CanAutoScale,
+		"autoScaleDetails":         validationState.AutoScaleDetails,
+		"requiredRoles":            validationState.RequiredRoles,
+		"configuredRoles":          validationState.ConfiguredRoles,
+		"updatingLeaderless":       false,                                 // Reset loading state
+		"updatingHideDistribution": false,                                 // Reset loading state
+		"updatingFullyRandom":      false,                                 // Reset loading state
+		"allowLeaderless":          room.RoleConfig.AllowLeaderlessGame,   // Sync checkbox state
+		"hideRoleDistribution":     room.RoleConfig.HideRoleDistribution,  // Sync checkbox state
+		"fullyRandomRoles":         room.RoleConfig.FullyRandomRoles,      // Sync checkbox state
 	}
 
-	log.Printf("  - Sending signals (with allowLeaderless): %+v", signals)
+	log.Printf("  - Sending signals: %+v", signals)
 	sse.MarshalAndMergeSignals(signals)
 }
 
@@ -951,4 +956,140 @@ func (h *Handler) rebalanceCustomRoles(room *game.Room, increment bool) {
 			roleConfig.Count--
 		}
 	}
+}
+
+// UpdateHideDistribution updates the hide role distribution setting for a room
+func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	log.Printf("🔍 UpdateHideDistribution called for room: %s", roomCode)
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse JSON body into a generic map
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Safely extract the boolean value
+	hide, ok := body["hideRoleDistribution"].(bool)
+	if !ok {
+		// Fallback for the simple format, just in case
+		hide, ok = body["hide"].(bool)
+		if !ok {
+			log.Printf("❌ Could not find a valid 'hide' or 'hideRoleDistribution' boolean in request for room %s", roomCode)
+			http.Error(w, "Invalid data format", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Log state change
+	previousState := room.RoleConfig.HideRoleDistribution
+	log.Printf("📊 UpdateHideDistribution state change for room %s:", roomCode)
+	log.Printf("  - Previous HideRoleDistribution: %v", previousState)
+	log.Printf("  - New HideRoleDistribution: %v", hide)
+
+	// Update the setting
+	room.RoleConfig.HideRoleDistribution = hide
+
+	// If hiding distribution and fully random was enabled, disable it (mutual exclusivity)
+	if hide && room.RoleConfig.FullyRandomRoles {
+		log.Printf("  - Disabling FullyRandomRoles due to mutual exclusivity")
+		room.RoleConfig.FullyRandomRoles = false
+	}
+
+	h.store.UpdateRoom(room)
+	log.Printf("✅ UpdateHideDistribution completed for room %s", roomCode)
+
+	// Notify all players
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	// Send updated UI using the helper
+	h.sendUpdatedRoleConfigUI(w, r, room)
+}
+
+// UpdateFullyRandom updates the fully random roles setting for a room
+func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	log.Printf("🔍 UpdateFullyRandom called for room: %s", roomCode)
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player is room creator
+	if !h.isRoomCreator(r, room) {
+		log.Printf("❌ Unauthorized access attempt for room: %s", roomCode)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse JSON body into a generic map
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("❌ Invalid request body for room %s: %v", roomCode, err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Safely extract the boolean value
+	random, ok := body["fullyRandomRoles"].(bool)
+	if !ok {
+		// Fallback for the simple format, just in case
+		random, ok = body["random"].(bool)
+		if !ok {
+			log.Printf("❌ Could not find a valid 'random' or 'fullyRandomRoles' boolean in request for room %s", roomCode)
+			http.Error(w, "Invalid data format", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Log state change
+	previousState := room.RoleConfig.FullyRandomRoles
+	log.Printf("📊 UpdateFullyRandom state change for room %s:", roomCode)
+	log.Printf("  - Previous FullyRandomRoles: %v", previousState)
+	log.Printf("  - New FullyRandomRoles: %v", random)
+
+	// Update the setting
+	room.RoleConfig.FullyRandomRoles = random
+
+	// If enabling fully random and hide distribution was enabled, disable it (mutual exclusivity)
+	if random && room.RoleConfig.HideRoleDistribution {
+		log.Printf("  - Disabling HideRoleDistribution due to mutual exclusivity")
+		room.RoleConfig.HideRoleDistribution = false
+	}
+
+	h.store.UpdateRoom(room)
+	log.Printf("✅ UpdateFullyRandom completed for room %s", roomCode)
+
+	// Notify all players
+	h.eventBus.Publish(Event{
+		Type:     "role_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	// Send updated UI using the helper
+	h.sendUpdatedRoleConfigUI(w, r, room)
 }
