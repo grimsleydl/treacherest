@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"treacherest"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/handlers"
 	"treacherest/internal/store"
@@ -12,15 +13,22 @@ import (
 )
 
 func main() {
+	// Load server configuration
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal("Failed to load configuration: ", err)
+	}
+	log.Printf("Loaded configuration: max players per room = %d", cfg.Server.MaxPlayersPerRoom)
+	
 	// Create CardService with fail-fast initialization using embedded resources
 	cardService, err := game.NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
 	if err != nil {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
 	
-	// Create store and handler
-	s := store.NewMemoryStore()
-	h := handlers.New(s, cardService)
+	// Create store and handler with configuration
+	s := store.NewMemoryStore(cfg)
+	h := handlers.New(s, cardService, cfg)
 	
 	// Set up routes
 	r := chi.NewRouter()

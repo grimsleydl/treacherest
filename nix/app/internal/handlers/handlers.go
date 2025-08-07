@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"sync"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/store"
 )
@@ -14,14 +15,16 @@ type Handler struct {
 	store       *store.MemoryStore
 	eventBus    *EventBus
 	cardService *game.CardService
+	config      *config.ServerConfig
 }
 
 // New creates a new handler
-func New(store *store.MemoryStore, cardService *game.CardService) *Handler {
+func New(store *store.MemoryStore, cardService *game.CardService, cfg *config.ServerConfig) *Handler {
 	return &Handler{
 		store:       store,
 		eventBus:    NewEventBus(),
 		cardService: cardService,
+		config:      cfg,
 	}
 }
 

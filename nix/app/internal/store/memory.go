@@ -5,19 +5,22 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 )
 
 // MemoryStore holds all game state in memory
 type MemoryStore struct {
-	mu    sync.RWMutex
-	rooms map[string]*game.Room
+	mu     sync.RWMutex
+	rooms  map[string]*game.Room
+	config *config.ServerConfig
 }
 
 // NewMemoryStore creates a new in-memory store
-func NewMemoryStore() *MemoryStore {
+func NewMemoryStore(cfg *config.ServerConfig) *MemoryStore {
 	return &MemoryStore{
-		rooms: make(map[string]*game.Room),
+		rooms:  make(map[string]*game.Room),
+		config: cfg,
 	}
 }
 
@@ -35,12 +38,17 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 		}
 	}
 
+	// Create default role configuration using standard preset
+	roleService := game.NewRoleConfigService(s.config)
+	roleConfig, _ := roleService.CreateFromPreset("standard", s.config.Server.MaxPlayersPerRoom)
+
 	room := &game.Room{
 		Code:       code,
 		State:      game.StateLobby,
 		Players:    make(map[string]*game.Player),
 		CreatedAt:  time.Now(),
-		MaxPlayers: 4,
+		MaxPlayers: s.config.Server.MaxPlayersPerRoom,
+		RoleConfig: roleConfig,
 	}
 
 	s.rooms[code] = room

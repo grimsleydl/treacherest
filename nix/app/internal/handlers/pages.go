@@ -36,7 +36,7 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	// Create player
 	sessionID := getOrCreateSession(w, r)
 	player := game.NewPlayer(generatePlayerID(), playerName, sessionID)
-	
+
 	// Set host flag if requested
 	if hostOnly {
 		player.IsHost = true
@@ -93,7 +93,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 			if newName != "" && newName != player.Name {
 				player.Name = newName
 				h.store.UpdateRoom(room)
-				
+
 				// Notify other players of the name change
 				h.eventBus.Publish(Event{
 					Type:     "player_updated",
@@ -101,7 +101,7 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 					Data:     room,
 				})
 			}
-			
+
 			// Show appropriate page based on player type and game state
 			if player.IsHost {
 				// Host sees dashboard view
@@ -131,10 +131,10 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// Cookie exists but player not in room - clear the stale cookie
 			http.SetCookie(w, &http.Cookie{
-				Name:     "player_" + room.Code,
-				Value:    "",
-				Path:     "/",
-				MaxAge:   -1,
+				Name:   "player_" + room.Code,
+				Value:  "",
+				Path:   "/",
+				MaxAge: -1,
 			})
 		}
 	}
