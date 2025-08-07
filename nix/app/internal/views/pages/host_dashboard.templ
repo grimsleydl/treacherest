@@ -9,113 +9,6 @@ import (
 
 templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	@layouts.Base("Host Dashboard") {
-		<style>
-			/* Tablet-optimized responsive styles */
-			.host-dashboard {
-				display: grid;
-				grid-template-columns: 1fr 1fr 1fr;
-				gap: 2rem;
-				height: calc(100vh - 2rem);
-				padding: 1rem;
-			}
-			
-			@media (max-width: 768px) {
-				.host-dashboard {
-					grid-template-columns: 1fr;
-					height: auto;
-				}
-			}
-			
-			.qr-section {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-				border-radius: 12px;
-				padding: 2rem;
-			}
-			
-			.qr-code-container {
-				background: white;
-				padding: 1rem;
-				border-radius: 8px;
-				margin-bottom: 1rem;
-			}
-			
-			.qr-code-container img {
-				display: block;
-				width: 300px;
-				height: 300px;
-				max-width: 100%;
-				height: auto;
-			}
-			
-			.players-section {
-				border-radius: 12px;
-				padding: 2rem;
-				overflow-y: auto;
-			}
-			
-			.room-code-large {
-				font-size: 3rem;
-				font-weight: bold;
-				letter-spacing: 0.3em;
-				/* Use DaisyUI primary color */
-				margin-bottom: 1rem;
-			}
-			
-			.join-instruction {
-				font-size: 1.2rem;
-				/* Use DaisyUI base-content with opacity */
-				text-align: center;
-				margin-bottom: 2rem;
-			}
-			
-			.player-count {
-				font-size: 1.5rem;
-				margin-bottom: 1rem;
-				/* Use DaisyUI primary color */
-			}
-			
-			.host-player-list {
-				display: flex;
-				flex-direction: column;
-				gap: 1rem;
-			}
-			
-			.host-player-item {
-				/* Use DaisyUI base-300 */
-				padding: 1.5rem;
-				border-radius: 8px;
-				font-size: 1.3rem;
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-			}
-			
-			.player-number {
-				/* Use DaisyUI primary bg and content */
-				width: 40px;
-				height: 40px;
-				border-radius: 50%;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				font-weight: bold;
-				margin-right: 1rem;
-			}
-			
-			.start-button-container {
-				margin-top: 2rem;
-				text-align: center;
-			}
-			
-			.start-button-container button {
-				width: 100%;
-				font-size: 1.5rem;
-				padding: 1.2rem;
-			}
-		</style>
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
@@ -130,8 +23,8 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 	     data-signals-auto-scale-details=""
 	     data-signals-required-roles="0"
 	     data-signals-configured-roles="0">
-		<div id="host-dashboard-container" class="host-dashboard">
-			<div id="host-dashboard-content">
+		<div id="host-dashboard-container" class="grid grid-cols-1 lg:grid-cols-3 gap-8 p-4 min-h-screen">
+			<div id="host-dashboard-content" class="contents">
 				@HostDashboardContent(room, player, cfg, cardService)
 			</div>
 		</div>
@@ -139,48 +32,46 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 }
 
 templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	<div class="qr-section bg-base-200">
-		<h1>Scan to Join</h1>
-		<div class="room-code-large text-primary">{ room.Code }</div>
-		<div class="qr-code-container" id="qr-code-container">
+	<div class="card bg-base-200 shadow-xl flex flex-col items-center justify-center p-8">
+		<h1 class="text-3xl font-bold mb-4">Scan to Join</h1>
+		<div class="text-5xl font-bold tracking-[0.3em] text-primary mb-4">{ room.Code }</div>
+		<div class="bg-white p-4 rounded-lg mb-4" id="qr-code-container">
 			<!-- QR code will be generated and inserted here -->
 			<img
 				id="qr-code-img"
 				data-attr-src="$qrCode"
 				data-show="$qrCode != ''"
 				alt="QR Code"
-				style="width: 300px; height: 300px;"
+				class="w-[300px] h-[300px] max-w-full"
 			/>
-			<div id="qr-placeholder" data-show="$qrCode == ''" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center;" class="bg-base-300 text-base-content text-opacity-60">
+			<div id="qr-placeholder" data-show="$qrCode == ''" class="w-[300px] h-[300px] flex items-center justify-center bg-base-300 text-base-content/60 rounded">
 				Generating QR Code...
 			</div>
 		</div>
-		<div class="join-instruction text-base-content text-opacity-60">
+		<div class="text-center text-lg text-base-content/60">
 			Players can scan this code
 			<br/>
 			or enter the room code
 		</div>
 	</div>
-	<div class="players-section bg-base-200">
-		<h2 class="text-primary">Players in Room</h2>
-		<div class="player-count">{ room.GetActivePlayerCount() } connected</div>
-		<div id="player-list" class="host-player-list">
+	<div class="card bg-base-200 shadow-xl p-8 overflow-y-auto">
+		<h2 class="text-2xl font-bold text-primary mb-4">Players in Room</h2>
+		<div class="text-xl mb-4">{ room.GetActivePlayerCount() } connected</div>
+		<div id="player-list" class="space-y-3">
 			for i, player := range room.GetActivePlayers() {
-				<div class="host-player-item bg-base-300">
-					<div style="display: flex; align-items: center;">
-						<div class="player-number bg-primary text-primary-content">{ i + 1 }</div>
-						<span>{ player.Name }</span>
-					</div>
+				<div class="flex items-center p-4 rounded-lg bg-base-300 text-lg">
+					<div class="badge badge-primary badge-lg mr-4">{ i + 1 }</div>
+					<span>{ player.Name }</span>
 				</div>
 			}
 		</div>
-		<div class="start-button-container">
+		<div class="mt-6">
 			if room.GetActivePlayerCount() >= 1 {
-				<button data-on-click={ "@post('/room/" + room.Code + "/start')" }>
+				<button class="btn btn-primary btn-lg w-full text-xl" data-on-click={ "@post('/room/" + room.Code + "/start')" }>
 					Start Game
 				</button>
 			} else {
-				<button disabled>
+				<button class="btn btn-disabled btn-lg w-full text-xl" disabled>
 					Waiting for players...
 				</button>
 			}
@@ -201,26 +92,31 @@ templ HostDashboardCountdown(room *game.Room, player *game.Player) {
 
 // Playing state content for SSE updates
 templ HostDashboardPlaying(room *game.Room, player *game.Player) {
-	<div class="container">
-		<h1>Game in Progress</h1>
-		<div class="room-code">{ room.Code }</div>
-		<div class="player-list">
-			<h2>Players</h2>
-			for _, p := range room.GetActivePlayers() {
-				<div class="player">
-					{ p.Name }
-				</div>
-			}
+	<div class="container mx-auto px-4 py-8 max-w-4xl">
+		<div class="text-center mb-8">
+			<h1 class="text-4xl font-bold text-primary mb-4">Game in Progress</h1>
+			<div class="text-5xl font-bold tracking-[0.2em] text-primary">{ room.Code }</div>
+		</div>
+		<div class="card bg-base-200 shadow-lg p-6">
+			<h2 class="text-2xl font-bold mb-4 text-primary">Players</h2>
+			<div class="space-y-2">
+				for i, p := range room.GetActivePlayers() {
+					<div class="flex items-center p-3 rounded-lg bg-base-300 hover:bg-base-100 transition-colors">
+						<div class="badge badge-primary badge-lg mr-3">{ i + 1 }</div>
+						<span class="text-lg">{ p.Name }</span>
+					</div>
+				}
+			</div>
 		</div>
 	</div>
 }
 
 // Ended state content for SSE updates
 templ HostDashboardEnded(room *game.Room, player *game.Player) {
-	<div class="container" style="text-align: center;">
-		<h1>Game Over</h1>
-		<div class="room-code">{ room.Code }</div>
-		<button data-on-click="@post('/room/new')" style="margin-top: 2rem;">
+	<div class="container mx-auto px-4 py-8 text-center">
+		<h1 class="text-4xl font-bold text-primary mb-4">Game Over</h1>
+		<div class="text-5xl font-bold tracking-[0.2em] text-primary mb-8">{ room.Code }</div>
+		<button class="btn btn-primary btn-lg" data-on-click="@post('/room/new')">
 			Start New Game
 		</button>
 	</div>
