@@ -280,8 +280,22 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 		return
 	}
 
-	// Update min/max players based on role counts
-	h.updatePlayerLimitsNew(room)
+	// When switching to custom mode, update MaxPlayers to match total roles
+	if room.RoleConfig.PresetName == "custom" {
+		totalRoles := 0
+		for _, typeConfig := range room.RoleConfig.RoleTypes {
+			totalRoles += typeConfig.Count
+		}
+		// Update MaxPlayers to match the new total (this trickles up from roles to player count)
+		room.RoleConfig.MaxPlayers = totalRoles
+		// Ensure we don't go below server minimums or above maximums
+		if room.RoleConfig.MaxPlayers < h.config.Server.MinPlayersPerRoom {
+			room.RoleConfig.MaxPlayers = h.config.Server.MinPlayersPerRoom
+		}
+		if room.RoleConfig.MaxPlayers > h.config.Server.MaxPlayersPerRoom {
+			room.RoleConfig.MaxPlayers = h.config.Server.MaxPlayersPerRoom
+		}
+	}
 
 	h.store.UpdateRoom(room)
 
@@ -879,14 +893,9 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 		return
 	}
 
-	// Now adjust role counts based on mode
-	if room.RoleConfig.PresetName != "custom" {
-		// Apply preset for new player count
-		h.applyPresetForPlayerCount(room)
-	} else {
-		// Smart rebalancing for custom mode
-		h.rebalanceCustomRoles(room, action == "increment")
-	}
+	// For preset mode, roles will auto-scale at game start via GetDistributionForPlayerCount
+	// For custom mode, user must manually adjust roles to match player count
+	// No immediate role adjustments here - let validation show if roles don't match
 
 	// Update room
 	h.store.UpdateRoom(room)
