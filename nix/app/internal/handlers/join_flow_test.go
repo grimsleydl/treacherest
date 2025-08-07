@@ -51,18 +51,21 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 	// Scenario 1: Try to join room 1 after being in room 2
 	// This simulates user pressing back button or entering URL directly
 	t.Run("JoinFirstRoomAfterSecond", func(t *testing.T) {
-		// Join room 1
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Charlie", roomCode1), nil)
-		r.AddCookie(sessionCookie)
-
-		// Wrap handler to capture routing params
+		// Join room 1 using POST
 		testRouter := setupTestRouter(h)
-		testRouter.ServeHTTP(w, r)
+		w := joinRoomViaPost(t, h, testRouter, roomCode1, "Charlie", sessionCookie)
 
-		if w.Code != http.StatusOK {
-			t.Errorf("Expected status 200, got %d", w.Code)
+		// Should redirect to room
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("Expected status 303, got %d", w.Code)
 			t.Logf("Response body: %s", w.Body.String())
+		}
+		
+		// Check redirect location
+		location := w.Header().Get("Location")
+		expectedLocation := "/room/" + roomCode1
+		if location != expectedLocation {
+			t.Errorf("Expected redirect to %s, got %s", expectedLocation, location)
 		}
 
 		// Check that the player was added to room 1
@@ -80,16 +83,12 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 
 	// Scenario 2: Try to join a different room in the same tab
 	t.Run("JoinDifferentRoomSameSession", func(t *testing.T) {
-		// First join room 1
-		w1 := httptest.NewRecorder()
-		r1 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode1), nil)
-		r1.AddCookie(sessionCookie)
-
+		// First join room 1 using POST
 		testRouter := setupTestRouter(h)
-		testRouter.ServeHTTP(w1, r1)
+		w1 := joinRoomViaPost(t, h, testRouter, roomCode1, "Dave", sessionCookie)
 
-		if w1.Code != http.StatusOK {
-			t.Errorf("Expected status 200 for room 1, got %d", w1.Code)
+		if w1.Code != http.StatusSeeOther {
+			t.Errorf("Expected status 303 for room 1, got %d", w1.Code)
 		}
 
 		// Get the player cookie for room 1
@@ -98,16 +97,11 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 			t.Fatal("No player cookie for room 1")
 		}
 
-		// Now try to join room 2
-		w2 := httptest.NewRecorder()
-		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Dave", roomCode2), nil)
-		r2.AddCookie(sessionCookie)
-		r2.AddCookie(playerCookie1) // This shouldn't interfere
+		// Now try to join room 2 using POST
+		w2 := joinRoomViaPost(t, h, testRouter, roomCode2, "Dave", sessionCookie, playerCookie1)
 
-		testRouter.ServeHTTP(w2, r2)
-
-		if w2.Code != http.StatusOK {
-			t.Errorf("Expected status 200 for room 2, got %d", w2.Code)
+		if w2.Code != http.StatusSeeOther {
+			t.Errorf("Expected status 303 for room 2, got %d", w2.Code)
 			t.Logf("Response body: %s", w2.Body.String())
 		}
 
@@ -133,13 +127,9 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 
 	// Scenario 3: Multiple SSE connections
 	t.Run("MultipleSSEConnections", func(t *testing.T) {
-		// Join room as a player
-		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode1), nil)
-		r.AddCookie(sessionCookie)
-
+		// Join room as a player using POST
 		testRouter := setupTestRouter(h)
-		testRouter.ServeHTTP(w, r)
+		w := joinRoomViaPost(t, h, testRouter, roomCode1, "Eve", sessionCookie)
 
 		playerCookie := getPlayerCookie(w.Result().Cookies(), roomCode1)
 		if playerCookie == nil {
@@ -168,14 +158,10 @@ func TestJoinFlowBackNavigation(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// Now try to join room 2 (simulating navigation without proper cleanup)
-		w2 := httptest.NewRecorder()
-		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Eve", roomCode2), nil)
-		r2.AddCookie(sessionCookie)
+		w2 := joinRoomViaPost(t, h, testRouter, roomCode2, "Eve", sessionCookie)
 
-		testRouter.ServeHTTP(w2, r2)
-
-		if w2.Code != http.StatusOK {
-			t.Errorf("Expected status 200 for room 2, got %d", w2.Code)
+		if w2.Code != http.StatusSeeOther {
+			t.Errorf("Expected status 303 for room 2, got %d", w2.Code)
 		}
 
 		// Wait for SSE to finish
@@ -198,12 +184,30 @@ func getPlayerCookie(cookies []*http.Cookie, roomCode string) *http.Cookie {
 	return nil
 }
 
+// joinRoomViaPost is a helper function to join a room using the new POST endpoint
+func joinRoomViaPost(t *testing.T, h *Handler, router *chi.Mux, roomCode, playerName string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+	formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, playerName)
+	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	
+	// Add any provided cookies
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
+	
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	
+	return w
+}
+
 func setupTestRouter(h *Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Room routes
 	r.Post("/room/create", h.CreateRoom)
 	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/join-room", h.JoinRoomPost)  // New POST endpoint
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Post("/room/{code}/start", h.StartGame)
 
@@ -275,14 +279,10 @@ func TestJoinFlowBrowserBackButton(t *testing.T) {
 		}
 
 		// Now try to join the same room again (simulating back button)
-		w2 := httptest.NewRecorder()
-		r2 := httptest.NewRequest("GET", fmt.Sprintf("/room/%s?name=Alice", roomCode), nil)
-		r2.AddCookie(sessionCookie)
+		w2 := joinRoomViaPost(t, h, testRouter, roomCode, "Alice", sessionCookie)
 
-		testRouter.ServeHTTP(w2, r2)
-
-		if w2.Code != http.StatusOK {
-			t.Errorf("Expected status 200, got %d", w2.Code)
+		if w2.Code != http.StatusSeeOther {
+			t.Errorf("Expected status 303, got %d", w2.Code)
 			t.Logf("Response: %s", w2.Body.String())
 		}
 

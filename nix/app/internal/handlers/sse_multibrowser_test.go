@@ -251,7 +251,9 @@ func TestMultiBrowserSSEScenarios(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		// Late browser tries to join during countdown
-		joinReq := httptest.NewRequest("GET", "/room/"+roomCode+"?name=LatePlayer", nil)
+		formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, "LatePlayer")
+		joinReq := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		joinReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		joinW := httptest.NewRecorder()
 		router.ServeHTTP(joinW, joinReq)
 
@@ -712,15 +714,17 @@ func (b *browserClient) close() {
 	// Cleanup if needed
 }
 
-// joinRoomAsPlayer simulates a browser joining a room
+// joinRoomAsPlayer simulates a browser joining a room using POST
 func joinRoomAsPlayer(t *testing.T, router *chi.Mux, roomCode, playerName string) *browserClient {
-	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
+	formData := fmt.Sprintf("room_code=%s&player_name=%s", roomCode, playerName)
+	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("Failed to join room as %s: status %d", playerName, w.Code)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Failed to join room as %s: expected redirect 303, got %d", playerName, w.Code)
 	}
 
 	client := &browserClient{roomCode: roomCode}
@@ -746,6 +750,7 @@ func setupSSETestRouter(h *Handler) *chi.Mux {
 
 	// Page routes
 	router.Get("/room/{code}", h.JoinRoom)
+	router.Post("/join-room", h.JoinRoomPost)  // New POST endpoint
 	router.Get("/game/{code}", h.GamePage)
 
 	// SSE routes

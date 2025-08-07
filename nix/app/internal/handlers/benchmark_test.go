@@ -44,7 +44,7 @@ func BenchmarkRoomCreation(b *testing.B) {
 	b.ReportMetric(float64(b.Elapsed().Milliseconds())/float64(b.N), "ms/op")
 }
 
-// BenchmarkJoinRoom benchmarks the time to join an existing room
+// BenchmarkJoinRoom benchmarks the time to show the join form
 func BenchmarkJoinRoom(b *testing.B) {
 	cfg := config.DefaultConfig()
 	s := store.NewMemoryStore(cfg)
@@ -60,25 +60,13 @@ func BenchmarkJoinRoom(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Create a unique player name for each iteration
-		playerName := fmt.Sprintf("Player%d", i)
-
-		req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+playerName, nil)
+		req := httptest.NewRequest("GET", "/room/"+roomCode, nil)
 		w := httptest.NewRecorder()
 
 		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			b.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
-		}
-
-		// Clean up the player for next iteration
-		// Find player by name
-		for _, p := range room.GetPlayers() {
-			if p.Name == playerName {
-				room.RemovePlayer(p.ID)
-				break
-			}
 		}
 	}
 

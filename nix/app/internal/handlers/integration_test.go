@@ -36,6 +36,7 @@ func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
 	r.Get("/", h.Home)
 	r.Post("/room/new", h.CreateRoom)
 	r.Get("/room/{code}", h.JoinRoom)
+	r.Post("/join-room", h.JoinRoomPost)
 	r.Post("/room/{code}/start", h.StartGame)
 	r.Post("/room/{code}/leave", h.LeaveRoom)
 	r.Get("/game/{code}", h.GamePage)
@@ -88,13 +89,22 @@ func (h *IntegrationTestHelper) CreateRoom(playerName string) (string, *http.Coo
 
 // JoinRoom joins an existing room
 func (h *IntegrationTestHelper) JoinRoom(roomCode, playerName string) *http.Cookie {
-	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+url.QueryEscape(playerName), nil)
+	// Use POST to join room
+	formData := "room_code=" + roomCode + "&player_name=" + url.QueryEscape(playerName)
+	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
 	h.router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		h.t.Fatalf("Expected OK, got %d", w.Code)
+	if w.Code != http.StatusSeeOther {
+		h.t.Fatalf("Expected redirect status 303, got %d", w.Code)
+	}
+
+	// Check redirect location
+	expectedLocation := "/room/" + roomCode
+	if location := w.Header().Get("Location"); location != expectedLocation {
+		h.t.Fatalf("Expected redirect to %s, got %s", expectedLocation, location)
 	}
 
 	// Get player cookie
@@ -314,13 +324,15 @@ func TestConcurrentJoins(t *testing.T) {
 			defer wg.Done()
 
 			playerName := fmt.Sprintf("Player %d", playerNum)
-			req := httptest.NewRequest("GET", "/room/"+roomCode+"?name="+url.QueryEscape(playerName), nil)
+			formData := "room_code=" + roomCode + "&player_name=" + url.QueryEscape(playerName)
+			req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			w := httptest.NewRecorder()
 
 			helper.router.ServeHTTP(w, req)
 
-			if w.Code != http.StatusOK {
-				errors <- fmt.Errorf("player %d got status %d", playerNum, w.Code)
+			if w.Code != http.StatusSeeOther {
+				errors <- fmt.Errorf("player %d got status %d (expected 303)", playerNum, w.Code)
 			}
 		}(i)
 	}
@@ -365,14 +377,16 @@ func TestPlayerReconnection(t *testing.T) {
 	}
 
 	// Rejoin with same session cookie
-	req := httptest.NewRequest("GET", "/room/"+roomCode+"?name=Host", nil)
+	formData := "room_code=" + roomCode + "&player_name=Host"
+	req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(hostCookie)
 	w := httptest.NewRecorder()
 
 	helper.router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected OK on rejoin, got %d", w.Code)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Expected redirect on rejoin, got %d", w.Code)
 	}
 
 	// Verify player restored with same ID
