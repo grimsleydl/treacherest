@@ -124,9 +124,11 @@ in {
         help = "Run all tests with coverage";
         command = ''
           cd $PRJ_ROOT/nix/app
-          go test -v -coverprofile=coverage.out ./...
-          go tool cover -html=coverage.out -o coverage.html
-          echo "Coverage report generated at coverage.html"
+          mkdir -p build/coverage
+          go test -v -coverprofile=build/coverage/coverage.out ./...
+          go tool cover -html=build/coverage/coverage.out -o build/coverage/coverage.html
+          go tool cover -func=build/coverage/coverage.out
+          echo "Coverage report generated at build/coverage/coverage.html"
         '';
       }
       {
