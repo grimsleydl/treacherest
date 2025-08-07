@@ -16,6 +16,99 @@ const (
 
 // AssignRoles assigns roles to players based on player count using cards from CardService
 func AssignRoles(players []*Player, cardService *CardService) {
+	// Use legacy role distribution
+	AssignRolesLegacy(players, cardService)
+}
+
+// AssignRolesWithConfig assigns roles to players using the room's role configuration
+func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConfig *RoleConfiguration, roleService *RoleConfigService) {
+	// Filter out hosts from role assignment
+	activePlayers := make([]*Player, 0, len(players))
+	for _, p := range players {
+		if !p.IsHost {
+			activePlayers = append(activePlayers, p)
+		}
+	}
+
+	count := len(activePlayers)
+	if count == 0 {
+		return // No active players to assign roles to
+	}
+
+	// Shuffle players first
+	shuffled := make([]*Player, count)
+	copy(shuffled, activePlayers)
+	rand.Shuffle(count, func(i, j int) {
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	})
+
+	// Get role distribution for the actual player count
+	var roleDistribution map[RoleType]int
+	if roleService != nil {
+		dist, err := roleService.GetDistributionForPlayerCount(roleConfig, count)
+		if err == nil {
+			roleDistribution = dist
+		}
+	}
+	
+	// Fallback to direct config if service not available
+	if roleDistribution == nil {
+		roleDistribution = make(map[RoleType]int)
+		for roleName, enabled := range roleConfig.EnabledRoles {
+			if !enabled {
+				continue
+			}
+			count := roleConfig.RoleCounts[roleName]
+			if count > 0 {
+				// Map role names to RoleType
+				switch roleName {
+				case "leader":
+					roleDistribution[RoleLeader] = count
+				case "guardian":
+					roleDistribution[RoleGuardian] = count
+				case "assassin":
+					roleDistribution[RoleAssassin] = count
+				case "traitor":
+					roleDistribution[RoleTraitor] = count
+				}
+			}
+		}
+	}
+
+	// Assign cards based on role distribution
+	playerIndex := 0
+	usedCards := make(map[*Card]bool)
+	
+	for roleType, count := range roleDistribution {
+		// Get random cards for this role type
+		cards := cardService.GetRandomCards(roleType, count)
+
+		// Assign cards to players
+		for _, card := range cards {
+			if playerIndex >= len(shuffled) {
+				break
+			}
+
+			// Skip if card already used (shouldn't happen with GetRandomCards, but be safe)
+			if usedCards[card] {
+				continue
+			}
+
+			shuffled[playerIndex].Role = card
+			usedCards[card] = true
+
+			// Leader is always revealed
+			if card.GetRoleType() == RoleLeader {
+				shuffled[playerIndex].RoleRevealed = true
+			}
+
+			playerIndex++
+		}
+	}
+}
+
+// AssignRolesLegacy uses the old hardcoded role distribution
+func AssignRolesLegacy(players []*Player, cardService *CardService) {
 	// Filter out hosts from role assignment
 	activePlayers := make([]*Player, 0, len(players))
 	for _, p := range players {
