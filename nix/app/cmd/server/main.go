@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -10,9 +11,13 @@ func main() {
 	handler := SetupServer()
 
 	// Start server
-	port := ":8080"
-	log.Printf("Starting server on %s", port)
-	if err := http.ListenAndServe(port, handler); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	addr := ":" + port
+	log.Printf("Starting server on %s", addr)
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)
 	}
 }
