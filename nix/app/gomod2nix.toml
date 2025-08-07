@@ -1,0 +1,33 @@
+schema = 3
+
+[mod]
+  [mod."github.com/a-h/templ"]
+    version = "v0.3.898"
+    hash = "sha256-UOiJihQrOok6bNvxrCQfgocEmICCI/Mmmk1vF9ntQCc="
+  [mod."github.com/delaneyj/gostar"]
+    version = "v0.8.0"
+    hash = "sha256-K0nm/OxEq4e3FLfUqOawMHIGkHZV69B3qJyBcLY4E9A="
+  [mod."github.com/go-chi/chi/v5"]
+    version = "v5.2.1"
+    hash = "sha256-oOi39n1MMETVl9ZKCODhlmFe0f/znEgxI3nJOW8yy2o="
+  [mod."github.com/goccy/go-json"]
+    version = "v0.10.5"
+    hash = "sha256-/EtlGihP0/7oInzMC5E0InZ4b5Ad3s4xOpqotloi3xw="
+  [mod."github.com/igrmk/treemap/v2"]
+    version = "v2.0.1"
+    hash = "sha256-4YFMjPiznVpQwBwBBb6SkhuNEgTHf84eZMWnGiD0RS8="
+  [mod."github.com/samber/lo"]
+    version = "v1.51.0"
+    hash = "sha256-Vgixn+tB/Rb8G2NTS3PuZO7iaXvmZtMaSvLETJhWIWM="
+  [mod."github.com/starfederation/datastar"]
+    version = "v1.0.0-beta.11"
+    hash = "sha256-7Bsnoboy8zVrWeueg0KcedpMeHton643dGtGhUsxq+s="
+  [mod."github.com/valyala/bytebufferpool"]
+    version = "v1.0.0"
+    hash = "sha256-I9FPZ3kCNRB+o0dpMwBnwZ35Fj9+ThvITn8a3Jr8mAY="
+  [mod."golang.org/x/exp"]
+    version = "v0.0.0-20250606033433-dcc06ee1d476"
+    hash = "sha256-6l2SmFtORAIXmsWGWrseCCR0HCoMd3Tpxdus00mJh3Q="
+  [mod."golang.org/x/text"]
+    version = "v0.26.0"
+    hash = "sha256-N+27nBCyGvje0yCTlUzZoVZ0LRxx4AJ+eBlrFQVRlFQ="
