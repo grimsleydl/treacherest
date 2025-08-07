@@ -45,7 +45,10 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 
 	// Subscribe to events
 	events := h.eventBus.Subscribe(roomCode)
-	defer h.eventBus.Unsubscribe(roomCode, events)
+	defer func() {
+		h.eventBus.Unsubscribe(events)
+		close(events) // SSE handler manages channel lifecycle
+	}()
 
 	// Don't send initial render - page already has correct content
 	// SSE will only send updates when events occur
@@ -94,15 +97,20 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
 					return
 				}
-			case "game_started", "countdown_update", "game_playing":
-				// Redirect to game page for all game transition events
-				log.Printf("🎮 Game transition event '%s' - redirecting to game page for room %s", event.Type, roomCode)
+			case "game_started":
+				// Redirect to game page when game starts
+				log.Printf("🎮 Game started - redirecting to game page for room %s", roomCode)
 				sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
 				// Flush immediately to ensure redirect is sent
 				if flusher, ok := w.(http.Flusher); ok {
 					flusher.Flush()
 				}
 				return // Close the lobby SSE connection
+			case "countdown_update", "game_playing":
+				// These events happen after game has started
+				// Players should already be on the game page, so just close this lobby connection
+				log.Printf("🎮 Game event '%s' received in lobby SSE - closing connection for room %s", event.Type, roomCode)
+				return
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
@@ -138,7 +146,10 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 	// Subscribe to events
 	events := h.eventBus.Subscribe(roomCode)
-	defer h.eventBus.Unsubscribe(roomCode, events)
+	defer func() {
+		h.eventBus.Unsubscribe(events)
+		close(events) // SSE handler manages channel lifecycle
+	}()
 
 	// Send initial render
 	h.renderGame(sse, room, player)
@@ -219,9 +230,9 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 	log.Printf("✅ Sent lobby fragment update for room %s", room.Code)
 }
 
-// renderGame renders the game body
+// renderGame renders the game content (without wrapper to prevent re-triggering data-on-load)
 func (h *Handler) renderGame(sse *datastar.ServerSentEventGenerator, room *game.Room, player *game.Player) {
-	component := pages.GameBody(room, player)
+	component := pages.GameContent(room, player)
 
 	// Render to string
 	html := renderToString(component)

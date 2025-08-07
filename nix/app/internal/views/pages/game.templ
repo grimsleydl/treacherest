@@ -13,11 +13,17 @@ templ GamePage(room *game.Room, currentPlayer *game.Player) {
 }
 
 templ GameBody(room *game.Room, currentPlayer *game.Player) {
+	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
+	<div data-on-load={ "@get('/sse/game/" + room.Code + "')" }>
+		@GameContent(room, currentPlayer)
+	</div>
+}
+
+templ GameContent(room *game.Room, currentPlayer *game.Player) {
 	<div
 		id="game-container"
 		class="container"
 		data-signals={ fmt.Sprintf("{countdown: %d}", room.CountdownRemaining) }
-		data-on-load={ "@get('/sse/game/" + room.Code + "')" }
 	>
 		if room.State == game.StateCountdown {
 			<div class="countdown">
