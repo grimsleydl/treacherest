@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -74,6 +75,14 @@ type Room struct {
 func (r *Room) AddPlayer(player *Player) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	// Check for duplicate names (case-insensitive)
+	playerNameLower := strings.ToLower(player.Name)
+	for _, p := range r.Players {
+		if strings.ToLower(p.Name) == playerNameLower {
+			return ErrDuplicateName
+		}
+	}
 
 	// Count non-host players only for capacity check
 	activePlayerCount := 0

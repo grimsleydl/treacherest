@@ -163,7 +163,7 @@ func TestRoom_ConcurrentAccess(t *testing.T) {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
-				player := NewPlayer(string(rune('a'+id)), "Player", "session")
+				player := NewPlayer(string(rune('a'+id)), "Player"+string(rune('0'+id)), "session"+string(rune('0'+id)))
 				err := room.AddPlayer(player)
 				if err != nil {
 					errChan <- err
@@ -195,7 +195,7 @@ func TestRoom_ConcurrentAccess(t *testing.T) {
 
 		// Add some initial players
 		for i := 0; i < 4; i++ {
-			player := NewPlayer(string(rune('a'+i)), "Player", "session")
+			player := NewPlayer(string(rune('a'+i)), "Player"+string(rune('1'+i)), "session"+string(rune('1'+i)))
 			room.AddPlayer(player)
 		}
 
