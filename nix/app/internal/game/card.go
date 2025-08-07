@@ -60,7 +60,7 @@ func (c *Card) GetRoleType() RoleType {
 func (c *Card) GetWinCondition() string {
 	switch c.Types.Subtype {
 	case "Leader":
-		return "The Leader, and their Guardians, win if they are the last players standing."
+		return "The Leader and their Guardians win if they are the last players standing."
 	case "Guardian":
 		return "The Guardians help the Leader, they win or lose with them."
 	case "Assassin":
