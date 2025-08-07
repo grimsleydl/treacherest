@@ -33,13 +33,22 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 			<div class="role-view">
 				if currentPlayer.Role != nil {
 					<div class={ "role-card", getRoleClass(string(currentPlayer.Role.GetRoleType())) }>
-						<h2>{ currentPlayer.Role.Name }</h2>
-						<div class="card-type">{ currentPlayer.Role.Type }</div>
-						<div class="card-rarity">{ currentPlayer.Role.Rarity }</div>
-						<div class="card-text">{ currentPlayer.Role.Text }</div>
-						<div class="card-meta">
-							<p><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
-							<p class="card-artist"><em>Art by { currentPlayer.Role.Artist }</em></p>
+						<div class="card-image-container">
+							<img 
+								src={ currentPlayer.Role.GetImageBase64() }
+								alt={ currentPlayer.Role.Name }
+								class="card-image"
+							/>
+						</div>
+						<div class="card-details">
+							<h2>{ currentPlayer.Role.Name }</h2>
+							<div class="card-type">{ currentPlayer.Role.Type }</div>
+							<div class="card-rarity">{ currentPlayer.Role.Rarity }</div>
+							<div class="card-text">{ currentPlayer.Role.Text }</div>
+							<div class="card-meta">
+								<p><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
+								<p class="card-artist"><em>Art by { currentPlayer.Role.Artist }</em></p>
+							</div>
 						</div>
 					</div>
 				}

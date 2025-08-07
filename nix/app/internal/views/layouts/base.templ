@@ -100,31 +100,131 @@ templ Base(title string) {
 			.role-card {
 				background: #16213e;
 				border: 3px solid #0f3460;
-				border-radius: 8px;
-				padding: 2rem;
+				border-radius: 12px;
+				padding: 1.5rem;
 				text-align: center;
-				margin: 2rem 0;
+				margin: 2rem auto;
+				max-width: 600px;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 			}
 			
 			.role-card.leader {
 				border-color: #ffd700;
+				background: linear-gradient(135deg, #16213e 0%, #2a2a00 100%);
 			}
 			
 			.role-card.guardian {
 				border-color: #4169e1;
+				background: linear-gradient(135deg, #16213e 0%, #000033 100%);
 			}
 			
 			.role-card.assassin {
 				border-color: #dc143c;
+				background: linear-gradient(135deg, #16213e 0%, #330000 100%);
 			}
 			
 			.role-card.traitor {
 				border-color: #8b008b;
+				background: linear-gradient(135deg, #16213e 0%, #2a002a 100%);
+			}
+			
+			.card-image-container {
+				margin: -1.5rem -1.5rem 1rem -1.5rem;
+				position: relative;
+				border-radius: 12px 12px 0 0;
+				overflow: hidden;
+				background: #0a0a0a;
+				min-height: 200px;
+			}
+			
+			.card-image {
+				width: 100%;
+				height: auto;
+				display: block;
+				border-radius: 12px 12px 0 0;
+			}
+			
+			.card-image-container.no-image {
+				background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			
+			.card-image-container.no-image::after {
+				content: "Card Image";
+				color: #444;
+				font-size: 1.5rem;
+				font-style: italic;
+			}
+			
+			.card-details h2 {
+				color: #fff;
+				margin: 1rem 0 0.5rem 0;
+				font-size: 1.8rem;
+			}
+			
+			.card-type {
+				color: #aaa;
+				font-size: 1.1rem;
+				margin-bottom: 0.5rem;
+			}
+			
+			.card-rarity {
+				color: #888;
+				font-size: 0.9rem;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+				margin-bottom: 1rem;
+			}
+			
+			.card-text {
+				background: rgba(0, 0, 0, 0.3);
+				padding: 1rem;
+				border-radius: 8px;
+				margin: 1rem 0;
+				line-height: 1.6;
+				text-align: left;
+				font-size: 0.95rem;
+			}
+			
+			.card-meta {
+				margin-top: 1rem;
+				padding-top: 1rem;
+				border-top: 1px solid #333;
+			}
+			
+			.card-meta p {
+				margin: 0.5rem 0;
+				font-size: 0.9rem;
+			}
+			
+			.card-artist {
+				color: #888;
+				font-size: 0.85rem !important;
+			}
+			
+			.leader-info {
+				background: rgba(255, 215, 0, 0.1);
+				border: 2px solid #ffd700;
+				border-radius: 8px;
+				padding: 1rem;
+				margin: 1rem 0;
+				text-align: center;
+			}
+			
+			.leader-info h3 {
+				margin: 0;
+				color: #ffd700;
 			}
 		</style>
 		</head>
 		<body>
 			{ children... }
+			<footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.85rem;">
+				<p>Card images from <a href="https://mtgtreachery.net" target="_blank" style="color: #4169e1;">MTG Treachery</a> | 
+				<a href="/static/attribution.html" style="color: #4169e1;">Attribution &amp; Legal</a></p>
+			</footer>
 		</body>
 	</html>
 }
