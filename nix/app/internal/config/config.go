@@ -18,6 +18,7 @@ type ServerConfig struct {
 type ServerSettings struct {
 	MaxPlayersPerRoom int           `yaml:"maxPlayersPerRoom"`
 	MinPlayersPerRoom int           `yaml:"minPlayersPerRoom"`
+	DefaultGameSize   int           `yaml:"defaultGameSize"`
 	RoomCodeLength    int           `yaml:"roomCodeLength"`
 	RoomTimeout       time.Duration `yaml:"roomTimeout"`
 }
@@ -81,6 +82,7 @@ func DefaultConfig() *ServerConfig {
 		Server: ServerSettings{
 			MaxPlayersPerRoom: 20,
 			MinPlayersPerRoom: 1,
+			DefaultGameSize:   5,
 			RoomCodeLength:    5,
 			RoomTimeout:       24 * time.Hour,
 		},
@@ -145,6 +147,17 @@ func (c *ServerConfig) Validate() error {
 	}
 	if c.Server.RoomCodeLength < 3 {
 		return fmt.Errorf("roomCodeLength must be at least 3")
+	}
+
+	// Validate and fix DefaultGameSize
+	if c.Server.DefaultGameSize == 0 {
+		c.Server.DefaultGameSize = 5 // Default to 5 if not set
+	}
+	if c.Server.DefaultGameSize < c.Server.MinPlayersPerRoom {
+		c.Server.DefaultGameSize = c.Server.MinPlayersPerRoom
+	}
+	if c.Server.DefaultGameSize > c.Server.MaxPlayersPerRoom {
+		c.Server.DefaultGameSize = c.Server.MaxPlayersPerRoom
 	}
 
 	// Validate roles

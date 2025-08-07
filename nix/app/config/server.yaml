@@ -2,6 +2,7 @@
 server:
   maxPlayersPerRoom: 20
   minPlayersPerRoom: 1
+  defaultGameSize: 5      # Default number of players for new rooms
   roomCodeLength: 5
   roomTimeout: 24h
 
