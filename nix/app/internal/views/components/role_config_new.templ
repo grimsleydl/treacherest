@@ -144,7 +144,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 			</div>
 
 				<!-- Accordion part -->
-				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4 transition-all duration-200">
+				<div class="collapse collapse-arrow row-start-1 col-start-2 col-span-4 transition-all duration-100">
 					<input type="checkbox" name={ fmt.Sprintf("accordion-%s", typeName) } id={ fmt.Sprintf("role-accordion-%s", typeName) }
 						   data-bind={ fmt.Sprintf("accordion%s", typeName) }
 						   class="peer/roletype sr-only"
@@ -155,7 +155,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 							   peer-checked/roletype:z-auto
 							   peer-checked/roletype:bg-transparent hover:bg-base-300
 							   transition
-							   peer-checked/roletype:delay-200
+							   peer-checked/roletype:delay-100
 							   ">
 						{ typeName }s
 						if typeConfig.Count > countEnabledCards(typeConfig) {
