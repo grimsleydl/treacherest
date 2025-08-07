@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -37,7 +36,13 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Use(middleware.Logger)
 	}
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	
+	// Group for regular routes WITH timeout
+	r.Group(func(r chi.Router) {
+		// Apply timeout middleware to this group
+		if cfg.Server.RequestTimeout > 0 {
+			r.Use(middleware.Timeout(cfg.Server.RequestTimeout))
+		}
 
 	// Our custom middleware
 	r.Use(localMiddleware.RequestSizeLimiter(cfg.Server.MaxRequestSize))
@@ -54,39 +59,48 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Use(mw)
 	}
 
-	// Static files
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(opts.StaticDir))))
+		// Static files
+		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(opts.StaticDir))))
 
-	// Main pages
-	r.Get("/", h.Home)
-	r.Post("/room/new", h.CreateRoom) // Changed from /room/create to match form action
-	r.Get("/room/{code}", h.JoinRoom)
-	r.Post("/join-room", h.JoinRoomPost) // New POST endpoint for joining rooms
-	r.Post("/room/{code}/leave", h.LeaveRoom)
-	r.Post("/room/{code}/start", h.StartGame)
-	r.Get("/game/{code}", h.GamePage)
+		// Main pages
+		r.Get("/", h.Home)
+		r.Post("/room/new", h.CreateRoom) // Changed from /room/create to match form action
+		r.Get("/room/{code}", h.JoinRoom)
+		r.Post("/join-room", h.JoinRoomPost) // New POST endpoint for joining rooms
+		r.Post("/room/{code}/leave", h.LeaveRoom)
+		r.Post("/room/{code}/start", h.StartGame)
+		r.Get("/game/{code}", h.GamePage)
 
-	// Role configuration endpoints
-	r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
-	r.Post("/room/{code}/config/toggle", h.ToggleRole)
-	r.Post("/room/{code}/config/count", h.UpdateRoleCount)
-	r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
-	r.Post("/room/{code}/config/hide-distribution", h.UpdateHideDistribution)
-	r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
-	r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
-	r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
-	r.Post("/room/{code}/config/player-count/increment", h.IncrementPlayerCount)
-	r.Post("/room/{code}/config/player-count/decrement", h.DecrementPlayerCount)
+		// Role configuration endpoints
+		r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
+		r.Post("/room/{code}/config/toggle", h.ToggleRole)
+		r.Post("/room/{code}/config/count", h.UpdateRoleCount)
+		r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
+		r.Post("/room/{code}/config/hide-distribution", h.UpdateHideDistribution)
+		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
+		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
+		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
+		r.Post("/room/{code}/config/player-count/increment", h.IncrementPlayerCount)
+		r.Post("/room/{code}/config/player-count/decrement", h.DecrementPlayerCount)
 
-	// New role configuration endpoints
-	r.Post("/room/{code}/config/card-toggle", h.ToggleRoleCard)
-	r.Post("/room/{code}/config/card-toggle-fast", h.ToggleRoleCardFast)
-	r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
+		// New role configuration endpoints
+		r.Post("/room/{code}/config/card-toggle", h.ToggleRoleCard)
+		r.Post("/room/{code}/config/card-toggle-fast", h.ToggleRoleCardFast)
+		r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
+	})
 
-	// SSE routes with validation middleware
-	r.Get("/sse/lobby/{code}", ValidateSSERequest(h.StreamLobby))
-	r.Get("/sse/game/{code}", ValidateSSERequest(h.StreamGame))
-	r.Get("/sse/host/{code}", ValidateSSERequest(h.StreamHost))
+	// Group for SSE routes with different (or no) timeout
+	r.Group(func(r chi.Router) {
+		// Apply SSE timeout if configured (0 means no timeout)
+		if cfg.Server.SSETimeout > 0 {
+			r.Use(middleware.Timeout(cfg.Server.SSETimeout))
+		}
+
+		// SSE routes with validation middleware
+		r.Get("/sse/lobby/{code}", ValidateSSERequest(h.StreamLobby))
+		r.Get("/sse/game/{code}", ValidateSSERequest(h.StreamGame))
+		r.Get("/sse/host/{code}", ValidateSSERequest(h.StreamHost))
+	})
 
 	// Health check endpoints (no auth required)
 	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {

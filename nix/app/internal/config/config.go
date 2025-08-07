@@ -2,11 +2,11 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
+
+// This file defines the configuration structures used by viper_config.go
+// The actual loading is handled by viper in viper_config.go
 
 // ServerConfig represents the server configuration
 type ServerConfig struct {
@@ -29,6 +29,8 @@ type ServerSettings struct {
 	WriteTimeout    time.Duration `yaml:"writeTimeout" envconfig:"WRITE_TIMEOUT" default:"15s"`
 	IdleTimeout     time.Duration `yaml:"idleTimeout" envconfig:"IDLE_TIMEOUT" default:"0s"` // 0 for SSE support
 	ShutdownTimeout time.Duration `yaml:"shutdownTimeout" envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
+	RequestTimeout  time.Duration `yaml:"requestTimeout"`  // Timeout for regular HTTP requests (middleware)
+	SSETimeout      time.Duration `yaml:"sseTimeout"`      // Timeout for SSE connections (0 = no timeout)
 
 	// Rate limiting (using golang.org/x/time/rate)
 	RateLimit      float64 `yaml:"rateLimit" envconfig:"RATE_LIMIT" default:"10"`            // requests per second
@@ -67,82 +69,6 @@ type Preset struct {
 	Distributions map[int]map[string]int `yaml:"distributions"`
 }
 
-// LoadConfigManual loads the server configuration from a YAML file and environment variables (legacy implementation)
-func LoadConfigManual(path string) (*ServerConfig, error) {
-	// Start with default config
-	config := DefaultConfig()
-
-	// If path provided, load from YAML file
-	if path == "" {
-		path = "config/server.yaml"
-	}
-
-	// Try to read the file
-	data, err := os.ReadFile(path)
-	if err == nil {
-		// Parse YAML if file exists
-		if err := yaml.Unmarshal(data, config); err != nil {
-			return nil, fmt.Errorf("failed to parse YAML: %w", err)
-		}
-	} else if !os.IsNotExist(err) {
-		// Return error if it's not just a missing file
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	// Override with environment variables
-	loadFromEnv(config)
-
-	// Validate configuration
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
-	return config, nil
-}
-
-// loadFromEnv loads configuration from environment variables
-func loadFromEnv(cfg *ServerConfig) {
-	// Check each environment variable and override if set
-	if port := os.Getenv("PORT"); port != "" {
-		cfg.Server.Port = port
-	}
-	if host := os.Getenv("HOST"); host != "" {
-		cfg.Server.Host = host
-	}
-	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
-		cfg.Server.LogLevel = logLevel
-	}
-	if logFormat := os.Getenv("LOG_FORMAT"); logFormat != "" {
-		cfg.Server.LogFormat = logFormat
-	}
-
-	// Parse numeric values
-	if rateLimit := os.Getenv("RATE_LIMIT"); rateLimit != "" {
-		if val, err := fmt.Sscanf(rateLimit, "%f", &cfg.Server.RateLimit); err == nil && val == 1 {
-			// Successfully parsed
-		}
-	}
-	if burst := os.Getenv("RATE_LIMIT_BURST"); burst != "" {
-		if val, err := fmt.Sscanf(burst, "%d", &cfg.Server.RateLimitBurst); err == nil && val == 1 {
-			// Successfully parsed
-		}
-	}
-	if maxReq := os.Getenv("MAX_REQUEST_SIZE"); maxReq != "" {
-		if val, err := fmt.Sscanf(maxReq, "%d", &cfg.Server.MaxRequestSize); err == nil && val == 1 {
-			// Successfully parsed
-		}
-	}
-	if maxSSE := os.Getenv("MAX_SSE_CONNECTIONS"); maxSSE != "" {
-		if val, err := fmt.Sscanf(maxSSE, "%d", &cfg.Server.MaxSSEConnections); err == nil && val == 1 {
-			// Successfully parsed
-		}
-	}
-
-	// Parse boolean values
-	if metrics := os.Getenv("ENABLE_METRICS"); metrics == "true" {
-		cfg.Server.EnableMetrics = true
-	}
-}
 
 // DefaultConfig returns a default configuration
 func DefaultConfig() *ServerConfig {
