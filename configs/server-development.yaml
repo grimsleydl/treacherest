@@ -13,7 +13,7 @@ server:
   
   # Timeouts - relaxed for development
   readTimeout: 15s
-  writeTimeout: 15s
+  writeTimeout: 10m  # 10 minutes for SSE support
   idleTimeout: 0s     # 0 for SSE support
   shutdownTimeout: 5s
   requestTimeout: 60s
@@ -24,7 +24,7 @@ server:
   rateLimitBurst: 200
   
   # Request limits
-  maxRequestSize: 1048576    # 1MB
+  maxRequestSize: 10485760   # 10MB for development
   maxSSEConnections: 1000
   
   # Development logging
