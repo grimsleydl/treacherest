@@ -54,21 +54,21 @@ func LoadConfig(configPath string) (*ServerConfig, error) {
 	v.SetDefault("server.roomtimeout", "24h")
 
 	// Timeout defaults
-	v.SetDefault("server.readtimeout", "0s")
-	v.SetDefault("server.writetimeout", "0s")
-	v.SetDefault("server.idletimeout", "0s") // 0 for SSE support
+	v.SetDefault("server.readtimeout", "30s")
+	v.SetDefault("server.writetimeout", "10m") // 10 minutes for SSE support
+	v.SetDefault("server.idletimeout", "0s")   // 0 for SSE support
 	v.SetDefault("server.shutdowntimeout", "0s")
-	
+
 	// Request timeout for middleware (separate from server timeouts)
-	v.SetDefault("server.requesttimeout", "60s")     // Default 60s for regular requests
-	v.SetDefault("server.ssetimeout", "24h")         // 24 hours for SSE connections (or 0 to disable)
+	v.SetDefault("server.requesttimeout", "60s") // Default 60s for regular requests
+	v.SetDefault("server.ssetimeout", "24h")     // 24 hours for SSE connections (or 0 to disable)
 
 	// Rate limiting defaults
 	v.SetDefault("server.ratelimit", 10.0)
 	v.SetDefault("server.ratelimitburst", 20)
 
 	// Request limits
-	v.SetDefault("server.maxrequestsize", 1048576) // 1MB
+	v.SetDefault("server.maxrequestsize", 10485760) // 10MB
 	v.SetDefault("server.maxsseconnections", 1000)
 
 	// Monitoring defaults

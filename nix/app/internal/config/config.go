@@ -29,8 +29,8 @@ type ServerSettings struct {
 	WriteTimeout    time.Duration `yaml:"writeTimeout" envconfig:"WRITE_TIMEOUT" default:"15s"`
 	IdleTimeout     time.Duration `yaml:"idleTimeout" envconfig:"IDLE_TIMEOUT" default:"0s"` // 0 for SSE support
 	ShutdownTimeout time.Duration `yaml:"shutdownTimeout" envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
-	RequestTimeout  time.Duration `yaml:"requestTimeout"`  // Timeout for regular HTTP requests (middleware)
-	SSETimeout      time.Duration `yaml:"sseTimeout"`      // Timeout for SSE connections (0 = no timeout)
+	RequestTimeout  time.Duration `yaml:"requestTimeout"` // Timeout for regular HTTP requests (middleware)
+	SSETimeout      time.Duration `yaml:"sseTimeout"`     // Timeout for SSE connections (0 = no timeout)
 
 	// Rate limiting (using golang.org/x/time/rate)
 	RateLimit      float64 `yaml:"rateLimit" envconfig:"RATE_LIMIT" default:"10"`            // requests per second
@@ -69,7 +69,6 @@ type Preset struct {
 	Distributions map[int]map[string]int `yaml:"distributions"`
 }
 
-
 // DefaultConfig returns a default configuration
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
@@ -83,9 +82,9 @@ func DefaultConfig() *ServerConfig {
 			// Server defaults
 			Port:            "", // Must be set via env
 			Host:            "", // Must be set via env
-			ReadTimeout:     15 * time.Second,
-			WriteTimeout:    15 * time.Second,
-			IdleTimeout:     0, // 0 for SSE support
+			ReadTimeout:     30 * time.Second,
+			WriteTimeout:    10 * time.Minute, // 10 minutes for SSE support
+			IdleTimeout:     0,                // 0 for SSE support
 			ShutdownTimeout: 30 * time.Second,
 
 			// Rate limiting defaults
@@ -93,7 +92,7 @@ func DefaultConfig() *ServerConfig {
 			RateLimitBurst: 20,
 
 			// Request limits
-			MaxRequestSize:    1048576, // 1MB
+			MaxRequestSize:    10485760, // 10MB
 			MaxSSEConnections: 1000,
 
 			// Monitoring defaults

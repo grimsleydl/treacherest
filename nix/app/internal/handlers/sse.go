@@ -24,6 +24,13 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
 	log.Printf("📡 SSE connection established for lobby %s", roomCode)
 
+	// Debug mode: log request details
+	if os.Getenv("DEBUG") != "" {
+		log.Printf("DEBUG: 📡 SSE request details - User-Agent: %s, RemoteAddr: %s", r.Header.Get("User-Agent"), r.RemoteAddr)
+		deadline, hasDeadline := r.Context().Deadline()
+		log.Printf("DEBUG: 📡 SSE request timeout context: deadline=%v, hasDeadline=%v", deadline, hasDeadline)
+	}
+
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		log.Printf("📡 SSE requested for non-existent room: %s", roomCode)
@@ -79,14 +86,18 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("📡 SSE connection ready for room %s with validation state v%d", roomCode, validationState.Version)
 
-	// Set up a heartbeat to detect stale connections
-	heartbeat := time.NewTicker(30 * time.Second)
+	// Set up a heartbeat to prevent timeouts
+	// 15 seconds is well under our 10-minute WriteTimeout
+	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 
 	// Stream updates
 	for {
 		select {
 		case <-r.Context().Done():
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 SSE context cancelled for room %s - error: %v", roomCode, r.Context().Err())
+			}
 			log.Printf("📡 Lobby SSE context cancelled for room %s", roomCode)
 			return
 		case <-heartbeat.C:
@@ -96,12 +107,33 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing SSE", roomCode)
 				return
 			}
-			
-			// Send keepalive ping to prevent browser timeout
-			// Browsers may close idle SSE connections after 2-5 minutes
-			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+
+			// Debug mode: log detailed heartbeat info
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 SSE heartbeat for lobby %s - player %s (%s)", roomCode, player.Name, player.ID)
+			}
+
+			// Send minimal keepalive comment to prevent timeout
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Sending keepalive for room %s", roomCode)
+			}
+
+			// Send minimal SSE comment - just colon and newlines
+			if _, err := w.Write([]byte(":\n\n")); err != nil {
+				if os.Getenv("DEBUG") != "" {
+					log.Printf("DEBUG: 📡 Keepalive write error: %v", err)
+				}
 				log.Printf("📡 Keepalive failed for room %s: %v - closing connection", roomCode, err)
 				return
+			}
+
+			// Flush to ensure the comment is sent immediately
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Keepalive sent successfully for room %s", roomCode)
 			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for %s: %s", roomCode, event.Type)
@@ -254,8 +286,9 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		h.renderGame(sse, room, player)
 	}
 
-	// Set up a heartbeat to prevent browser timeouts
-	heartbeat := time.NewTicker(30 * time.Second)
+	// Set up a heartbeat to prevent timeouts
+	// 15 seconds is well under our 10-minute WriteTimeout
+	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 
 	// Stream updates
@@ -264,10 +297,27 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		case <-heartbeat.C:
-			// Send keepalive ping to prevent browser timeout
-			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+			// Send minimal keepalive comment to prevent timeout
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Sending keepalive for game room %s", roomCode)
+			}
+
+			// Send minimal SSE comment - just colon and newlines
+			if _, err := w.Write([]byte(":\n\n")); err != nil {
+				if os.Getenv("DEBUG") != "" {
+					log.Printf("DEBUG: 📡 Keepalive write error: %v", err)
+				}
 				log.Printf("📡 Keepalive failed for game room %s: %v - closing connection", roomCode, err)
 				return
+			}
+
+			// Flush to ensure the comment is sent immediately
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Keepalive sent successfully for game room %s", roomCode)
 			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for game %s: %s", roomCode, event.Type)
@@ -518,8 +568,9 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("📡 Host SSE connection ready for room %s, waiting for events (subscriber channel: %p)", roomCode, events)
 
-	// Set up a heartbeat to detect stale connections
-	heartbeat := time.NewTicker(30 * time.Second)
+	// Set up a heartbeat to prevent timeouts
+	// 15 seconds is well under our 10-minute WriteTimeout
+	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 
 	// Stream updates
@@ -535,11 +586,28 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Heartbeat: Room %s no longer exists, closing host SSE", roomCode)
 				return
 			}
-			
-			// Send keepalive ping to prevent browser timeout
-			if err := sse.Send("keepalive", []string{fmt.Sprintf(`{"time":"%s"}`, time.Now().Format(time.RFC3339))}); err != nil {
+
+			// Send minimal keepalive comment to prevent timeout
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Sending keepalive for host room %s", roomCode)
+			}
+
+			// Send minimal SSE comment - just colon and newlines
+			if _, err := w.Write([]byte(":\n\n")); err != nil {
+				if os.Getenv("DEBUG") != "" {
+					log.Printf("DEBUG: 📡 Keepalive write error: %v", err)
+				}
 				log.Printf("📡 Keepalive failed for host room %s: %v - closing connection", roomCode, err)
 				return
+			}
+
+			// Flush to ensure the comment is sent immediately
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			if os.Getenv("DEBUG") != "" {
+				log.Printf("DEBUG: 📡 Keepalive sent successfully for host room %s", roomCode)
 			}
 		case event := <-events:
 			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
