@@ -1,0 +1,23 @@
+* Configuration Management Improvements
+1. Add CONFIG_PATH Environment Variable Support
+2. Allow specifying config file location via CONFIG_PATH env var
+3. Makes container mounting more flexible
+4. Restructure Config Directory
+   Move from nix/app/config/ to standard locations:
+   - configs/ at project root (for multiple environment configs)
+   - configs/base.yaml (shared defaults)
+   - configs/production.yaml (production overrides)
+   - configs/development.yaml (dev overrides)
+   - Update Container Configuration
+     - Modify containers.nix to:
+       - Include config directory in container at /etc/treacherest/
+       - Support CONFIG_PATH environment variable
+       - Add volume mount point documentation
+5. Implement Config Validation
+    Enhance the existing Validate() function to check all critical values at startup
+6. Document Configuration
+   - Create docs/configuration.org with:
+     - All available environment variables
+     - Config file structure
+     - Container deployment examples
+     - Priority order (env > file > defaults)

@@ -10,7 +10,7 @@
 in {
   # Main production container
   default = n2c.nix2container.buildImage {
-    name = "docker.io/grimsleydl/treacherest";
+    name = "ghcr.io/grimsleydl/treacherest";
     tag = "latest";
     
     # Copy binary, static files, and configs to container
@@ -18,11 +18,10 @@ in {
       name = "image-root";
       paths = [ 
         inputs.cells.app.packages.default
-        # Include default config files
+        # Include production config at well-known location
         (nixpkgs.runCommand "configs" {} ''
-          mkdir -p $out/app/config
-          cp ${inputs.self}/configs/server.yaml $out/app/config/server.yaml
-          cp ${inputs.self}/configs/production.yaml $out/app/config/production.yaml
+          mkdir -p $out/app
+          cp ${inputs.self}/configs/server-production.yaml $out/app/server.yaml
         '')
       ];
       pathsToLink = [ "/bin" "/static" "/app" ];  # Copy bin, static, and app directories
@@ -36,6 +35,8 @@ in {
       
       env = [
         "PATH=/bin"
+        "HOST=0.0.0.0"
+        "PORT=8080"
         "SSL_CERT_FILE=${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
       ];
       
@@ -56,7 +57,7 @@ in {
   
   # Development container with debugging tools
   dev = n2c.nix2container.buildImage {
-    name = "docker.io/grimsleydl/treacherest";
+    name = "ghcr.io/grimsleydl/treacherest";
     tag = "dev";
     
     copyToRoot = nixpkgs.buildEnv {
@@ -68,11 +69,10 @@ in {
         nixpkgs.curl
         nixpkgs.jq
         nixpkgs.busybox
-        # Include development config
+        # Include development config at well-known location
         (nixpkgs.runCommand "configs" {} ''
-          mkdir -p $out/app/config
-          cp ${inputs.self}/configs/server.yaml $out/app/config/server.yaml
-          cp ${inputs.self}/configs/development.yaml $out/app/config/development.yaml
+          mkdir -p $out/app
+          cp ${inputs.self}/configs/server-development.yaml $out/app/server.yaml
         '')
       ];
       pathsToLink = [ "/bin" "/static" "/app" ];
@@ -84,6 +84,8 @@ in {
       
       env = [
         "PATH=/bin"
+        "HOST=0.0.0.0"
+        "PORT=8080"
         "SSL_CERT_FILE=${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
       ];
       
@@ -105,17 +107,17 @@ in {
   
   # Minimal container
   minimal = n2c.nix2container.buildImage {
-    name = "docker.io/grimsleydl/treacherest";
+    name = "ghcr.io/grimsleydl/treacherest";
     tag = "minimal";
     
     copyToRoot = nixpkgs.buildEnv {
       name = "image-root";
       paths = [ 
         inputs.cells.app.packages.default
-        # Include minimal config
+        # Include default config at well-known location
         (nixpkgs.runCommand "configs" {} ''
-          mkdir -p $out/app/config
-          cp ${inputs.self}/configs/server.yaml $out/app/config/server.yaml
+          mkdir -p $out/app
+          cp ${inputs.self}/configs/server-production.yaml $out/app/server.yaml
         '')
       ];
       pathsToLink = [ "/bin" "/static" "/app" ];
@@ -124,7 +126,11 @@ in {
     config = {
       entrypoint = [ "/bin/server" ];
       
-      env = [ "PATH=/bin" ];
+      env = [ 
+        "PATH=/bin"
+        "HOST=0.0.0.0"
+        "PORT=8080"
+      ];
       
       exposedPorts = {
         "8080/tcp" = {};
