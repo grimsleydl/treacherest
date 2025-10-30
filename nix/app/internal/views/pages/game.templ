@@ -92,13 +92,47 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
 					<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
-					<div class="space-y-2">
-						for _, player := range room.GetActivePlayers() {
-							<div class="flex justify-between items-center p-2 rounded hover:bg-base-300 transition-colors">
-								<span>{ player.Name }</span>
-								if player.RoleRevealed {
-									<span class="badge badge-sm">{ player.Role.Name }</span>
-								}
+					<div class="join join-vertical w-full">
+						for _, p := range room.GetActivePlayers() {
+							<div class="collapse collapse-arrow join-item border border-base-300">
+								<input
+									type="checkbox"
+									id={ fmt.Sprintf("reveal-%s", p.ID) }
+									disabled?={ room.State != game.StatePlaying }
+								/>
+								<div class="collapse-title flex items-center justify-between gap-2">
+									<div class="flex items-center gap-2">
+										<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID) }>{ p.Name }</span>
+										if p.ID == currentPlayer.ID {
+											<span class="badge badge-primary badge-xs">You</span>
+										}
+										if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
+											<span class="badge badge-warning badge-xs">Leader</span>
+										}
+										if p.RoleRevealed {
+											<span class="badge badge-ghost badge-xs">{ p.Role.Name }</span>
+										}
+									</div>
+									<!-- Reveal button for accessibility -->
+									<label for={ fmt.Sprintf("reveal-%s", p.ID) } class="btn btn-ghost btn-xs"
+									       aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
+									       title="Click to reveal role">
+										Reveal
+									</label>
+								</div>
+								<div id={ fmt.Sprintf("reveal-%s-panel", p.ID) } class="collapse-content">
+									<!-- Show mini card if:
+									     - Player is Leader (show to everyone)
+									     - Current player viewing their own card
+									     - Role is globally revealed -->
+									if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
+									   (p.ID == currentPlayer.ID && p.Role != nil) ||
+									   (p.RoleRevealed && p.Role != nil) {
+										@MiniRoleCard(p.Role)
+									} else {
+										<div class="text-sm opacity-60">Unknown role.</div>
+									}
+								</div>
 							</div>
 						}
 					</div>
@@ -144,6 +178,29 @@ templ FormatCardText(text string) {
 			}
 		</div>
 	}
+}
+
+// MiniRoleCard renders a compact role card for inline reveals
+templ MiniRoleCard(card *game.Card) {
+	if card == nil {
+		<div class="text-sm opacity-60">No role assigned.</div>
+		return
+	}
+	<div class="border rounded-lg p-3 bg-base-100 space-y-2">
+		<div class="flex items-center gap-2">
+			<strong class="truncate">{ card.Name }</strong>
+			<span class="badge badge-outline">{ string(card.GetRoleType()) }</span>
+			if card.URI != "" {
+				<a href={ templ.SafeURL(card.URI) } target="_blank" rel="noopener noreferrer"
+				   class="link link-primary text-xs" title="View on Oracle">
+					Oracle
+				</a>
+			}
+		</div>
+		<div class="text-sm leading-relaxed">
+			@FormatCardText(card.Text)
+		</div>
+	</div>
 }
 
 // FormatRulings formats rulings, handling separator lines differently
