@@ -186,19 +186,29 @@ templ MiniRoleCard(card *game.Card) {
 		<div class="text-sm opacity-60">No role assigned.</div>
 		return
 	}
-	<div class="border rounded-lg p-3 bg-base-100 space-y-2">
-		<div class="flex items-center gap-2">
-			<strong class="truncate">{ card.Name }</strong>
-			<span class="badge badge-outline">{ string(card.GetRoleType()) }</span>
-			if card.URI != "" {
-				<a href={ templ.SafeURL(card.URI) } target="_blank" rel="noopener noreferrer"
-				   class="link link-primary text-xs" title="View on Oracle">
-					Oracle
-				</a>
-			}
-		</div>
-		<div class="text-sm leading-relaxed">
-			@FormatCardText(card.Text)
+	<div class="border rounded-lg bg-base-100 overflow-hidden">
+		<figure class="bg-base-200">
+			<img
+				src={ card.GetImageBase64() }
+				alt={ card.Name }
+				class="w-full h-auto"
+				onerror="this.style.display='none'"
+			/>
+		</figure>
+		<div class="p-3 space-y-2">
+			<div class="flex items-center gap-2">
+				<strong class="truncate">{ card.Name }</strong>
+				<span class="badge badge-outline">{ string(card.GetRoleType()) }</span>
+				if card.URI != "" {
+					<a href={ templ.SafeURL(card.URI) } target="_blank" rel="noopener noreferrer"
+					   class="link link-primary text-xs" title="View on Oracle">
+						Oracle
+					</a>
+				}
+			</div>
+			<div class="text-sm leading-relaxed">
+				@FormatCardText(card.Text)
+			</div>
 		</div>
 	</div>
 }
