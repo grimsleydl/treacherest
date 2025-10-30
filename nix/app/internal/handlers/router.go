@@ -69,6 +69,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/join-room", h.JoinRoomPost) // New POST endpoint for joining rooms
 		r.Post("/room/{code}/leave", h.LeaveRoom)
 		r.Post("/room/{code}/start", h.StartGame)
+		r.Post("/room/{code}/reveal/{playerID}", h.ToggleReveal)
 		r.Get("/game/{code}", h.GamePage)
 
 		// Role configuration endpoints

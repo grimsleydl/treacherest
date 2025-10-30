@@ -236,6 +236,65 @@ func (h *Handler) LeaveRoom(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ToggleReveal toggles the public reveal state of a player's role
+func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		log.Printf("❌ No player cookie for room: %s", roomCode)
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	me := room.GetPlayer(playerCookie.Value)
+	if me == nil {
+		log.Printf("❌ Player not found in room: %s", roomCode)
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the target player
+	target := room.GetPlayer(playerID)
+	if target == nil {
+		log.Printf("❌ Target player not found: %s", playerID)
+		http.Error(w, "Target player not found", http.StatusBadRequest)
+		return
+	}
+
+	// Authorization: only the player themselves can reveal their own role
+	if me.ID != target.ID {
+		log.Printf("❌ Player %s attempted to reveal %s's role (forbidden)", me.ID, target.ID)
+		http.Error(w, "You can only reveal your own role", http.StatusForbidden)
+		return
+	}
+
+	// Toggle the reveal state
+	target.RoleRevealed = !target.RoleRevealed
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Player %s toggled role reveal to %v in room %s", target.Name, target.RoleRevealed, roomCode)
+
+	// Publish event to update all connected clients
+	h.eventBus.Publish(Event{
+		Type:     "role_revealed",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	// Return success - SSE will handle the UI update
+	w.WriteHeader(http.StatusOK)
+}
+
 // runCountdown runs the countdown timer
 func (h *Handler) runCountdown(room *game.Room) {
 	ticker := time.NewTicker(1 * time.Second)
