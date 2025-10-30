@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -130,7 +131,7 @@ func (r *Room) GetPlayers() []*Player {
 	return players
 }
 
-// GetActivePlayers returns a copy of all non-host players
+// GetActivePlayers returns a copy of all non-host players, sorted by join time
 func (r *Room) GetActivePlayers() []*Player {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -141,6 +142,12 @@ func (r *Room) GetActivePlayers() []*Player {
 			players = append(players, p)
 		}
 	}
+
+	// Sort by join time for stable UI ordering across SSE updates
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].JoinedAt.Before(players[j].JoinedAt)
+	})
+
 	return players
 }
 
