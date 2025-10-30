@@ -278,6 +278,13 @@ func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Leaders cannot hide their role (they start face-up per game rules)
+	if target.Role != nil && target.Role.GetRoleType() == game.RoleLeader && target.RoleRevealed {
+		log.Printf("❌ Leader %s attempted to hide their role (not allowed)", target.Name)
+		http.Error(w, "Leaders cannot hide their role", http.StatusForbidden)
+		return
+	}
+
 	// Toggle the reveal state
 	target.RoleRevealed = !target.RoleRevealed
 	h.store.UpdateRoom(room)
