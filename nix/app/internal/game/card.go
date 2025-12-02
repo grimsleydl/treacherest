@@ -121,3 +121,13 @@ func (c *Card) GetPlaceholderPath() string {
 func (c *Card) GetImageBase64() string {
 	return c.Base64Image
 }
+
+// GetID returns the card ID (implements ability.CardLike interface)
+func (c *Card) GetID() int {
+	return c.ID
+}
+
+// GetText returns the card text (implements ability.CardLike interface)
+func (c *Card) GetText() string {
+	return c.Text
+}

@@ -4,8 +4,14 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"treacherest/internal/game"
 )
+
+// CardLike is an interface that represents card properties needed for ability detection
+// This avoids circular imports with the game package
+type CardLike interface {
+	GetID() int
+	GetText() string
+}
 
 // AbilityRegistry manages all card abilities
 type AbilityRegistry struct {
@@ -13,7 +19,7 @@ type AbilityRegistry struct {
 }
 
 // NewAbilityRegistry creates a new registry and auto-registers abilities
-func NewAbilityRegistry(cards []*game.Card) *AbilityRegistry {
+func NewAbilityRegistry(cards []CardLike) *AbilityRegistry {
 	registry := &AbilityRegistry{
 		abilities: make(map[int]*Ability),
 	}
@@ -21,7 +27,7 @@ func NewAbilityRegistry(cards []*game.Card) *AbilityRegistry {
 	// Auto-register pattern-based abilities
 	for _, card := range cards {
 		if ability := DetectAbilityPattern(card); ability != nil {
-			registry.abilities[card.ID] = ability
+			registry.abilities[card.GetID()] = ability
 		}
 	}
 
@@ -60,9 +66,9 @@ func (r *AbilityRegistry) ListAll() []*Ability {
 
 // DetectAbilityPattern attempts to automatically detect an ability from card text
 // Returns nil if the card doesn't fit known patterns
-func DetectAbilityPattern(card *game.Card) *Ability {
+func DetectAbilityPattern(card CardLike) *Ability {
 	// Empty text = no ability
-	if card.Text == "" {
+	if card.GetText() == "" {
 		return nil
 	}
 
@@ -71,7 +77,7 @@ func DetectAbilityPattern(card *game.Card) *Ability {
 
 	// Build basic ability structure
 	ability := &Ability{
-		CardID: card.ID,
+		CardID: card.GetID(),
 		Trigger: Trigger{
 			Type: triggerType,
 		},
@@ -83,7 +89,7 @@ func DetectAbilityPattern(card *game.Card) *Ability {
 	}
 
 	// Detect effect types
-	effectTypes := detectEffectTypes(card.Text)
+	effectTypes := detectEffectTypes(card.GetText())
 	ability.Effects = make([]Effect, len(effectTypes))
 	for i, effectType := range effectTypes {
 		ability.Effects[i] = Effect{
@@ -92,17 +98,17 @@ func DetectAbilityPattern(card *game.Card) *Ability {
 	}
 
 	// Detect conditions
-	ability.Conditions = detectConditions(card.Text)
+	ability.Conditions = detectConditions(card.GetText())
 
 	// Detect duration
-	ability.Duration = detectDuration(card.Text)
+	ability.Duration = detectDuration(card.GetText())
 
 	return ability
 }
 
 // detectTriggerType determines the trigger type from card text
-func detectTriggerType(card *game.Card) TriggerType {
-	text := card.Text
+func detectTriggerType(card CardLike) TriggerType {
+	text := card.GetText()
 
 	// Check for "As X is unveiled" (replacement effect)
 	if strings.Contains(text, "As ") && strings.Contains(text, " is unveiled") {
@@ -135,8 +141,8 @@ func detectTriggerType(card *game.Card) TriggerType {
 }
 
 // parseUnveilCost extracts the unveil cost from card text
-func parseUnveilCost(card *game.Card) string {
-	text := card.Text
+func parseUnveilCost(card CardLike) string {
+	text := card.GetText()
 
 	// Pattern 1: "Unveil {X}" or "Unveil {3}" etc.
 	unveilPattern := regexp.MustCompile(`Unveil\s+(\{[^}]+\}(?:\{[^}]+\})*)`)

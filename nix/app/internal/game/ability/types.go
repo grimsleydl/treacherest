@@ -260,14 +260,3 @@ type AbilityContext struct {
 	CardID    int
 	TempData  map[string]interface{} // Mutable state for multi-step abilities
 }
-
-// PendingAbility represents an ability awaiting player choice
-type PendingAbility struct {
-	ID             string
-	PlayerID       string
-	CardID         int
-	AbilityType    string
-	Data           map[string]interface{}
-	ModalDismissed bool
-	ModalState     map[string]interface{}
-}

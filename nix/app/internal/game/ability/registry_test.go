@@ -2,14 +2,27 @@ package ability
 
 import (
 	"testing"
-	"treacherest/internal/game"
 )
+
+// testCard is a simple implementation of CardLike for testing
+type testCard struct {
+	id   int
+	text string
+}
+
+func (tc *testCard) GetID() int {
+	return tc.id
+}
+
+func (tc *testCard) GetText() string {
+	return tc.text
+}
 
 // TestNewAbilityRegistry tests registry creation
 func TestNewAbilityRegistry(t *testing.T) {
-	cards := []*game.Card{
-		{ID: 1, Name: "Test Card 1", Text: "When Test Card 1 is unveiled, draw a card."},
-		{ID: 2, Name: "Test Card 2", Text: "When Test Card 2 is unveiled, deal 3 damage."},
+	cards := []CardLike{
+		&testCard{id: 1, text: "When Test Card 1 is unveiled, draw a card."},
+		&testCard{id: 2, text: "When Test Card 2 is unveiled, deal 3 damage."},
 	}
 
 	registry := NewAbilityRegistry(cards)
@@ -131,7 +144,7 @@ func TestDetectTriggerType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			card := &game.Card{Text: tt.text}
+			card := &testCard{text: tt.text}
 			triggerType := detectTriggerType(card)
 			if triggerType != tt.expected {
 				t.Errorf("Expected %s, got %s", tt.expected, triggerType)
@@ -176,7 +189,7 @@ func TestParseUnveilCost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			card := &game.Card{Text: tt.text}
+			card := &testCard{text: tt.text}
 			cost := parseUnveilCost(card)
 			if cost != tt.expected {
 				t.Errorf("Expected %q, got %q", tt.expected, cost)
@@ -238,33 +251,30 @@ func TestDetectEffectType(t *testing.T) {
 func TestPatternDetection(t *testing.T) {
 	tests := []struct {
 		name          string
-		card          *game.Card
+		card          CardLike
 		expectAbility bool
 	}{
 		{
 			name: "simple unveil ability",
-			card: &game.Card{
-				ID:   1,
-				Name: "Simple Card",
-				Text: "When Simple Card is unveiled, draw a card.",
+			card: &testCard{
+				id:   1,
+				text: "When Simple Card is unveiled, draw a card.",
 			},
 			expectAbility: true,
 		},
 		{
 			name: "complex custom ability",
-			card: &game.Card{
-				ID:   31,
-				Name: "The Wearer of Masks",
-				Text: "As The Wearer of Masks is unveiled, reveal up to X non-Leader identity cards...",
+			card: &testCard{
+				id:   31,
+				text: "As The Wearer of Masks is unveiled, reveal up to X non-Leader identity cards...",
 			},
 			expectAbility: true,
 		},
 		{
 			name: "no ability text",
-			card: &game.Card{
-				ID:   100,
-				Name: "Vanilla Card",
-				Text: "",
+			card: &testCard{
+				id:   100,
+				text: "",
 			},
 			expectAbility: false,
 		},
