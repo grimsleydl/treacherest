@@ -88,12 +88,61 @@ templ UnveilAbilityContent(room *game.Room, player *game.Player, pendingAbility 
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 			</svg>
-			<span>Choose a card to transform into. This action will be implemented in Phase 6.</span>
+			<span>Choose a card to transform into. You will gain this card's abilities while keeping your original role type.</span>
 		</div>
 
-		// Placeholder for card selection - will be implemented in Phase 6
-		<div class="text-center text-sm text-base-content/60">
-			Card selection UI will be added in Phase 6.1-6.2
+		// Get available cards from ability data
+		if availableCardIDs, ok := pendingAbility.Data["available_cards"].([]int); ok && len(availableCardIDs) > 0 {
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				for _, cardID := range availableCardIDs {
+					if card := room.CardPool.GetCardByID(cardID); card != nil {
+						@SelectableCard(room, pendingAbility, card)
+					}
+				}
+			</div>
+		} else {
+			<div class="alert alert-warning">
+				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+				</svg>
+				<span>No cards available to choose from.</span>
+			</div>
+		}
+	</div>
+}
+
+// SelectableCard renders a single card that can be selected for transformation
+templ SelectableCard(room *game.Room, pendingAbility *ability.PendingAbility, card *game.Card) {
+	<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-2 border-base-300 hover:border-primary">
+		<figure class="bg-base-200">
+			<img
+				src={ card.GetImageBase64() }
+				alt={ card.Name }
+				class="w-full h-auto"
+				onerror="this.style.display='none'"
+			/>
+		</figure>
+		<div class="card-body p-4">
+			<h3 class="card-title text-sm">{ card.Name }</h3>
+			<div class="flex gap-1 flex-wrap">
+				<span class="badge badge-sm badge-outline">{ string(card.GetRoleType()) }</span>
+				<span class="badge badge-sm badge-ghost">{ card.Rarity }</span>
+			</div>
+			<div class="text-xs text-base-content/70 line-clamp-3 my-2">
+				{ card.GetText() }
+			</div>
+			<div class="card-actions justify-end mt-2">
+				<button
+					class="btn btn-primary btn-sm w-full"
+					data-on-click={ fmt.Sprintf("@post('/room/%s/ability/%s/select-card') {card_id: %d}", room.Code, pendingAbility.ID, card.GetID()) }
+					title={ fmt.Sprintf("Transform into %s", card.Name) }
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					Select This Card
+				</button>
+			</div>
 		</div>
 	</div>
 }
