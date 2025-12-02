@@ -302,6 +302,83 @@ func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ToggleFaceState toggles the face up/down state of a player's role
+// This is separate from reveal - face state affects ability conditions (e.g., Wearer of Masks)
+func (h *Handler) ToggleFaceState(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		log.Printf("❌ No player cookie for room: %s", roomCode)
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	me := room.GetPlayer(playerCookie.Value)
+	if me == nil {
+		log.Printf("❌ Player not found in room: %s", roomCode)
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the target player
+	target := room.GetPlayer(playerID)
+	if target == nil {
+		log.Printf("❌ Target player not found: %s", playerID)
+		http.Error(w, "Target player not found", http.StatusBadRequest)
+		return
+	}
+
+	// Authorization: only the player themselves can toggle their face state
+	if me.ID != target.ID {
+		log.Printf("❌ Player %s attempted to toggle %s's face state (forbidden)", me.ID, target.ID)
+		http.Error(w, "You can only toggle your own face state", http.StatusForbidden)
+		return
+	}
+
+	// Toggle the face state
+	target.FaceUp = !target.FaceUp
+	log.Printf("🃏 Player %s toggled face state to %v in room %s", target.Name, target.FaceUp, roomCode)
+
+	// Check for transformation end conditions
+	if target.AbilityState != nil && target.AbilityState.TransformState != nil {
+		if target.AbilityState.CheckTransformEndCondition("face_down") && !target.FaceUp {
+			// End transformation
+			log.Printf("🔄 Ending transformation for %s (turned face down)", target.Name)
+			originalCardID := target.AbilityState.EndTransform()
+
+			// Restore original role
+			if room.CardPool != nil {
+				if originalCard := room.CardPool.GetCardByID(originalCardID); originalCard != nil {
+					target.Role = originalCard
+					log.Printf("✅ Restored original role %s for %s", originalCard.GetText(), target.Name)
+				}
+			}
+		}
+	}
+
+	h.store.UpdateRoom(room)
+
+	// Publish event to update all connected clients
+	h.eventBus.Publish(Event{
+		Type:     "face_state_changed",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	// Return success - SSE will handle the UI update
+	w.WriteHeader(http.StatusOK)
+}
+
 // runCountdown runs the countdown timer
 func (h *Handler) runCountdown(room *game.Room) {
 	ticker := time.NewTicker(1 * time.Second)

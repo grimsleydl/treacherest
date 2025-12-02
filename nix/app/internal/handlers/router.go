@@ -70,6 +70,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/leave", h.LeaveRoom)
 		r.Post("/room/{code}/start", h.StartGame)
 		r.Post("/room/{code}/reveal/{playerID}", h.ToggleReveal)
+		r.Post("/room/{code}/facestate/{playerID}", h.ToggleFaceState)
 		r.Get("/game/{code}", h.GamePage)
 
 		// Role configuration endpoints
