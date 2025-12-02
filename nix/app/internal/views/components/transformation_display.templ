@@ -1,0 +1,136 @@
+package components
+
+import (
+	"strings"
+	"treacherest/internal/game"
+)
+
+// TransformationDisplay shows the player's current transformation state
+// Displayed when a player is actively transformed (e.g., via The Wearer of Masks)
+templ TransformationDisplay(room *game.Room, player *game.Player) {
+	if player.AbilityState == nil || player.AbilityState.TransformState == nil {
+		return
+	}
+	<div class="alert alert-warning shadow-lg" id="transformation-display">
+		<div class="flex-1">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info flex-shrink-0 w-6 h-6">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+			<div>
+				<h3 class="font-bold">You Are Transformed!</h3>
+				<div class="text-sm">
+					@TransformationDetails(room, player)
+				</div>
+			</div>
+		</div>
+		<div class="flex-none">
+			<details class="dropdown dropdown-end">
+				<summary class="btn btn-sm btn-ghost">Details</summary>
+				<div class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-80 mt-2">
+					@TransformationInfo(room, player)
+				</div>
+			</details>
+		</div>
+	</div>
+}
+
+// TransformationDetails shows brief transformation info
+templ TransformationDetails(room *game.Room, player *game.Player) {
+	if transformState := player.AbilityState.TransformState; transformState != nil {
+		if originalCard := room.CardPool.GetCardByID(transformState.OriginalCardID); originalCard != nil {
+			<span class="font-semibold">
+				Originally: { originalCard.Name }
+			</span>
+			<span class="mx-1">→</span>
+			<span class="font-semibold">
+				Now: { player.Role.Name }
+			</span>
+		}
+		if len(transformState.KeepTypes) > 0 {
+			<div class="text-xs mt-1 opacity-80">
+				Keeping: { strings.Join(transformState.KeepTypes, ", ") }
+			</div>
+		}
+	}
+}
+
+// TransformationInfo shows detailed transformation state in dropdown
+templ TransformationInfo(room *game.Room, player *game.Player) {
+	if transformState := player.AbilityState.TransformState; transformState != nil {
+		<div class="p-3 space-y-3">
+			<div>
+				<h4 class="font-bold text-sm mb-2">Transformation Details</h4>
+				<div class="space-y-2 text-sm">
+					if originalCard := room.CardPool.GetCardByID(transformState.OriginalCardID); originalCard != nil {
+						<div>
+							<span class="text-base-content/60">Original Card:</span>
+							<span class="font-semibold ml-2">{ originalCard.Name }</span>
+							<span class="badge badge-sm badge-ghost ml-1">{ string(originalCard.GetRoleType()) }</span>
+						</div>
+					}
+					<div>
+						<span class="text-base-content/60">Current Card:</span>
+						<span class="font-semibold ml-2">{ player.Role.Name }</span>
+						<span class="badge badge-sm badge-ghost ml-1">{ string(player.Role.GetRoleType()) }</span>
+					</div>
+					if len(transformState.KeepTypes) > 0 {
+						<div>
+							<span class="text-base-content/60">Preserved Attributes:</span>
+							<div class="flex gap-1 mt-1 flex-wrap">
+								for _, keepType := range transformState.KeepTypes {
+									<span class="badge badge-sm badge-accent">{ keepType }</span>
+								}
+							</div>
+						</div>
+					}
+					if transformState.EndCondition != "" {
+						<div>
+							<span class="text-base-content/60">Transformation Ends When:</span>
+							<div class="mt-1">
+								<div class="text-xs">
+									• { formatEndCondition(transformState.EndCondition) }
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+			<div class="divider my-2"></div>
+			<div class="text-xs text-base-content/60">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline mr-1">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+				</svg>
+				You are using the abilities of your current card while maintaining your original role type.
+			</div>
+		</div>
+	}
+}
+
+// CompactTransformationBadge shows a small badge for transformation status
+// Can be used in player lists or smaller UI elements
+templ CompactTransformationBadge(player *game.Player) {
+	if player.AbilityState != nil && player.AbilityState.TransformState != nil {
+		<span class="badge badge-warning badge-xs" title="Player is transformed">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3 mr-1">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+			</svg>
+			Transformed
+		</span>
+	}
+}
+
+// Helper function to format end condition descriptions
+func formatEndCondition(condition string) string {
+	switch condition {
+	case "face_down":
+		return "You turn your card face down"
+	case "face_up":
+		return "You turn your card face up"
+	case "revealed":
+		return "Your role is revealed to everyone"
+	case "end_of_game":
+		return "The game ends"
+	default:
+		return condition
+	}
+}
