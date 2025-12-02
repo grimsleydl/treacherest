@@ -213,6 +213,10 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 										@CardWithModal(card, "")
 									</span>
 								</label>
+								// Show role options UI for cards that support configuration
+								if typeConfig.EnabledCards[card.Name] {
+									@RoleOptionsUI(room, card)
+								}
 							</div>
 						}
 					</div>

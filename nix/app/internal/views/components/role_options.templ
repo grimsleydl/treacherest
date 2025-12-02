@@ -1,0 +1,247 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+// OptionField represents a configurable option for a card
+type OptionField struct {
+	Key          string
+	Label        string
+	Description  string
+	Type         string // "checkbox", "number", "select"
+	DefaultValue interface{}
+	MinValue     *int    // for number fields
+	MaxValue     *int    // for number fields
+	Options      []OptionSelectValue // for select fields
+}
+
+type OptionSelectValue struct {
+	Value string
+	Label string
+}
+
+// GetCardOptions returns the configurable options for a specific card
+// This is where we define which cards have options and what they are
+func GetCardOptions(cardID int, cardName string) []OptionField {
+	switch cardID {
+	case 31: // The Wearer of Masks
+		maxVal := 10
+		return []OptionField{
+			{
+				Key:          "use_all_cards",
+				Label:        "Use All Cards",
+				Description:  "Include all non-Leader cards when revealing",
+				Type:         "checkbox",
+				DefaultValue: false,
+			},
+			{
+				Key:          "max_reveal",
+				Label:        "Max Cards to Reveal",
+				Description:  "Maximum number of cards to reveal (X value)",
+				Type:         "number",
+				DefaultValue: 5,
+				MinValue:     new(int), // 0
+				MaxValue:     &maxVal,
+			},
+		}
+	case 25: // The Metamorph (example for future expansion)
+		return []OptionField{
+			{
+				Key:          "filter_mode",
+				Label:        "Filter Mode",
+				Description:  "Which types of cards can be copied",
+				Type:         "select",
+				DefaultValue: "all",
+				Options: []OptionSelectValue{
+					{Value: "all", Label: "All Cards"},
+					{Value: "traitors_only", Label: "Traitors Only"},
+					{Value: "non_traitors", Label: "Non-Traitors"},
+				},
+			},
+		}
+	default:
+		return []OptionField{}
+	}
+}
+
+// RoleOptionsUI renders configuration options for a card if it supports them
+templ RoleOptionsUI(room *game.Room, card *game.Card) {
+	if optionFields := GetCardOptions(card.GetID(), card.Name); len(optionFields) > 0 {
+		<div class="ml-8 mt-2 mb-3 p-3 bg-base-300 rounded-lg border border-base-content/10">
+			<div class="text-xs font-semibold mb-2 text-base-content/70">Card Options</div>
+			<div class="space-y-3">
+				for _, field := range optionFields {
+					@RenderOptionField(room, card, field)
+				}
+			</div>
+		</div>
+	}
+}
+
+// RenderOptionField renders a single option field based on its type
+templ RenderOptionField(room *game.Room, card *game.Card, field OptionField) {
+	<div class="form-control">
+		switch field.Type {
+			case "checkbox":
+				@CheckboxOption(room, card, field)
+			case "number":
+				@NumberOption(room, card, field)
+			case "select":
+				@SelectOption(room, card, field)
+		}
+	</div>
+}
+
+// CheckboxOption renders a checkbox field
+templ CheckboxOption(room *game.Room, card *game.Card, field OptionField) {
+	<label class="label cursor-pointer justify-start gap-3">
+		<input
+			type="checkbox"
+			class="checkbox checkbox-sm"
+			id={ fmt.Sprintf("option-%d-%s", card.GetID(), field.Key) }
+			checked?={ getCheckboxValue(room, card.GetID(), field.Key, field.DefaultValue) }
+			data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + (evt.target.checked ? 'true' : 'false')})`, room.Code, card.GetID(), field.Key) }
+		/>
+		<div class="flex flex-col">
+			<span class="label-text text-sm">{ field.Label }</span>
+			if field.Description != "" {
+				<span class="label-text-alt text-xs opacity-60">{ field.Description }</span>
+			}
+		</div>
+	</label>
+}
+
+// NumberOption renders a number input field
+templ NumberOption(room *game.Room, card *game.Card, field OptionField) {
+	<label class="label">
+		<div class="flex flex-col flex-1">
+			<span class="label-text text-sm">{ field.Label }</span>
+			if field.Description != "" {
+				<span class="label-text-alt text-xs opacity-60">{ field.Description }</span>
+			}
+		</div>
+	</label>
+	<input
+		type="number"
+		class="input input-sm input-bordered w-20"
+		id={ fmt.Sprintf("option-%d-%s", card.GetID(), field.Key) }
+		value={ fmt.Sprintf("%d", getIntValue(room, card.GetID(), field.Key, field.DefaultValue)) }
+		min?={ field.MinValue != nil }
+		if field.MinValue != nil {
+			min={ fmt.Sprintf("%d", *field.MinValue) }
+		}
+		max?={ field.MaxValue != nil }
+		if field.MaxValue != nil {
+			max={ fmt.Sprintf("%d", *field.MaxValue) }
+		}
+		data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
+	/>
+}
+
+// SelectOption renders a select dropdown field
+templ SelectOption(room *game.Room, card *game.Card, field OptionField) {
+	<label class="label">
+		<div class="flex flex-col flex-1">
+			<span class="label-text text-sm">{ field.Label }</span>
+			if field.Description != "" {
+				<span class="label-text-alt text-xs opacity-60">{ field.Description }</span>
+			}
+		</div>
+	</label>
+	<select
+		class="select select-sm select-bordered"
+		id={ fmt.Sprintf("option-%d-%s", card.GetID(), field.Key) }
+		data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
+	>
+		for _, opt := range field.Options {
+			<option
+				value={ opt.Value }
+				selected?={ getStringValue(room, card.GetID(), field.Key, field.DefaultValue) == opt.Value }
+			>
+				{ opt.Label }
+			</option>
+		}
+	</select>
+}
+
+// Helper functions to get current values from RoleOptionsManager
+
+func getCheckboxValue(room *game.Room, cardID int, key string, defaultValue interface{}) bool {
+	if room.RoleOptionsManager == nil {
+		if boolDefault, ok := defaultValue.(bool); ok {
+			return boolDefault
+		}
+		return false
+	}
+
+	if !room.RoleOptionsManager.HasOptions(cardID) {
+		if boolDefault, ok := defaultValue.(bool); ok {
+			return boolDefault
+		}
+		return false
+	}
+
+	opts := room.RoleOptionsManager.GetOrCreateOptions(cardID)
+	if val, err := opts.GetBoolOption(key); err == nil {
+		return val
+	}
+
+	if boolDefault, ok := defaultValue.(bool); ok {
+		return boolDefault
+	}
+	return false
+}
+
+func getIntValue(room *game.Room, cardID int, key string, defaultValue interface{}) int {
+	if room.RoleOptionsManager == nil {
+		if intDefault, ok := defaultValue.(int); ok {
+			return intDefault
+		}
+		return 0
+	}
+
+	if !room.RoleOptionsManager.HasOptions(cardID) {
+		if intDefault, ok := defaultValue.(int); ok {
+			return intDefault
+		}
+		return 0
+	}
+
+	opts := room.RoleOptionsManager.GetOrCreateOptions(cardID)
+	if val, err := opts.GetIntOption(key); err == nil {
+		return val
+	}
+
+	if intDefault, ok := defaultValue.(int); ok {
+		return intDefault
+	}
+	return 0
+}
+
+func getStringValue(room *game.Room, cardID int, key string, defaultValue interface{}) string {
+	if room.RoleOptionsManager == nil {
+		if strDefault, ok := defaultValue.(string); ok {
+			return strDefault
+		}
+		return ""
+	}
+
+	if !room.RoleOptionsManager.HasOptions(cardID) {
+		if strDefault, ok := defaultValue.(string); ok {
+			return strDefault
+		}
+		return ""
+	}
+
+	opts := room.RoleOptionsManager.GetOrCreateOptions(cardID)
+	if val, err := opts.GetStringOption(key); err == nil {
+		return val
+	}
+
+	if strDefault, ok := defaultValue.(string); ok {
+		return strDefault
+	}
+	return ""
+}
