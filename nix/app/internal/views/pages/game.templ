@@ -27,6 +27,8 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 		class="container"
 		data-signals={ fmt.Sprintf(`{"countdown": %d}`, room.CountdownRemaining) }
 	>
+		// Render pending ability modals for current player
+		@components.PendingAbilitiesContainer(room, currentPlayer)
 		if room.State == game.StateCountdown {
 			@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
 		} else {
