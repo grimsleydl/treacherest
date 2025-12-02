@@ -430,7 +430,120 @@ func (h *Handler) GetRoleOptions(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf(`{"card_id": %d, "options": %v}`, cardIDInt, opts.Options)))
 }
 
-// SetRoleOption sets a role option for a specific card
+// DismissModal dismisses a modal for a pending ability
+func (h *Handler) DismissModal(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Verify the ability belongs to this player
+	ability := player.AbilityState.GetPendingAbility(abilityID)
+	if ability == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	if ability.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Dismiss the modal
+	success := player.AbilityState.DismissModal(abilityID)
+	if !success {
+		http.Error(w, "Failed to dismiss modal", http.StatusInternalServerError)
+		return
+	}
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🙈 Player %s dismissed modal for ability %s in room %s", player.Name, abilityID, roomCode)
+
+	// Publish event to update UI
+	h.eventBus.Publish(Event{
+		Type:     "modal_dismissed",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// RestoreModal restores a dismissed modal for a pending ability
+func (h *Handler) RestoreModal(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Verify the ability belongs to this player
+	ability := player.AbilityState.GetPendingAbility(abilityID)
+	if ability == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	if ability.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Restore the modal
+	success := player.AbilityState.RestoreModal(abilityID)
+	if !success {
+		http.Error(w, "Failed to restore modal", http.StatusInternalServerError)
+		return
+	}
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("👁️ Player %s restored modal for ability %s in room %s", player.Name, abilityID, roomCode)
+
+	// Publish event to update UI
+	h.eventBus.Publish(Event{
+		Type:     "modal_restored",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *Handler) SetRoleOption(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
 

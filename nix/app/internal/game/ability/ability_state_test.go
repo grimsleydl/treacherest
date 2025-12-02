@@ -313,3 +313,170 @@ func TestGetOriginalCardID(t *testing.T) {
 		t.Errorf("Expected original card ID 31, got %d", originalID)
 	}
 }
+
+// TestDismissModal tests dismissing a modal for a pending ability
+func TestDismissModal(t *testing.T) {
+	state := NewAbilityState()
+
+	ability := &PendingAbility{
+		ID:       "ability-1",
+		PlayerID: "player-1",
+		CardID:   31,
+	}
+
+	state.AddPendingAbility(ability)
+
+	// Initially not dismissed
+	if state.IsModalDismissed("ability-1") {
+		t.Error("Expected modal to not be dismissed initially")
+	}
+
+	// Dismiss modal
+	success := state.DismissModal("ability-1")
+	if !success {
+		t.Error("Expected DismissModal to succeed")
+	}
+
+	// Check dismissed status
+	if !state.IsModalDismissed("ability-1") {
+		t.Error("Expected modal to be dismissed after DismissModal")
+	}
+
+	// Try to dismiss non-existent ability
+	success = state.DismissModal("non-existent")
+	if success {
+		t.Error("Expected DismissModal to fail for non-existent ability")
+	}
+}
+
+// TestRestoreModal tests restoring a dismissed modal
+func TestRestoreModal(t *testing.T) {
+	state := NewAbilityState()
+
+	ability := &PendingAbility{
+		ID:             "ability-1",
+		PlayerID:       "player-1",
+		CardID:         31,
+		ModalDismissed: true, // Start dismissed
+	}
+
+	state.AddPendingAbility(ability)
+
+	// Initially dismissed
+	if !state.IsModalDismissed("ability-1") {
+		t.Error("Expected modal to be dismissed initially")
+	}
+
+	// Restore modal
+	success := state.RestoreModal("ability-1")
+	if !success {
+		t.Error("Expected RestoreModal to succeed")
+	}
+
+	// Check restored status
+	if state.IsModalDismissed("ability-1") {
+		t.Error("Expected modal to not be dismissed after RestoreModal")
+	}
+
+	// Try to restore non-existent ability
+	success = state.RestoreModal("non-existent")
+	if success {
+		t.Error("Expected RestoreModal to fail for non-existent ability")
+	}
+}
+
+// TestSetModalState tests setting modal state data
+func TestSetModalState(t *testing.T) {
+	state := NewAbilityState()
+
+	ability := &PendingAbility{
+		ID:       "ability-1",
+		PlayerID: "player-1",
+		CardID:   31,
+	}
+
+	state.AddPendingAbility(ability)
+
+	// Set some modal state
+	success := state.SetModalState("ability-1", "selected_card_id", 15)
+	if !success {
+		t.Error("Expected SetModalState to succeed")
+	}
+
+	success = state.SetModalState("ability-1", "filter", "Traitor")
+	if !success {
+		t.Error("Expected SetModalState to succeed")
+	}
+
+	// Retrieve state
+	val, exists := state.GetModalState("ability-1", "selected_card_id")
+	if !exists {
+		t.Error("Expected modal state 'selected_card_id' to exist")
+	}
+	if cardID, ok := val.(int); !ok || cardID != 15 {
+		t.Errorf("Expected selected_card_id to be 15, got %v", val)
+	}
+
+	val, exists = state.GetModalState("ability-1", "filter")
+	if !exists {
+		t.Error("Expected modal state 'filter' to exist")
+	}
+	if filter, ok := val.(string); !ok || filter != "Traitor" {
+		t.Errorf("Expected filter to be 'Traitor', got %v", val)
+	}
+
+	// Try to set state for non-existent ability
+	success = state.SetModalState("non-existent", "key", "value")
+	if success {
+		t.Error("Expected SetModalState to fail for non-existent ability")
+	}
+}
+
+// TestGetModalState tests retrieving modal state data
+func TestGetModalState(t *testing.T) {
+	state := NewAbilityState()
+
+	ability := &PendingAbility{
+		ID:         "ability-1",
+		PlayerID:   "player-1",
+		CardID:     31,
+		ModalState: map[string]interface{}{
+			"option1": "value1",
+			"option2": 42,
+		},
+	}
+
+	state.AddPendingAbility(ability)
+
+	// Get existing state
+	val, exists := state.GetModalState("ability-1", "option1")
+	if !exists {
+		t.Error("Expected modal state 'option1' to exist")
+	}
+	if str, ok := val.(string); !ok || str != "value1" {
+		t.Errorf("Expected option1 to be 'value1', got %v", val)
+	}
+
+	val, exists = state.GetModalState("ability-1", "option2")
+	if !exists {
+		t.Error("Expected modal state 'option2' to exist")
+	}
+	if num, ok := val.(int); !ok || num != 42 {
+		t.Errorf("Expected option2 to be 42, got %v", val)
+	}
+
+	// Get non-existent state
+	val, exists = state.GetModalState("ability-1", "non-existent")
+	if exists {
+		t.Error("Expected non-existent state to not exist")
+	}
+	if val != nil {
+		t.Errorf("Expected nil value for non-existent state, got %v", val)
+	}
+
+	// Get state for non-existent ability
+	val, exists = state.GetModalState("non-existent", "option1")
+	if exists {
+		t.Error("Expected GetModalState to fail for non-existent ability")
+	}
+}

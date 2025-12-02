@@ -154,3 +154,55 @@ func (as *AbilityState) GetOriginalCardID() int {
 	}
 	return 0
 }
+
+// DismissModal sets the modal dismissed flag for a pending ability
+func (as *AbilityState) DismissModal(abilityID string) bool {
+	ability := as.GetPendingAbility(abilityID)
+	if ability == nil {
+		return false
+	}
+	ability.ModalDismissed = true
+	return true
+}
+
+// RestoreModal clears the modal dismissed flag for a pending ability
+func (as *AbilityState) RestoreModal(abilityID string) bool {
+	ability := as.GetPendingAbility(abilityID)
+	if ability == nil {
+		return false
+	}
+	ability.ModalDismissed = false
+	return true
+}
+
+// IsModalDismissed checks if a modal is dismissed for a pending ability
+func (as *AbilityState) IsModalDismissed(abilityID string) bool {
+	ability := as.GetPendingAbility(abilityID)
+	if ability == nil {
+		return false
+	}
+	return ability.ModalDismissed
+}
+
+// SetModalState stores state data for a modal
+func (as *AbilityState) SetModalState(abilityID string, key string, value interface{}) bool {
+	ability := as.GetPendingAbility(abilityID)
+	if ability == nil {
+		return false
+	}
+	if ability.ModalState == nil {
+		ability.ModalState = make(map[string]interface{})
+	}
+	ability.ModalState[key] = value
+	return true
+}
+
+// GetModalState retrieves state data for a modal
+func (as *AbilityState) GetModalState(abilityID string, key string) (interface{}, bool) {
+	ability := as.GetPendingAbility(abilityID)
+	if ability == nil || ability.ModalState == nil {
+		return nil, false
+	}
+	value, exists := ability.ModalState[key]
+	return value, exists
+}

@@ -83,6 +83,10 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		// Role options endpoints (for card-specific configuration)
 		r.Get("/room/{code}/options", h.GetRoleOptions)
 		r.Post("/room/{code}/options", h.SetRoleOption)
+
+		// Modal dismiss/restore endpoints (for ability modals)
+		r.Post("/room/{code}/ability/{abilityID}/dismiss", h.DismissModal)
+		r.Post("/room/{code}/ability/{abilityID}/restore", h.RestoreModal)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
