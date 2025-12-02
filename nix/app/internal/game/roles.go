@@ -156,9 +156,13 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 			shuffled[playerIndex].Role = card
 			usedCards[card] = true
 
-			// Leader is always revealed
+			// Leader is always revealed and face up
 			if card.GetRoleType() == RoleLeader {
 				shuffled[playerIndex].RoleRevealed = true
+				shuffled[playerIndex].FaceUp = true
+			} else {
+				// All non-Leader roles start face down
+				shuffled[playerIndex].FaceUp = false
 			}
 
 			playerIndex++
@@ -224,9 +228,13 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 			shuffled[playerIndex].Role = card
 			usedCards[card] = true
 
-			// Leader is always revealed
+			// Leader is always revealed and face up
 			if card.GetRoleType() == RoleLeader {
 				shuffled[playerIndex].RoleRevealed = true
+				shuffled[playerIndex].FaceUp = true
+			} else {
+				// All non-Leader roles start face down
+				shuffled[playerIndex].FaceUp = false
 			}
 
 			playerIndex++
@@ -452,6 +460,15 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 			// Use modulo to reuse cards if needed
 			card := shuffledCards[i%len(shuffledCards)]
 			shuffled[playerIndex].Role = card
+
+			// Set face state based on role type
+			// Leaders start face up, all other roles start face down
+			if card != nil && card.GetRoleType() == RoleLeader {
+				shuffled[playerIndex].FaceUp = true
+			} else {
+				shuffled[playerIndex].FaceUp = false
+			}
+
 			log.Printf("Assigned %s to player %s", card.Name, shuffled[playerIndex].Name)
 			playerIndex++
 		}

@@ -435,3 +435,83 @@ func TestHiddenDistribution(t *testing.T) {
 		}
 	})
 }
+
+func TestAssignRoles_InitialFaceState(t *testing.T) {
+	// Create CardService for testing
+	cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("Failed to create CardService: %v", err)
+	}
+
+	t.Run("Leaders start face up, all other roles start face down", func(t *testing.T) {
+		// Test with multiple player counts to ensure consistency
+		for playerCount := 2; playerCount <= 8; playerCount++ {
+			players := make([]*Player, playerCount)
+			for i := 0; i < playerCount; i++ {
+				players[i] = NewPlayer(string(rune('a'+i)), "Player", "session")
+			}
+
+			// Assign roles
+			AssignRoles(players, cardService)
+
+			// Verify face state for each player
+			for _, p := range players {
+				if p.Role == nil {
+					t.Errorf("Player has nil role")
+					continue
+				}
+
+				if p.Role.GetRoleType() == RoleLeader {
+					if !p.FaceUp {
+						t.Errorf("Leader %s should start face up, got face down", p.Role.Name)
+					}
+				} else {
+					if p.FaceUp {
+						t.Errorf("Non-Leader %s (%s) should start face down, got face up", p.Role.Name, p.Role.GetRoleType())
+					}
+				}
+			}
+		}
+	})
+
+	t.Run("AssignRolesWithConfig also sets correct face state", func(t *testing.T) {
+		players := []*Player{
+			{ID: "1", Name: "Player1"},
+			{ID: "2", Name: "Player2"},
+			{ID: "3", Name: "Player3"},
+			{ID: "4", Name: "Player4"},
+		}
+
+		roleConfig := &RoleConfiguration{
+			PresetName:          "custom",
+			AllowLeaderlessGame: false,
+			MinPlayers:          1,
+			MaxPlayers:          8,
+			RoleTypes: map[string]*RoleTypeConfig{
+				"Leader":   {Count: 1},
+				"Guardian": {Count: 2},
+				"Traitor":  {Count: 1},
+			},
+		}
+
+		AssignRolesWithConfig(players, cardService, roleConfig, nil)
+
+		// Verify face state for each player
+		for _, p := range players {
+			if p.Role == nil {
+				t.Errorf("Player %s has nil role", p.Name)
+				continue
+			}
+
+			if p.Role.GetRoleType() == RoleLeader {
+				if !p.FaceUp {
+					t.Errorf("Leader %s should start face up, got face down", p.Role.Name)
+				}
+			} else {
+				if p.FaceUp {
+					t.Errorf("Non-Leader %s (%s) should start face down, got face up", p.Role.Name, p.Role.GetRoleType())
+				}
+			}
+		}
+	})
+}
