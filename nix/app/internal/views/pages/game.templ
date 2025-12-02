@@ -194,13 +194,15 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 								</div>
 								<div id={ fmt.Sprintf("reveal-%s-panel", p.ID) } class="collapse-content">
 									<!-- Show mini card if:
-									     - Player is Leader (show to everyone)
+									     - Player is Leader (always face up)
 									     - Current player viewing their own card
-									     - Role is globally revealed -->
+									     - Card is face up AND globally revealed -->
 									if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
 									   (p.ID == currentPlayer.ID && p.Role != nil) ||
-									   (p.RoleRevealed && p.Role != nil) {
+									   (p.FaceUp && p.RoleRevealed && p.Role != nil) {
 										@MiniRoleCard(p.Role)
+									} else if !p.FaceUp && p.ID != currentPlayer.ID {
+										<div class="text-sm opacity-60">Card is face down.</div>
 									} else {
 										<div class="text-sm opacity-60">Unknown role.</div>
 									}
