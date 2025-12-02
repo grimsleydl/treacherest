@@ -208,3 +208,36 @@ func (cp *CardPool) getAvailableCardsUnsafe() []*Card {
 	}
 	return available
 }
+
+// GetCardsByTypes returns available cards matching any of the specified types
+// If no types are specified, returns all available cards
+func (cp *CardPool) GetCardsByTypes(types ...string) []*Card {
+	cp.mu.RLock()
+	defer cp.mu.RUnlock()
+
+	// If no types specified, return all available cards
+	if len(types) == 0 {
+		return cp.getAvailableCardsUnsafe()
+	}
+
+	// Create a map for faster type lookup
+	typeMap := make(map[string]bool)
+	for _, t := range types {
+		typeMap[t] = true
+	}
+
+	filtered := make([]*Card, 0)
+	for _, card := range cp.AllCards {
+		// Skip if assigned
+		if _, assigned := cp.AssignedCards[card.ID]; assigned {
+			continue
+		}
+
+		// Check if card type matches any of the specified types
+		cardType := string(card.GetRoleType())
+		if typeMap[cardType] {
+			filtered = append(filtered, card)
+		}
+	}
+	return filtered
+}

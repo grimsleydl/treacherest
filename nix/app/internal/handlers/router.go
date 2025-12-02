@@ -87,6 +87,10 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		// Modal dismiss/restore endpoints (for ability modals)
 		r.Post("/room/{code}/ability/{abilityID}/dismiss", h.DismissModal)
 		r.Post("/room/{code}/ability/{abilityID}/restore", h.RestoreModal)
+
+		// Ability action endpoints
+		r.Post("/room/{code}/player/{playerID}/trigger-wearer", h.TriggerWearerAbility)
+		r.Post("/room/{code}/ability/{abilityID}/select-card", h.SelectWearerCard)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
