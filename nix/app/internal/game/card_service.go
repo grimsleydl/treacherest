@@ -102,6 +102,15 @@ func (cs *CardService) GetRandomTraitor() *Card {
 	return cs.Traitors[rand.Intn(len(cs.Traitors))]
 }
 
+// GetAllCards returns all cards from the card service
+func (cs *CardService) GetAllCards() []*Card {
+	cards := make([]*Card, len(cs.allCards))
+	for i := range cs.allCards {
+		cards[i] = &cs.allCards[i]
+	}
+	return cards
+}
+
 // GetRandomCards returns a specified number of random cards from a category
 // ensuring no duplicates
 func (cs *CardService) GetRandomCards(cardType RoleType, count int) []*Card {

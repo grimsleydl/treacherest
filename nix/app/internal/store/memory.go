@@ -49,13 +49,21 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 	roleService.SetCardService(s.cardService)
 	roleConfig, _ := roleService.CreateFromPreset("standard", s.config.Server.DefaultGameSize)
 
+	// Initialize card pool with all available cards
+	var allCards []*game.Card
+	if s.cardService != nil {
+		allCards = s.cardService.GetAllCards()
+	}
+
 	room := &game.Room{
-		Code:       code,
-		State:      game.StateLobby,
-		Players:    make(map[string]*game.Player),
-		CreatedAt:  time.Now(),
-		MaxPlayers: s.config.Server.MaxPlayersPerRoom,
-		RoleConfig: roleConfig,
+		Code:               code,
+		State:              game.StateLobby,
+		Players:            make(map[string]*game.Player),
+		CreatedAt:          time.Now(),
+		MaxPlayers:         s.config.Server.MaxPlayersPerRoom,
+		RoleConfig:         roleConfig,
+		CardPool:           game.NewCardPool(allCards),
+		RoleOptionsManager: game.NewRoleOptionsManager(),
 	}
 
 	s.rooms[code] = room

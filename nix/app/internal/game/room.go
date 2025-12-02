@@ -69,6 +69,10 @@ type Room struct {
 	ValidationVersion int64     `json:"-"`
 	LastValidatedAt   time.Time `json:"-"`
 
+	// Ability system components
+	CardPool           *CardPool
+	RoleOptionsManager *RoleOptionsManager
+
 	mu sync.RWMutex
 }
 
