@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"treacherest/internal/game/ability"
 )
 
 // GameState represents the current state of a game
@@ -348,6 +349,79 @@ func (r *Room) ValidateRoleConfig() error {
 	// For now, we allow flexible role counts
 	// The assignment logic will handle distributing roles appropriately
 	return nil
+}
+
+// GetAvailableCards implements ability.GameStateProvider
+// Returns cards from the pool matching filters
+func (r *Room) GetAvailableCards(filters []ability.Filter) []ability.CardLike {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if r.CardPool == nil {
+		return []ability.CardLike{}
+	}
+
+	// Get available cards
+	available := r.CardPool.GetAvailableCards()
+
+	// Apply filters
+	filtered := make([]ability.CardLike, 0)
+	for _, card := range available {
+		if matchesFilters(card, filters) {
+			filtered = append(filtered, card)
+		}
+	}
+
+	return filtered
+}
+
+// GetRoleOption implements ability.GameStateProvider
+func (r *Room) GetRoleOption(cardID int, key string) (interface{}, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if r.RoleOptionsManager == nil {
+		return nil, false
+	}
+
+	if !r.RoleOptionsManager.HasOptions(cardID) {
+		return nil, false
+	}
+
+	opts := r.RoleOptionsManager.GetOrCreateOptions(cardID)
+	return opts.GetOption(key)
+}
+
+// GetCardByID implements ability.GameStateProvider
+func (r *Room) GetCardByID(cardID int) ability.CardLike {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if r.CardPool == nil {
+		return nil
+	}
+
+	return r.CardPool.GetCardByID(cardID)
+}
+
+// matchesFilters checks if a card matches all given filters
+func matchesFilters(card *Card, filters []ability.Filter) bool {
+	for _, filter := range filters {
+		switch filter.Type {
+		case ability.FilterRole:
+			roleType := card.GetRoleType()
+			roleStr := string(roleType)
+
+			matches := roleStr == filter.Value
+			if filter.Negate {
+				matches = !matches
+			}
+			if !matches {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // GetValidationState returns comprehensive validation information

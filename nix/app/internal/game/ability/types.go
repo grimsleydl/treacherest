@@ -253,10 +253,22 @@ type AbilityResolver interface {
 	RemoveEffect(ctx *AbilityContext) error
 }
 
+// GameStateProvider interface allows resolvers to access game state
+// without circular imports between ability and game packages
+type GameStateProvider interface {
+	// GetAvailableCards returns cards from the pool matching filters
+	GetAvailableCards(filters []Filter) []CardLike
+	// GetRoleOption retrieves a configuration option for a card
+	GetRoleOption(cardID int, key string) (interface{}, bool)
+	// GetCardByID retrieves a card by its ID
+	GetCardByID(cardID int) CardLike
+}
+
 // AbilityContext provides game state for ability resolution
 type AbilityContext struct {
-	RoomCode  string
-	PlayerID  string
-	CardID    int
-	TempData  map[string]interface{} // Mutable state for multi-step abilities
+	RoomCode     string
+	PlayerID     string
+	CardID       int
+	TempData     map[string]interface{} // Mutable state for multi-step abilities
+	GameState    GameStateProvider      // Access to game state
 }
