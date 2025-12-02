@@ -379,6 +379,152 @@ func (h *Handler) ToggleFaceState(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetRoleOptions retrieves role options for a specific card
+func (h *Handler) GetRoleOptions(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	cardID := r.URL.Query().Get("card_id")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse card ID
+	var cardIDInt int
+	if _, err := fmt.Sscanf(cardID, "%d", &cardIDInt); err != nil {
+		http.Error(w, "Invalid card ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get options
+	if room.RoleOptionsManager == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("{}"))
+		return
+	}
+
+	if !room.RoleOptionsManager.HasOptions(cardIDInt) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("{}"))
+		return
+	}
+
+	opts := room.RoleOptionsManager.GetOrCreateOptions(cardIDInt)
+
+	// Return options as JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(fmt.Sprintf(`{"card_id": %d, "options": %v}`, cardIDInt, opts.Options)))
+}
+
+// SetRoleOption sets a role option for a specific card
+func (h *Handler) SetRoleOption(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room and is host
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Only host can modify role options
+	if !player.IsHost {
+		http.Error(w, "Only host can modify role options", http.StatusForbidden)
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		CardID int                    `json:"card_id"`
+		Key    string                 `json:"key"`
+		Value  interface{}            `json:"value"`
+	}
+
+	if err := r.ParseForm(); err == nil && r.Method == "POST" {
+		// Handle form data
+		cardID := r.FormValue("card_id")
+		key := r.FormValue("key")
+		value := r.FormValue("value")
+
+		var cardIDInt int
+		if _, err := fmt.Sscanf(cardID, "%d", &cardIDInt); err != nil {
+			http.Error(w, "Invalid card ID", http.StatusBadRequest)
+			return
+		}
+
+		req.CardID = cardIDInt
+		req.Key = key
+
+		// Try to parse value as different types
+		if value == "true" {
+			req.Value = true
+		} else if value == "false" {
+			req.Value = false
+		} else if intVal, err := fmt.Sscanf(value, "%d", new(int)); err == nil && intVal == 1 {
+			var parsed int
+			fmt.Sscanf(value, "%d", &parsed)
+			req.Value = parsed
+		} else {
+			req.Value = value
+		}
+	} else {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.CardID == 0 || req.Key == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Set option
+	if room.RoleOptionsManager == nil {
+		room.RoleOptionsManager = game.NewRoleOptionsManager()
+	}
+
+	opts := room.RoleOptionsManager.GetOrCreateOptions(req.CardID)
+	opts.SetOption(req.Key, req.Value)
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🔧 Role option set: card=%d, key=%s, value=%v", req.CardID, req.Key, req.Value)
+
+	// Publish event to update all connected clients
+	h.eventBus.Publish(Event{
+		Type:     "role_options_changed",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // runCountdown runs the countdown timer
 func (h *Handler) runCountdown(room *game.Room) {
 	ticker := time.NewTicker(1 * time.Second)

@@ -79,6 +79,10 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/config/count", h.UpdateRoleCount)
 		r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
 		r.Post("/room/{code}/config/hide-distribution", h.UpdateHideDistribution)
+
+		// Role options endpoints (for card-specific configuration)
+		r.Get("/room/{code}/options", h.GetRoleOptions)
+		r.Post("/room/{code}/options", h.SetRoleOption)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)
