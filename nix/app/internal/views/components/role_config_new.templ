@@ -231,8 +231,6 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 										}
 									</span>
 								</label>
-								// Card modal placed outside label to avoid invalid nesting
-								@CardModal(card)
 								// Show role options UI for cards that support configuration
 								if typeConfig.EnabledCards[card.Name] {
 									@RoleOptionsUI(room, card)
@@ -242,6 +240,10 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 					</div>
 				</div>
 			</div>
+			// Card modals rendered outside collapse to prevent layout interference
+			for _, card := range cards {
+				@CardModal(card)
+			}
 		</div>
 	}
 }
