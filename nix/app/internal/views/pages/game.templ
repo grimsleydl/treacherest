@@ -113,67 +113,26 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<!-- Leader confirmation prompts for pending ability reveals -->
 				@components.LeaderConfirmationPrompts(room, currentPlayer)
-				<!-- Public reveal/hide button and face state toggle for current player -->
+				<!-- Modal container for X input and other modals -->
+				<div id="modal-container"></div>
+				<!-- Unveil button and face state toggle for current player -->
 				if currentPlayer.Role != nil && room.State == game.StatePlaying {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
-						// Leaders cannot hide their role (they start face-up per game rules)
+						// Leaders start face-up and cannot be turned face down
 						if currentPlayer.Role.GetRoleType() == game.RoleLeader {
-							// Leaders are always revealed, no hide button
-						} else if currentPlayer.RoleRevealed {
-							<button
-								class="btn btn-sm btn-outline btn-warning"
-								data-on-click={ fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID) }
-								title="Hide your role from everyone">
-								🙈 Hide Role from Everyone
-							</button>
+							// No action buttons for Leaders
+						} else if !currentPlayer.FaceUp {
+							// Card is face down - show Unveil button
+							@components.UnveilButton(room, currentPlayer)
 						} else {
-							<label
-								for={ fmt.Sprintf("confirm-reveal-%s", currentPlayer.ID) }
-								class="btn btn-sm btn-outline btn-primary"
-								title="Reveal your role to everyone">
-								👁️ Reveal Role to Everyone
-							</label>
-						}
-						<!-- Face state toggle button -->
-						if currentPlayer.FaceUp {
+							// Card is face up - show Turn Face Down button (for transformed players)
 							<button
 								class="btn btn-sm btn-outline btn-secondary"
 								data-on-click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
 								title="Turn your card face down (may end transformations)">
 								🃏 Turn Face Down
 							</button>
-						} else {
-							<button
-								class="btn btn-sm btn-outline btn-accent"
-								data-on-click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
-								title="Turn your card face up">
-								🃏 Turn Face Up
-							</button>
 						}
-					</div>
-				}
-				<!-- Confirmation modal for revealing -->
-				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.RoleRevealed {
-					<input type="checkbox" id={ fmt.Sprintf("confirm-reveal-%s", currentPlayer.ID) } class="modal-toggle"/>
-					<div class="modal" role="dialog">
-						<div class="modal-box">
-							<h3 class="font-bold text-lg">Reveal Your Role?</h3>
-							<p class="py-4">
-								Are you sure you want to reveal your role (<strong>{ currentPlayer.Role.Name }</strong>) to all players?
-								This action will make your role visible to everyone in the game.
-							</p>
-							<div class="modal-action">
-								<label for={ fmt.Sprintf("confirm-reveal-%s", currentPlayer.ID) } class="btn btn-ghost">
-									Cancel
-								</label>
-								<button
-									class="btn btn-primary"
-									data-on-click={ fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID) }>
-									Confirm Reveal
-								</button>
-							</div>
-						</div>
-						<label class="modal-backdrop" for={ fmt.Sprintf("confirm-reveal-%s", currentPlayer.ID) }>Close</label>
 					</div>
 				}
 				<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">

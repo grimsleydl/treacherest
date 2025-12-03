@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar-go/datastar"
@@ -9,6 +10,8 @@ import (
 	"net/http"
 	"time"
 	"treacherest/internal/game"
+	"treacherest/internal/game/ability"
+	"treacherest/internal/views/components"
 )
 
 // StartGame starts a game
@@ -673,4 +676,149 @@ func (h *Handler) runCountdown(room *game.Room) {
 		RoomCode: room.Code,
 		Data:     room,
 	})
+}
+
+// UnveilPlayer handles the universal unveil action for any card
+// For cards without special requirements, this simply sets them face up
+// For cards with requirements, it redirects to the appropriate flow
+func (h *Handler) UnveilPlayer(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		log.Printf("❌ No player cookie for room: %s", roomCode)
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	me := room.GetPlayer(playerCookie.Value)
+	if me == nil {
+		log.Printf("❌ Player not found in room: %s", roomCode)
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the target player
+	target := room.GetPlayer(playerID)
+	if target == nil {
+		log.Printf("❌ Target player not found: %s", playerID)
+		http.Error(w, "Target player not found", http.StatusBadRequest)
+		return
+	}
+
+	// Authorization: only the player themselves can unveil their own card
+	if me.ID != target.ID {
+		log.Printf("❌ Player %s attempted to unveil %s's card (forbidden)", me.ID, target.ID)
+		http.Error(w, "You can only unveil your own card", http.StatusForbidden)
+		return
+	}
+
+	// Already face up - nothing to do
+	if target.FaceUp {
+		log.Printf("ℹ️ Player %s's card is already face up", target.Name)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Check if this card has special unveil requirements
+	if target.Role != nil {
+		req := ability.GetUnveilRequirements(target.Role.GetID())
+
+		// If requires input, redirect to modal (this shouldn't normally happen
+		// since the UI should show the modal button instead)
+		if req.InputType != ability.NoInput {
+			log.Printf("⚠️ Card %s requires input but simple unveil called - redirect needed", target.Role.Name)
+			http.Error(w, "This card requires input before unveiling", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Simple unveil: set face up and mark as revealed
+	target.FaceUp = true
+	target.RoleRevealed = true
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Player %s unveiled their card (simple unveil) in room %s", target.Name, roomCode)
+
+	// Publish event to update all connected clients
+	h.eventBus.Publish(Event{
+		Type:     "role_revealed",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetUnveilModal returns the X input modal for cards that need it
+func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		log.Printf("❌ Room not found: %s", roomCode)
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the requesting player is in the room
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		log.Printf("❌ No player cookie for room: %s", roomCode)
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	me := room.GetPlayer(playerCookie.Value)
+	if me == nil {
+		log.Printf("❌ Player not found in room: %s", roomCode)
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the target player
+	target := room.GetPlayer(playerID)
+	if target == nil {
+		log.Printf("❌ Target player not found: %s", playerID)
+		http.Error(w, "Target player not found", http.StatusBadRequest)
+		return
+	}
+
+	// Authorization: only the player themselves can see their unveil modal
+	if me.ID != target.ID {
+		log.Printf("❌ Player %s attempted to get %s's unveil modal (forbidden)", me.ID, target.ID)
+		http.Error(w, "You can only unveil your own card", http.StatusForbidden)
+		return
+	}
+
+	// Verify target has a role
+	if target.Role == nil {
+		http.Error(w, "Player has no role assigned", http.StatusBadRequest)
+		return
+	}
+
+	// Get unveil requirements for this card
+	req := ability.GetUnveilRequirements(target.Role.GetID())
+
+	// Render the modal
+	var buf bytes.Buffer
+	if err := components.XInputModal(room, target, req).Render(r.Context(), &buf); err != nil {
+		log.Printf("❌ Failed to render X input modal: %v", err)
+		http.Error(w, "Failed to render modal", http.StatusInternalServerError)
+		return
+	}
+
+	// Send as SSE fragment
+	sse := datastar.NewSSE(w, r)
+	sse.PatchElements(buf.String(), datastar.WithSelector("#modal-container"))
 }

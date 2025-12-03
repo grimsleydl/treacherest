@@ -1,0 +1,175 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+	"treacherest/internal/game/ability"
+)
+
+// XInputModal shows a modal for the player to input their X value
+// before triggering an unveil ability that requires numeric input
+templ XInputModal(room *game.Room, player *game.Player, requirements *ability.UnveilRequirements) {
+	<div
+		id="x-input-modal"
+		class="modal modal-open"
+		data-signals-x-value={ fmt.Sprintf("%d", requirements.DefaultValue) }
+	>
+		<div class="modal-box">
+			<h3 class="font-bold text-lg flex items-center gap-2">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+				</svg>
+				Unveil { player.Role.Name }
+			</h3>
+
+			<div class="py-4">
+				<p class="text-sm opacity-80 mb-4">
+					{ requirements.InputDescription }
+				</p>
+
+				// Numeric input variant
+				<div class="form-control" id="x-input-numeric">
+					<label class="label">
+						<span class="label-text font-medium">{ requirements.InputLabel }</span>
+					</label>
+					<div class="flex items-center gap-4">
+						<button
+							class="btn btn-circle btn-sm btn-outline"
+							data-on-click="$xValue = Math.max(0, $xValue - 1)"
+							type="button"
+						>
+							-
+						</button>
+						<input
+							type="number"
+							class="input input-bordered w-24 text-center text-xl font-bold"
+							data-bind="$xValue"
+							min={ fmt.Sprintf("%d", requirements.MinValue) }
+							if requirements.MaxValue >= 0 {
+								max={ fmt.Sprintf("%d", requirements.MaxValue) }
+							}
+						/>
+						<button
+							class="btn btn-circle btn-sm btn-outline"
+							data-on-click={
+								fmt.Sprintf(
+									"$xValue = %s",
+									func() string {
+										if requirements.MaxValue >= 0 {
+											return fmt.Sprintf("Math.min(%d, $xValue + 1)", requirements.MaxValue)
+										}
+										return "$xValue + 1"
+									}(),
+								)
+							}
+							type="button"
+						>
+							+
+						</button>
+					</div>
+				</div>
+
+				// Slider variant (alternative view)
+				<div class="form-control mt-4" id="x-input-slider">
+					<label class="label">
+						<span class="label-text">Drag to adjust:</span>
+						<span class="label-text-alt font-bold text-lg" data-text="$xValue"></span>
+					</label>
+					<input
+						type="range"
+						class="range range-primary"
+						data-bind="$xValue"
+						min={ fmt.Sprintf("%d", requirements.MinValue) }
+						if requirements.MaxValue >= 0 {
+							max={ fmt.Sprintf("%d", requirements.MaxValue) }
+						} else {
+							max="10"
+						}
+						step="1"
+					/>
+					<div class="w-full flex justify-between text-xs px-2 mt-1">
+						<span>0</span>
+						<span>5</span>
+						if requirements.MaxValue >= 0 {
+							<span>{ fmt.Sprintf("%d", requirements.MaxValue) }</span>
+						} else {
+							<span>10+</span>
+						}
+					</div>
+				</div>
+
+				// Preview of what will happen
+				<div class="alert alert-info mt-4">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+					<div>
+						<div class="text-sm" data-show="$xValue === 0">
+							You will unveil without seeing any transformation options.
+						</div>
+						<div class="text-sm" data-show="$xValue === 1">
+							You will see <strong>1</strong> card to choose from.
+						</div>
+						<div class="text-sm" data-show="$xValue > 1">
+							You will see up to <strong data-text="$xValue"></strong> cards to choose from.
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="modal-action">
+				<button
+					class="btn btn-ghost"
+					data-on-click="@get('/game/' + window.location.pathname.split('/').pop())"
+				>
+					Cancel
+				</button>
+				<button
+					class="btn btn-primary"
+					data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-wearer/' + $xValue)", room.Code, player.ID) }
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+					</svg>
+					Unveil
+				</button>
+			</div>
+		</div>
+		<div class="modal-backdrop bg-base-300/50" data-on-click="@get('/game/' + window.location.pathname.split('/').pop())"></div>
+	</div>
+}
+
+// UnveilButton shows an unveil button for cards that have unveil abilities
+// This replaces the old "Reveal Role" button
+templ UnveilButton(room *game.Room, player *game.Player) {
+	if player.Role == nil || player.FaceUp {
+		// No button if no role or already face up
+		return
+	}
+
+	// Check if this card has special unveil requirements
+	if req := ability.GetUnveilRequirements(player.Role.GetID()); req.InputType == ability.NumericInput {
+		// Card needs X input - show button that opens modal
+		<button
+			class="btn btn-primary btn-sm"
+			data-on-click={ fmt.Sprintf("@get('/room/%s/unveil-modal/%s')", room.Code, player.ID) }
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+			</svg>
+			Unveil
+		</button>
+	} else {
+		// Card has no special requirements - simple unveil
+		<button
+			class="btn btn-primary btn-sm"
+			data-on-click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+			</svg>
+			Unveil
+		</button>
+	}
+}

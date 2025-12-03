@@ -71,6 +71,8 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/start", h.StartGame)
 		r.Post("/room/{code}/reveal/{playerID}", h.ToggleReveal)
 		r.Post("/room/{code}/facestate/{playerID}", h.ToggleFaceState)
+		r.Post("/room/{code}/unveil/{playerID}", h.UnveilPlayer)
+		r.Get("/room/{code}/unveil-modal/{playerID}", h.GetUnveilModal)
 		r.Get("/game/{code}", h.GamePage)
 
 		// Role configuration endpoints
