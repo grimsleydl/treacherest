@@ -153,7 +153,7 @@ templ SelectableCard(room *game.Room, pendingAbility *ability.PendingAbility, ca
 			<div class="card-actions justify-end mt-2">
 				<button
 					class="btn btn-primary btn-sm w-full"
-					data-on-click={ fmt.Sprintf("@post('/room/%s/ability/%s/select-card') {card_id: %d}", room.Code, pendingAbility.ID, card.GetID()) }
+					data-on-click={ fmt.Sprintf("@post('/room/%s/ability/%s/select-card/%d')", room.Code, pendingAbility.ID, card.GetID()) }
 					title={ fmt.Sprintf("Transform into %s", card.Name) }
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">

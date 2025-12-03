@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"treacherest/internal/game"
 	"treacherest/internal/game/ability"
 
@@ -55,16 +56,23 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filter cards based on options
+	// Get available cards based on options
+	// By default, include all role types EXCEPT Leaders (unless useAllCards is enabled)
 	var filterTypes []string
 	if !useAllCards {
-		// Exclude Leaders by default
+		// Default: exclude Leaders, include all other role types
 		filterTypes = []string{"Guardian", "Assassin", "Traitor"}
 	}
+	// If useAllCards is true, filterTypes remains empty, which returns ALL available cards
 
 	availableCards := room.CardPool.GetCardsByTypes(filterTypes...)
 
-	// Limit to maxReveal cards
+	// Shuffle the cards to ensure random selection
+	rand.Shuffle(len(availableCards), func(i, j int) {
+		availableCards[i], availableCards[j] = availableCards[j], availableCards[i]
+	})
+
+	// Limit to maxReveal cards (now from a shuffled pool)
 	if len(availableCards) > maxReveal {
 		availableCards = availableCards[:maxReveal]
 	}
@@ -155,18 +163,11 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body to get selected card ID
-	var req struct {
-		CardID int `json:"card_id"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if req.CardID == 0 {
-		http.Error(w, "Card ID is required", http.StatusBadRequest)
+	// Get card ID from URL path
+	cardIDStr := chi.URLParam(r, "cardID")
+	cardID, err := strconv.Atoi(cardIDStr)
+	if err != nil || cardID == 0 {
+		http.Error(w, "Invalid card ID", http.StatusBadRequest)
 		return
 	}
 
@@ -178,8 +179,8 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cardAllowed := false
-	for _, cardID := range availableCardIDs {
-		if cardID == req.CardID {
+	for _, availableID := range availableCardIDs {
+		if availableID == cardID {
 			cardAllowed = true
 			break
 		}
@@ -191,7 +192,7 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the selected card from CardPool
-	selectedCard := room.CardPool.GetCardByID(req.CardID)
+	selectedCard := room.CardPool.GetCardByID(cardID)
 	if selectedCard == nil {
 		http.Error(w, "Selected card not found in pool", http.StatusNotFound)
 		return
@@ -202,7 +203,7 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 
 	// Start transformation
 	originalCardID := player.Role.GetID()
-	player.AbilityState.StartTransform(originalCardID, req.CardID, keepTypes, "face_down")
+	player.AbilityState.StartTransform(originalCardID, cardID, keepTypes, "face_down")
 
 	// Update player's role to the transformed card
 	player.Role = selectedCard
@@ -212,7 +213,7 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 
-	log.Printf("🎭 Player %s transformed from card %d to card %d in room %s", player.Name, originalCardID, req.CardID, roomCode)
+	log.Printf("🎭 Player %s transformed from card %d to card %d in room %s", player.Name, originalCardID, cardID, roomCode)
 
 	// Publish event
 	h.eventBus.Publish(Event{

@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -245,13 +243,7 @@ func TestSelectWearerCard(t *testing.T) {
 
 	t.Run("Select card successfully", func(t *testing.T) {
 		// Select card ID 15 (The Bodyguard)
-		reqBody := map[string]interface{}{
-			"card_id": 15,
-		}
-		bodyBytes, _ := json.Marshal(reqBody)
-
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card", bytes.NewReader(bodyBytes))
-		req.Header.Set("Content-Type", "application/json")
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 		req.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
 			Value: "player1",
@@ -260,6 +252,7 @@ func TestSelectWearerCard(t *testing.T) {
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("abilityID", abilityID)
+		rctx.URLParams.Add("cardID", "15")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -354,13 +347,7 @@ func TestSelectWearerCard(t *testing.T) {
 		handler.ConfirmAbility(confirmW, confirmReq)
 
 		// Try to select card not in available list (e.g., card 999)
-		reqBody := map[string]interface{}{
-			"card_id": 999,
-		}
-		bodyBytes, _ := json.Marshal(reqBody)
-
-		req2 := httptest.NewRequest("POST", "/room/"+room2.Code+"/ability/"+abilityID2+"/select-card", bytes.NewReader(bodyBytes))
-		req2.Header.Set("Content-Type", "application/json")
+		req2 := httptest.NewRequest("POST", "/room/"+room2.Code+"/ability/"+abilityID2+"/select-card/999", nil)
 		req2.AddCookie(&http.Cookie{
 			Name:  "player_" + room2.Code,
 			Value: "player2",
@@ -369,6 +356,7 @@ func TestSelectWearerCard(t *testing.T) {
 		rctx2 := chi.NewRouteContext()
 		rctx2.URLParams.Add("code", room2.Code)
 		rctx2.URLParams.Add("abilityID", abilityID2)
+		rctx2.URLParams.Add("cardID", "999")
 		req2 = req2.WithContext(context.WithValue(req2.Context(), chi.RouteCtxKey, rctx2))
 
 		w2 := httptest.NewRecorder()
@@ -381,13 +369,7 @@ func TestSelectWearerCard(t *testing.T) {
 	})
 
 	t.Run("Ability not found", func(t *testing.T) {
-		reqBody := map[string]interface{}{
-			"card_id": 15,
-		}
-		bodyBytes, _ := json.Marshal(reqBody)
-
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/non-existent/select-card", bytes.NewReader(bodyBytes))
-		req.Header.Set("Content-Type", "application/json")
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/non-existent/select-card/15", nil)
 		req.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
 			Value: "player1",
@@ -396,6 +378,7 @@ func TestSelectWearerCard(t *testing.T) {
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("abilityID", "non-existent")
+		rctx.URLParams.Add("cardID", "15")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -408,17 +391,12 @@ func TestSelectWearerCard(t *testing.T) {
 	})
 
 	t.Run("No player cookie", func(t *testing.T) {
-		reqBody := map[string]interface{}{
-			"card_id": 15,
-		}
-		bodyBytes, _ := json.Marshal(reqBody)
-
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card", bytes.NewReader(bodyBytes))
-		req.Header.Set("Content-Type", "application/json")
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("abilityID", abilityID)
+		rctx.URLParams.Add("cardID", "15")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -523,13 +501,7 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 	}
 
 	// Now select a card
-	reqBody := map[string]interface{}{
-		"card_id": 15,
-	}
-	bodyBytes, _ := json.Marshal(reqBody)
-
-	req2 := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card", bytes.NewReader(bodyBytes))
-	req2.Header.Set("Content-Type", "application/json")
+	req2 := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 	req2.AddCookie(&http.Cookie{
 		Name:  "player_" + room.Code,
 		Value: "player1",
@@ -538,6 +510,7 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 	rctx2 := chi.NewRouteContext()
 	rctx2.URLParams.Add("code", room.Code)
 	rctx2.URLParams.Add("abilityID", abilityID)
+	rctx2.URLParams.Add("cardID", "15")
 	req2 = req2.WithContext(context.WithValue(req2.Context(), chi.RouteCtxKey, rctx2))
 
 	w2 := httptest.NewRecorder()
@@ -774,13 +747,7 @@ func TestConfirmAbility(t *testing.T) {
 		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
 
 		// Try to select card WITHOUT Leader confirmation (should fail)
-		reqBody := map[string]interface{}{
-			"card_id": 15,
-		}
-		bodyBytes, _ := json.Marshal(reqBody)
-
-		selectReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card", bytes.NewReader(bodyBytes))
-		selectReq.Header.Set("Content-Type", "application/json")
+		selectReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 		selectReq.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
 			Value: "player1",
@@ -788,6 +755,7 @@ func TestConfirmAbility(t *testing.T) {
 		selectRctx := chi.NewRouteContext()
 		selectRctx.URLParams.Add("code", room.Code)
 		selectRctx.URLParams.Add("abilityID", abilityID)
+		selectRctx.URLParams.Add("cardID", "15")
 		selectReq = selectReq.WithContext(context.WithValue(selectReq.Context(), chi.RouteCtxKey, selectRctx))
 		selectW := httptest.NewRecorder()
 		handler.SelectWearerCard(selectW, selectReq)
