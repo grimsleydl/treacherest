@@ -31,8 +31,8 @@ func GetCardOptions(cardID int, cardName string) []OptionField {
 		return []OptionField{
 			{
 				Key:          "use_all_cards",
-				Label:        "Use All Cards",
-				Description:  "Include all non-Leader cards when revealing",
+				Label:        "Include Leaders",
+				Description:  "Also include Leader cards in the reveal pool (normally excluded)",
 				Type:         "checkbox",
 				DefaultValue: false,
 			},

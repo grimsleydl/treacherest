@@ -11,27 +11,67 @@ templ TransformationDisplay(room *game.Room, player *game.Player) {
 	if player.AbilityState == nil || player.AbilityState.TransformState == nil {
 		return
 	}
-	<div class="alert alert-warning shadow-lg" id="transformation-display">
-		<div class="flex-1">
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info flex-shrink-0 w-6 h-6">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-			</svg>
-			<div>
-				<h3 class="font-bold">You Are Transformed!</h3>
-				<div class="text-sm">
-					@TransformationDetails(room, player)
+	<div class="card bg-warning/20 shadow-lg max-w-md w-full" id="transformation-display">
+		<div class="card-body p-4">
+			<div class="flex items-center gap-2 mb-2">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-warning flex-shrink-0 w-6 h-6">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"></path>
+				</svg>
+				<h3 class="font-bold text-warning">You Are Transformed!</h3>
+			</div>
+			<div class="text-sm mb-3">
+				@TransformationDetails(room, player)
+			</div>
+			<!-- Collapsible original card view -->
+			<div class="collapse collapse-arrow bg-base-200 rounded-lg">
+				<input type="checkbox" id="show-original-card"/>
+				<div class="collapse-title font-medium text-sm py-2">
+					View Your Original Role Card
+				</div>
+				<div class="collapse-content">
+					@OriginalCardView(room, player)
+				</div>
+			</div>
+			<!-- Details dropdown -->
+			<div class="mt-2 text-right">
+				<details class="dropdown dropdown-end">
+					<summary class="btn btn-xs btn-ghost">Transformation Details</summary>
+					<div class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-80 mt-2">
+						@TransformationInfo(room, player)
+					</div>
+				</details>
+			</div>
+		</div>
+	</div>
+}
+
+// OriginalCardView shows the player's original role card before transformation
+templ OriginalCardView(room *game.Room, player *game.Player) {
+	if player.AbilityState == nil || player.AbilityState.TransformState == nil {
+		return
+	}
+	if originalCard := room.CardPool.GetCardByID(player.AbilityState.TransformState.OriginalCardID); originalCard != nil {
+		<div class="border rounded-lg bg-base-100 overflow-hidden mt-2">
+			<figure class="bg-base-200">
+				<img
+					src={ originalCard.GetImageBase64() }
+					alt={ originalCard.Name }
+					class="w-full h-auto"
+					onerror="this.style.display='none'"
+				/>
+			</figure>
+			<div class="p-3 space-y-2">
+				<div class="flex items-center gap-2">
+					<strong class="truncate">{ originalCard.Name }</strong>
+					<span class="badge badge-outline">{ string(originalCard.GetRoleType()) }</span>
+					<span class="badge badge-secondary badge-sm">Original</span>
+				</div>
+				<div class="text-xs opacity-70">
+					This is your true identity. You are currently using the abilities of your transformed card.
 				</div>
 			</div>
 		</div>
-		<div class="flex-none">
-			<details class="dropdown dropdown-end">
-				<summary class="btn btn-sm btn-ghost">Details</summary>
-				<div class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-80 mt-2">
-					@TransformationInfo(room, player)
-				</div>
-			</details>
-		</div>
-	</div>
+	}
 }
 
 // TransformationDetails shows brief transformation info
@@ -57,35 +97,35 @@ templ TransformationDetails(room *game.Room, player *game.Player) {
 // TransformationInfo shows detailed transformation state in dropdown
 templ TransformationInfo(room *game.Room, player *game.Player) {
 	if transformState := player.AbilityState.TransformState; transformState != nil {
-		<div class="p-3 space-y-3">
+		<div class="p-3 space-y-3 text-base-content">
 			<div>
 				<h4 class="font-bold text-sm mb-2">Transformation Details</h4>
 				<div class="space-y-2 text-sm">
 					if originalCard := room.CardPool.GetCardByID(transformState.OriginalCardID); originalCard != nil {
 						<div>
-							<span class="text-base-content/60">Original Card:</span>
+							<span class="opacity-70">Original Card:</span>
 							<span class="font-semibold ml-2">{ originalCard.Name }</span>
-							<span class="badge badge-sm badge-ghost ml-1">{ string(originalCard.GetRoleType()) }</span>
+							<span class="badge badge-sm badge-outline ml-1">{ string(originalCard.GetRoleType()) }</span>
 						</div>
 					}
 					<div>
-						<span class="text-base-content/60">Current Card:</span>
+						<span class="opacity-70">Current Card:</span>
 						<span class="font-semibold ml-2">{ player.Role.Name }</span>
-						<span class="badge badge-sm badge-ghost ml-1">{ string(player.Role.GetRoleType()) }</span>
+						<span class="badge badge-sm badge-outline ml-1">{ string(player.Role.GetRoleType()) }</span>
 					</div>
 					if len(transformState.KeepTypes) > 0 {
 						<div>
-							<span class="text-base-content/60">Preserved Attributes:</span>
+							<span class="opacity-70">Preserved Attributes:</span>
 							<div class="flex gap-1 mt-1 flex-wrap">
 								for _, keepType := range transformState.KeepTypes {
-									<span class="badge badge-sm badge-accent">{ keepType }</span>
+									<span class="badge badge-sm badge-secondary">{ keepType }</span>
 								}
 							</div>
 						</div>
 					}
 					if transformState.EndCondition != "" {
 						<div>
-							<span class="text-base-content/60">Transformation Ends When:</span>
+							<span class="opacity-70">Transformation Ends When:</span>
 							<div class="mt-1">
 								<div class="text-xs">
 									• { formatEndCondition(transformState.EndCondition) }
@@ -96,7 +136,7 @@ templ TransformationInfo(room *game.Room, player *game.Player) {
 				</div>
 			</div>
 			<div class="divider my-2"></div>
-			<div class="text-xs text-base-content/60">
+			<div class="text-xs opacity-70">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline mr-1">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
 				</svg>
