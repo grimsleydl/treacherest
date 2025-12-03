@@ -364,3 +364,67 @@ func convertCardsToIDs(cards []*game.Card) []int {
 	}
 	return ids
 }
+
+// EliminatePlayer handles marking a player as eliminated from the game
+// This is a manual action - players mark themselves as eliminated when they lose
+func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Get the requesting player
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	requestingPlayer := room.GetPlayer(playerCookie.Value)
+	if requestingPlayer == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the player to be eliminated
+	targetPlayer := room.GetPlayer(playerID)
+	if targetPlayer == nil {
+		http.Error(w, "Target player not found", http.StatusNotFound)
+		return
+	}
+
+	// Only allow players to eliminate themselves (or hosts to eliminate anyone)
+	if requestingPlayer.ID != targetPlayer.ID && !requestingPlayer.IsHost {
+		http.Error(w, "You can only eliminate yourself", http.StatusForbidden)
+		return
+	}
+
+	// Check if already eliminated
+	if targetPlayer.IsEliminated {
+		http.Error(w, "Player is already eliminated", http.StatusBadRequest)
+		return
+	}
+
+	// Mark the player as eliminated
+	targetPlayer.MarkEliminated()
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("💀 Player %s has been eliminated in room %s", targetPlayer.Name, roomCode)
+
+	// Publish elimination event
+	h.eventBus.Publish(Event{
+		Type:     "player_eliminated",
+		RoomCode: room.Code,
+		Data: map[string]interface{}{
+			"room":              room,
+			"eliminated_player": targetPlayer,
+		},
+	})
+
+	w.WriteHeader(http.StatusOK)
+}

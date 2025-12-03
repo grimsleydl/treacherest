@@ -101,7 +101,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				<!-- Modal container for X input and other modals -->
 				<div id="modal-container"></div>
 				<!-- Unveil button and face state toggle for current player -->
-				if currentPlayer.Role != nil && room.State == game.StatePlaying {
+				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
 						// Leaders start face-up and cannot be turned face down
 						if currentPlayer.Role.GetRoleType() == game.RoleLeader {
@@ -120,6 +120,25 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 						}
 					</div>
 				}
+				<!-- Elimination button for self-elimination -->
+				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated && !currentPlayer.IsHost {
+					<div class="max-w-md w-full flex justify-center mt-4">
+						<button
+							class="btn btn-sm btn-outline btn-error"
+							data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
+							onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
+							title="Mark yourself as eliminated from the game">
+							💀 I've Been Eliminated
+						</button>
+					</div>
+				}
+				<!-- Eliminated status display -->
+				if currentPlayer.IsEliminated {
+					<div class="alert alert-error max-w-md w-full">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+						<span class="text-lg font-bold">You have been eliminated</span>
+					</div>
+				}
 				<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
 					<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
 					<div class="join join-vertical w-full">
@@ -132,17 +151,20 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 								/>
 								<div class="collapse-title flex items-center justify-between gap-2">
 									<div class="flex items-center gap-2 flex-wrap">
-										<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID) }>{ p.Name }</span>
+										<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID), templ.KV("line-through opacity-50", p.IsEliminated) }>{ p.Name }</span>
 										if p.ID == currentPlayer.ID {
 											<span class="badge badge-primary badge-xs">You</span>
+										}
+										if p.IsEliminated {
+											<span class="badge badge-error badge-xs">Eliminated</span>
 										}
 										if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
 											<span class="badge badge-warning badge-xs">Leader</span>
 										}
-										if p.RoleRevealed {
+										if p.RoleRevealed && !p.IsEliminated {
 											<span class="badge badge-ghost badge-xs">{ p.Role.Name }</span>
 										}
-										if !p.FaceUp {
+										if !p.FaceUp && !p.IsEliminated {
 											<span class="badge badge-neutral badge-xs" title="Card is face down">🃏 Face Down</span>
 										}
 									</div>

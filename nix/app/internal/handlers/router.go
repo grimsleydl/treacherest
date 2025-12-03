@@ -94,6 +94,9 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/player/{playerID}/trigger-wearer/{xValue}", h.TriggerWearerAbility)
 		r.Post("/room/{code}/ability/{abilityID}/select-card/{cardID}", h.SelectWearerCard)
 		r.Post("/room/{code}/ability/{abilityID}/confirm", h.ConfirmAbility)
+
+		// Player elimination
+		r.Post("/room/{code}/player/{playerID}/eliminate", h.EliminatePlayer)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)

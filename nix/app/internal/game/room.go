@@ -156,6 +156,26 @@ func (r *Room) GetActivePlayers() []*Player {
 	return players
 }
 
+// GetLivingPlayers returns all non-eliminated, non-host players, sorted by join time
+func (r *Room) GetLivingPlayers() []*Player {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	players := make([]*Player, 0, len(r.Players))
+	for _, p := range r.Players {
+		if p.IsActiveInGame() {
+			players = append(players, p)
+		}
+	}
+
+	// Sort by join time for stable UI ordering across SSE updates
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].JoinedAt.Before(players[j].JoinedAt)
+	})
+
+	return players
+}
+
 // GetActivePlayerCount returns the number of non-host players
 func (r *Room) GetActivePlayerCount() int {
 	r.mu.RLock()

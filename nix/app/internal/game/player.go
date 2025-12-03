@@ -18,6 +18,10 @@ type Player struct {
 	// Ability system
 	AbilityState *ability.AbilityState // Tracks pending abilities, transformations, active effects
 	FaceUp       bool                  // Explicit face up/down state for role card
+
+	// Elimination
+	IsEliminated bool      // Player has been eliminated from the game
+	EliminatedAt time.Time // When elimination occurred
 }
 
 // NewPlayer creates a new player
@@ -31,4 +35,15 @@ func NewPlayer(id, name, sessionID string) *Player {
 		AbilityState: ability.NewAbilityState(),
 		FaceUp:       true, // Default to face up (will be managed by game logic)
 	}
+}
+
+// MarkEliminated marks the player as eliminated from the game
+func (p *Player) MarkEliminated() {
+	p.IsEliminated = true
+	p.EliminatedAt = time.Now()
+}
+
+// IsActiveInGame returns true if the player is actively participating (not eliminated and not host)
+func (p *Player) IsActiveInGame() bool {
+	return !p.IsEliminated && !p.IsHost
 }
