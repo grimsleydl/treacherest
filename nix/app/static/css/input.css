@@ -83,7 +83,7 @@
   
   /* Role configuration specific styles */
   .role-configuration {
-    @apply bg-base-200 p-4 rounded-lg shadow-lg max-w-md mx-auto;
+    @apply bg-base-200 p-4 rounded-lg shadow-lg max-w-lg mx-auto;
   }
 
   .role-configuration h3, .role-configuration h4 {
