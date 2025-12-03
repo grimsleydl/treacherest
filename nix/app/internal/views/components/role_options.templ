@@ -27,7 +27,6 @@ type OptionSelectValue struct {
 func GetCardOptions(cardID int, cardName string) []OptionField {
 	switch cardID {
 	case 31: // The Wearer of Masks
-		maxVal := 10
 		return []OptionField{
 			{
 				Key:          "use_all_cards",
@@ -35,30 +34,6 @@ func GetCardOptions(cardID int, cardName string) []OptionField {
 				Description:  "Also include Leader cards in the reveal pool (normally excluded)",
 				Type:         "checkbox",
 				DefaultValue: false,
-			},
-			{
-				Key:          "max_reveal",
-				Label:        "Max Cards to Reveal",
-				Description:  "Maximum number of cards to reveal (X value)",
-				Type:         "number",
-				DefaultValue: 5,
-				MinValue:     new(int), // 0
-				MaxValue:     &maxVal,
-			},
-		}
-	case 25: // The Metamorph (example for future expansion)
-		return []OptionField{
-			{
-				Key:          "filter_mode",
-				Label:        "Filter Mode",
-				Description:  "Which types of cards can be copied",
-				Type:         "select",
-				DefaultValue: "all",
-				Options: []OptionSelectValue{
-					{Value: "all", Label: "All Cards"},
-					{Value: "traitors_only", Label: "Traitors Only"},
-					{Value: "non_traitors", Label: "Non-Traitors"},
-				},
 			},
 		}
 	default:
