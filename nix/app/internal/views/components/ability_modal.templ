@@ -216,22 +216,21 @@ templ PendingAbilitiesContainer(room *game.Room, player *game.Player) {
 // This should be included in the game view for the Leader player
 templ LeaderConfirmationPrompts(room *game.Room, currentPlayer *game.Player) {
 	// Only show to Leader
-	if currentPlayer.Role == nil || currentPlayer.Role.GetRoleType() != game.RoleLeader {
-		return
-	}
-
-	// Find all pending abilities requiring Leader confirmation
-	<div id="leader-confirmation-prompts">
-		for _, p := range room.GetPlayers() {
-			if p.AbilityState != nil {
-				for _, pendingAbility := range p.AbilityState.PendingAbilities {
-					if pendingAbility.RequiresConfirmation && pendingAbility.ConfirmationRole == "leader" && !pendingAbility.IsConfirmed() {
-						@LeaderConfirmationCard(room, p, pendingAbility)
+	if currentPlayer.Role != nil && currentPlayer.Role.GetRoleType() == game.RoleLeader {
+		// Find all pending abilities requiring Leader confirmation
+		// Exclude the Leader's own abilities - they shouldn't confirm their own reveals
+		<div id="leader-confirmation-prompts">
+			for _, p := range room.GetPlayers() {
+				if p.ID != currentPlayer.ID && p.AbilityState != nil {
+					for _, pendingAbility := range p.AbilityState.PendingAbilities {
+						if pendingAbility.RequiresConfirmation && pendingAbility.ConfirmationRole == "leader" && !pendingAbility.IsConfirmed() {
+							@LeaderConfirmationCard(room, p, pendingAbility)
+						}
 					}
 				}
 			}
-		}
-	</div>
+		</div>
+	}
 }
 
 // LeaderConfirmationCard renders a single confirmation prompt for the Leader

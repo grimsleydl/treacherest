@@ -36,6 +36,16 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if player already has a pending Wearer ability - prevent rerolling
+	if player.AbilityState != nil && player.AbilityState.HasPendingAbilities() {
+		for _, pending := range player.AbilityState.PendingAbilities {
+			if pending.CardID == 31 {
+				http.Error(w, "Ability already in progress - cannot reroll", http.StatusConflict)
+				return
+			}
+		}
+	}
+
 	// Get X value from URL parameter (mana spent by player)
 	xValueStr := chi.URLParam(r, "xValue")
 	xValue, err := strconv.Atoi(xValueStr)
@@ -111,6 +121,10 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 	// Create pending ability with confirmation requirement
 	// The Leader must confirm they've witnessed the physical card reveal
 	// before the player can see their transformation options
+	// If there's no Leader in the game, skip confirmation requirement
+	leader := room.GetLeader()
+	requiresConfirmation := leader != nil
+
 	abilityID := fmt.Sprintf("wearer-%s-%d", playerID, room.CountdownRemaining)
 	pendingAbility := &ability.PendingAbility{
 		ID:          abilityID,
@@ -125,7 +139,7 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 			"card_name":       player.Role.Name,
 		},
 		ModalDismissed:       false,
-		RequiresConfirmation: true,
+		RequiresConfirmation: requiresConfirmation,
 		ConfirmationRole:     "leader", // Leader must confirm they've seen the reveal
 		ConfirmedBy:          []string{},
 	}

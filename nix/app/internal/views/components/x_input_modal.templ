@@ -8,7 +8,8 @@ import (
 
 // XInputModal shows a modal for the player to input their X value
 // before triggering an unveil ability that requires numeric input
-templ XInputModal(room *game.Room, player *game.Player, requirements *ability.UnveilRequirements) {
+// maxAvailableCards is the actual number of cards available for selection
+templ XInputModal(room *game.Room, player *game.Player, requirements *ability.UnveilRequirements, maxAvailableCards int) {
 	<div
 		id="x-input-modal"
 		class="modal modal-open"
@@ -35,7 +36,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 					<div class="flex items-center gap-4">
 						<button
 							class="btn btn-circle btn-sm btn-outline"
-							data-on-click="$xValue = Math.max(0, $xValue - 1)"
+							data-on-click="$xValue = Math.max(0, Number($xValue) - 1)"
 							type="button"
 						>
 							-
@@ -43,58 +44,17 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 						<input
 							type="number"
 							class="input input-bordered w-24 text-center text-xl font-bold"
-							data-bind="$xValue"
+							data-bind="xValue"
 							min={ fmt.Sprintf("%d", requirements.MinValue) }
-							if requirements.MaxValue >= 0 {
-								max={ fmt.Sprintf("%d", requirements.MaxValue) }
-							}
+							max={ fmt.Sprintf("%d", maxAvailableCards) }
 						/>
 						<button
 							class="btn btn-circle btn-sm btn-outline"
-							data-on-click={
-								fmt.Sprintf(
-									"$xValue = %s",
-									func() string {
-										if requirements.MaxValue >= 0 {
-											return fmt.Sprintf("Math.min(%d, $xValue + 1)", requirements.MaxValue)
-										}
-										return "$xValue + 1"
-									}(),
-								)
-							}
+							data-on-click={ fmt.Sprintf("$xValue = Math.min(%d, Number($xValue) + 1)", maxAvailableCards) }
 							type="button"
 						>
 							+
 						</button>
-					</div>
-				</div>
-
-				// Slider variant (alternative view)
-				<div class="form-control mt-4" id="x-input-slider">
-					<label class="label">
-						<span class="label-text">Drag to adjust:</span>
-						<span class="label-text-alt font-bold text-lg" data-text="$xValue"></span>
-					</label>
-					<input
-						type="range"
-						class="range range-primary"
-						data-bind="$xValue"
-						min={ fmt.Sprintf("%d", requirements.MinValue) }
-						if requirements.MaxValue >= 0 {
-							max={ fmt.Sprintf("%d", requirements.MaxValue) }
-						} else {
-							max="10"
-						}
-						step="1"
-					/>
-					<div class="w-full flex justify-between text-xs px-2 mt-1">
-						<span>0</span>
-						<span>5</span>
-						if requirements.MaxValue >= 0 {
-							<span>{ fmt.Sprintf("%d", requirements.MaxValue) }</span>
-						} else {
-							<span>10+</span>
-						}
 					</div>
 				</div>
 
@@ -118,7 +78,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 			<div class="modal-action">
 				<button
 					class="btn btn-ghost"
-					data-on-click="@get('/game/' + window.location.pathname.split('/').pop())"
+					data-on-click="document.getElementById('modal-container').innerHTML = ''"
 				>
 					Cancel
 				</button>
@@ -134,20 +94,17 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 				</button>
 			</div>
 		</div>
-		<div class="modal-backdrop bg-base-300/50" data-on-click="@get('/game/' + window.location.pathname.split('/').pop())"></div>
+		<div class="modal-backdrop bg-base-300/50" data-on-click="document.getElementById('modal-container').innerHTML = ''"></div>
 	</div>
 }
 
 // UnveilButton shows an unveil button for cards that have unveil abilities
 // This replaces the old "Reveal Role" button
 templ UnveilButton(room *game.Room, player *game.Player) {
-	if player.Role == nil || player.FaceUp {
-		// No button if no role or already face up
-		return
-	}
-
-	// Check if this card has special unveil requirements
-	if req := ability.GetUnveilRequirements(player.Role.GetID()); req.InputType == ability.NumericInput {
+	// Only show button if player has a role and is not face up
+	if player.Role != nil && !player.FaceUp {
+		// Check if this card has special unveil requirements
+		if req := ability.GetUnveilRequirements(player.Role.GetID()); req.InputType == ability.NumericInput {
 		// Card needs X input - show button that opens modal
 		<button
 			class="btn btn-primary btn-sm"
@@ -171,5 +128,6 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 			</svg>
 			Unveil
 		</button>
+		}
 	}
 }

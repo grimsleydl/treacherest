@@ -810,9 +810,35 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 	// Get unveil requirements for this card
 	req := ability.GetUnveilRequirements(target.Role.GetID())
 
+	// Calculate max available cards based on CardPool and options
+	maxAvailableCards := 0
+	if room.CardPool != nil {
+		// Check if Leaders should be included
+		var useAllCards bool = false
+		if room.RoleOptionsManager != nil && room.RoleOptionsManager.HasOptions(31) {
+			opts := room.RoleOptionsManager.GetOrCreateOptions(31)
+			if val, err := opts.GetBoolOption("use_all_cards"); err == nil {
+				useAllCards = val
+			}
+		}
+
+		// Get available cards based on options
+		var filterTypes []string
+		if !useAllCards {
+			filterTypes = []string{"Guardian", "Assassin", "Traitor"}
+		}
+		availableCards := room.CardPool.GetCardsByTypes(filterTypes...)
+		maxAvailableCards = len(availableCards)
+	}
+
+	// Ensure at least 1 as default if no cards available
+	if maxAvailableCards == 0 {
+		maxAvailableCards = 10 // Fallback
+	}
+
 	// Render the modal
 	var buf bytes.Buffer
-	if err := components.XInputModal(room, target, req).Render(r.Context(), &buf); err != nil {
+	if err := components.XInputModal(room, target, req, maxAvailableCards).Render(r.Context(), &buf); err != nil {
 		log.Printf("❌ Failed to render X input modal: %v", err)
 		http.Error(w, "Failed to render modal", http.StatusInternalServerError)
 		return
