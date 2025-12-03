@@ -287,9 +287,14 @@ func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
 
 	// Toggle the reveal state
 	target.RoleRevealed = !target.RoleRevealed
+	// Revealing also turns the card face up (you can't reveal a face-down card)
+	// Hiding does NOT turn face down - use the separate "Turn Face Down" action for that
+	if target.RoleRevealed {
+		target.FaceUp = true
+	}
 	h.store.UpdateRoom(room)
 
-	log.Printf("🎭 Player %s toggled role reveal to %v in room %s", target.Name, target.RoleRevealed, roomCode)
+	log.Printf("🎭 Player %s toggled role reveal to %v (FaceUp: %v) in room %s", target.Name, target.RoleRevealed, target.FaceUp, roomCode)
 
 	// Publish event to update all connected clients
 	h.eventBus.Publish(Event{
