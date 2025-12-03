@@ -180,6 +180,7 @@ func TestSelectWearerCard(t *testing.T) {
 	// Create room with CardPool
 	room, _ := memStore.CreateRoom()
 	player1 := game.NewPlayer("player1", "Alice", "session1")
+	leader := game.NewPlayer("leader1", "Leader", "session2")
 
 	// Give player1 The Wearer of Masks
 	wearerCard := &game.Card{
@@ -190,7 +191,17 @@ func TestSelectWearerCard(t *testing.T) {
 	}
 	player1.Role = wearerCard
 
+	// Give leader a Leader role (for confirmation)
+	leaderCard := &game.Card{
+		ID:    1,
+		Name:  "Test Leader",
+		Type:  "Creature - Leader",
+		Types: game.CardTypes{Subtype: "Leader"},
+	}
+	leader.Role = leaderCard
+
 	room.AddPlayer(player1)
+	room.AddPlayer(leader)
 
 	// Initialize CardPool with some cards
 	availableCards := []*game.Card{
@@ -214,6 +225,23 @@ func TestSelectWearerCard(t *testing.T) {
 	updatedRoom, _ := memStore.GetRoom(room.Code)
 	updatedPlayer := updatedRoom.GetPlayer("player1")
 	abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
+
+	// Leader confirms the ability (required before card selection)
+	confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
+	confirmRctx := chi.NewRouteContext()
+	confirmRctx.URLParams.Add("code", room.Code)
+	confirmRctx.URLParams.Add("abilityID", abilityID)
+	confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+	confirmReq.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: "leader1",
+	})
+	confirmW := httptest.NewRecorder()
+	handler.ConfirmAbility(confirmW, confirmReq)
+
+	if confirmW.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 for confirm, got %d", confirmW.Code)
+	}
 
 	t.Run("Select card successfully", func(t *testing.T) {
 		// Select card ID 15 (The Bodyguard)
@@ -278,7 +306,16 @@ func TestSelectWearerCard(t *testing.T) {
 			Type:  "Creature - Traitor",
 			Types: game.CardTypes{Subtype: "Traitor"},
 		}
+		// Add a Leader to this room for confirmation
+		leader2 := game.NewPlayer("leader2", "Leader2", "session3")
+		leader2.Role = &game.Card{
+			ID:    1,
+			Name:  "Test Leader",
+			Type:  "Creature - Leader",
+			Types: game.CardTypes{Subtype: "Leader"},
+		}
 		room2.AddPlayer(player2)
+		room2.AddPlayer(leader2)
 		// Use fresh availableCards copy
 		availableCards2 := []*game.Card{
 			{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
@@ -302,6 +339,19 @@ func TestSelectWearerCard(t *testing.T) {
 		updatedRoom2, _ := memStore.GetRoom(room2.Code)
 		updatedPlayer2 := updatedRoom2.GetPlayer("player2")
 		abilityID2 := updatedPlayer2.AbilityState.PendingAbilities[0].ID
+
+		// Leader confirms the ability first
+		confirmReq := httptest.NewRequest("POST", "/room/"+room2.Code+"/ability/"+abilityID2+"/confirm", nil)
+		confirmRctx := chi.NewRouteContext()
+		confirmRctx.URLParams.Add("code", room2.Code)
+		confirmRctx.URLParams.Add("abilityID", abilityID2)
+		confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+		confirmReq.AddCookie(&http.Cookie{
+			Name:  "player_" + room2.Code,
+			Value: "leader2",
+		})
+		confirmW := httptest.NewRecorder()
+		handler.ConfirmAbility(confirmW, confirmReq)
 
 		// Try to select card not in available list (e.g., card 999)
 		reqBody := map[string]interface{}{
@@ -392,7 +442,7 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 		eventBus: eventBus,
 	}
 
-	// Create room
+	// Create room with player and leader
 	room, _ := memStore.CreateRoom()
 	player1 := game.NewPlayer("player1", "Alice", "session1")
 	player1.Role = &game.Card{
@@ -401,7 +451,15 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 		Type:  "Creature - Traitor",
 		Types: game.CardTypes{Subtype: "Traitor"},
 	}
+	leader := game.NewPlayer("leader1", "Leader", "session2")
+	leader.Role = &game.Card{
+		ID:    1,
+		Name:  "Test Leader",
+		Type:  "Creature - Leader",
+		Types: game.CardTypes{Subtype: "Leader"},
+	}
 	room.AddPlayer(player1)
+	room.AddPlayer(leader)
 
 	availableCards := []*game.Card{
 		{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
@@ -432,11 +490,39 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 		t.Error("Timeout waiting for ability_triggered event")
 	}
 
-	// Now select a card
+	// Get the pending ability ID
 	updatedRoom, _ := memStore.GetRoom(room.Code)
 	updatedPlayer := updatedRoom.GetPlayer("player1")
 	abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
 
+	// Leader confirms the ability (required before card selection)
+	confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
+	confirmRctx := chi.NewRouteContext()
+	confirmRctx.URLParams.Add("code", room.Code)
+	confirmRctx.URLParams.Add("abilityID", abilityID)
+	confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+	confirmReq.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: "leader1",
+	})
+	confirmW := httptest.NewRecorder()
+	handler.ConfirmAbility(confirmW, confirmReq)
+
+	if confirmW.Code != http.StatusOK {
+		t.Fatalf("Leader confirmation failed with status %d", confirmW.Code)
+	}
+
+	// Wait for ability_confirmed event
+	select {
+	case event := <-eventChan:
+		if event.Type != "ability_confirmed" {
+			t.Errorf("Expected event type 'ability_confirmed', got %s", event.Type)
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timeout waiting for ability_confirmed event")
+	}
+
+	// Now select a card
 	reqBody := map[string]interface{}{
 		"card_id": 15,
 	}
@@ -467,4 +553,247 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Timeout waiting for transformation_complete event")
 	}
+}
+
+// TestConfirmAbility tests the ability confirmation system
+func TestConfirmAbility(t *testing.T) {
+	cfg := config.DefaultConfig()
+	memStore := store.NewMemoryStore(cfg)
+	eventBus := NewEventBus()
+	handler := &Handler{
+		store:    memStore,
+		config:   cfg,
+		eventBus: eventBus,
+	}
+
+	t.Run("Leader can confirm ability successfully", func(t *testing.T) {
+		room, _ := memStore.CreateRoom()
+		player1 := game.NewPlayer("player1", "Alice", "session1")
+		player1.Role = &game.Card{
+			ID:    31,
+			Name:  "The Wearer of Masks",
+			Type:  "Creature - Traitor",
+			Types: game.CardTypes{Subtype: "Traitor"},
+		}
+		leader := game.NewPlayer("leader1", "Leader", "session2")
+		leader.Role = &game.Card{
+			ID:    1,
+			Name:  "Test Leader",
+			Type:  "Creature - Leader",
+			Types: game.CardTypes{Subtype: "Leader"},
+		}
+		room.AddPlayer(player1)
+		room.AddPlayer(leader)
+
+		availableCards := []*game.Card{
+			{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
+		}
+		room.CardPool = game.NewCardPool(availableCards)
+		memStore.UpdateRoom(room)
+
+		// Trigger the ability
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerRctx := chi.NewRouteContext()
+		triggerRctx.URLParams.Add("code", room.Code)
+		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
+		triggerW := httptest.NewRecorder()
+		handler.TriggerWearerAbility(triggerW, triggerReq)
+
+		// Get the ability ID
+		updatedRoom, _ := memStore.GetRoom(room.Code)
+		updatedPlayer := updatedRoom.GetPlayer("player1")
+		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
+
+		// Verify ability requires confirmation and is not confirmed
+		pendingAbility := updatedPlayer.AbilityState.GetPendingAbility(abilityID)
+		if !pendingAbility.RequiresConfirmation {
+			t.Error("Expected ability to require confirmation")
+		}
+		if pendingAbility.IsConfirmed() {
+			t.Error("Expected ability to not be confirmed yet")
+		}
+
+		// Leader confirms the ability
+		confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
+		confirmRctx := chi.NewRouteContext()
+		confirmRctx.URLParams.Add("code", room.Code)
+		confirmRctx.URLParams.Add("abilityID", abilityID)
+		confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+		confirmReq.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: "leader1",
+		})
+		confirmW := httptest.NewRecorder()
+		handler.ConfirmAbility(confirmW, confirmReq)
+
+		if confirmW.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", confirmW.Code)
+		}
+
+		// Verify ability is now confirmed
+		updatedRoom, _ = memStore.GetRoom(room.Code)
+		updatedPlayer = updatedRoom.GetPlayer("player1")
+		pendingAbility = updatedPlayer.AbilityState.GetPendingAbility(abilityID)
+		if !pendingAbility.IsConfirmed() {
+			t.Error("Expected ability to be confirmed after Leader confirmation")
+		}
+	})
+
+	t.Run("Non-leader cannot confirm leader-only ability", func(t *testing.T) {
+		room, _ := memStore.CreateRoom()
+		player1 := game.NewPlayer("player1", "Alice", "session1")
+		player1.Role = &game.Card{
+			ID:    31,
+			Name:  "The Wearer of Masks",
+			Type:  "Creature - Traitor",
+			Types: game.CardTypes{Subtype: "Traitor"},
+		}
+		player2 := game.NewPlayer("player2", "Bob", "session2")
+		player2.Role = &game.Card{
+			ID:    15,
+			Name:  "The Bodyguard",
+			Type:  "Creature - Guardian",
+			Types: game.CardTypes{Subtype: "Guardian"},
+		}
+		leader := game.NewPlayer("leader1", "Leader", "session3")
+		leader.Role = &game.Card{
+			ID:    1,
+			Name:  "Test Leader",
+			Type:  "Creature - Leader",
+			Types: game.CardTypes{Subtype: "Leader"},
+		}
+		room.AddPlayer(player1)
+		room.AddPlayer(player2)
+		room.AddPlayer(leader)
+
+		availableCards := []*game.Card{
+			{ID: 16, Name: "Another Card", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
+		}
+		room.CardPool = game.NewCardPool(availableCards)
+		memStore.UpdateRoom(room)
+
+		// Trigger the ability
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerRctx := chi.NewRouteContext()
+		triggerRctx.URLParams.Add("code", room.Code)
+		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
+		triggerW := httptest.NewRecorder()
+		handler.TriggerWearerAbility(triggerW, triggerReq)
+
+		// Get the ability ID
+		updatedRoom, _ := memStore.GetRoom(room.Code)
+		updatedPlayer := updatedRoom.GetPlayer("player1")
+		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
+
+		// Non-leader player tries to confirm (should fail)
+		confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
+		confirmRctx := chi.NewRouteContext()
+		confirmRctx.URLParams.Add("code", room.Code)
+		confirmRctx.URLParams.Add("abilityID", abilityID)
+		confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+		confirmReq.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: "player2",
+		})
+		confirmW := httptest.NewRecorder()
+		handler.ConfirmAbility(confirmW, confirmReq)
+
+		if confirmW.Code != http.StatusForbidden {
+			t.Errorf("Expected status 403, got %d", confirmW.Code)
+		}
+	})
+
+	t.Run("Ability not found", func(t *testing.T) {
+		room, _ := memStore.CreateRoom()
+		leader := game.NewPlayer("leader1", "Leader", "session1")
+		leader.Role = &game.Card{
+			ID:    1,
+			Name:  "Test Leader",
+			Type:  "Creature - Leader",
+			Types: game.CardTypes{Subtype: "Leader"},
+		}
+		room.AddPlayer(leader)
+		memStore.UpdateRoom(room)
+
+		confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/nonexistent/confirm", nil)
+		confirmRctx := chi.NewRouteContext()
+		confirmRctx.URLParams.Add("code", room.Code)
+		confirmRctx.URLParams.Add("abilityID", "nonexistent")
+		confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
+		confirmReq.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: "leader1",
+		})
+		confirmW := httptest.NewRecorder()
+		handler.ConfirmAbility(confirmW, confirmReq)
+
+		if confirmW.Code != http.StatusNotFound {
+			t.Errorf("Expected status 404, got %d", confirmW.Code)
+		}
+	})
+
+	t.Run("Cannot select card without confirmation", func(t *testing.T) {
+		room, _ := memStore.CreateRoom()
+		player1 := game.NewPlayer("player1", "Alice", "session1")
+		player1.Role = &game.Card{
+			ID:    31,
+			Name:  "The Wearer of Masks",
+			Type:  "Creature - Traitor",
+			Types: game.CardTypes{Subtype: "Traitor"},
+		}
+		leader := game.NewPlayer("leader1", "Leader", "session2")
+		leader.Role = &game.Card{
+			ID:    1,
+			Name:  "Test Leader",
+			Type:  "Creature - Leader",
+			Types: game.CardTypes{Subtype: "Leader"},
+		}
+		room.AddPlayer(player1)
+		room.AddPlayer(leader)
+
+		availableCards := []*game.Card{
+			{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
+		}
+		room.CardPool = game.NewCardPool(availableCards)
+		memStore.UpdateRoom(room)
+
+		// Trigger the ability
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerRctx := chi.NewRouteContext()
+		triggerRctx.URLParams.Add("code", room.Code)
+		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
+		triggerW := httptest.NewRecorder()
+		handler.TriggerWearerAbility(triggerW, triggerReq)
+
+		// Get the ability ID
+		updatedRoom, _ := memStore.GetRoom(room.Code)
+		updatedPlayer := updatedRoom.GetPlayer("player1")
+		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
+
+		// Try to select card WITHOUT Leader confirmation (should fail)
+		reqBody := map[string]interface{}{
+			"card_id": 15,
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+
+		selectReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card", bytes.NewReader(bodyBytes))
+		selectReq.Header.Set("Content-Type", "application/json")
+		selectReq.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: "player1",
+		})
+		selectRctx := chi.NewRouteContext()
+		selectRctx.URLParams.Add("code", room.Code)
+		selectRctx.URLParams.Add("abilityID", abilityID)
+		selectReq = selectReq.WithContext(context.WithValue(selectReq.Context(), chi.RouteCtxKey, selectRctx))
+		selectW := httptest.NewRecorder()
+		handler.SelectWearerCard(selectW, selectReq)
+
+		if selectW.Code != http.StatusForbidden {
+			t.Errorf("Expected status 403, got %d", selectW.Code)
+		}
+	})
 }

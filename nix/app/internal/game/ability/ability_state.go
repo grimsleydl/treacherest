@@ -21,6 +21,30 @@ type PendingAbility struct {
 	ModalDismissed bool
 	ModalState     map[string]interface{}
 	CreatedAt      time.Time
+
+	// Confirmation system - prevents peeking at ability choices before physically revealing
+	RequiresConfirmation bool     // Whether this ability needs external confirmation
+	ConfirmationRole     string   // Who must confirm: "leader", "all_players", "any_player"
+	ConfirmedBy          []string // Player IDs who have confirmed
+}
+
+// IsConfirmed checks if the ability has received required confirmations
+func (pa *PendingAbility) IsConfirmed() bool {
+	if !pa.RequiresConfirmation {
+		return true
+	}
+	return len(pa.ConfirmedBy) > 0
+}
+
+// AddConfirmation adds a player's confirmation
+func (pa *PendingAbility) AddConfirmation(playerID string) {
+	// Check if already confirmed by this player
+	for _, id := range pa.ConfirmedBy {
+		if id == playerID {
+			return
+		}
+	}
+	pa.ConfirmedBy = append(pa.ConfirmedBy, playerID)
 }
 
 // ActiveEffect represents an ongoing effect on a player

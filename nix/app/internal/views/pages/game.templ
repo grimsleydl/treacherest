@@ -111,6 +111,8 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 						<span class="text-lg font-bold">Leader: { leader.Name }</span>
 					</div>
 				}
+				<!-- Leader confirmation prompts for pending ability reveals -->
+				@components.LeaderConfirmationPrompts(room, currentPlayer)
 				<!-- Public reveal/hide button and face state toggle for current player -->
 				if currentPlayer.Role != nil && room.State == game.StatePlaying {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">

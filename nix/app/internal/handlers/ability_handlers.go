@@ -74,7 +74,9 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create pending ability
+	// Create pending ability with confirmation requirement
+	// The Leader must confirm they've witnessed the physical card reveal
+	// before the player can see their transformation options
 	abilityID := fmt.Sprintf("wearer-%s-%d", playerID, room.CountdownRemaining)
 	pendingAbility := &ability.PendingAbility{
 		ID:          abilityID,
@@ -85,8 +87,13 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 			"available_cards": convertCardsToIDs(availableCards),
 			"max_reveal":      maxReveal,
 			"use_all_cards":   useAllCards,
+			"player_name":     player.Name,
+			"card_name":       player.Role.Name,
 		},
-		ModalDismissed: false,
+		ModalDismissed:       false,
+		RequiresConfirmation: true,
+		ConfirmationRole:     "leader", // Leader must confirm they've seen the reveal
+		ConfirmedBy:          []string{},
 	}
 
 	player.AbilityState.AddPendingAbility(pendingAbility)
@@ -139,6 +146,12 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 	// Verify ability belongs to this player
 	if pendingAbility.PlayerID != player.ID {
 		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Verify ability has been confirmed (if required)
+	if pendingAbility.RequiresConfirmation && !pendingAbility.IsConfirmed() {
+		http.Error(w, "Ability has not been confirmed by the Leader yet", http.StatusForbidden)
 		return
 	}
 
@@ -204,6 +217,97 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 	// Publish event
 	h.eventBus.Publish(Event{
 		Type:     "transformation_complete",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// ConfirmAbility allows the Leader (or designated role) to confirm they've witnessed
+// a player's physical card reveal, enabling the ability to proceed
+func (h *Handler) ConfirmAbility(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Get the confirming player (should be the Leader for "leader" confirmation role)
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	confirmer := room.GetPlayer(playerCookie.Value)
+	if confirmer == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Find the pending ability (could be on any player)
+	var pendingAbility *ability.PendingAbility
+	var abilityOwner *game.Player
+	for _, p := range room.GetPlayers() {
+		if p.AbilityState != nil {
+			if pa := p.AbilityState.GetPendingAbility(abilityID); pa != nil {
+				pendingAbility = pa
+				abilityOwner = p
+				break
+			}
+		}
+	}
+
+	if pendingAbility == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if ability requires confirmation
+	if !pendingAbility.RequiresConfirmation {
+		http.Error(w, "Ability does not require confirmation", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the confirmer is authorized based on ConfirmationRole
+	switch pendingAbility.ConfirmationRole {
+	case "leader":
+		// Only the Leader can confirm
+		if confirmer.Role == nil || confirmer.Role.GetRoleType() != game.RoleLeader {
+			http.Error(w, "Only the Leader can confirm this ability", http.StatusForbidden)
+			return
+		}
+	case "any_player":
+		// Anyone except the ability owner can confirm
+		if confirmer.ID == pendingAbility.PlayerID {
+			http.Error(w, "You cannot confirm your own ability", http.StatusForbidden)
+			return
+		}
+	case "all_players":
+		// Anyone except the ability owner can contribute to confirmation
+		if confirmer.ID == pendingAbility.PlayerID {
+			http.Error(w, "You cannot confirm your own ability", http.StatusForbidden)
+			return
+		}
+	default:
+		http.Error(w, "Unknown confirmation role", http.StatusInternalServerError)
+		return
+	}
+
+	// Add confirmation
+	pendingAbility.AddConfirmation(confirmer.ID)
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("✅ %s confirmed ability %s for %s in room %s", confirmer.Name, abilityID, abilityOwner.Name, roomCode)
+
+	// Publish event to update all clients
+	h.eventBus.Publish(Event{
+		Type:     "ability_confirmed",
 		RoomCode: room.Code,
 		Data:     room,
 	})
