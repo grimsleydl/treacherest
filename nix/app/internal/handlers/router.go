@@ -89,7 +89,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/ability/{abilityID}/restore", h.RestoreModal)
 
 		// Ability action endpoints
-		r.Post("/room/{code}/player/{playerID}/trigger-wearer", h.TriggerWearerAbility)
+		r.Post("/room/{code}/player/{playerID}/trigger-wearer/{xValue}", h.TriggerWearerAbility)
 		r.Post("/room/{code}/ability/{abilityID}/select-card/{cardID}", h.SelectWearerCard)
 		r.Post("/room/{code}/ability/{abilityID}/confirm", h.ConfirmAbility)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)

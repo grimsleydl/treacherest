@@ -51,11 +51,12 @@ func TestTriggerWearerAbility(t *testing.T) {
 	memStore.UpdateRoom(room)
 
 	t.Run("Trigger ability successfully", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/5", nil)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("playerID", "player1")
+		rctx.URLParams.Add("xValue", "5")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -113,11 +114,12 @@ func TestTriggerWearerAbility(t *testing.T) {
 		freshRoom.AddPlayer(player2)
 		memStore.UpdateRoom(freshRoom)
 
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player2/trigger-wearer", nil)
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player2/trigger-wearer/3", nil)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("playerID", "player2")
+		rctx.URLParams.Add("xValue", "3")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -130,11 +132,12 @@ func TestTriggerWearerAbility(t *testing.T) {
 	})
 
 	t.Run("Player not found", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/nonexistent/trigger-wearer", nil)
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/nonexistent/trigger-wearer/3", nil)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
 		rctx.URLParams.Add("playerID", "nonexistent")
+		rctx.URLParams.Add("xValue", "3")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -147,11 +150,12 @@ func TestTriggerWearerAbility(t *testing.T) {
 	})
 
 	t.Run("Room not found", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/room/INVALID/player/player1/trigger-wearer", nil)
+		req := httptest.NewRequest("POST", "/room/INVALID/player/player1/trigger-wearer/3", nil)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "INVALID")
 		rctx.URLParams.Add("playerID", "player1")
+		rctx.URLParams.Add("xValue", "3")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		w := httptest.NewRecorder()
@@ -211,10 +215,11 @@ func TestSelectWearerCard(t *testing.T) {
 	room.CardPool = game.NewCardPool(availableCards)
 
 	// Trigger ability first to create pending ability
-	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/5", nil)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	rctx.URLParams.Add("playerID", "player1")
+	rctx.URLParams.Add("xValue", "5")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 	w := httptest.NewRecorder()
 	handler.TriggerWearerAbility(w, req)
@@ -320,10 +325,11 @@ func TestSelectWearerCard(t *testing.T) {
 		memStore.UpdateRoom(room2)
 
 		// Trigger ability
-		req := httptest.NewRequest("POST", "/room/"+room2.Code+"/player/player2/trigger-wearer", nil)
+		req := httptest.NewRequest("POST", "/room/"+room2.Code+"/player/player2/trigger-wearer/5", nil)
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room2.Code)
 		rctx.URLParams.Add("playerID", "player2")
+		rctx.URLParams.Add("xValue", "5")
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 		w := httptest.NewRecorder()
 		handler.TriggerWearerAbility(w, req)
@@ -449,10 +455,11 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 	eventChan := eventBus.Subscribe(room.Code)
 
 	// Trigger ability
-	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	rctx.URLParams.Add("playerID", "player1")
+	rctx.URLParams.Add("xValue", "3")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 	w := httptest.NewRecorder()
 
@@ -565,10 +572,11 @@ func TestConfirmAbility(t *testing.T) {
 		memStore.UpdateRoom(room)
 
 		// Trigger the ability
-		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerRctx.URLParams.Add("xValue", "3")
 		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
 		triggerW := httptest.NewRecorder()
 		handler.TriggerWearerAbility(triggerW, triggerReq)
@@ -647,10 +655,11 @@ func TestConfirmAbility(t *testing.T) {
 		memStore.UpdateRoom(room)
 
 		// Trigger the ability
-		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerRctx.URLParams.Add("xValue", "3")
 		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
 		triggerW := httptest.NewRecorder()
 		handler.TriggerWearerAbility(triggerW, triggerReq)
@@ -733,10 +742,11 @@ func TestConfirmAbility(t *testing.T) {
 		memStore.UpdateRoom(room)
 
 		// Trigger the ability
-		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer", nil)
+		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")
+		triggerRctx.URLParams.Add("xValue", "3")
 		triggerReq = triggerReq.WithContext(context.WithValue(triggerReq.Context(), chi.RouteCtxKey, triggerRctx))
 		triggerW := httptest.NewRecorder()
 		handler.TriggerWearerAbility(triggerW, triggerReq)

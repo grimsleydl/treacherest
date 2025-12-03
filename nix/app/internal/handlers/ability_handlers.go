@@ -13,7 +13,7 @@ import (
 )
 
 // TriggerWearerAbility initiates The Wearer of Masks ability for a player
-// This is typically called at game start for players with The Wearer of Masks card
+// The X value (number of cards to reveal) is passed as a URL parameter
 func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
 	playerID := chi.URLParam(r, "playerID")
@@ -36,19 +36,45 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get role options for The Wearer of Masks
-	var maxReveal int = 5 // Default
+	// Get X value from URL parameter (mana spent by player)
+	xValueStr := chi.URLParam(r, "xValue")
+	xValue, err := strconv.Atoi(xValueStr)
+	if err != nil || xValue < 0 {
+		http.Error(w, "Invalid X value", http.StatusBadRequest)
+		return
+	}
+
+	// If X is 0, player chose not to reveal any cards - ability resolves with no effect
+	if xValue == 0 {
+		// Just set the card face up without transformation
+		player.FaceUp = true
+		player.RoleRevealed = true
+		h.store.UpdateRoom(room)
+
+		log.Printf("🎭 Wearer ability for %s in room %s - X=0, no transformation", player.Name, roomCode)
+
+		h.eventBus.Publish(Event{
+			Type:     "role_revealed",
+			RoomCode: room.Code,
+			Data:     room,
+		})
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Get role options for whether to include Leader cards
 	var useAllCards bool = false
 
 	if room.RoleOptionsManager != nil && room.RoleOptionsManager.HasOptions(31) {
 		opts := room.RoleOptionsManager.GetOrCreateOptions(31)
-		if val, err := opts.GetIntOption("max_reveal"); err == nil {
-			maxReveal = val
-		}
 		if val, err := opts.GetBoolOption("use_all_cards"); err == nil {
 			useAllCards = val
 		}
 	}
+
+	// X value is now the maxReveal
+	maxReveal := xValue
 
 	// Get available cards from CardPool
 	if room.CardPool == nil {
@@ -93,7 +119,7 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		AbilityType: "unveil",
 		Data: map[string]interface{}{
 			"available_cards": convertCardsToIDs(availableCards),
-			"max_reveal":      maxReveal,
+			"x_value":         xValue,
 			"use_all_cards":   useAllCards,
 			"player_name":     player.Name,
 			"card_name":       player.Role.Name,
