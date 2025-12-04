@@ -844,7 +844,9 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send as SSE fragment
+	// Send as SSE fragment using inner mode to preserve #modal-container element
 	sse := datastar.NewSSE(w, r)
-	sse.PatchElements(buf.String(), datastar.WithSelector("#modal-container"))
+	sse.PatchElements(buf.String(),
+		datastar.WithSelector("#modal-container"),
+		datastar.WithModeInner())
 }

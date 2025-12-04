@@ -19,6 +19,7 @@ templ GameBody(room *game.Room, currentPlayer *game.Player) {
 	<div data-on-load={ "@get('/sse/game/" + room.Code + "')" }>
 		@GameContent(room, currentPlayer)
 	</div>
+	// Modal container is now in Base layout, completely outside SSE-affected areas
 }
 
 templ GameContent(room *game.Room, currentPlayer *game.Player) {
@@ -108,8 +109,6 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<!-- Leader confirmation prompts for pending ability reveals -->
 				@components.LeaderConfirmationPrompts(room, currentPlayer)
-				<!-- Modal container for X input and other modals -->
-				<div id="modal-container"></div>
 				<!-- Unveil button and face state toggle for current player -->
 				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
