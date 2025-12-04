@@ -470,6 +470,10 @@ func (h *Handler) StealRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Store original card IDs before stealing
+	originalCardID := player.Role.GetID()
+	stolenCardID := targetPlayer.Role.GetID()
+
 	// Steal the role using StealRole utility
 	err = room.StealRole(player, targetPlayer, true) // turnFaceDown=true unless Leader
 	if err != nil {
@@ -477,7 +481,10 @@ func (h *Handler) StealRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mark Metamorph as used (removed from game)
+	// Track the identity theft in TransformState (using the extended abstraction)
+	player.AbilityState.StealIdentity(originalCardID, stolenCardID)
+
+	// Mark Metamorph timing window as used
 	player.AbilityState.UseMetamorph()
 
 	h.store.UpdateRoom(room)

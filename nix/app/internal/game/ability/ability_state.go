@@ -58,22 +58,35 @@ type ActiveEffect struct {
 	AppliedAt    time.Time
 }
 
-// TransformState tracks role transformation (e.g., The Wearer of Masks)
+// RoleChangeType distinguishes between different kinds of role changes
+type RoleChangeType string
+
+const (
+	RoleChangeTransform RoleChangeType = "transform" // Wearer of Masks - reversible
+	RoleChangeSteal     RoleChangeType = "steal"     // Metamorph - permanent
+)
+
+// TransformState tracks role changes (transformation or identity stealing)
 // Stores card IDs to avoid circular imports with game package
 type TransformState struct {
 	IsTransformed     bool
 	OriginalCardID    int      // ID of original card
-	TransformedCardID int      // ID of transformed card
-	KeepTypes         []string // Types to retain (e.g., ["Traitor"])
-	EndCondition      string   // When to revert (e.g., "face_down")
+	TransformedCardID int      // ID of new card
+	KeepTypes         []string // Types to retain (empty for full identity change)
+	EndCondition      string   // When to revert ("never" for permanent)
+
+	// Extended fields for abstraction
+	ChangeType        RoleChangeType // "transform" or "steal"
+	IsPermanent       bool           // If true, cannot revert
+	SourceCardRemoved bool           // If true, original card removed from game (Metamorph)
 }
 
-// MetamorphState tracks The Metamorph's temporary steal ability
+// MetamorphState tracks The Metamorph's temporary steal WINDOW (not the role change itself)
+// The actual role change is tracked by TransformState with ChangeType: RoleChangeSteal
 type MetamorphState struct {
-	IsActive        bool      // Effect is currently active (until end of turn)
-	ActivatedAt     time.Time // When effect started
-	HasBeenUsed     bool      // Once used to steal, cannot trigger again
-	RemovedFromGame bool      // Metamorph card removed after stealing
+	IsActive    bool      // Effect window is active (until end of turn)
+	ActivatedAt time.Time // When window opened
+	HasBeenUsed bool      // Once used to steal, window closes
 }
 
 // NewAbilityState creates a new ability state
@@ -137,7 +150,7 @@ func (as *AbilityState) RemoveActiveEffect(effectID string) {
 	}
 }
 
-// StartTransform begins a role transformation
+// StartTransform begins a role transformation (Wearer of Masks - reversible)
 func (as *AbilityState) StartTransform(originalCardID, transformedCardID int, keepTypes []string, endCondition string) {
 	as.TransformState = &TransformState{
 		IsTransformed:     true,
@@ -145,7 +158,29 @@ func (as *AbilityState) StartTransform(originalCardID, transformedCardID int, ke
 		TransformedCardID: transformedCardID,
 		KeepTypes:         keepTypes,
 		EndCondition:      endCondition,
+		ChangeType:        RoleChangeTransform,
+		IsPermanent:       false,
+		SourceCardRemoved: false,
 	}
+}
+
+// StealIdentity begins a permanent identity steal (Metamorph - irreversible)
+func (as *AbilityState) StealIdentity(originalCardID, stolenCardID int) {
+	as.TransformState = &TransformState{
+		IsTransformed:     true,
+		OriginalCardID:    originalCardID,
+		TransformedCardID: stolenCardID,
+		KeepTypes:         []string{},    // No types kept - full identity change
+		EndCondition:      "never",       // Permanent
+		ChangeType:        RoleChangeSteal,
+		IsPermanent:       true,
+		SourceCardRemoved: true, // Metamorph removed from game
+	}
+}
+
+// IsStolenIdentity checks if this is a permanent identity steal (Metamorph)
+func (as *AbilityState) IsStolenIdentity() bool {
+	return as.TransformState != nil && as.TransformState.ChangeType == RoleChangeSteal
 }
 
 // EndTransform ends a role transformation and returns the original card ID
@@ -240,28 +275,27 @@ func (as *AbilityState) GetModalState(abilityID string, key string) (interface{}
 	return value, exists
 }
 
-// ActivateMetamorph activates The Metamorph's steal ability
+// ActivateMetamorph activates The Metamorph's steal window
 func (as *AbilityState) ActivateMetamorph() {
 	as.MetamorphState = &MetamorphState{
-		IsActive:        true,
-		ActivatedAt:     time.Now(),
-		HasBeenUsed:     false,
-		RemovedFromGame: false,
+		IsActive:    true,
+		ActivatedAt: time.Now(),
+		HasBeenUsed: false,
 	}
 }
 
-// DeactivateMetamorph deactivates The Metamorph's steal ability (end of turn)
+// DeactivateMetamorph deactivates The Metamorph's steal window (end of turn)
 func (as *AbilityState) DeactivateMetamorph() {
 	if as.MetamorphState != nil {
 		as.MetamorphState.IsActive = false
 	}
 }
 
-// UseMetamorph marks The Metamorph ability as used (card removed from game)
+// UseMetamorph marks The Metamorph ability window as used
+// The actual identity theft is tracked via StealIdentity() in TransformState
 func (as *AbilityState) UseMetamorph() {
 	if as.MetamorphState != nil {
 		as.MetamorphState.HasBeenUsed = true
-		as.MetamorphState.RemovedFromGame = true
 		as.MetamorphState.IsActive = false
 	}
 }

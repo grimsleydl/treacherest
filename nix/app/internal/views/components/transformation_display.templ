@@ -6,11 +6,46 @@ import (
 )
 
 // TransformationDisplay shows the player's current transformation state
-// Displayed when a player is actively transformed (e.g., via The Wearer of Masks)
+// Handles both reversible transformations (Wearer of Masks) and permanent steals (Metamorph)
 templ TransformationDisplay(room *game.Room, player *game.Player) {
 	if player.AbilityState == nil || player.AbilityState.TransformState == nil {
 		return
 	}
+	// Show different UI for stolen identities vs transformations
+	if player.AbilityState.IsStolenIdentity() {
+		@StolenIdentityDisplay(room, player)
+	} else {
+		@TransformDisplay(room, player)
+	}
+}
+
+// StolenIdentityDisplay shows when player has permanently stolen another's identity (Metamorph)
+templ StolenIdentityDisplay(room *game.Room, player *game.Player) {
+	<div class="card bg-error/20 shadow-lg max-w-md w-full" id="stolen-identity-display">
+		<div class="card-body p-4">
+			<div class="flex items-center gap-2 mb-2">
+				<span class="text-2xl">🦎</span>
+				<h3 class="font-bold text-error">Stolen Identity</h3>
+			</div>
+			<div class="text-sm mb-3">
+				<p>You have permanently become this identity. Your original card (The Metamorph) has been removed from the game.</p>
+			</div>
+			<!-- Collapsible original card view -->
+			<div class="collapse collapse-arrow bg-base-200 rounded-lg">
+				<input type="checkbox" id="show-original-metamorph"/>
+				<div class="collapse-title font-medium text-sm min-h-0 py-3 pr-8">
+					View Your Original Role (Metamorph)
+				</div>
+				<div class="collapse-content">
+					@OriginalCardView(room, player)
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+// TransformDisplay shows reversible transformation state (Wearer of Masks)
+templ TransformDisplay(room *game.Room, player *game.Player) {
 	<div class="card bg-warning/20 shadow-lg max-w-md w-full" id="transformation-display">
 		<div class="card-body p-4">
 			<div class="flex items-center gap-2 mb-2">
@@ -170,6 +205,8 @@ func formatEndCondition(condition string) string {
 		return "Your role is revealed to everyone"
 	case "end_of_game":
 		return "The game ends"
+	case "never":
+		return "This change is permanent"
 	default:
 		return condition
 	}
