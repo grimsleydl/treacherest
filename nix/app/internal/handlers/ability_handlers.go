@@ -365,6 +365,182 @@ func convertCardsToIDs(cards []*game.Card) []int {
 	return ids
 }
 
+// TriggerMetamorphAbility activates The Metamorph's steal ability when unveiled
+// The Metamorph (ID 25): "When The Metamorph is unveiled, until end of turn,
+// as an opponent loses the game, you may remove The Metamorph from the game.
+// If you do, gain control of that player's identity card and turn it face down if it isn't a Leader."
+func (h *Handler) TriggerMetamorphAbility(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	player := room.GetPlayer(playerID)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player has The Metamorph (card ID 25)
+	if player.Role == nil || player.Role.GetID() != 25 {
+		http.Error(w, "Player does not have The Metamorph", http.StatusBadRequest)
+		return
+	}
+
+	// Check if already activated
+	if player.AbilityState != nil && player.AbilityState.IsMetamorphActive() {
+		http.Error(w, "Metamorph ability already active", http.StatusConflict)
+		return
+	}
+
+	// Activate the Metamorph ability
+	if player.AbilityState == nil {
+		player.AbilityState = ability.NewAbilityState()
+	}
+	player.AbilityState.ActivateMetamorph()
+
+	// Set card face up
+	player.FaceUp = true
+	player.RoleRevealed = true
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🦎 Metamorph ability activated for %s in room %s", player.Name, roomCode)
+
+	// Publish event
+	h.eventBus.Publish(Event{
+		Type:     "metamorph_activated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// StealRole handles The Metamorph stealing an eliminated player's identity
+func (h *Handler) StealRole(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+	targetPlayerID := chi.URLParam(r, "targetPlayerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Get the Metamorph player
+	player := room.GetPlayer(playerID)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player has The Metamorph and ability is active
+	if player.Role == nil || player.Role.GetID() != 25 {
+		http.Error(w, "Player does not have The Metamorph", http.StatusBadRequest)
+		return
+	}
+
+	if player.AbilityState == nil || !player.AbilityState.CanUseMetamorph() {
+		http.Error(w, "Metamorph ability is not active or already used", http.StatusBadRequest)
+		return
+	}
+
+	// Get the target (eliminated) player
+	targetPlayer := room.GetPlayer(targetPlayerID)
+	if targetPlayer == nil {
+		http.Error(w, "Target player not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify target is eliminated
+	if !targetPlayer.IsEliminated {
+		http.Error(w, "Can only steal roles from eliminated players", http.StatusBadRequest)
+		return
+	}
+
+	// Verify target still has a role
+	if targetPlayer.Role == nil {
+		http.Error(w, "Target player has no role to steal", http.StatusBadRequest)
+		return
+	}
+
+	// Steal the role using StealRole utility
+	err = room.StealRole(player, targetPlayer, true) // turnFaceDown=true unless Leader
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to steal role: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Mark Metamorph as used (removed from game)
+	player.AbilityState.UseMetamorph()
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🦎 %s stole %s's role (%s) in room %s", player.Name, targetPlayer.Name, player.Role.Name, roomCode)
+
+	// Publish event
+	h.eventBus.Publish(Event{
+		Type:     "role_stolen",
+		RoomCode: room.Code,
+		Data: map[string]interface{}{
+			"room":    room,
+			"stealer": player,
+			"victim":  targetPlayer,
+		},
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// EndMetamorphEffect deactivates The Metamorph's steal ability window
+// Called when the player clicks "End Turn" or the effect naturally expires
+func (h *Handler) EndMetamorphEffect(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	player := room.GetPlayer(playerID)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player has The Metamorph
+	if player.Role == nil || player.Role.GetID() != 25 {
+		http.Error(w, "Player does not have The Metamorph", http.StatusBadRequest)
+		return
+	}
+
+	// Deactivate the ability
+	if player.AbilityState != nil {
+		player.AbilityState.DeactivateMetamorph()
+	}
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🦎 Metamorph ability ended for %s in room %s", player.Name, roomCode)
+
+	// Publish event
+	h.eventBus.Publish(Event{
+		Type:     "metamorph_ended",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // EliminatePlayer handles marking a player as eliminated from the game
 // This is a manual action - players mark themselves as eliminated when they lose
 func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {

@@ -45,6 +45,21 @@ type UnveilRequirements struct {
 
 // unveilRequirements is the registry of all card unveil requirements
 var unveilRequirements = map[int]*UnveilRequirements{
+	// The Metamorph (ID 25)
+	// "Identity — Traitor
+	// Unveil—Pay 8 life, Discard a card.
+	// When The Metamorph is unveiled, until end of turn, as an opponent loses the game,
+	// you may remove The Metamorph from the game. If you do, gain control of that player's
+	// identity card and turn it face down if it isn't a Leader."
+	25: {
+		CardID:                     25,
+		RequiresLeaderConfirmation: true,
+		InputType:                  NoInput,
+		InputLabel:                 "",
+		InputDescription:           "Pay 8 life and discard a card to unveil The Metamorph. Until end of turn, when an opponent loses, you may steal their identity.",
+		SetsFaceUp:                 true,
+	},
+
 	// The Wearer of Masks (ID 31)
 	// "Unveil {X}: As The Wearer of Masks is unveiled, reveal up to X non-Leader
 	// identity cards at random from outside the game..."

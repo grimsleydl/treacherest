@@ -97,6 +97,11 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 
 		// Player elimination
 		r.Post("/room/{code}/player/{playerID}/eliminate", h.EliminatePlayer)
+
+		// Metamorph ability endpoints
+		r.Post("/room/{code}/player/{playerID}/trigger-metamorph", h.TriggerMetamorphAbility)
+		r.Post("/room/{code}/player/{playerID}/steal-role/{targetPlayerID}", h.StealRole)
+		r.Post("/room/{code}/player/{playerID}/end-metamorph", h.EndMetamorphEffect)
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)

@@ -116,6 +116,19 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 			</svg>
 			Unveil
 		</button>
+	} else if player.Role.GetID() == 25 {
+		// The Metamorph - trigger metamorph ability with confirmation
+		<button
+			class="btn btn-primary btn-sm"
+			onclick="return confirm('Pay 8 life and discard a card to unveil The Metamorph?')"
+			data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-metamorph')", room.Code, player.ID) }
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+			</svg>
+			Unveil - Pay 8 Life, Discard
+		</button>
 	} else {
 		// Card has no special requirements - simple unveil
 		<button
@@ -129,5 +142,79 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 			Unveil
 		</button>
 		}
+	}
+}
+
+// MetamorphActiveIndicator shows when The Metamorph's ability is active
+templ MetamorphActiveIndicator(room *game.Room, player *game.Player) {
+	if player.AbilityState != nil && player.AbilityState.IsMetamorphActive() {
+		<div class="alert alert-success shadow-lg mb-4">
+			<div class="flex items-center gap-2">
+				<span class="text-2xl">🦎</span>
+				<div>
+					<h3 class="font-bold">Metamorph Ability Active</h3>
+					<p class="text-sm">When an opponent is eliminated this turn, you may steal their identity.</p>
+				</div>
+			</div>
+			<button
+				class="btn btn-sm btn-outline"
+				data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/end-metamorph')", room.Code, player.ID) }
+				onclick="return confirm('End The Metamorph ability window? This cannot be undone.')"
+			>
+				End Turn
+			</button>
+		</div>
+	}
+}
+
+// MetamorphStealPrompt shows when an opponent is eliminated and Metamorph can steal
+templ MetamorphStealPrompt(room *game.Room, player *game.Player, eliminatedPlayer *game.Player) {
+	if player.AbilityState != nil && player.AbilityState.CanUseMetamorph() && eliminatedPlayer != nil && eliminatedPlayer.Role != nil {
+		<div class="modal modal-open" role="dialog" id="metamorph-steal-modal">
+			<div class="modal-box">
+				<h3 class="font-bold text-lg flex items-center gap-2">
+					<span class="text-2xl">🦎</span>
+					Steal { eliminatedPlayer.Name }'s Identity?
+				</h3>
+				<p class="py-4">
+					{ eliminatedPlayer.Name } has been eliminated. You may remove The Metamorph from the game to steal their identity card:
+				</p>
+				<div class="card bg-base-200 p-4 mb-4">
+					<div class="flex items-center gap-4">
+						if eliminatedPlayer.Role != nil {
+							<img
+								src={ eliminatedPlayer.Role.GetImageBase64() }
+								alt={ eliminatedPlayer.Role.Name }
+								class="w-24 h-auto rounded"
+								onerror="this.style.display='none'"
+							/>
+							<div>
+								<p class="font-bold">{ eliminatedPlayer.Role.Name }</p>
+								<p class="text-sm badge badge-outline">{ string(eliminatedPlayer.Role.GetRoleType()) }</p>
+							</div>
+						}
+					</div>
+				</div>
+				<p class="text-sm text-base-content/70 mb-4">
+					If you steal, The Metamorph is removed from the game and you become the stolen identity (face-down unless Leader).
+				</p>
+				<div class="modal-action">
+					<button
+						class="btn btn-error"
+						data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/steal-role/%s')", room.Code, player.ID, eliminatedPlayer.ID) }
+					>
+						<span class="text-lg">🦎</span>
+						Steal Identity
+					</button>
+					<button
+						class="btn btn-ghost"
+						onclick="document.getElementById('metamorph-steal-modal').remove()"
+					>
+						Pass
+					</button>
+				</div>
+			</div>
+			<div class="modal-backdrop bg-black/50"></div>
+		</div>
 	}
 }

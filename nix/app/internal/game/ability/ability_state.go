@@ -9,6 +9,7 @@ type AbilityState struct {
 	PendingAbilities []*PendingAbility
 	ActiveEffects    []*ActiveEffect
 	TransformState   *TransformState
+	MetamorphState   *MetamorphState // Tracks The Metamorph's steal ability
 }
 
 // PendingAbility represents an ability awaiting player choice or resolution
@@ -65,6 +66,14 @@ type TransformState struct {
 	TransformedCardID int      // ID of transformed card
 	KeepTypes         []string // Types to retain (e.g., ["Traitor"])
 	EndCondition      string   // When to revert (e.g., "face_down")
+}
+
+// MetamorphState tracks The Metamorph's temporary steal ability
+type MetamorphState struct {
+	IsActive        bool      // Effect is currently active (until end of turn)
+	ActivatedAt     time.Time // When effect started
+	HasBeenUsed     bool      // Once used to steal, cannot trigger again
+	RemovedFromGame bool      // Metamorph card removed after stealing
 }
 
 // NewAbilityState creates a new ability state
@@ -229,4 +238,40 @@ func (as *AbilityState) GetModalState(abilityID string, key string) (interface{}
 	}
 	value, exists := ability.ModalState[key]
 	return value, exists
+}
+
+// ActivateMetamorph activates The Metamorph's steal ability
+func (as *AbilityState) ActivateMetamorph() {
+	as.MetamorphState = &MetamorphState{
+		IsActive:        true,
+		ActivatedAt:     time.Now(),
+		HasBeenUsed:     false,
+		RemovedFromGame: false,
+	}
+}
+
+// DeactivateMetamorph deactivates The Metamorph's steal ability (end of turn)
+func (as *AbilityState) DeactivateMetamorph() {
+	if as.MetamorphState != nil {
+		as.MetamorphState.IsActive = false
+	}
+}
+
+// UseMetamorph marks The Metamorph ability as used (card removed from game)
+func (as *AbilityState) UseMetamorph() {
+	if as.MetamorphState != nil {
+		as.MetamorphState.HasBeenUsed = true
+		as.MetamorphState.RemovedFromGame = true
+		as.MetamorphState.IsActive = false
+	}
+}
+
+// IsMetamorphActive checks if The Metamorph's steal ability is currently active
+func (as *AbilityState) IsMetamorphActive() bool {
+	return as.MetamorphState != nil && as.MetamorphState.IsActive && !as.MetamorphState.HasBeenUsed
+}
+
+// CanUseMetamorph checks if The Metamorph can be used to steal
+func (as *AbilityState) CanUseMetamorph() bool {
+	return as.MetamorphState != nil && as.MetamorphState.IsActive && !as.MetamorphState.HasBeenUsed
 }
