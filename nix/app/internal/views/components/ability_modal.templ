@@ -73,6 +73,8 @@ templ FullAbilityModal(room *game.Room, player *game.Player, pendingAbility *abi
 			switch pendingAbility.AbilityType {
 				case "unveil":
 					@UnveilAbilityContent(room, player, pendingAbility)
+				case "puppet_master_redistribution":
+					@PuppetMasterRedistributionContent(room, player, pendingAbility)
 				default:
 					@DefaultAbilityContent(room, player, pendingAbility)
 			}
@@ -191,6 +193,8 @@ func getAbilityTitle(pendingAbility *ability.PendingAbility) string {
 	switch pendingAbility.AbilityType {
 	case "unveil":
 		return "Choose a Card to Transform Into"
+	case "puppet_master_redistribution":
+		return "Redistribute Identity Cards"
 	case "reveal":
 		return "Reveal Cards"
 	case "choice":
@@ -268,4 +272,203 @@ func getCardNameFromAbility(pendingAbility *ability.PendingAbility) string {
 		return name
 	}
 	return "an ability"
+}
+
+// PuppetMasterRedistributionContent renders the multi-step redistribution interface
+// Step 1: Select players to include in redistribution
+// Step 2: Assign roles to selected players
+templ PuppetMasterRedistributionContent(room *game.Room, player *game.Player, pendingAbility *ability.PendingAbility) {
+	<div class="space-y-4">
+		// Check if ability requires confirmation and hasn't been confirmed yet
+		if pendingAbility.RequiresConfirmation && !pendingAbility.IsConfirmed() {
+			// Show "waiting for confirmation" message to the ability owner
+			<div class="alert alert-warning">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6 animate-pulse">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+				</svg>
+				<div>
+					<h3 class="font-bold">Show Your Card to the Leader</h3>
+					<p class="text-sm">Physically reveal your card to the Leader. They must confirm they've witnessed it before you can proceed.</p>
+				</div>
+			</div>
+			<div class="flex justify-center">
+				<div class="loading loading-spinner loading-lg text-primary"></div>
+			</div>
+			<p class="text-center text-sm text-base-content/60">Waiting for Leader confirmation...</p>
+		} else {
+			// Ability is confirmed - show redistribution interface
+			if step := getPuppetMasterStep(pendingAbility); step == 1 {
+				@PuppetMasterPlayerSelection(room, player, pendingAbility)
+			} else {
+				@PuppetMasterRoleAssignment(room, player, pendingAbility)
+			}
+		}
+	</div>
+}
+
+// PuppetMasterPlayerSelection - Step 1: Select players to include
+templ PuppetMasterPlayerSelection(room *game.Room, player *game.Player, pendingAbility *ability.PendingAbility) {
+	<div class="space-y-4">
+		<div class="alert alert-info">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+			<div>
+				<h3 class="font-bold">Step 1: Select Players</h3>
+				<p class="text-sm">Choose which players' identity cards to include in the redistribution. You can select any number of players (or none to skip).</p>
+			</div>
+		</div>
+
+		<form id="puppet-master-selection-form">
+			<div class="space-y-2">
+				for _, p := range room.GetLivingPlayers() {
+					if p.ID != player.ID {
+						<label class="flex items-center gap-3 p-3 rounded-lg border border-base-300 hover:border-primary cursor-pointer transition-colors">
+							<input
+								type="checkbox"
+								name="selected_players"
+								value={ p.ID }
+								class="checkbox checkbox-primary"
+							/>
+							<div class="flex-1">
+								<span class="font-medium">{ p.Name }</span>
+								if p.Role != nil {
+									<span class="ml-2 badge badge-sm badge-outline">{ string(p.Role.GetRoleType()) }</span>
+									if p.FaceUp || p.Role.GetRoleType() == game.RoleLeader {
+										<span class="ml-1 badge badge-sm badge-ghost">{ p.Role.Name }</span>
+									}
+								}
+							</div>
+							if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
+								<span class="badge badge-warning badge-sm">Leader (stays face up)</span>
+							}
+						</label>
+					}
+				}
+			</div>
+		</form>
+
+		<div class="flex justify-end gap-2 mt-4">
+			<button
+				class="btn btn-outline"
+				data-on-click={ fmt.Sprintf("@post('/room/%s/puppet-master/%s/skip')", room.Code, pendingAbility.ID) }
+			>
+				Skip Redistribution
+			</button>
+			<button
+				class="btn btn-primary"
+				data-on-click={ fmt.Sprintf("$$('#puppet-master-selection-form').serialize() ; @post('/room/%s/puppet-master/%s/select-players')", room.Code, pendingAbility.ID) }
+			>
+				Continue to Assignment
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+				</svg>
+			</button>
+		</div>
+	</div>
+}
+
+// PuppetMasterRoleAssignment - Step 2: Assign roles to players
+templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAbility *ability.PendingAbility) {
+	<div class="space-y-4">
+		<div class="alert alert-info">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+			<div>
+				<h3 class="font-bold">Step 2: Assign Roles</h3>
+				<p class="text-sm">Decide which role each player receives. Drag and drop or use the dropdown to reassign. Non-Leader cards will be turned face down.</p>
+			</div>
+		</div>
+
+		<form id="puppet-master-assignment-form">
+			<div class="overflow-x-auto">
+				<table class="table table-zebra">
+					<thead>
+						<tr>
+							<th>Player</th>
+							<th>Current Role</th>
+							<th>New Role</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, playerID := range getSelectedPlayerIDs(pendingAbility) {
+							if p := room.GetPlayer(playerID); p != nil && p.Role != nil {
+								<tr>
+									<td class="font-medium">{ p.Name }</td>
+									<td>
+										<div class="flex items-center gap-2">
+											<span>{ p.Role.Name }</span>
+											<span class="badge badge-xs badge-outline">{ string(p.Role.GetRoleType()) }</span>
+										</div>
+									</td>
+									<td>
+										<select
+											name={ fmt.Sprintf("assignment_%s", p.ID) }
+											class="select select-bordered select-sm w-full max-w-xs"
+										>
+											for _, targetID := range getSelectedPlayerIDs(pendingAbility) {
+												if target := room.GetPlayer(targetID); target != nil && target.Role != nil {
+													<option
+														value={ fmt.Sprintf("%d", target.Role.GetID()) }
+														selected?={ target.ID == p.ID }
+													>
+														{ target.Role.Name } ({ string(target.Role.GetRoleType()) })
+													</option>
+												}
+											}
+										</select>
+									</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+		</form>
+
+		<div class="alert alert-warning">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+			</svg>
+			<span class="text-sm">Each role must be assigned to exactly one player. All non-Leader cards will be turned face down after redistribution.</span>
+		</div>
+
+		<div class="flex justify-between mt-4">
+			<button
+				class="btn btn-ghost"
+				data-on-click={ fmt.Sprintf("@post('/room/%s/puppet-master/%s/back')", room.Code, pendingAbility.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+				</svg>
+				Back to Selection
+			</button>
+			<button
+				class="btn btn-primary"
+				data-on-click={ fmt.Sprintf("$$('#puppet-master-assignment-form').serialize() ; @post('/room/%s/puppet-master/%s/execute')", room.Code, pendingAbility.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+				</svg>
+				Confirm Redistribution
+			</button>
+		</div>
+	</div>
+}
+
+// Helper function to get the current step for Puppet Master ability
+func getPuppetMasterStep(pendingAbility *ability.PendingAbility) int {
+	if step, ok := pendingAbility.Data["step"].(int); ok {
+		return step
+	}
+	return 1 // Default to step 1
+}
+
+// Helper function to get selected player IDs from Puppet Master ability
+func getSelectedPlayerIDs(pendingAbility *ability.PendingAbility) []string {
+	if ids, ok := pendingAbility.Data["selected_players"].([]string); ok {
+		return ids
+	}
+	return []string{}
 }

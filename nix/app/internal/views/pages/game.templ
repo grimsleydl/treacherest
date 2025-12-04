@@ -189,10 +189,12 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 									<!-- Show mini card if:
 									     - Player is Leader (always face up)
 									     - Current player viewing their own card
-									     - Card is face up (visible to everyone at the table) -->
+									     - Card is face up (visible to everyone at the table)
+									     - Current player has Puppet Master vision (can see all face-down cards) -->
 									if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
 									   (p.ID == currentPlayer.ID && p.Role != nil) ||
-									   (p.FaceUp && p.Role != nil) {
+									   (p.FaceUp && p.Role != nil) ||
+									   (currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanViewOthersFaceDown && p.Role != nil) {
 										@MiniRoleCard(p.Role)
 									} else {
 										<div class="text-sm opacity-60">Card is face down.</div>

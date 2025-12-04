@@ -102,6 +102,14 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/player/{playerID}/trigger-metamorph", h.TriggerMetamorphAbility)
 		r.Post("/room/{code}/player/{playerID}/steal-role/{targetPlayerID}", h.StealRole)
 		r.Post("/room/{code}/player/{playerID}/end-metamorph", h.EndMetamorphEffect)
+
+		// Puppet Master ability endpoints
+		r.Post("/room/{code}/player/{playerID}/trigger-puppet-master", h.TriggerPuppetMasterAbility)
+		r.Post("/room/{code}/puppet-master/{abilityID}/select-players", h.PuppetMasterSelectPlayers)
+		r.Post("/room/{code}/puppet-master/{abilityID}/skip", h.PuppetMasterSkip)
+		r.Post("/room/{code}/puppet-master/{abilityID}/back", h.PuppetMasterBack)
+		r.Post("/room/{code}/puppet-master/{abilityID}/execute", h.PuppetMasterExecute)
+
 		r.Post("/room/{code}/config/fully-random", h.UpdateFullyRandom)
 		r.Post("/room/{code}/config/role-type/{roleType}/increment", h.IncrementRoleTypeCount)
 		r.Post("/room/{code}/config/role-type/{roleType}/decrement", h.DecrementRoleTypeCount)

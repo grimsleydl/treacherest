@@ -611,3 +611,402 @@ func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// TriggerPuppetMasterAbility initiates The Puppet Master's ability when unveiled
+// The Puppet Master (ID 27): "When The Puppet Master is unveiled, redistribute control
+// of any number of other identity cards. Then turn face down each of those cards
+// that isn't a Leader."
+func (h *Handler) TriggerPuppetMasterAbility(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	playerID := chi.URLParam(r, "playerID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	player := room.GetPlayer(playerID)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify player has The Puppet Master (card ID 27)
+	if player.Role == nil || player.Role.GetID() != 27 {
+		http.Error(w, "Player does not have The Puppet Master", http.StatusBadRequest)
+		return
+	}
+
+	// Check if player already has a pending Puppet Master ability
+	if player.AbilityState != nil && player.AbilityState.HasPendingAbilities() {
+		for _, pending := range player.AbilityState.PendingAbilities {
+			if pending.CardID == 27 {
+				http.Error(w, "Ability already in progress", http.StatusConflict)
+				return
+			}
+		}
+	}
+
+	// Create pending ability with confirmation requirement
+	leader := room.GetLeader()
+	requiresConfirmation := leader != nil
+
+	abilityID := fmt.Sprintf("puppet-master-%s-%d", playerID, rand.Int())
+	pendingAbility := &ability.PendingAbility{
+		ID:          abilityID,
+		PlayerID:    playerID,
+		CardID:      27,
+		AbilityType: "puppet_master_redistribution",
+		Data: map[string]interface{}{
+			"step":             1, // Start at step 1 (player selection)
+			"selected_players": []string{},
+			"player_name":      player.Name,
+			"card_name":        player.Role.Name,
+		},
+		ModalDismissed:       false,
+		RequiresConfirmation: requiresConfirmation,
+		ConfirmationRole:     "leader",
+		ConfirmedBy:          []string{},
+	}
+
+	if player.AbilityState == nil {
+		player.AbilityState = ability.NewAbilityState()
+	}
+	player.AbilityState.AddPendingAbility(pendingAbility)
+
+	// Set card face up
+	player.FaceUp = true
+	player.RoleRevealed = true
+
+	// Grant the permanent ability to view face-down cards
+	player.AbilityState.GrantViewOthersFaceDown()
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Puppet Master ability triggered for %s in room %s", player.Name, roomCode)
+
+	h.eventBus.Publish(Event{
+		Type:     "ability_triggered",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// PuppetMasterSelectPlayers handles step 1 - selecting players to include in redistribution
+func (h *Handler) PuppetMasterSelectPlayers(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Get the requesting player
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Get the pending ability
+	pendingAbility := player.AbilityState.GetPendingAbility(abilityID)
+	if pendingAbility == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify ability belongs to this player
+	if pendingAbility.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Verify ability has been confirmed (if required)
+	if pendingAbility.RequiresConfirmation && !pendingAbility.IsConfirmed() {
+		http.Error(w, "Ability has not been confirmed by the Leader yet", http.StatusForbidden)
+		return
+	}
+
+	// Parse selected players from form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	selectedPlayers := r.Form["selected_players"]
+
+	// Validate selected players (must be living players, not the Puppet Master)
+	validatedPlayers := []string{}
+	for _, pID := range selectedPlayers {
+		p := room.GetPlayer(pID)
+		if p != nil && !p.IsEliminated && p.ID != player.ID && p.Role != nil {
+			validatedPlayers = append(validatedPlayers, pID)
+		}
+	}
+
+	// Need at least 2 players to redistribute
+	if len(validatedPlayers) < 2 {
+		// If less than 2 players, skip to completion (can't swap with only 1 or 0)
+		player.AbilityState.ResolvePendingAbility(abilityID)
+		h.store.UpdateRoom(room)
+
+		log.Printf("🎭 Puppet Master redistribution skipped (fewer than 2 players selected) for %s in room %s", player.Name, roomCode)
+
+		h.eventBus.Publish(Event{
+			Type:     "ability_resolved",
+			RoomCode: room.Code,
+			Data:     room,
+		})
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Store selected players and move to step 2
+	pendingAbility.Data["selected_players"] = validatedPlayers
+	pendingAbility.Data["step"] = 2
+
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Puppet Master selected %d players for redistribution in room %s", len(validatedPlayers), roomCode)
+
+	h.eventBus.Publish(Event{
+		Type:     "ability_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// PuppetMasterSkip handles skipping the redistribution entirely
+func (h *Handler) PuppetMasterSkip(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	pendingAbility := player.AbilityState.GetPendingAbility(abilityID)
+	if pendingAbility == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	if pendingAbility.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Resolve the ability without redistribution
+	player.AbilityState.ResolvePendingAbility(abilityID)
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Puppet Master redistribution skipped for %s in room %s", player.Name, roomCode)
+
+	h.eventBus.Publish(Event{
+		Type:     "ability_resolved",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// PuppetMasterBack goes back to player selection (step 1)
+func (h *Handler) PuppetMasterBack(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	pendingAbility := player.AbilityState.GetPendingAbility(abilityID)
+	if pendingAbility == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	if pendingAbility.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Reset to step 1
+	pendingAbility.Data["step"] = 1
+	pendingAbility.Data["selected_players"] = []string{}
+
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "ability_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// PuppetMasterExecute performs the actual redistribution
+func (h *Handler) PuppetMasterExecute(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	abilityID := chi.URLParam(r, "abilityID")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in room", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	pendingAbility := player.AbilityState.GetPendingAbility(abilityID)
+	if pendingAbility == nil {
+		http.Error(w, "Ability not found", http.StatusNotFound)
+		return
+	}
+
+	if pendingAbility.PlayerID != player.ID {
+		http.Error(w, "Ability does not belong to this player", http.StatusForbidden)
+		return
+	}
+
+	// Parse form data for assignments
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get selected players
+	selectedPlayerIDs, ok := pendingAbility.Data["selected_players"].([]string)
+	if !ok || len(selectedPlayerIDs) < 2 {
+		http.Error(w, "Invalid selected players", http.StatusBadRequest)
+		return
+	}
+
+	// Build assignment map: playerID -> cardID they should receive
+	assignments := make(map[string]int)
+	for _, pID := range selectedPlayerIDs {
+		cardIDStr := r.FormValue(fmt.Sprintf("assignment_%s", pID))
+		cardID, err := strconv.Atoi(cardIDStr)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid card assignment for player %s", pID), http.StatusBadRequest)
+			return
+		}
+		assignments[pID] = cardID
+	}
+
+	// Validate: each card should be assigned exactly once
+	cardAssignmentCount := make(map[int]int)
+	for _, cardID := range assignments {
+		cardAssignmentCount[cardID]++
+		if cardAssignmentCount[cardID] > 1 {
+			http.Error(w, "Each card can only be assigned to one player", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Collect current roles for selected players
+	playerRoles := make(map[string]*game.Card)
+	for _, pID := range selectedPlayerIDs {
+		p := room.GetPlayer(pID)
+		if p != nil && p.Role != nil {
+			playerRoles[pID] = p.Role
+		}
+	}
+
+	// Execute the redistribution
+	for playerID, cardID := range assignments {
+		p := room.GetPlayer(playerID)
+		if p == nil {
+			continue
+		}
+
+		// Find the card by ID
+		var newRole *game.Card
+		for _, originalRole := range playerRoles {
+			if originalRole.GetID() == cardID {
+				newRole = originalRole
+				break
+			}
+		}
+
+		if newRole == nil {
+			continue
+		}
+
+		// Assign the new role
+		p.Role = newRole
+
+		// Turn face down if not a Leader
+		if newRole.GetRoleType() != game.RoleLeader {
+			p.FaceUp = false
+			p.RoleRevealed = false
+		}
+	}
+
+	// Resolve the ability
+	player.AbilityState.ResolvePendingAbility(abilityID)
+	h.store.UpdateRoom(room)
+
+	log.Printf("🎭 Puppet Master redistribution executed by %s in room %s", player.Name, roomCode)
+
+	h.eventBus.Publish(Event{
+		Type:     "puppet_master_redistribution",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}

@@ -60,6 +60,20 @@ var unveilRequirements = map[int]*UnveilRequirements{
 		SetsFaceUp:                 true,
 	},
 
+	// The Puppet Master (ID 27)
+	// "Unveil {6}: When The Puppet Master is unveiled, redistribute control of any number
+	// of other identity cards. Then turn face down each of those cards that isn't a Leader.
+	// You may look at face-down identity cards you don't control any time.
+	// At the beginning of your end step, draw two cards."
+	27: {
+		CardID:                     27,
+		RequiresLeaderConfirmation: true,
+		InputType:                  ChoiceInput,
+		InputLabel:                 "Redistribute Identity Cards",
+		InputDescription:           "Pay {6} to unveil. Choose which players to include in the redistribution and how to reassign their identity cards.",
+		SetsFaceUp:                 true,
+	},
+
 	// The Wearer of Masks (ID 31)
 	// "Unveil {X}: As The Wearer of Masks is unveiled, reveal up to X non-Leader
 	// identity cards at random from outside the game..."

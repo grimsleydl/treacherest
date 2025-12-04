@@ -6,10 +6,11 @@ import (
 
 // AbilityState tracks all ability-related state for a player
 type AbilityState struct {
-	PendingAbilities []*PendingAbility
-	ActiveEffects    []*ActiveEffect
-	TransformState   *TransformState
-	MetamorphState   *MetamorphState // Tracks The Metamorph's steal ability
+	PendingAbilities     []*PendingAbility
+	ActiveEffects        []*ActiveEffect
+	TransformState       *TransformState
+	MetamorphState       *MetamorphState // Tracks The Metamorph's steal ability
+	CanViewOthersFaceDown bool            // The Puppet Master can view face-down identity cards
 }
 
 // PendingAbility represents an ability awaiting player choice or resolution
@@ -308,4 +309,9 @@ func (as *AbilityState) IsMetamorphActive() bool {
 // CanUseMetamorph checks if The Metamorph can be used to steal
 func (as *AbilityState) CanUseMetamorph() bool {
 	return as.MetamorphState != nil && as.MetamorphState.IsActive && !as.MetamorphState.HasBeenUsed
+}
+
+// GrantViewOthersFaceDown grants the ability to view face-down identity cards (The Puppet Master)
+func (as *AbilityState) GrantViewOthersFaceDown() {
+	as.CanViewOthersFaceDown = true
 }
