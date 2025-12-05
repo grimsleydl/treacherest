@@ -82,7 +82,7 @@ func TestGamePage(t *testing.T) {
 			AssertValid().
 			AssertContains("Test Guardian").
 			AssertHasElementWithID("game-container").
-			AssertContains(`data-on-load="@get(&#39;/sse/game/GAME1&#39;)"`)
+			AssertContains(`data-init="@get(&#39;/sse/game/GAME1&#39;)"`)
 	})
 
 	t.Run("shows player role", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestGamePage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("Revealing roles in...").
-			AssertContains("data-attr-style=\"&#39;--value:&#39; + $countdown\"")
+			AssertContains(`data-attr:style="'--value:' + $countdown"`)
 	})
 
 	t.Run("shows player list", func(t *testing.T) {

@@ -50,7 +50,7 @@ func TestBaseLayout(t *testing.T) {
 		component := Base("Structure Test")
 
 		renderer.Render(component).
-			AssertMatches(`(?s)<!doctype html>.*<html.*>.*<head>.*</head>.*<body>.*</body>.*</html>`).
+			AssertMatches(`(?s)<!doctype html>.*<html.*>.*<head>.*</head>.*<body.*>.*</body>.*</html>`).
 			AssertElementCount("html", 1).
 			AssertElementCount("head", 1).
 			AssertElementCount("body", 1)

@@ -8,7 +8,7 @@ templ CountdownDisplay(initialValue int) {
 		<h1 class="text-3xl font-bold mb-4">Game Starting...</h1>
 		<div class="text-6xl font-mono">
 			<span class="countdown countdown-fast">
-				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr:style="'--value:' + $countdown"></span>
 			</span>
 		</div>
 		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
@@ -21,7 +21,7 @@ templ CountdownDisplayWithMessage(initialValue int, message string) {
 		<h1 class="text-3xl font-bold mb-4">{ message }</h1>
 		<div class="text-6xl font-mono">
 			<span class="countdown countdown-fast">
-				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr:style="'--value:' + $countdown"></span>
 			</span>
 		</div>
 		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
@@ -34,7 +34,7 @@ templ CountdownLarge(initialValue int) {
 		<h1 class="text-4xl font-bold">Game Starting</h1>
 		<div class="flex gap-2 text-8xl font-mono">
 			<span class="countdown">
-				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr:style="'--value:' + $countdown"></span>
 			</span>
 			<span class="text-4xl self-end mb-4">seconds</span>
 		</div>
@@ -45,7 +45,7 @@ templ CountdownLarge(initialValue int) {
 templ CountdownWithBox(initialValue int, label string) {
 	<div class="flex flex-col gap-2 items-center">
 		<span class="countdown font-mono text-6xl">
-			<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+			<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr:style="'--value:' + $countdown"></span>
 		</span>
 		<span class="text-sm opacity-70">{ label }</span>
 	</div>
@@ -58,7 +58,7 @@ templ CountdownWithSpeed(initialValue int, message string, speed string) {
 		<h1 class="text-3xl font-bold mb-4">{ message }</h1>
 		<div class="text-6xl font-mono">
 			<span class={ "countdown", fmt.Sprintf("countdown-%s", speed) }>
-				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr-style="'--value:' + $countdown"></span>
+				<span style={ fmt.Sprintf("--value:%d", initialValue) } data-attr:style="'--value:' + $countdown"></span>
 			</span>
 		</div>
 		<p class="text-lg text-base-content/70 mt-4">Get ready!</p>
@@ -70,7 +70,7 @@ templ CountdownInline(initialValue int, animationMs int) {
 	<span class="countdown font-mono text-4xl">
 		<span
 			style={ fmt.Sprintf("--value:%d; --animation-duration:%dms", initialValue, animationMs) }
-			data-attr-style={ fmt.Sprintf("'--value:' + $countdown + '; --animation-duration:%dms'", animationMs) }
+			data-attr:style={ fmt.Sprintf("'--value:' + $countdown + '; --animation-duration:%dms'", animationMs) }
 		></span>
 	</span>
 }

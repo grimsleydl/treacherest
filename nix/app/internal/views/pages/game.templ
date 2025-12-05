@@ -15,8 +15,8 @@ templ GamePage(room *game.Room, currentPlayer *game.Player) {
 }
 
 templ GameBody(room *game.Room, currentPlayer *game.Player) {
-	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
-	<div data-on-load={ "@get('/sse/game/" + room.Code + "')" }>
+	// data-init is on wrapper div that never gets morphed to prevent re-triggering
+	<div data-init={ "@get('/sse/game/" + room.Code + "')" }>
 		@GameContent(room, currentPlayer)
 	</div>
 	// Modal container is now in Base layout, completely outside SSE-affected areas
@@ -122,7 +122,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 							// Card is face up - show Turn Face Down button (for transformed players)
 							<button
 								class="btn btn-sm btn-outline btn-secondary"
-								data-on-click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
+								data-on:click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
 								title="Turn your card face down (may end transformations)">
 								🃏 Turn Face Down
 							</button>
@@ -134,7 +134,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 					<div class="max-w-md w-full flex justify-center mt-4">
 						<button
 							class="btn btn-sm btn-outline btn-error"
-							data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
+							data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
 							onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
 							title="Mark yourself as eliminated from the game">
 							💀 I've Been Eliminated

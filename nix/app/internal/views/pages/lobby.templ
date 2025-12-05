@@ -16,8 +16,8 @@ templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 }
 
 templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	// data-on-load is on wrapper div that never gets morphed to prevent re-triggering
-	<div data-on-load={ "@get('/sse/lobby/" + room.Code + "')" }>
+	// data-init is on wrapper div that never gets morphed to prevent re-triggering
+	<div data-init={ "@get('/sse/lobby/" + room.Code + "')" }>
 		<div id="lobby-container" class="container">
 			<div id="lobby-content">
 				@LobbyContent(room, currentPlayer, cfg, cardService)
@@ -30,12 +30,12 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.Serv
 	// Only add signals for players who can control the game
 	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) {
 		<div
-			data-signals-is-starting="false"
-			data-signals-start-error=""
-			data-signals-can-start-game="true"
-			data-signals-validation-message=""
-			data-signals-can-auto-scale="false"
-			data-signals-auto-scale-details=""
+			data-signals:is-starting="false"
+			data-signals:start-error=""
+			data-signals:can-start-game="true"
+			data-signals:validation-message=""
+			data-signals:can-auto-scale="false"
+			data-signals:auto-scale-details=""
 		>
 			@LobbyContentInner(room, currentPlayer, cfg, cardService, true)
 		</div>
@@ -84,13 +84,13 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 		if canControl && room.GetActivePlayerCount() >= 1 {
 			<button
 				class="btn btn-primary btn-lg btn-wide"
-				data-on-click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
-				data-attr-disabled="$isStarting || !$canStartGame"
-				data-class-loading="$isStarting"
-				data-attr-aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
-				data-attr-aria-busy="$isStarting ? 'true' : 'false'"
-				data-attr-aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
-				data-attr-aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
+				data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
+				data-attr:disabled="$isStarting || !$canStartGame"
+				data-class:loading="$isStarting"
+				data-attr:aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
+				data-attr:aria-busy="$isStarting ? 'true' : 'false'"
+				data-attr:aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
+				data-attr:aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
 			>
 				<span data-show="!$isStarting">Start Game</span>
 				<span data-show="$isStarting" aria-hidden="true">Starting...</span>
@@ -111,7 +111,7 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 				<span id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</span>
 			</div>
 		}
-		<button class="btn btn-error btn-outline" data-on-click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
+		<button class="btn btn-error btn-outline" data-on:click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
 			Leave Room
 		</button>
 	</div>

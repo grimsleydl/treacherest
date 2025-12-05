@@ -13,7 +13,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 	<div
 		id="x-input-modal"
 		class="modal modal-open"
-		data-signals-x-value={ fmt.Sprintf("%d", requirements.DefaultValue) }
+		data-signals:x-value={ fmt.Sprintf("%d", requirements.DefaultValue) }
 	>
 		<div class="modal-box">
 			<h3 class="font-bold text-lg flex items-center gap-2">
@@ -36,7 +36,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 					<div class="flex items-center gap-4">
 						<button
 							class="btn btn-circle btn-sm btn-outline"
-							data-on-click="$xValue = Math.max(0, Number($xValue) - 1)"
+							data-on:click="$xValue = Math.max(0, Number($xValue) - 1)"
 							type="button"
 						>
 							-
@@ -50,7 +50,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 						/>
 						<button
 							class="btn btn-circle btn-sm btn-outline"
-							data-on-click={ fmt.Sprintf("$xValue = Math.min(%d, Number($xValue) + 1)", maxAvailableCards) }
+							data-on:click={ fmt.Sprintf("$xValue = Math.min(%d, Number($xValue) + 1)", maxAvailableCards) }
 							type="button"
 						>
 							+
@@ -78,13 +78,13 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 			<div class="modal-action">
 				<button
 					class="btn btn-ghost"
-					data-on-click="evt.target.closest('.modal')?.remove()"
+					data-on:click="evt.target.closest('.modal')?.remove()"
 				>
 					Cancel
 				</button>
 				<button
 					class="btn btn-primary"
-					data-on-click={ fmt.Sprintf("document.getElementById('x-input-modal')?.remove(); @post('/room/%s/player/%s/trigger-wearer/' + $xValue)", room.Code, player.ID) }
+					data-on:click={ fmt.Sprintf("document.getElementById('x-input-modal')?.remove(); @post('/room/%s/player/%s/trigger-wearer/' + $xValue)", room.Code, player.ID) }
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
@@ -94,7 +94,7 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 				</button>
 			</div>
 		</div>
-		<div class="modal-backdrop bg-base-300/50" data-on-click="evt.target.closest('.modal')?.remove()"></div>
+		<div class="modal-backdrop bg-base-300/50" data-on:click="evt.target.closest('.modal')?.remove()"></div>
 	</div>
 }
 
@@ -116,7 +116,7 @@ func getPendingAbilityForCard(player *game.Player, cardID int) *ability.PendingA
 templ InlinePendingAbilityButton(room *game.Room, player *game.Player, pending *ability.PendingAbility) {
 	<button
 		class="btn btn-info btn-sm gap-1"
-		data-on-click={ fmt.Sprintf("@post('/room/%s/ability/%s/restore')", room.Code, pending.ID) }
+		data-on:click={ fmt.Sprintf("@post('/room/%s/ability/%s/restore')", room.Code, pending.ID) }
 		title="Continue with ability - click to show options"
 	>
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
@@ -139,7 +139,7 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 		// Card needs X input - show button that opens modal
 		<button
 			class="btn btn-primary btn-sm"
-			data-on-click={ fmt.Sprintf("@get('/room/%s/unveil-modal/%s')", room.Code, player.ID) }
+			data-on:click={ fmt.Sprintf("@get('/room/%s/unveil-modal/%s')", room.Code, player.ID) }
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
@@ -152,7 +152,7 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 		<button
 			class="btn btn-primary btn-sm"
 			onclick="return confirm('Pay 8 life and discard a card to unveil The Metamorph?')"
-			data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-metamorph')", room.Code, player.ID) }
+			data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-metamorph')", room.Code, player.ID) }
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
@@ -165,7 +165,7 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 		<button
 			class="btn btn-primary btn-sm"
 			onclick="return confirm('Pay 6 mana to unveil The Puppet Master and redistribute identity cards?')"
-			data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-puppet-master')", room.Code, player.ID) }
+			data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-puppet-master')", room.Code, player.ID) }
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
@@ -177,7 +177,7 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 		// Card has no special requirements - simple unveil
 		<button
 			class="btn btn-primary btn-sm"
-			data-on-click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
+			data-on:click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
@@ -202,7 +202,7 @@ templ MetamorphActiveIndicator(room *game.Room, player *game.Player) {
 			</div>
 			<button
 				class="btn btn-sm btn-outline"
-				data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/end-metamorph')", room.Code, player.ID) }
+				data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/end-metamorph')", room.Code, player.ID) }
 				onclick="return confirm('End The Metamorph ability window? This cannot be undone.')"
 			>
 				End Turn
@@ -245,7 +245,7 @@ templ MetamorphStealPrompt(room *game.Room, player *game.Player, eliminatedPlaye
 				<div class="modal-action">
 					<button
 						class="btn btn-error"
-						data-on-click={ fmt.Sprintf("@post('/room/%s/player/%s/steal-role/%s')", room.Code, player.ID, eliminatedPlayer.ID) }
+						data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/steal-role/%s')", room.Code, player.ID, eliminatedPlayer.ID) }
 					>
 						<span class="text-lg">🦎</span>
 						Steal Identity

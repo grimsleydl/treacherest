@@ -15,7 +15,7 @@ templ Base(title string) {
 			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js"></script>
 		</head>
 		<body 
-			data-signals-theme="localStorage.getItem('theme') || 'dracula'"
+			data-signals:theme="localStorage.getItem('theme') || 'dracula'"
 			data-effect="document.documentElement.setAttribute('data-theme', $theme); localStorage.setItem('theme', $theme)">
 			<nav class="navbar bg-base-100 shadow-lg">
 				<div class="flex-1">

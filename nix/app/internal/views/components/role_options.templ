@@ -77,7 +77,7 @@ templ CheckboxOption(room *game.Room, card *game.Card, field OptionField) {
 			class="checkbox checkbox-sm"
 			id={ fmt.Sprintf("option-%d-%s", card.GetID(), field.Key) }
 			checked?={ getCheckboxValue(room, card.GetID(), field.Key, field.DefaultValue) }
-			data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + (evt.target.checked ? 'true' : 'false')})`, room.Code, card.GetID(), field.Key) }
+			data-on:change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + (evt.target.checked ? 'true' : 'false')})`, room.Code, card.GetID(), field.Key) }
 		/>
 		<div class="flex flex-col">
 			<span class="label-text text-sm">{ field.Label }</span>
@@ -111,7 +111,7 @@ templ NumberOption(room *game.Room, card *game.Card, field OptionField) {
 		if field.MaxValue != nil {
 			max={ fmt.Sprintf("%d", *field.MaxValue) }
 		}
-		data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
+		data-on:change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
 	/>
 }
 
@@ -128,7 +128,7 @@ templ SelectOption(room *game.Room, card *game.Card, field OptionField) {
 	<select
 		class="select select-sm select-bordered"
 		id={ fmt.Sprintf("option-%d-%s", card.GetID(), field.Key) }
-		data-on-change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
+		data-on:change={ fmt.Sprintf(`@post('/room/%s/options', {body: 'card_id=%d&key=%s&value=' + evt.target.value})`, room.Code, card.GetID(), field.Key) }
 	>
 		for _, opt := range field.Options {
 			<option

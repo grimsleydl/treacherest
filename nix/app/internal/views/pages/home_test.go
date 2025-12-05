@@ -61,7 +61,7 @@ func TestHomePage(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
-			AssertContains(`data-on-submit`).
+			AssertContains(`data-on:submit`).
 			AssertContains(`evt.preventDefault()`)
 	})
 

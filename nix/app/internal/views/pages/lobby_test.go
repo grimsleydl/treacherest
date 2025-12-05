@@ -57,7 +57,7 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
-			AssertContains(`data-on-load="@get(&#39;/sse/lobby/TEST1&#39;)"`)
+			AssertContains(`data-init="@get(&#39;/sse/lobby/TEST1&#39;)"`)
 	})
 
 	t.Run("renders player list", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestLobbyBody(t *testing.T) {
 		renderer.Render(component).
 			AssertNotContains("Need at least").
 			AssertContains("Start Game").
-			AssertContains(`data-attr-disabled="$isStarting || !$canStartGame"`)
+			AssertContains(`data-attr:disabled="$isStarting || !$canStartGame"`)
 	})
 
 }

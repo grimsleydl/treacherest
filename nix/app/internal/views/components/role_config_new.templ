@@ -38,7 +38,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 			<div class="player-range flex items-center gap-2">
 				<button
 					class="btn btn-primary btn-sm"
-					data-on-click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
+					data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
 					disabled?={ shouldDisableDecrement(playerCountDisplay, room, cfg) }
 					title={ getDecrementTitle(playerCountDisplay) }
 				>
@@ -47,7 +47,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 				<span class="px-2 font-semibold">{ fmt.Sprintf("%d players", room.RoleConfig.MaxPlayers) }</span>
 				<button
 					class="btn btn-primary btn-sm"
-					data-on-click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
+					data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
 					disabled?={ shouldDisableIncrement(playerCountDisplay, room, cfg) }
 					title={ getIncrementTitle(playerCountDisplay) }
 				>
@@ -62,7 +62,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 		</div>
 		// Preset selector
 		<div class="preset-selector" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
-			<form id="preset-form" data-on-change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
+			<form id="preset-form" data-on:change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
 				<label for="role-preset">Role Preset:</label>
 				<select
 					id="role-preset"
@@ -92,8 +92,8 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					id="allow-leaderless"
 					checked?={ room.RoleConfig.AllowLeaderlessGame }
 					data-bind="allowLeaderless"
-					data-attr-disabled="$updatingLeaderless"
-					data-on-change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowLeaderless: evt.target.checked})})`, room.Code) }
+					data-attr:disabled="$updatingLeaderless"
+					data-on:change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowLeaderless: evt.target.checked})})`, room.Code) }
 				/>
 				<label for="allow-leaderless">
 					Allow Leaderless Games
@@ -107,8 +107,8 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					id="hide-role-distribution"
 					checked?={ room.RoleConfig.HideRoleDistribution }
 					data-bind="hideRoleDistribution"
-					data-attr-disabled="$updatingHideDistribution || $fullyRandomRoles"
-					data-on-change={ fmt.Sprintf(`$updatingHideDistribution = true; @post('/room/%s/config/hide-distribution', {body: JSON.stringify({hide: evt.target.checked})})`, room.Code) }
+					data-attr:disabled="$updatingHideDistribution || $fullyRandomRoles"
+					data-on:change={ fmt.Sprintf(`$updatingHideDistribution = true; @post('/room/%s/config/hide-distribution', {body: JSON.stringify({hide: evt.target.checked})})`, room.Code) }
 				/>
 				<label for="hide-role-distribution">
 					Hide Role Distribution
@@ -122,8 +122,8 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					id="fully-random-roles"
 					checked?={ room.RoleConfig.FullyRandomRoles }
 					data-bind="fullyRandomRoles"
-					data-attr-disabled="$updatingFullyRandom || $hideRoleDistribution"
-					data-on-change={ fmt.Sprintf(`$updatingFullyRandom = true; @post('/room/%s/config/fully-random', {body: JSON.stringify({random: evt.target.checked})})`, room.Code) }
+					data-attr:disabled="$updatingFullyRandom || $hideRoleDistribution"
+					data-on:change={ fmt.Sprintf(`$updatingFullyRandom = true; @post('/room/%s/config/fully-random', {body: JSON.stringify({random: evt.target.checked})})`, room.Code) }
 				/>
 				<label for="fully-random-roles">
 					Fully Random Roles
@@ -178,13 +178,13 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 					<div class="flex flex-col items-center gap-1 relative z-10">
 						<button
 							class="btn btn-primary relative z-20"
-							data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
+							data-on:click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/increment')`, room.Code, typeName) }
 							onclick="event.stopPropagation()"
 						>+</button>
 						<span class="text-lg font-bold">{ fmt.Sprintf("%d", typeConfig.Count) }</span>
 						<button
 							class="btn btn-primary relative z-20"
-							data-on-click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
+							data-on:click={ fmt.Sprintf(`@post('/room/%s/config/role-type/%s/decrement')`, room.Code, typeName) }
 							disabled?={ typeConfig.Count == 0 }
 							onclick="event.stopPropagation()"
 						>-</button>
@@ -207,7 +207,7 @@ templ RoleTypeSection(room *game.Room, typeName string, typeConfig *game.RoleTyp
 										class="toggle"
 										id={ fmt.Sprintf("card-%s-%s", typeName, card.NameAnchor) }
 										checked?={ typeConfig.EnabledCards[card.Name] }
-										data-on-click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
+										data-on:click={ fmt.Sprintf(`$cardId = evt.target.id; $cardChecked = evt.target.checked; @post('/room/%s/config/card-toggle')`, room.Code) }
 									/>
 									<span class="label-text flex items-center gap-2">
 										<label
