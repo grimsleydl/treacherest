@@ -9,42 +9,42 @@ default:
 registry := "ghcr.io/grimsleydl/treacherest"
 
 # ============================================================
-# Container Build Recipes
+# Container Build Recipes (nix build only)
 # ============================================================
 
 # Build production container
 build-container:
     nix build .#containers.x86_64-linux.default
-    @echo "Built production container. Use 'just load-container' to load into Docker."
+    @echo "Built production container"
 
-# Build development container (includes debugging tools)
+# Build dev container
 build-container-dev:
     nix build .#containers.x86_64-linux.dev
-    @echo "Built dev container. Use 'just load-container-dev' to load into Docker."
+    @echo "Built dev container"
 
-# Build minimal container (just the binary)
+# Build minimal container
 build-container-minimal:
     nix build .#containers.x86_64-linux.minimal
-    @echo "Built minimal container. Use 'just load-container-minimal' to load into Docker."
+    @echo "Built minimal container"
 
 # ============================================================
-# Container Load Recipes (into Docker daemon)
+# Container Load Recipes (build + load into Podman)
 # ============================================================
 
-# Load production container into Docker
-load-container: build-container
-    ./result/copyTo docker-daemon:{{registry}}:latest
-    @echo "Loaded {{registry}}:latest into Docker"
+# Build and load production container into Podman
+load-container:
+    nix run .#containers.x86_64-linux.default.copyTo -- containers-storage:{{registry}}:latest
+    @echo "Loaded {{registry}}:latest into Podman"
 
-# Load dev container into Docker
-load-container-dev: build-container-dev
-    ./result/copyTo docker-daemon:{{registry}}:dev
-    @echo "Loaded {{registry}}:dev into Docker"
+# Build and load dev container into Podman
+load-container-dev:
+    nix run .#containers.x86_64-linux.dev.copyTo -- containers-storage:{{registry}}:dev
+    @echo "Loaded {{registry}}:dev into Podman"
 
-# Load minimal container into Docker
-load-container-minimal: build-container-minimal
-    ./result/copyTo docker-daemon:{{registry}}:minimal
-    @echo "Loaded {{registry}}:minimal into Docker"
+# Build and load minimal container into Podman
+load-container-minimal:
+    nix run .#containers.x86_64-linux.minimal.copyTo -- containers-storage:{{registry}}:minimal
+    @echo "Loaded {{registry}}:minimal into Podman"
 
 # ============================================================
 # Container Push Recipes (to GHCR)
@@ -52,17 +52,17 @@ load-container-minimal: build-container-minimal
 
 # Push production container to GHCR
 push-container: load-container
-    docker push {{registry}}:latest
+    podman push {{registry}}:latest
     @echo "Pushed {{registry}}:latest to GHCR"
 
 # Push dev container to GHCR
 push-container-dev: load-container-dev
-    docker push {{registry}}:dev
+    podman push {{registry}}:dev
     @echo "Pushed {{registry}}:dev to GHCR"
 
 # Push minimal container to GHCR
 push-container-minimal: load-container-minimal
-    docker push {{registry}}:minimal
+    podman push {{registry}}:minimal
     @echo "Pushed {{registry}}:minimal to GHCR"
 
 # Push all container variants to GHCR
@@ -70,22 +70,22 @@ push-all: push-container push-container-dev push-container-minimal
     @echo "All containers pushed to GHCR"
 
 # ============================================================
-# Direct Push (no Docker daemon required)
+# Direct Push (no local storage required)
 # ============================================================
 
-# Push production container directly to GHCR (requires skopeo auth)
-push-direct: build-container
-    ./result/copyTo docker://{{registry}}:latest
+# Push production container directly to GHCR
+push-direct:
+    nix run .#containers.x86_64-linux.default.copyTo -- docker://{{registry}}:latest
     @echo "Pushed {{registry}}:latest directly to GHCR"
 
 # Push dev container directly to GHCR
-push-direct-dev: build-container-dev
-    ./result/copyTo docker://{{registry}}:dev
+push-direct-dev:
+    nix run .#containers.x86_64-linux.dev.copyTo -- docker://{{registry}}:dev
     @echo "Pushed {{registry}}:dev directly to GHCR"
 
 # Push minimal container directly to GHCR
-push-direct-minimal: build-container-minimal
-    ./result/copyTo docker://{{registry}}:minimal
+push-direct-minimal:
+    nix run .#containers.x86_64-linux.minimal.copyTo -- docker://{{registry}}:minimal
     @echo "Pushed {{registry}}:minimal directly to GHCR"
 
 # ============================================================
@@ -94,15 +94,15 @@ push-direct-minimal: build-container-minimal
 
 # Run production container locally
 run-container: load-container
-    docker run --rm -p 8080:8080 {{registry}}:latest
+    podman run --rm -p 8080:8080 {{registry}}:latest
 
 # Run dev container locally with shell
 run-container-dev: load-container-dev
-    docker run --rm -it -p 8080:8080 {{registry}}:dev
+    podman run --rm -it -p 8080:8080 {{registry}}:dev
 
 # Run minimal container locally
 run-container-minimal: load-container-minimal
-    docker run --rm -p 8080:8080 {{registry}}:minimal
+    podman run --rm -p 8080:8080 {{registry}}:minimal
 
 # ============================================================
 # Auth & Utility
@@ -112,19 +112,19 @@ run-container-minimal: load-container-minimal
 ghcr-login:
     @echo "Logging into GHCR..."
     @echo "Make sure GITHUB_TOKEN is set with packages:write scope"
-    echo $GITHUB_TOKEN | docker login ghcr.io -u grimsleydl --password-stdin
+    echo $GITHUB_TOKEN | podman login ghcr.io -u grimsleydl --password-stdin
 
 # Show container image details
 inspect-container: load-container
-    docker inspect {{registry}}:latest | jq '.[0].Config'
+    podman inspect {{registry}}:latest | jq '.[0].Config'
 
 # List all local treacherest images
 list-images:
-    docker images | grep treacherest || echo "No treacherest images found"
+    podman images | grep treacherest || echo "No treacherest images found"
 
 # Remove all local treacherest images
 clean-images:
-    docker images --format '{{{{.Repository}}}}:{{{{.Tag}}}}' | grep treacherest | xargs -r docker rmi
+    podman images --format '{{{{.Repository}}}}:{{{{.Tag}}}}' | grep treacherest | xargs -r podman rmi
     @echo "Cleaned up local treacherest images"
 
 # ============================================================
@@ -132,7 +132,12 @@ clean-images:
 # ============================================================
 
 # Build and push a tagged release (e.g., just release v1.0.0)
-release tag: build-container
-    ./result/copyTo docker-daemon:{{registry}}:{{tag}}
-    docker push {{registry}}:{{tag}}
+release tag:
+    nix run .#containers.x86_64-linux.default.copyTo -- containers-storage:{{registry}}:{{tag}}
+    podman push {{registry}}:{{tag}}
     @echo "Released {{registry}}:{{tag}}"
+
+# Direct push a tagged release (e.g., just release-direct v1.0.0)
+release-direct tag:
+    nix run .#containers.x86_64-linux.default.copyTo -- docker://{{registry}}:{{tag}}
+    @echo "Released {{registry}}:{{tag}} directly to GHCR"
