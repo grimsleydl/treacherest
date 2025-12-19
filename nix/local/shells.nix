@@ -40,6 +40,9 @@ in {
       # Base go compiler needed for air
       go
 
+      # Task runner for container builds
+      just
+
       gopls
       gotools
       golangci-lint
@@ -72,7 +75,7 @@ in {
         help = "Start development server with hot reload";
         command = ''
           cd $PRJ_ROOT/nix/app
-          templ generate --watch --proxy="http://localhost:8080" --open-browser=false &
+          templ generate --watch --proxy="http://localhost:8888" --open-browser=false &
           air
         '';
       }
@@ -313,6 +316,11 @@ in {
       echo "  build-css-prod   - Build minified CSS for production"
       echo "  dev-css          - Start dev server with CSS watching"
       echo "  backup-templates - Backup templates before migration"
+      echo ""
+      echo "Container commands (via just):"
+      echo "  just --list      - Show all container recipes"
+      echo "  just build-container - Build production container"
+      echo "  just push-container  - Build, load, and push to GHCR"
       echo ""
       echo "Playwright environment configured:"
       echo "  PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
