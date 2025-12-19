@@ -9,7 +9,7 @@ server:
   
   # Development server settings
   host: localhost
-  port: "8080"
+  port: "8888"
   
   # Timeouts - relaxed for development
   readTimeout: 15s
@@ -32,6 +32,13 @@ server:
   logFormat: text
   enableMetrics: false
   metricsPort: "9090"
+
+  # State backup - disabled for easier debugging in development
+  backupEncryptionEnabled: false
+  # backupEncryptionKey: ""  # Not needed when encryption disabled
+
+  # Debug mode - enables debug panel and debug endpoints
+  debugModeEnabled: true
 
 # Include all role definitions for development
 roles:

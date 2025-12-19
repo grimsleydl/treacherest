@@ -13,7 +13,7 @@ import (
 func TestNew(t *testing.T) {
 	cfg := config.DefaultConfig()
 	memStore := store.NewMemoryStore(cfg)
-	handler := New(memStore, createMockCardService(), cfg)
+	handler := New(memStore, createMockCardService(), cfg, nil)
 
 	if handler == nil {
 		t.Fatal("New returned nil handler")

@@ -33,7 +33,7 @@ func TestUpdateRolePreset(t *testing.T) {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	h := New(s, cardService, cfg)
+	h := New(s, cardService, cfg, nil)
 
 	// Create a test room with a player
 	room := &game.Room{
@@ -140,7 +140,7 @@ func TestUpdateRolePreset(t *testing.T) {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	h := New(s, cardService, cfg)
+	h := New(s, cardService, cfg, nil)
 
 	// Create a test room
 	room := &game.Room{
@@ -240,7 +240,7 @@ func TestUpdateRolePreset(t *testing.T) {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	h := New(s, cardService, cfg)
+	h := New(s, cardService, cfg, nil)
 
 	// Create a test room
 	room := &game.Room{
@@ -340,7 +340,7 @@ func TestIsRoomCreator(t *testing.T) {
 	// Create handler
 	cfg := config.DefaultConfig()
 	s := store.NewMemoryStore(cfg)
-	h := New(s, nil, cfg)
+	h := New(s, nil, cfg, nil)
 
 	// Test with host mode
 	hostRoom := &game.Room{

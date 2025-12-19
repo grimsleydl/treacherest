@@ -122,3 +122,62 @@ func (s *MemoryStore) validateAndFixRoleConfig(room *game.Room) bool {
 	// The validation is handled by the room's ValidateRoleConfig method
 	return false
 }
+
+// RegisterRestoredRoom registers a room that was restored from a backup
+// This is used when recovering from a Cloud Run instance replacement
+func (s *MemoryStore) RegisterRestoredRoom(room *game.Room) error {
+	if room == nil {
+		return fmt.Errorf("room is nil")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Check if room already exists (another player might have restored it first)
+	if _, exists := s.rooms[room.Code]; exists {
+		return fmt.Errorf("room %s already exists", room.Code)
+	}
+
+	// Reinitialize CardPool with current cards from CardService
+	// The backup may have outdated card data, so we need fresh references
+	if s.cardService != nil {
+		allCards := s.cardService.GetAllCards()
+		room.CardPool = game.NewCardPool(allCards)
+
+		// Re-mark assigned cards based on player roles
+		for _, player := range room.Players {
+			if player.Role != nil {
+				// Find the matching card in the fresh card pool
+				freshCard := room.CardPool.GetCardByID(player.Role.ID)
+				if freshCard != nil {
+					room.CardPool.MarkCardAssigned(freshCard.ID)
+					// Update player's role reference to the fresh card
+					player.Role = freshCard
+				}
+			}
+		}
+	}
+
+	// Initialize RoleOptionsManager if nil
+	if room.RoleOptionsManager == nil {
+		room.RoleOptionsManager = game.NewRoleOptionsManager()
+	}
+
+	s.rooms[room.Code] = room
+	return nil
+}
+
+// RoomExists checks if a room with the given code exists
+func (s *MemoryStore) RoomExists(code string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, exists := s.rooms[code]
+	return exists
+}
+
+// DeleteRoom removes a room from the store (used for debug/testing)
+func (s *MemoryStore) DeleteRoom(code string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.rooms, code)
+}

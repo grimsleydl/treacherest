@@ -45,6 +45,13 @@ type ServerSettings struct {
 	MetricsPort   string `yaml:"metricsPort" envconfig:"METRICS_PORT"` // No default - must be set if metrics enabled
 	LogLevel      string `yaml:"logLevel" envconfig:"LOG_LEVEL" default:"info"`
 	LogFormat     string `yaml:"logFormat" envconfig:"LOG_FORMAT" default:"text"`
+
+	// State backup (for Cloud Run instance recovery)
+	BackupEncryptionKey     string `yaml:"backupEncryptionKey" envconfig:"BACKUP_ENCRYPTION_KEY"`                       // 32-byte hex string (64 chars)
+	BackupEncryptionEnabled bool   `yaml:"backupEncryptionEnabled" envconfig:"BACKUP_ENCRYPTION_ENABLED" default:"true"`
+
+	// Debug mode (enables debug panel on game pages and debug endpoints)
+	DebugModeEnabled bool `yaml:"debugModeEnabled" envconfig:"DEBUG_MODE_ENABLED" default:"false"`
 }
 
 // RolesConfig contains role definitions and presets

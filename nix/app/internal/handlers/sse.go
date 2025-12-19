@@ -84,6 +84,13 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to send initial validation state: %v", err)
 	}
 
+	// Send debug mode signal if debug mode is enabled (for debug panel visibility)
+	if h.config.Server.DebugModeEnabled {
+		sse.MarshalAndPatchSignals(map[string]interface{}{
+			"debugmode": true,
+		})
+	}
+
 	log.Printf("📡 SSE connection ready for room %s with validation state v%d", roomCode, validationState.Version)
 
 	// Set up a heartbeat to prevent timeouts
@@ -261,6 +268,16 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to send initial game signals: %v", err)
 	}
 
+	// Send initial state backup
+	h.emitStateBackup(sse, room)
+
+	// Send debug mode signal if debug mode is enabled (for debug panel visibility)
+	if h.config.Server.DebugModeEnabled {
+		sse.MarshalAndPatchSignals(map[string]interface{}{
+			"debugmode": true,
+		})
+	}
+
 	// If joining during countdown, calculate actual remaining time
 	if room.State == game.StateCountdown {
 		// Calculate how much time has passed since countdown started
@@ -291,12 +308,17 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 
+	// Track heartbeat count for periodic backup (every 4 heartbeats = 60 seconds)
+	heartbeatCount := 0
+
 	// Stream updates
 	for {
 		select {
 		case <-r.Context().Done():
 			return
 		case <-heartbeat.C:
+			heartbeatCount++
+
 			// Send minimal keepalive comment to prevent timeout
 			if os.Getenv("DEBUG") != "" {
 				log.Printf("DEBUG: 📡 Sending keepalive for game room %s", roomCode)
@@ -318,6 +340,14 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 			if os.Getenv("DEBUG") != "" {
 				log.Printf("DEBUG: 📡 Keepalive sent successfully for game room %s", roomCode)
+			}
+
+			// Send periodic backup every 60 seconds (4 heartbeats)
+			if heartbeatCount%4 == 0 {
+				room, _ = h.store.GetRoom(roomCode)
+				if room != nil {
+					h.emitStateBackup(sse, room)
+				}
 			}
 		case event := <-events:
 			log.Printf("📡 SSE event received for game %s: %s", roomCode, event.Type)
@@ -349,14 +379,32 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				}
 				sse.MarshalAndPatchSignals(signals)
 				log.Printf("🎮 Game playing - cleared countdown signal for room %s", roomCode)
+
+				// Emit backup after game state transition
+				h.emitStateBackup(sse, room)
 			default:
 				// All other events need full re-render
 				room, _ = h.store.GetRoom(roomCode)
 				player = room.GetPlayer(player.ID) // Refresh player data
 				h.renderGame(sse, room, player)
+
+				// Clear any temporary modals (e.g., X input modal for Wearer of Masks)
+				h.clearModalContainer(sse)
+
+				// Emit backup after any game state change
+				h.emitStateBackup(sse, room)
 			}
 		}
 	}
+}
+
+// clearModalContainer clears temporary modals from #modal-container via SSE
+// This is needed because #modal-container is outside #game-container and doesn't get
+// automatically cleared when game content is morphed
+func (h *Handler) clearModalContainer(sse *datastar.ServerSentEventGenerator) {
+	sse.PatchElements("",
+		datastar.WithSelector("#modal-container"),
+		datastar.WithModeInner())
 }
 
 // sendPlayerListUpdate sends only the player list card - minimal update for player join/leave
@@ -475,6 +523,30 @@ func renderToString(component templ.Component) string {
 	return buf.String()
 }
 
+// emitStateBackup sends an encrypted state backup to the client for localStorage storage
+// This is used for recovering game state after Cloud Run instance replacement
+func (h *Handler) emitStateBackup(sse *datastar.ServerSentEventGenerator, room *game.Room) {
+	if h.backupService == nil {
+		return // Backup service not configured
+	}
+
+	backup, err := h.backupService.CreateBackup(room)
+	if err != nil {
+		log.Printf("❌ Failed to create state backup for room %s: %v", room.Code, err)
+		return
+	}
+
+	// Send backup as a signal - handled by dedicated #backup-handler element's data-effect
+	err = sse.MarshalAndPatchSignals(map[string]interface{}{
+		"stateBackup": backup,
+	})
+	if err != nil {
+		log.Printf("❌ Failed to send state backup signal for room %s: %v", room.Code, err)
+	} else if os.Getenv("DEBUG") != "" {
+		log.Printf("DEBUG: 💾 Sent state backup for room %s (%d bytes)", room.Code, len(backup))
+	}
+}
+
 // StreamHost streams host dashboard updates
 func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
@@ -560,6 +632,13 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Printf("📡 Sent initial countdown signal to host: %d", room.CountdownRemaining)
 		}
+	}
+
+	// Send debug mode signal if debug mode is enabled (for debug panel visibility)
+	if h.config.Server.DebugModeEnabled {
+		sse.MarshalAndPatchSignals(map[string]interface{}{
+			"debugmode": true,
+		})
 	}
 
 	// Subscribe to events

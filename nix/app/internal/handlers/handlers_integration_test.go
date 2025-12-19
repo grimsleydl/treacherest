@@ -9,7 +9,7 @@ import (
 func TestHandler_Store(t *testing.T) {
 	cfg := config.DefaultConfig()
 	memStore := store.NewMemoryStore(cfg)
-	handler := New(memStore, createMockCardService(), cfg)
+	handler := New(memStore, createMockCardService(), cfg, nil)
 
 	// Test that Store() returns the same store
 	if handler.Store() != memStore {

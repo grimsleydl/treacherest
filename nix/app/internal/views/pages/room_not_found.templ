@@ -1,0 +1,93 @@
+package pages
+
+import "treacherest/internal/views/layouts"
+
+templ RoomNotFound(roomCode string) {
+	@layouts.Base("Room Not Found") {
+		<div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
+			<div class="max-w-md w-full mx-auto text-center">
+				<div id="restore-status" class="card bg-base-100 shadow-xl">
+					<div class="card-body">
+						<!-- Initial loading state - attempting restore -->
+						<div id="restore-loading">
+							<span class="loading loading-spinner loading-lg"></span>
+							<h2 class="text-2xl font-semibold mt-4">Reconnecting...</h2>
+							<p class="text-base-content/70 mt-2">Checking for saved game state...</p>
+						</div>
+
+						<!-- Failed state - shown if restore fails -->
+						<div id="restore-failed" class="hidden">
+							<div class="text-6xl mb-4">:(</div>
+							<h2 class="text-2xl font-semibold">Room Not Found</h2>
+							<p class="text-base-content/70 mt-2">
+								Room <span class="font-mono font-bold">{ roomCode }</span> no longer exists.
+							</p>
+							<p class="text-base-content/70 mt-2 text-sm">
+								This can happen if the server was restarted and no saved game state was found.
+							</p>
+							<a href="/" class="btn btn-primary mt-6">Back to Home</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			// Attempt to restore room from backup
+			(async function() {
+				const roomCode = '{ roomCode }';
+				const BACKUP_KEY_PREFIX = 'treacherest_backup_';
+				const backup = localStorage.getItem(BACKUP_KEY_PREFIX + roomCode);
+
+				if (!backup) {
+					// No backup found, show failed state immediately
+					document.getElementById('restore-loading').classList.add('hidden');
+					document.getElementById('restore-failed').classList.remove('hidden');
+					return;
+				}
+
+				// Get player ID from cookie
+				function getPlayerID() {
+					const cookies = document.cookie.split(';');
+					for (const cookie of cookies) {
+						const [name, value] = cookie.trim().split('=');
+						if (name === 'player_' + roomCode) {
+							return value;
+						}
+					}
+					return '';
+				}
+
+				try {
+					const formData = new URLSearchParams();
+					formData.append('roomCode', roomCode);
+					formData.append('backup', backup);
+					formData.append('playerID', getPlayerID());
+
+					const resp = await fetch('/room/restore', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: formData.toString()
+					});
+
+					if (resp.ok) {
+						const result = await resp.json();
+						if (result.status === 'restored' || result.status === 'exists') {
+							// Success! Reload the page to get the restored room
+							window.location.reload();
+							return;
+						}
+					}
+				} catch (e) {
+					console.error('Restore failed:', e);
+				}
+
+				// Restore failed - clean up invalid backup and show error
+				localStorage.removeItem(BACKUP_KEY_PREFIX + roomCode);
+				localStorage.removeItem(BACKUP_KEY_PREFIX + roomCode + '_time');
+				document.getElementById('restore-loading').classList.add('hidden');
+				document.getElementById('restore-failed').classList.remove('hidden');
+			})();
+		</script>
+	}
+}

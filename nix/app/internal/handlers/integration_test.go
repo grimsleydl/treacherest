@@ -29,7 +29,7 @@ type IntegrationTestHelper struct {
 func NewIntegrationTestHelper(t *testing.T) *IntegrationTestHelper {
 	cfg := config.DefaultConfig()
 	gameStore := store.NewMemoryStore(cfg)
-	h := New(gameStore, createMockCardService(), cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
 
 	// Set up router with all routes
 	r := chi.NewRouter()

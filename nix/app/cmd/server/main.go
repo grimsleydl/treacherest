@@ -40,10 +40,24 @@ func main() {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
 
+	// Create BackupService for game state backup/restore
+	backupService, err := game.NewBackupService(
+		cfg.Server.BackupEncryptionKey,
+		cfg.Server.BackupEncryptionEnabled,
+	)
+	if err != nil {
+		log.Fatal("Failed to initialize backup service: ", err)
+	}
+	if backupService.IsEnabled() {
+		log.Printf("Backup service initialized with encryption enabled")
+	} else {
+		log.Printf("Backup service initialized in DEBUG mode (encryption disabled)")
+	}
+
 	// Create store and handler with configuration
 	s := store.NewMemoryStore(cfg)
 	s.SetCardService(cardService)
-	h := handlers.New(s, cardService, cfg)
+	h := handlers.New(s, cardService, cfg, backupService)
 
 	// Use the unified router setup
 	r := handlers.SetupRouter(h, cfg, nil)

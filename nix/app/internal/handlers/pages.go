@@ -76,7 +76,10 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
-		http.Error(w, "Room not found", http.StatusNotFound)
+		// Render a page that attempts to restore from backup
+		component := pages.RoomNotFound(roomCode)
+		w.WriteHeader(http.StatusNotFound)
+		component.Render(r.Context(), w)
 		return
 	}
 
@@ -229,7 +232,10 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
-		http.Error(w, "Room not found", http.StatusNotFound)
+		// Render a page that attempts to restore from backup
+		component := pages.RoomNotFound(roomCode)
+		w.WriteHeader(http.StatusNotFound)
+		component.Render(r.Context(), w)
 		return
 	}
 

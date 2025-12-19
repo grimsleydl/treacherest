@@ -24,7 +24,7 @@ func TestStreamHost(t *testing.T) {
 	// Create test handler
 	cfg := config.DefaultConfig()
 	gameStore := store.NewMemoryStore(cfg)
-	h := New(gameStore, createMockCardService(), cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()
@@ -106,7 +106,7 @@ func TestStreamHostUnauthorized(t *testing.T) {
 	// Create test handler
 	cfg := config.DefaultConfig()
 	gameStore := store.NewMemoryStore(cfg)
-	h := New(gameStore, createMockCardService(), cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
 
 	// Create a room with regular player
 	room, err := gameStore.CreateRoom()
@@ -172,7 +172,7 @@ func TestStreamHostPlayerUpdates(t *testing.T) {
 	// Create test handler
 	cfg := config.DefaultConfig()
 	gameStore := store.NewMemoryStore(cfg)
-	h := New(gameStore, createMockCardService(), cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
 
 	// Create a room with host
 	room, err := gameStore.CreateRoom()

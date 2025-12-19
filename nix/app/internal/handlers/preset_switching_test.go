@@ -70,7 +70,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	h := New(s, cardService, cfg)
+	h := New(s, cardService, cfg, nil)
 
 	// Create a room with standard preset
 	room := &game.Room{
@@ -215,7 +215,7 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	h := New(s, cardService, cfg)
+	h := New(s, cardService, cfg, nil)
 
 	// Create a room starting in custom mode
 	room := &game.Room{

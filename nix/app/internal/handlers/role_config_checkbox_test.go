@@ -23,7 +23,7 @@ func TestCheckboxHandlersReturnSSE(t *testing.T) {
 	memStore := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	memStore.SetCardService(cardService)
-	handler := New(memStore, cardService, cfg)
+	handler := New(memStore, cardService, cfg, nil)
 
 	// Create a test room with a player
 	player := &game.Player{

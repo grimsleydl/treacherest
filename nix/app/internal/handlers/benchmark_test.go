@@ -22,7 +22,7 @@ import (
 func BenchmarkRoomCreation(b *testing.B) {
 	cfg := config.DefaultConfig()
 	s := store.NewMemoryStore(cfg)
-	h := New(s, createMockCardService(), cfg)
+	h := New(s, createMockCardService(), cfg, nil)
 
 	// Create a form request
 	form := url.Values{}
@@ -48,7 +48,7 @@ func BenchmarkRoomCreation(b *testing.B) {
 func BenchmarkJoinRoom(b *testing.B) {
 	cfg := config.DefaultConfig()
 	s := store.NewMemoryStore(cfg)
-	h := New(s, createMockCardService(), cfg)
+	h := New(s, createMockCardService(), cfg, nil)
 
 	// Create a room first
 	room, _ := s.CreateRoom()
@@ -81,7 +81,7 @@ func BenchmarkSSEBroadcast(b *testing.B) {
 		b.Run(fmt.Sprintf("%d_clients", numClients), func(b *testing.B) {
 			cfg := config.DefaultConfig()
 			s := store.NewMemoryStore(cfg)
-			h := New(s, createMockCardService(), cfg)
+			h := New(s, createMockCardService(), cfg, nil)
 
 			// Create a room with players
 			room, _ := s.CreateRoom()
@@ -137,7 +137,7 @@ func BenchmarkConcurrentSSEClients(b *testing.B) {
 		b.Run(fmt.Sprintf("%d_concurrent", numClients), func(b *testing.B) {
 			cfg := config.DefaultConfig()
 			s := store.NewMemoryStore(cfg)
-			h := New(s, createMockCardService(), cfg)
+			h := New(s, createMockCardService(), cfg, nil)
 
 			// Create multiple rooms
 			numRooms := numClients / 10 // Average 10 clients per room
@@ -211,7 +211,7 @@ func BenchmarkMemoryPerRoom(b *testing.B) {
 
 			cfg := config.DefaultConfig()
 			s := store.NewMemoryStore(cfg)
-			h := New(s, createMockCardService(), cfg)
+			h := New(s, createMockCardService(), cfg, nil)
 
 			rooms := make([]*game.Room, b.N)
 

@@ -18,7 +18,7 @@ func newTestHandler() *Handler {
 	s := store.NewMemoryStore(cfg)
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	return New(s, cardService, cfg)
+	return New(s, cardService, cfg, nil) // nil backupService for tests
 }
 
 // newTestHandlerWithStore creates a handler with a specific store
@@ -26,7 +26,7 @@ func newTestHandlerWithStore(s *store.MemoryStore) *Handler {
 	cfg := config.DefaultConfig()
 	cardService := createMockCardService()
 	s.SetCardService(cardService)
-	return New(s, cardService, cfg)
+	return New(s, cardService, cfg, nil) // nil backupService for tests
 }
 
 // createMockCardService creates a CardService with minimal data for testing

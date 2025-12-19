@@ -850,3 +850,93 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 		datastar.WithSelector("#modal-container"),
 		datastar.WithModeInner())
 }
+
+// RestoreRoom restores a room from a client-provided encrypted backup
+// This is called when a player attempts to access a room that doesn't exist
+// (e.g., after Cloud Run instance replacement)
+func (h *Handler) RestoreRoom(w http.ResponseWriter, r *http.Request) {
+	// Parse request body
+	var req struct {
+		RoomCode string `json:"roomCode"`
+		Backup   string `json:"backup"`
+		PlayerID string `json:"playerID"`
+	}
+
+	if err := r.ParseForm(); err == nil && r.Method == "POST" {
+		req.RoomCode = r.FormValue("roomCode")
+		req.Backup = r.FormValue("backup")
+		req.PlayerID = r.FormValue("playerID")
+	}
+
+	if req.RoomCode == "" || req.Backup == "" {
+		log.Printf("❌ RestoreRoom: missing roomCode or backup")
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("🔄 RestoreRoom attempt for room %s by player %s", req.RoomCode, req.PlayerID)
+
+	// Check if room already exists (another player might have restored it first)
+	if h.store.RoomExists(req.RoomCode) {
+		log.Printf("✅ Room %s already exists (restored by another player)", req.RoomCode)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status": "exists"}`))
+		return
+	}
+
+	// Check if backup service is available
+	if h.backupService == nil {
+		log.Printf("❌ RestoreRoom: backup service not available")
+		http.Error(w, "Backup service not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Attempt restore from backup
+	room, err := h.backupService.RestoreBackup(req.Backup, req.RoomCode)
+	if err != nil {
+		log.Printf("❌ RestoreRoom: backup restore failed for %s: %v", req.RoomCode, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Re-register the restored room
+	if err := h.store.RegisterRestoredRoom(room); err != nil {
+		log.Printf("❌ RestoreRoom: failed to register restored room %s: %v", req.RoomCode, err)
+		http.Error(w, "Failed to restore room", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("✅ Room %s restored from backup by player %s", req.RoomCode, req.PlayerID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"status": "restored"}`))
+}
+
+// DebugClearRoom deletes a room to simulate Cloud Run instance restart
+// This is only available when debugModeEnabled is true
+func (h *Handler) DebugClearRoom(w http.ResponseWriter, r *http.Request) {
+	// Only allow in debug mode
+	if !h.config.Server.DebugModeEnabled {
+		http.Error(w, "Debug endpoints only available when debugModeEnabled is true", http.StatusForbidden)
+		return
+	}
+
+	roomCode := chi.URLParam(r, "code")
+	if roomCode == "" {
+		http.Error(w, "Room code required", http.StatusBadRequest)
+		return
+	}
+
+	// Just verify the room exists
+	if !h.store.RoomExists(roomCode) {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	// Delete the room
+	h.store.DeleteRoom(roomCode)
+
+	log.Printf("🗑️ DEBUG: Room %s cleared (simulating instance restart)", roomCode)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"status": "cleared"}`))
+}
