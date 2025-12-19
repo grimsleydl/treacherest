@@ -214,16 +214,44 @@ Before proposing any commit:
 1. **NEVER change merge modes** - Always use `morph` mode for SSE fragments
 2. **Always include wrapper elements** - When sending SSE fragments, include the target element in the fragment to preserve DOM structure
 3. **Example**: To update `#lobby-content`, send `<div id="lobby-content">...</div>` and target the parent `#lobby-container`
-4. **Prevent SSE connection exhaustion** - Separate wrapper with `data-on-load` from morphable content:
+4. **Prevent SSE connection exhaustion** - Separate wrapper with `data-init` from morphable content:
    ```templ
-   // Wrapper div with data-on-load (never morphed)
+   // Wrapper div with data-init (never morphed)
    templ GameBody(room *game.Room, player *game.Player) {
-       <div data-on-load={ "@get('/sse/game/" + room.Code + "')" }>
+       <div data-init={ "@get('/sse/game/" + room.Code + "')" }>
            @GameContent(room, player)  // Only this gets morphed
        </div>
    }
    ```
-   This prevents `data-on-load` re-evaluation during DOM morphing which causes connection exhaustion
+   This prevents `data-init` re-evaluation during DOM morphing which causes connection exhaustion
+
+### Datastar RC.7 Syntax Reference
+This project uses Datastar RC.7 syntax. Key conventions:
+
+| Pattern | Example | Purpose |
+|---------|---------|---------|
+| Event handlers | `data-on:click` | Colon delimiter for events |
+| Signals | `data-signals:foo` | Colon delimiter for signals |
+| Attributes | `data-attr:disabled` | Colon delimiter for dynamic attributes |
+| Classes | `data-class:loading` | Colon delimiter for conditional classes |
+| Initialization | `data-init` | Execute action on element load (replaces `data-on-load`) |
+| Modifiers | `data-signals__ifmissing` | Double underscore for modifiers |
+
+**Note**: RC.7 changed `data-on-load` to `data-init` and uses colon (`:`) as delimiter for attribute suffixes.
+
+### Modal Patching Pattern
+When patching modal containers via SSE, use `inner` mode to preserve the container element:
+
+```go
+// In handler - use WithModeInner() to preserve #modal-container
+sse.MergeFragment(
+    render(component),
+    datastar.WithSelector("#modal-container"),
+    datastar.WithModeInner(),  // Preserves container, replaces contents
+)
+```
+
+**Why**: Default `outer` mode replaces the entire target element, which can break event listeners and cause layout issues. Using `inner` mode keeps the container intact while replacing its contents.
 
 ### Game Development Patterns
 1. **State Management**
