@@ -2,13 +2,13 @@
 <html>
 <head>
     <title>Test Morph Issue</title>
-    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-beta.11/bundles/datastar.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
 </head>
 <body>
-    <h1>Test Morphing with data-on-load</h1>
-    
+    <h1>Test Morphing with data-init</h1>
+
     <!-- This simulates our lobby structure -->
-    <div id="wrapper" data-on-load="console.log('data-on-load triggered!')">
+    <div id="wrapper" data-init="console.log('data-init triggered!')">
         <div id="lobby-container" class="container">
             <div id="lobby-content">
                 <h2>Initial Content</h2>
