@@ -225,8 +225,8 @@ Before proposing any commit:
    ```
    This prevents `data-init` re-evaluation during DOM morphing which causes connection exhaustion
 
-### Datastar RC.7 Syntax Reference
-This project uses Datastar RC.7 syntax. Key conventions:
+### Datastar v1.0.1 Syntax Reference
+This project uses Datastar v1.0.1 syntax. Key conventions:
 
 | Pattern | Example | Purpose |
 |---------|---------|---------|
@@ -234,10 +234,10 @@ This project uses Datastar RC.7 syntax. Key conventions:
 | Signals | `data-signals:foo` | Colon delimiter for signals |
 | Attributes | `data-attr:disabled` | Colon delimiter for dynamic attributes |
 | Classes | `data-class:loading` | Colon delimiter for conditional classes |
-| Initialization | `data-init` | Execute action on element load (replaces `data-on-load`) |
+| Initialization | `data-init` | Execute action on element load |
 | Modifiers | `data-signals__ifmissing` | Double underscore for modifiers |
 
-**Note**: RC.7 changed `data-on-load` to `data-init` and uses colon (`:`) as delimiter for attribute suffixes.
+**Note**: Datastar uses colon (`:`) as the delimiter for attribute suffixes (e.g., `data-on:click`, `data-signals:foo`) and double underscore (`__`) for modifiers (e.g., `__ifmissing`, `__document`). Use `data-init` (not `data-on-load`) for element initialization.
 
 ### Modal Patching Pattern
 When patching modal containers via SSE, use `inner` mode to preserve the container element:

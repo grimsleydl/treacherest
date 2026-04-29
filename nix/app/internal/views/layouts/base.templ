@@ -8,15 +8,16 @@ templ Base(title string) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<meta name="robots" content="noindex">
+			<meta name="robots" content="noindex"/>
 			<title>{ title } - MTG Treacherest</title>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 			<link href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css"/>
-			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js"></script>
+			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.1/bundles/datastar.js"></script>
 		</head>
 		<body
 			data-signals:theme="localStorage.getItem('theme') || 'dracula'"
-			data-effect="document.documentElement.setAttribute('data-theme', $theme); localStorage.setItem('theme', $theme)">
+			data-effect="document.documentElement.setAttribute('data-theme', $theme); localStorage.setItem('theme', $theme)"
+		>
 			<nav class="navbar bg-base-100 shadow-lg">
 				<div class="flex-1">
 					<a class="btn btn-ghost normal-case text-xl" href="/">MTG Treacherest</a>
@@ -33,16 +34,20 @@ templ Base(title string) {
 			</footer>
 			<div id="modal-container"></div>
 			<!-- Backup handler: isolated element to store state backups without interfering with other Datastar effects -->
-			<div id="backup-handler"
+			<div
+				id="backup-handler"
 				style="display:none"
 				data-signals:stateBackup__ifmissing=""
-				data-effect="$stateBackup && window.storeBackup($stateBackup)"></div>
+				data-effect="$stateBackup && window.storeBackup($stateBackup)"
+			></div>
 			<!-- Debug panel: only shown when debugMode signal is true (sent by SSE when debugModeEnabled config is true) -->
-			<div id="debug-panel"
+			<div
+				id="debug-panel"
 				data-signals:debugmode__ifmissing="false"
 				data-show="$debugmode"
 				class="fixed bottom-4 right-4 p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
-				style="display: none; z-index: 99999;">
+				style="display: none; z-index: 99999;"
+			>
 				<div class="flex items-center gap-2 mb-2"><span class="badge badge-warning">DEBUG</span></div>
 				<div id="debug-info" class="text-xs mb-2">Loading...</div>
 				<div class="flex flex-col gap-2">
@@ -53,8 +58,8 @@ templ Base(title string) {
 			</div>
 			<script>
 				// State backup handling for Cloud Run instance recovery
-				(function() {
-					const BACKUP_KEY_PREFIX = 'treacherest_backup_';
+				(function () {
+					const BACKUP_KEY_PREFIX = "treacherest_backup_";
 
 					// Get room code from current URL path
 					function getRoomCode() {
@@ -65,10 +70,10 @@ templ Base(title string) {
 
 					// Get player ID from cookie
 					function getPlayerID(roomCode) {
-						const cookies = document.cookie.split(';');
+						const cookies = document.cookie.split(";");
 						for (const cookie of cookies) {
-							const [name, value] = cookie.trim().split('=');
-							if (name === 'player_' + roomCode) {
+							const [name, value] = cookie.trim().split("=");
+							if (name === "player_" + roomCode) {
 								return value;
 							}
 						}
@@ -76,12 +81,16 @@ templ Base(title string) {
 					}
 
 					// Store backup when signal changes (called from data-effect)
-					window.storeBackup = function(backup) {
+					window.storeBackup = function (backup) {
 						if (!backup) return;
 						const roomCode = getRoomCode();
 						if (roomCode) {
 							localStorage.setItem(BACKUP_KEY_PREFIX + roomCode, backup);
-							console.log('💾 Stored backup for room', roomCode, '(' + backup.length + ' bytes)');
+							console.log(
+								"💾 Stored backup for room",
+								roomCode,
+								"(" + backup.length + " bytes)",
+							);
 						}
 					};
 
@@ -94,26 +103,31 @@ templ Base(title string) {
 
 						try {
 							const formData = new URLSearchParams();
-							formData.append('roomCode', roomCode);
-							formData.append('backup', backup);
-							formData.append('playerID', playerID || '');
+							formData.append("roomCode", roomCode);
+							formData.append("backup", backup);
+							formData.append("playerID", playerID || "");
 
-							const resp = await fetch('/room/restore', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-								body: formData.toString()
+							const resp = await fetch("/room/restore", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/x-www-form-urlencoded",
+								},
+								body: formData.toString(),
 							});
 
 							if (resp.ok) {
 								const result = await resp.json();
-								if (result.status === 'restored' || result.status === 'exists') {
-									console.log('Room restored successfully, reloading...');
+								if (
+									result.status === "restored" ||
+									result.status === "exists"
+								) {
+									console.log("Room restored successfully, reloading...");
 									window.location.reload();
 									return true;
 								}
 							}
 						} catch (e) {
-							console.error('Restore failed:', e);
+							console.error("Restore failed:", e);
 						}
 
 						// Backup invalid/expired - clean it up
@@ -123,7 +137,7 @@ templ Base(title string) {
 
 					// Check if we're on a room/game page and room might need restore
 					// This is triggered when the SSE connection fails with room not found
-					window.attemptRoomRestore = async function() {
+					window.attemptRoomRestore = async function () {
 						const roomCode = getRoomCode();
 						if (roomCode) {
 							return attemptRestore(roomCode);
@@ -140,9 +154,9 @@ templ Base(title string) {
 							const key = localStorage.key(i);
 							if (key && key.startsWith(BACKUP_KEY_PREFIX)) {
 								// Check if this backup was stored more than 1 hour ago
-								const storageTimeKey = key + '_time';
+								const storageTimeKey = key + "_time";
 								const storageTime = localStorage.getItem(storageTimeKey);
-								if (storageTime && (now - parseInt(storageTime, 10)) > maxAge) {
+								if (storageTime && now - parseInt(storageTime, 10) > maxAge) {
 									localStorage.removeItem(key);
 									localStorage.removeItem(storageTimeKey);
 								}
@@ -152,10 +166,10 @@ templ Base(title string) {
 
 					// Store timestamp with backup
 					const originalSetItem = localStorage.setItem.bind(localStorage);
-					localStorage.setItem = function(key, value) {
+					localStorage.setItem = function (key, value) {
 						originalSetItem(key, value);
-						if (key.startsWith(BACKUP_KEY_PREFIX) && !key.endsWith('_time')) {
-							originalSetItem(key + '_time', Date.now().toString());
+						if (key.startsWith(BACKUP_KEY_PREFIX) && !key.endsWith("_time")) {
+							originalSetItem(key + "_time", Date.now().toString());
 						}
 					};
 
@@ -168,39 +182,62 @@ templ Base(title string) {
 						const roomCode = getRoomCode();
 						if (!roomCode) return;
 
-						const dumpBtn = document.getElementById('debug-dump');
-						const clearBtn = document.getElementById('debug-clear');
-						const restoreBtn = document.getElementById('debug-restore');
+						const dumpBtn = document.getElementById("debug-dump");
+						const clearBtn = document.getElementById("debug-clear");
+						const restoreBtn = document.getElementById("debug-restore");
 
 						if (dumpBtn) {
 							dumpBtn.onclick = () => {
-								const currentBackup = localStorage.getItem(BACKUP_KEY_PREFIX + roomCode);
-								console.log('Backup:', currentBackup);
-								try { console.log('Parsed:', JSON.parse(currentBackup)); } catch(e) {}
+								const currentBackup = localStorage.getItem(
+									BACKUP_KEY_PREFIX + roomCode,
+								);
+								console.log("Backup:", currentBackup);
+								try {
+									console.log("Parsed:", JSON.parse(currentBackup));
+								} catch (e) {}
 							};
 						}
 
 						if (clearBtn) {
 							clearBtn.onclick = async () => {
-								if (!confirm('Clear room from server? (You can restore after)')) return;
-								const resp = await fetch('/room/' + roomCode + '/debug/clear', { method: 'POST' });
-								if (resp.ok) alert('Room cleared! Click Restore to restore from backup.');
-								else alert('Failed: ' + await resp.text());
+								if (!confirm("Clear room from server? (You can restore after)"))
+									return;
+								const resp = await fetch("/room/" + roomCode + "/debug/clear", {
+									method: "POST",
+								});
+								if (resp.ok)
+									alert("Room cleared! Click Restore to restore from backup.");
+								else alert("Failed: " + (await resp.text()));
 							};
 						}
 
 						if (restoreBtn) {
 							restoreBtn.onclick = async () => {
-								const backup = localStorage.getItem(BACKUP_KEY_PREFIX + roomCode);
-								if (!backup) { alert('No backup in localStorage'); return; }
+								const backup = localStorage.getItem(
+									BACKUP_KEY_PREFIX + roomCode,
+								);
+								if (!backup) {
+									alert("No backup in localStorage");
+									return;
+								}
 								const playerID = getPlayerID(roomCode);
-								const resp = await fetch('/room/restore', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-									body: 'roomCode=' + roomCode + '&backup=' + encodeURIComponent(backup) + '&playerID=' + (playerID || '')
+								const resp = await fetch("/room/restore", {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/x-www-form-urlencoded",
+									},
+									body:
+										"roomCode=" +
+										roomCode +
+										"&backup=" +
+										encodeURIComponent(backup) +
+										"&playerID=" +
+										(playerID || ""),
 								});
-								if (resp.ok) { alert('Restored! Reloading...'); window.location.reload(); }
-								else alert('Restore failed: ' + await resp.text());
+								if (resp.ok) {
+									alert("Restored! Reloading...");
+									window.location.reload();
+								} else alert("Restore failed: " + (await resp.text()));
 							};
 						}
 					}
@@ -211,9 +248,11 @@ templ Base(title string) {
 						if (!roomCode) return;
 
 						const backup = localStorage.getItem(BACKUP_KEY_PREFIX + roomCode);
-						const debugInfo = document.getElementById('debug-info');
+						const debugInfo = document.getElementById("debug-info");
 						if (debugInfo) {
-							debugInfo.textContent = backup ? (backup.length/1024).toFixed(1) + ' KB' : 'No backup';
+							debugInfo.textContent = backup
+								? (backup.length / 1024).toFixed(1) + " KB"
+								: "No backup";
 						}
 					}
 
