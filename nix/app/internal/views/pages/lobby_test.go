@@ -112,10 +112,14 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains(`@post(&#39;/room/COUP2/config/coup-preset&#39;, {contentType: &#39;form&#39;})`).
 			AssertContains("coup-info-form").
 			AssertContains(`@post(&#39;/room/COUP2/config/coup-info&#39;, {contentType: &#39;form&#39;})`).
+			AssertContains("coup-royal-guard-form").
+			AssertContains(`@post(&#39;/room/COUP2/config/coup-royal-guard&#39;, {contentType: &#39;form&#39;})`).
 			AssertContains("King-to-Blue Info").
 			AssertContains("Red-to-Black Info").
 			AssertContains("Black-to-Red Info").
 			AssertContains("Black Network").
+			AssertContains("Royal Guard Blockers").
+			AssertContains("Any number").
 			AssertContains("Coup Rules Reference").
 			AssertContains("Every other player remains an opponent").
 			AssertContains("Do not prove a hidden role").

@@ -517,6 +517,80 @@ func TestEliminatePlayer_CoupSelfEliminationRevealsRole(t *testing.T) {
 	}
 }
 
+func TestUseCoupRoyalGuard_RevealsHiddenBlueKnight(t *testing.T) {
+	h := newTestHandler()
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+
+	blue := game.NewPlayer("p1", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.RoleRevealed = false
+	blue.FaceUp = false
+
+	room.AddPlayer(blue)
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/royal-guard/"+blue.ID, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: blue.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("playerID", blue.ID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.UseCoupRoyalGuard(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	updatedBlue := updatedRoom.GetPlayer(blue.ID)
+	if !updatedBlue.RoleRevealed {
+		t.Fatal("expected Royal Guard to publicly reveal Blue Knight")
+	}
+	if !updatedBlue.FaceUp {
+		t.Fatal("expected Royal Guard to turn Blue Knight face up")
+	}
+}
+
+func TestSetupRouter_RoutesCoupRoyalGuardAction(t *testing.T) {
+	h := newTestHandler()
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+
+	blue := game.NewPlayer("p1", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.RoleRevealed = false
+	blue.FaceUp = false
+
+	room.AddPlayer(blue)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/royal-guard/"+blue.ID, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: blue.ID,
+	})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+}
+
 func TestHandler_StartGame_CoupSixPlayerPreset(t *testing.T) {
 	h := newTestHandler()
 

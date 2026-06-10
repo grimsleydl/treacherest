@@ -192,6 +192,29 @@ func CoupPresetSummary(preset CoupPreset) string {
 	return strings.Join(parts, ", ")
 }
 
+// CoupRoyalGuardRuleText returns the player-facing Royal Guard rule for a blocker limit.
+// A limit of 0 means any number of eligible blockers.
+func CoupRoyalGuardRuleText(blockerLimit int) string {
+	blockerLimit = NormalizeCoupRoyalGuardBlockerLimit(blockerLimit)
+	blockerText := "any number of untapped creatures"
+	switch {
+	case blockerLimit == 1:
+		blockerText = "one untapped creature"
+	case blockerLimit > 1:
+		blockerText = fmt.Sprintf("up to %d untapped creatures", blockerLimit)
+	}
+
+	return fmt.Sprintf("Once each combat, a revealed Blue Knight may have %s they control block creatures attacking the King player as though those creatures were attacking the Blue Knight. Normal blocking restrictions apply.", blockerText)
+}
+
+// NormalizeCoupRoyalGuardBlockerLimit treats negative limits as the default unlimited setting.
+func NormalizeCoupRoyalGuardBlockerLimit(blockerLimit int) int {
+	if blockerLimit < 0 {
+		return 0
+	}
+	return blockerLimit
+}
+
 func pluralCoupRole(role RoleType) string {
 	switch role {
 	case RoleBlueKnight:

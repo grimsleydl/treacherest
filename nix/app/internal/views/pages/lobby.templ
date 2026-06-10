@@ -157,6 +157,21 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 							</select>
 						</label>
 					</form>
+					<div class="divider my-1"></div>
+					<form
+						id="coup-royal-guard-form"
+						class="form-control w-full"
+						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
+					>
+						<label class="label" for="coup-royal-guard-blockers"><span class="label-text">Royal Guard Blockers</span></label>
+						<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-full">
+							<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
+							<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
+							<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
+							<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
+						</select>
+					</form>
+					<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
 					if coupPresetMatchesActivePlayers(room) {
 						<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
 					} else {

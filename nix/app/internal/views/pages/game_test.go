@@ -271,6 +271,10 @@ func TestGameBody_CoupPrivacy(t *testing.T) {
 
 	renderer.Render(component).
 		AssertContains("Blue Knight").
+		AssertContains("Royal Guard").
+		AssertContains("any number of untapped creatures").
+		AssertContains("creatures attacking the King player").
+		AssertContains(`@post(&#39;/room/COUP1/coup/royal-guard/p2&#39;)`).
 		AssertContains("Publicly Reveal Role").
 		AssertContains(`@post(&#39;/room/COUP1/reveal/p2&#39;)`).
 		AssertContains("King Player").
@@ -278,6 +282,31 @@ func TestGameBody_CoupPrivacy(t *testing.T) {
 		AssertNotContains("Black Knight").
 		AssertNotContains("Red Knight").
 		AssertNotContains("Green Knight")
+}
+
+func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room := &game.Room{
+		Code:                       "COUPRG",
+		State:                      game.StatePlaying,
+		RulesMode:                  game.RulesModeCoup,
+		CoupRoyalGuardBlockerLimit: 1,
+		Players:                    make(map[string]*game.Player),
+		MaxPlayers:                 5,
+	}
+	blue := &game.Player{
+		ID:     "p2",
+		Name:   "Blue Player",
+		Role:   mockCoupCard(1002, "Blue Knight"),
+		FaceUp: false,
+	}
+	room.Players[blue.ID] = blue
+
+	renderer.Render(GameBody(room, blue)).
+		AssertContains("Royal Guard").
+		AssertContains("one untapped creature").
+		AssertNotContains("any number of untapped creatures")
 }
 
 func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {

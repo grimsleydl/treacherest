@@ -109,6 +109,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<!-- Leader confirmation prompts for pending ability reveals -->
 				@components.LeaderConfirmationPrompts(room, currentPlayer)
+				@CoupRoyalGuardPanel(room, currentPlayer)
 				<!-- Unveil button and face state toggle for current player -->
 				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
@@ -252,6 +253,31 @@ templ FormatCardText(text string) {
 					</span>
 				}
 			}
+		</div>
+	}
+}
+
+templ CoupRoyalGuardPanel(room *game.Room, currentPlayer *game.Player) {
+	if room.RulesMode == game.RulesModeCoup &&
+		currentPlayer.Role != nil &&
+		currentPlayer.Role.GetRoleType() == game.RoleBlueKnight &&
+		room.State == game.StatePlaying &&
+		!currentPlayer.IsEliminated {
+		<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
+			<h3 class="font-bold text-primary">Royal Guard</h3>
+			<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
+			if !currentPlayer.RoleRevealed {
+				<p class="text-xs text-warning">Using Royal Guard publicly reveals you as Blue Knight.</p>
+			}
+			<div class="mt-3">
+				<button
+					class="btn btn-sm btn-outline btn-info"
+					data-on:click={ fmt.Sprintf("@post('/room/%s/coup/royal-guard/%s')", room.Code, currentPlayer.ID) }
+					onclick="return confirm('Use Royal Guard and reveal yourself as Blue Knight if hidden?')"
+				>
+					Use Royal Guard
+				</button>
+			</div>
 		</div>
 	}
 }

@@ -80,6 +80,8 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/config/preset", h.UpdateRolePreset)
 		r.Post("/room/{code}/config/coup-preset", h.UpdateCoupPreset)
 		r.Post("/room/{code}/config/coup-info", h.UpdateCoupInfoPolicy)
+		r.Post("/room/{code}/config/coup-royal-guard", h.UpdateCoupRoyalGuardSettings)
+		r.Post("/room/{code}/coup/royal-guard/{playerID}", h.UseCoupRoyalGuard)
 		r.Post("/room/{code}/config/toggle", h.ToggleRole)
 		r.Post("/room/{code}/config/count", h.UpdateRoleCount)
 		r.Post("/room/{code}/config/leaderless", h.UpdateLeaderlessGame)
