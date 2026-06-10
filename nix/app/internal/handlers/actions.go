@@ -326,26 +326,31 @@ func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Authorization: only the player themselves can reveal their own role
-	if me.ID != target.ID {
+	// Authorization: players reveal themselves; hosts may record public table reveals.
+	if me.ID != target.ID && !me.IsHost {
 		log.Printf("❌ Player %s attempted to reveal %s's role (forbidden)", me.ID, target.ID)
 		http.Error(w, "You can only reveal your own role", http.StatusForbidden)
 		return
 	}
 
-	// Leaders cannot hide their role (they start face-up per game rules)
-	if target.Role != nil && target.Role.GetRoleType() == game.RoleLeader && target.RoleRevealed {
-		log.Printf("❌ Leader %s attempted to hide their role (not allowed)", target.Name)
-		http.Error(w, "Leaders cannot hide their role", http.StatusForbidden)
-		return
-	}
-
-	// Toggle the reveal state
-	target.RoleRevealed = !target.RoleRevealed
-	// Revealing also turns the card face up (you can't reveal a face-down card)
-	// Hiding does NOT turn face down - use the separate "Turn Face Down" action for that
-	if target.RoleRevealed {
+	if room.RulesMode == game.RulesModeCoup {
+		target.RoleRevealed = true
 		target.FaceUp = true
+	} else {
+		// Leaders cannot hide their role (they start face-up per game rules)
+		if target.Role != nil && target.Role.GetRoleType() == game.RoleLeader && target.RoleRevealed {
+			log.Printf("❌ Leader %s attempted to hide their role (not allowed)", target.Name)
+			http.Error(w, "Leaders cannot hide their role", http.StatusForbidden)
+			return
+		}
+
+		// Toggle the reveal state
+		target.RoleRevealed = !target.RoleRevealed
+		// Revealing also turns the card face up (you can't reveal a face-down card)
+		// Hiding does NOT turn face down - use the separate "Turn Face Down" action for that
+		if target.RoleRevealed {
+			target.FaceUp = true
+		}
 	}
 	h.store.UpdateRoom(room)
 

@@ -41,6 +41,8 @@ func NewPlayer(id, name, sessionID string) *Player {
 func (p *Player) MarkEliminated() {
 	p.IsEliminated = true
 	p.EliminatedAt = time.Now()
+	p.RoleRevealed = true
+	p.FaceUp = true
 }
 
 // IsActiveInGame returns true if the player is actively participating (not eliminated and not host)

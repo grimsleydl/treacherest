@@ -271,6 +271,8 @@ func TestGameBody_CoupPrivacy(t *testing.T) {
 
 	renderer.Render(component).
 		AssertContains("Blue Knight").
+		AssertContains("Publicly Reveal Role").
+		AssertContains(`@post(&#39;/room/COUP1/reveal/p2&#39;)`).
 		AssertContains("King Player").
 		AssertContains(`alt="King"`).
 		AssertNotContains("Black Knight").

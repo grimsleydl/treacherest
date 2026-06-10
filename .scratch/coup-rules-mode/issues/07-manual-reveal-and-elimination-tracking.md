@@ -1,6 +1,6 @@
 # Manual Reveal And Elimination Tracking
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -12,12 +12,20 @@ Add Coup-safe manual Reveal and Elimination flows using the decided table-state 
 
 ## Acceptance criteria
 
-- [ ] Coup players can be manually Revealed according to the permission model.
-- [ ] Coup players can be manually Eliminated according to the permission model.
-- [ ] Eliminated players reveal their role publicly.
-- [ ] Private role viewing remains distinct from public Reveal.
-- [ ] SSE updates keep all clients in sync without leaking still-hidden roles.
-- [ ] Tests cover Reveal, Elimination, and privacy boundaries.
+- [x] Coup players can be manually Revealed according to the permission model.
+- [x] Coup players can be manually Eliminated according to the permission model.
+- [x] Eliminated players reveal their role publicly.
+- [x] Private role viewing remains distinct from public Reveal.
+- [x] SSE updates keep all clients in sync without leaking still-hidden roles.
+- [x] Tests cover Reveal, Elimination, and privacy boundaries.
+
+## Completion notes
+
+- Added Coup public Reveal handling for self-reveal and host/spectator record-reveal; Coup reveal is idempotent and does not hide already-public roles.
+- Updated elimination so eliminated players become publicly revealed and face up.
+- Added player-facing public Reveal controls and host-dashboard record Reveal/Elimination controls.
+- Updated host SSE to refresh on public reveal and elimination events.
+- Added handler, host SSE, and template tests for permission/state behavior and hidden-role privacy.
 
 ## Blocked by
 

@@ -388,6 +388,135 @@ func TestHandler_StartGame_CoupFivePlayerHappyPath(t *testing.T) {
 	}
 }
 
+func TestToggleReveal_CoupHostCanRecordPublicReveal(t *testing.T) {
+	h := newTestHandler()
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+
+	host := game.NewPlayer("host", "Host", "session-host")
+	host.IsHost = true
+	target := game.NewPlayer("p1", "Blue Player", "session-blue")
+	target.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	target.RoleRevealed = false
+	target.FaceUp = false
+
+	room.AddPlayer(host)
+	room.AddPlayer(target)
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/reveal/"+target.ID, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: host.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("playerID", target.ID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.ToggleReveal(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	updatedTarget := updatedRoom.GetPlayer(target.ID)
+	if !updatedTarget.RoleRevealed {
+		t.Fatal("expected target role to be publicly revealed")
+	}
+	if !updatedTarget.FaceUp {
+		t.Fatal("expected public reveal to turn target role face up")
+	}
+}
+
+func TestToggleReveal_CoupPublicRevealIsIdempotent(t *testing.T) {
+	h := newTestHandler()
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+
+	player := game.NewPlayer("p1", "Blue Player", "session-blue")
+	player.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	player.RoleRevealed = true
+	player.FaceUp = true
+
+	room.AddPlayer(player)
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/reveal/"+player.ID, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: player.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("playerID", player.ID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.ToggleReveal(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	updatedPlayer := updatedRoom.GetPlayer(player.ID)
+	if !updatedPlayer.RoleRevealed {
+		t.Fatal("expected Coup public reveal endpoint to leave role revealed")
+	}
+	if !updatedPlayer.FaceUp {
+		t.Fatal("expected Coup public reveal endpoint to leave role face up")
+	}
+}
+
+func TestEliminatePlayer_CoupSelfEliminationRevealsRole(t *testing.T) {
+	h := newTestHandler()
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+
+	player := game.NewPlayer("p1", "Black Player", "session-black")
+	player.Role = mockHandlerCoupCard(1003, "Black Knight")
+	player.RoleRevealed = false
+	player.FaceUp = false
+
+	room.AddPlayer(player)
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/"+player.ID+"/eliminate", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: player.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("playerID", player.ID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.EliminatePlayer(w, req)
+
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	updatedPlayer := updatedRoom.GetPlayer(player.ID)
+	if !updatedPlayer.IsEliminated {
+		t.Fatal("expected player to be eliminated")
+	}
+	if !updatedPlayer.RoleRevealed {
+		t.Fatal("expected eliminated player's role to be publicly revealed")
+	}
+	if !updatedPlayer.FaceUp {
+		t.Fatal("expected eliminated player's role to be face up")
+	}
+}
+
 func TestHandler_StartGame_CoupSixPlayerPreset(t *testing.T) {
 	h := newTestHandler()
 
@@ -825,6 +954,22 @@ func findHandlerTestPlayersByRole(t *testing.T, players []*game.Player, roleType
 		t.Fatalf("expected to find %s in assigned players", roleType)
 	}
 	return found
+}
+
+func mockHandlerCoupCard(id int, name string) *game.Card {
+	return &game.Card{
+		ID:   id,
+		Name: name,
+		Types: game.CardTypes{
+			Supertype: "Coup",
+			Subtype:   name,
+		},
+		Text:        "Test " + name + " Card",
+		Type:        "Coup Role",
+		Rarity:      "Coup",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,test",
+	}
 }
 
 func handlerTestRoleRulingsContain(card *game.Card, want string) bool {

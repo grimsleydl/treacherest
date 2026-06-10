@@ -757,6 +757,14 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				}
 				sse.MarshalAndPatchSignals(signals)
 				log.Printf("🎮 Game playing - cleared countdown signal for host in room %s", roomCode)
+			case "role_revealed", "player_eliminated":
+				room, _ = h.store.GetRoom(roomCode)
+				player = room.GetPlayer(player.ID)
+				if player == nil {
+					log.Printf("📡 Host no longer in room %s, closing SSE", roomCode)
+					return
+				}
+				h.renderHostDashboard(sse, room, player)
 			case "game_ended":
 				// Update dashboard to show ended state
 				room, _ = h.store.GetRoom(roomCode)
