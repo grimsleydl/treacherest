@@ -69,6 +69,42 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Player Two")
 	})
 
+	t.Run("shows selected rules mode", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:       "COUP1",
+			State:      game.StateLobby,
+			RulesMode:  game.RulesModeCoup,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 4,
+		}
+		coupRoom.Players[player1.ID] = player1
+		coupRoom.Players[player2.ID] = player2
+
+		component := LobbyPage(coupRoom, player1, cfg, cardService)
+
+		renderer.Render(component).
+			AssertContains("Rules Mode").
+			AssertContains("Coup")
+	})
+
+	t.Run("shows coup setup placeholder instead of start action", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:       "COUP2",
+			State:      game.StateLobby,
+			RulesMode:  game.RulesModeCoup,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 4,
+		}
+		coupRoom.Players[player1.ID] = player1
+		coupRoom.Players[player2.ID] = player2
+
+		component := LobbyPage(coupRoom, player1, cfg, cardService)
+
+		renderer.Render(component).
+			AssertContains("Coup setup is not ready yet").
+			AssertNotContains(`@post(&#39;/room/COUP2/start&#39;)`)
+	})
+
 	t.Run("shows need more players message", func(t *testing.T) {
 		// Create empty room to test minimum message
 		emptyRoom := &game.Room{

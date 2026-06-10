@@ -96,6 +96,59 @@ func TestHandler_CreateRoom(t *testing.T) {
 		}
 	})
 
+	t.Run("creates coup rules mode room", func(t *testing.T) {
+		h := newTestHandler()
+
+		form := url.Values{}
+		form.Add("playerName", "Test Player")
+		form.Add("rulesMode", "coup")
+
+		req := httptest.NewRequest("POST", "/create-room", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+
+		h.CreateRoom(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", resp.StatusCode)
+		}
+
+		roomCode := strings.TrimPrefix(resp.Header.Get("Location"), "/room/")
+		room, err := h.store.GetRoom(roomCode)
+		if err != nil {
+			t.Fatalf("room not found in store: %v", err)
+		}
+
+		if room.RulesMode != game.RulesModeCoup {
+			t.Errorf("expected rules mode %q, got %q", game.RulesModeCoup, room.RulesMode)
+		}
+	})
+
+	t.Run("rejects invalid rules mode", func(t *testing.T) {
+		h := newTestHandler()
+
+		form := url.Values{}
+		form.Add("playerName", "Test Player")
+		form.Add("rulesMode", "bogus")
+
+		req := httptest.NewRequest("POST", "/create-room", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+
+		h.CreateRoom(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", resp.StatusCode)
+		}
+
+		location := resp.Header.Get("Location")
+		if location != "" {
+			t.Errorf("expected no redirect location, got %s", location)
+		}
+	})
+
 	t.Run("generates random name when player name is empty", func(t *testing.T) {
 		h := newTestHandler()
 
@@ -256,6 +309,44 @@ func TestHandler_JoinRoom(t *testing.T) {
 		}
 		if !strings.Contains(body, roomCode) {
 			t.Error("expected room code in join form")
+		}
+	})
+
+	t.Run("renders selected rules mode for existing player", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		player := game.NewPlayer("p1", "Coup Player", "session1")
+		room.AddPlayer(player)
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		req := httptest.NewRequest("GET", "/room/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: player.ID,
+		})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		body := w.Body.String()
+		if !strings.Contains(body, "Rules Mode") {
+			t.Error("expected rules mode label")
+		}
+		if !strings.Contains(body, "Coup") {
+			t.Error("expected Coup rules mode")
+		}
+		if !strings.Contains(body, "Coup setup is not ready yet") {
+			t.Error("expected Coup setup placeholder")
 		}
 	})
 }

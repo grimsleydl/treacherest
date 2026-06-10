@@ -69,6 +69,10 @@ func TestCreateRoom(t *testing.T) {
 			t.Errorf("expected state %s, got %s", game.StateLobby, room.State)
 		}
 
+		if room.RulesMode != game.RulesModeTreachery {
+			t.Errorf("expected rules mode %q, got %q", game.RulesModeTreachery, room.RulesMode)
+		}
+
 		if room.Players == nil {
 			t.Error("players map not initialized")
 		}

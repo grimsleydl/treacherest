@@ -83,4 +83,16 @@ func TestHomePage(t *testing.T) {
 			AssertContains(`type="checkbox"`).
 			AssertContains("don't play, just manage")
 	})
+
+	t.Run("has rules mode selector", func(t *testing.T) {
+		component := Home()
+
+		renderer.Render(component).
+			AssertContains("Rules Mode").
+			AssertContains(`name="rulesMode"`).
+			AssertContains(`value="treachery"`).
+			AssertContains(`value="coup"`).
+			AssertContains("Treachery").
+			AssertContains("Coup")
+	})
 }

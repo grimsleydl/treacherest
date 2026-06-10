@@ -23,6 +23,15 @@ templ Home() {
 									/>
 								</div>
 								<div class="form-control w-full">
+									<label class="label" for="rulesMode">
+										<span class="label-text">Rules Mode</span>
+									</label>
+									<select id="rulesMode" name="rulesMode" class="select select-bordered w-full">
+										<option value="treachery" selected>Treachery</option>
+										<option value="coup">Coup</option>
+									</select>
+								</div>
+								<div class="form-control w-full">
 									<label class="label cursor-pointer gap-3 flex-wrap items-center w-full min-w-0">
 										<input type="checkbox" name="hostOnly" value="true" class="toggle" data-bind:host-mode/>
 										<span class="label-text break-words flex-1 min-w-0" style="white-space:normal">Host mode (don't play, just manage)</span>

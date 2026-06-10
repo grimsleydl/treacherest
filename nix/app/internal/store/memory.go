@@ -58,6 +58,7 @@ func (s *MemoryStore) CreateRoom() (*game.Room, error) {
 	room := &game.Room{
 		Code:               code,
 		State:              game.StateLobby,
+		RulesMode:          game.RulesModeTreachery,
 		Players:            make(map[string]*game.Player),
 		CreatedAt:          time.Now(),
 		MaxPlayers:         s.config.Server.MaxPlayersPerRoom,

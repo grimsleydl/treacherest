@@ -16,6 +16,12 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 
 // CreateRoom creates a new room and redirects to it
 func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
+	rulesMode, ok := game.ParseRulesMode(r.FormValue("rulesMode"))
+	if !ok {
+		http.Error(w, "Invalid rules mode", http.StatusBadRequest)
+		return
+	}
+
 	playerName := r.FormValue("playerName")
 	if playerName == "" {
 		playerName = generateRandomName()
@@ -30,6 +36,7 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create room", http.StatusInternalServerError)
 		return
 	}
+	room.RulesMode = rulesMode
 
 	// Create player
 	sessionID := getOrCreateSession(w, r)

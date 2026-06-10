@@ -53,6 +53,12 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 		<div class="text-center mb-6">
 			<div class="text-5xl font-bold tracking-wider text-primary">{ room.Code }</div>
 		</div>
+		<div class="flex justify-center">
+			<div class="badge badge-outline gap-2">
+				<span class="text-base-content/70">Rules Mode</span>
+				<span class="font-semibold">{ rulesModeLabel(room.RulesMode) }</span>
+			</div>
+		</div>
 	</div>
 	// Error display container - errors will be inserted here by SSE
 	<div id="error-container">
@@ -76,12 +82,17 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 		</div>
 	</div>
 	// Show role configuration for the first player if no host is present
-	if canControl && room.RoleConfig != nil {
+	if canControl && room.RulesMode != game.RulesModeCoup && room.RoleConfig != nil {
 		@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
 	}
 	// Enhanced start button with proper state management
 	<div class="flex flex-col items-center gap-4 mt-8">
-		if canControl && room.GetActivePlayerCount() >= 1 {
+		if canControl && room.RulesMode == game.RulesModeCoup {
+			<div class="alert alert-info max-w-md">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+				<span id="coup-setup-message" role="status" aria-live="polite">Coup setup is not ready yet</span>
+			</div>
+		} else if canControl && room.GetActivePlayerCount() >= 1 {
 			<button
 				class="btn btn-primary btn-lg btn-wide"
 				data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
@@ -143,4 +154,13 @@ func getFirstPlayerID(room *game.Room) string {
 		return firstPlayer.ID
 	}
 	return ""
+}
+
+func rulesModeLabel(mode game.RulesMode) string {
+	switch mode {
+	case game.RulesModeCoup:
+		return "Coup"
+	default:
+		return "Treachery"
+	}
 }

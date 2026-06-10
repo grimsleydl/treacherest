@@ -117,6 +117,56 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 	})
 
+	t.Run("does not start coup room before coup setup exists", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		player1 := game.NewPlayer("p1", "Player 1", "session1")
+		room.AddPlayer(player1)
+		h.store.UpdateRoom(room)
+
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: player1.ID,
+		})
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("code", room.Code)
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		h.StartGame(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		body := w.Body.String()
+		if !strings.Contains(body, "Coup setup is not ready yet") {
+			t.Errorf("expected response to explain unavailable Coup setup, got: %s", body)
+		}
+		if strings.Contains(body, "window.location.href") {
+			t.Errorf("expected no game redirect for unavailable Coup setup, got: %s", body)
+		}
+
+		updatedRoom, _ := h.store.GetRoom(room.Code)
+		if updatedRoom.State != game.StateLobby {
+			t.Errorf("expected state %s, got %s", game.StateLobby, updatedRoom.State)
+		}
+		if updatedRoom.RulesMode != game.RulesModeCoup {
+			t.Errorf("expected rules mode %q, got %q", game.RulesModeCoup, updatedRoom.RulesMode)
+		}
+		for _, player := range updatedRoom.GetPlayers() {
+			if player.Role != nil {
+				t.Errorf("expected no role assignment for Coup room, got %s for %s", player.Role.Name, player.Name)
+			}
+		}
+	})
+
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
 		h := newTestHandler()
 

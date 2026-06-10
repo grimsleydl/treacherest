@@ -1,6 +1,6 @@
 # Rules Mode Selection Shell
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -14,10 +14,18 @@ This slice does not need full Coup behavior yet. Coup can route to a minimal pla
 
 ## Acceptance criteria
 
-- [ ] A user can choose a Rules Mode before or during room creation.
-- [ ] Existing legacy/Treachery room creation still works after the change.
-- [ ] A Coup selection is stored with the game and visible in the room/lobby.
-- [ ] Tests cover Rules Mode persistence through create/join/start setup boundaries.
+- [x] A user can choose a Rules Mode before or during room creation.
+- [x] Existing legacy/Treachery room creation still works after the change.
+- [x] A Coup selection is stored with the game and visible in the room/lobby.
+- [x] Tests cover Rules Mode persistence through create/join/start setup boundaries.
+
+## Completion notes
+
+- Added `treachery` and `coup` Rules Mode values on rooms.
+- Room creation defaults to Treachery and accepts Coup via the create-room form.
+- Invalid Rules Mode submissions are rejected before a room is created.
+- Lobby renders the selected Rules Mode.
+- Coup rooms show a disabled setup placeholder and cannot start through the legacy Treachery role assignment path.
 
 ## Blocked by
 

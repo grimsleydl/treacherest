@@ -50,9 +50,11 @@ type ValidationState struct {
 
 // Room represents a game room
 type Room struct {
-	Code       string
-	State      GameState
-	Players    map[string]*Player
+	Code      string
+	State     GameState
+	RulesMode RulesMode
+	Players   map[string]*Player
+
 	MaxPlayers int
 	CreatedAt  time.Time
 	StartedAt  time.Time
