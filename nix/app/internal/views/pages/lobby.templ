@@ -88,10 +88,51 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 	// Enhanced start button with proper state management
 	<div class="flex flex-col items-center gap-4 mt-8">
 		if canControl && room.RulesMode == game.RulesModeCoup {
-			<div class="alert alert-info max-w-md">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				<span id="coup-setup-message" role="status" aria-live="polite">Coup setup is not ready yet</span>
+			<div class="card bg-base-200 shadow-xl max-w-md w-full">
+				<div class="card-body gap-3">
+					<form
+						id="coup-preset-form"
+						class="form-control w-full"
+						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-preset', {contentType: 'form'})", room.Code) }
+					>
+						<label class="label" for="coup-preset">
+							<span class="label-text">Coup Preset</span>
+						</label>
+						<select id="coup-preset" name="preset" class="select select-bordered select-sm w-full">
+							for _, preset := range game.CoupPresetOptions() {
+								<option value={ string(preset) } selected?={ game.NormalizeCoupPreset(room.CoupPreset) == preset }>
+									{ game.CoupPresetLabel(preset) }
+								</option>
+							}
+						</select>
+					</form>
+					<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
+					if coupPresetMatchesActivePlayers(room) {
+						<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
+					} else {
+						<p id="validation-help" class="text-sm text-warning" role="status" aria-live="polite">{ coupPresetValidationText(room) }</p>
+					}
+				</div>
 			</div>
+			if room.GetActivePlayerCount() >= 1 && coupPresetMatchesActivePlayers(room) {
+				<button
+					class="btn btn-primary btn-lg btn-wide"
+					data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
+					data-attr:disabled="$isStarting || !$canStartGame"
+					data-class:loading="$isStarting"
+					data-attr:aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
+					data-attr:aria-busy="$isStarting ? 'true' : 'false'"
+					data-attr:aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
+					data-attr:aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
+				>
+					<span data-show="!$isStarting">Start Game</span>
+					<span data-show="$isStarting" aria-hidden="true">Starting...</span>
+				</button>
+			} else if room.GetActivePlayerCount() >= 1 {
+				<div id="validation-help" class="text-sm text-error">
+					{ coupPresetValidationText(room) }
+				</div>
+			}
 		} else if canControl && room.GetActivePlayerCount() >= 1 {
 			<button
 				class="btn btn-primary btn-lg btn-wide"
@@ -163,4 +204,17 @@ func rulesModeLabel(mode game.RulesMode) string {
 	default:
 		return "Treachery"
 	}
+}
+
+func coupPresetMatchesActivePlayers(room *game.Room) bool {
+	expected, ok := game.CoupPresetPlayerCount(room.CoupPreset)
+	return ok && room.GetActivePlayerCount() == expected
+}
+
+func coupPresetValidationText(room *game.Room) string {
+	expected, ok := game.CoupPresetPlayerCount(room.CoupPreset)
+	if !ok {
+		return "Select a supported Coup preset"
+	}
+	return fmt.Sprintf("Requires exactly %d active players", expected)
 }

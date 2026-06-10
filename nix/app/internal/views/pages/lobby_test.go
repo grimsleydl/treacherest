@@ -2,6 +2,7 @@ package pages
 
 import (
 	"testing"
+	"time"
 	"treacherest"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
@@ -87,22 +88,31 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Coup")
 	})
 
-	t.Run("shows coup setup placeholder instead of start action", func(t *testing.T) {
+	t.Run("shows coup preset summary before start", func(t *testing.T) {
 		coupRoom := &game.Room{
 			Code:       "COUP2",
 			State:      game.StateLobby,
 			RulesMode:  game.RulesModeCoup,
+			CoupPreset: game.CoupPresetSix,
 			Players:    make(map[string]*game.Player),
 			MaxPlayers: 4,
 		}
-		coupRoom.Players[player1.ID] = player1
-		coupRoom.Players[player2.ID] = player2
+		for i := 1; i <= 6; i++ {
+			player := game.NewPlayer(string(rune('a'+i)), "Coup Player", "session")
+			player.JoinedAt = time.Unix(int64(i), 0)
+			coupRoom.Players[player.ID] = player
+		}
+		currentPlayer := coupRoom.Players["b"]
 
-		component := LobbyPage(coupRoom, player1, cfg, cardService)
+		component := LobbyPage(coupRoom, currentPlayer, cfg, cardService)
 
 		renderer.Render(component).
-			AssertContains("Coup setup is not ready yet").
-			AssertNotContains(`@post(&#39;/room/COUP2/start&#39;)`)
+			AssertContains("Coup Preset").
+			AssertContains("coup-preset-form").
+			AssertContains(`@post(&#39;/room/COUP2/config/coup-preset&#39;, {contentType: &#39;form&#39;})`).
+			AssertContains("6 players").
+			AssertContains("King, Blue Knight, 2 Black Knights, Red Knight, Green Knight").
+			AssertContains(`@post(&#39;/room/COUP2/start&#39;)`)
 	})
 
 	t.Run("shows need more players message", func(t *testing.T) {

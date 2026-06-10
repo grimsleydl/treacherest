@@ -218,6 +218,15 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					// Non-controlling players don't need role config updates
 					log.Printf("📡 Skipping role config update for non-controlling player %s in room %s", player.ID, roomCode)
 				}
+			case "coup_config_updated":
+				log.Printf("🎯 Coup config updated for room %s", roomCode)
+				room, _ = h.store.GetRoom(roomCode)
+				player = room.GetPlayer(player.ID)
+				if player == nil {
+					log.Printf("📡 Player no longer in room %s after Coup config update, closing SSE", roomCode)
+					return
+				}
+				h.sendLobbyUpdate(sse, room, player)
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}

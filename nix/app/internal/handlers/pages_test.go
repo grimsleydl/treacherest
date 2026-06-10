@@ -345,8 +345,14 @@ func TestHandler_JoinRoom(t *testing.T) {
 		if !strings.Contains(body, "Coup") {
 			t.Error("expected Coup rules mode")
 		}
-		if !strings.Contains(body, "Coup setup is not ready yet") {
-			t.Error("expected Coup setup placeholder")
+		if !strings.Contains(body, "Coup Preset") {
+			t.Error("expected Coup preset summary")
+		}
+		if !strings.Contains(body, "5 players") {
+			t.Error("expected default Coup preset player count")
+		}
+		if !strings.Contains(body, "Requires exactly 5 active players") {
+			t.Error("expected Coup preset validation message")
 		}
 	})
 }

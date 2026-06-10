@@ -146,7 +146,7 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 
 		body := w.Body.String()
-		if !strings.Contains(body, "Coup currently requires exactly 5 active players") {
+		if !strings.Contains(body, "Coup preset coup-5 requires exactly 5 active players") {
 			t.Errorf("expected response to explain unsupported Coup player count, got: %s", body)
 		}
 		if strings.Contains(body, "window.location.href") {
@@ -163,6 +163,62 @@ func TestHandler_StartGame(t *testing.T) {
 		for _, player := range updatedRoom.GetPlayers() {
 			if player.Role != nil {
 				t.Errorf("expected no role assignment for Coup room, got %s for %s", player.Role.Name, player.Name)
+			}
+		}
+	})
+
+	t.Run("rejects selected coup preset that does not match player count", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		room.CoupPreset = game.CoupPresetSix
+		players := []*game.Player{
+			game.NewPlayer("p1", "Player 1", "session1"),
+			game.NewPlayer("p2", "Player 2", "session2"),
+			game.NewPlayer("p3", "Player 3", "session3"),
+			game.NewPlayer("p4", "Player 4", "session4"),
+			game.NewPlayer("p5", "Player 5", "session5"),
+		}
+		for _, player := range players {
+			room.AddPlayer(player)
+		}
+		h.store.UpdateRoom(room)
+
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: players[0].ID,
+		})
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("code", room.Code)
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		h.StartGame(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		body := w.Body.String()
+		if !strings.Contains(body, "Coup preset coup-6 requires exactly 6 active players") {
+			t.Errorf("expected response to explain selected Coup preset mismatch, got: %s", body)
+		}
+		if strings.Contains(body, "window.location.href") {
+			t.Errorf("expected no game redirect for mismatched Coup preset, got: %s", body)
+		}
+
+		updatedRoom, _ := h.store.GetRoom(room.Code)
+		if updatedRoom.State != game.StateLobby {
+			t.Errorf("expected state %s, got %s", game.StateLobby, updatedRoom.State)
+		}
+		for _, player := range updatedRoom.GetPlayers() {
+			if player.Role != nil {
+				t.Errorf("expected no role assignment for mismatched Coup preset, got %s for %s", player.Role.Name, player.Name)
 			}
 		}
 	})
@@ -321,6 +377,155 @@ func TestHandler_StartGame_CoupFivePlayerHappyPath(t *testing.T) {
 		"Black Knight": 1,
 		"Red Knight":   1,
 		"Green Knight": 1,
+	}
+	for roleName, expectedCount := range expectedRoles {
+		if gotRoles[roleName] != expectedCount {
+			t.Errorf("expected %d %s role(s), got %d in %v", expectedCount, roleName, gotRoles[roleName], gotRoles)
+		}
+	}
+	if len(gotRoles) != len(expectedRoles) {
+		t.Errorf("expected only Coup roles %v, got %v", expectedRoles, gotRoles)
+	}
+}
+
+func TestHandler_StartGame_CoupSixPlayerPreset(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetSix
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+		game.NewPlayer("p6", "Player 6", "session6"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: players[0].ID,
+	})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.StartGame(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+	body := w.Body.String()
+	expectedScript := "window.location.href = '/game/" + room.Code + "'"
+	if !strings.Contains(body, expectedScript) {
+		t.Errorf("expected response to contain redirect script %q, got: %s", expectedScript, body)
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.State != game.StateCountdown {
+		t.Errorf("expected state %s, got %s", game.StateCountdown, updatedRoom.State)
+	}
+
+	gotRoles := make(map[string]int)
+	for _, player := range updatedRoom.GetActivePlayers() {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		gotRoles[player.Role.Name]++
+	}
+
+	expectedRoles := map[string]int{
+		"King":         1,
+		"Blue Knight":  1,
+		"Black Knight": 2,
+		"Red Knight":   1,
+		"Green Knight": 1,
+	}
+	for roleName, expectedCount := range expectedRoles {
+		if gotRoles[roleName] != expectedCount {
+			t.Errorf("expected %d %s role(s), got %d in %v", expectedCount, roleName, gotRoles[roleName], gotRoles)
+		}
+	}
+	if len(gotRoles) != len(expectedRoles) {
+		t.Errorf("expected only Coup roles %v, got %v", expectedRoles, gotRoles)
+	}
+}
+
+func TestHandler_StartGame_CoupEightPlayerChaosPreset(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetEightChaos
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+		game.NewPlayer("p6", "Player 6", "session6"),
+		game.NewPlayer("p7", "Player 7", "session7"),
+		game.NewPlayer("p8", "Player 8", "session8"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: players[0].ID,
+	})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.StartGame(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+	body := w.Body.String()
+	expectedScript := "window.location.href = '/game/" + room.Code + "'"
+	if !strings.Contains(body, expectedScript) {
+		t.Errorf("expected response to contain redirect script %q, got: %s", expectedScript, body)
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.State != game.StateCountdown {
+		t.Errorf("expected state %s, got %s", game.StateCountdown, updatedRoom.State)
+	}
+
+	gotRoles := make(map[string]int)
+	for _, player := range updatedRoom.GetActivePlayers() {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		gotRoles[player.Role.Name]++
+	}
+
+	expectedRoles := map[string]int{
+		"King":             1,
+		"Blue Knight":      2,
+		"Black Knight":     2,
+		"Red Knight":       1,
+		"Green Knight":     1,
+		"Wasteland Knight": 1,
 	}
 	for roleName, expectedCount := range expectedRoles {
 		if gotRoles[roleName] != expectedCount {
