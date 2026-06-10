@@ -19,27 +19,42 @@ This file provides guidance to Claude Code when working with this repository.
 **Architecture**: Server-side rendering with SSE (Server-Sent Events) for real-time updates
 **Key Features**: Multiplayer game rooms, real-time state synchronization, browser-based gameplay
 
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as local markdown under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default local triage label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context domain docs: use root `CONTEXT.md` and `docs/adr/` when present. See `docs/agents/domain.md`.
+
 ## Source Control
 
-- This project uses the `jj` source control system. To commit, use `jj commit -m "..."`. There is no need to "add" files with `jj`; they are tracked automatically.
+- This project uses Git for source control. Stage files explicitly with `git add`, then commit with `git commit`.
 
 - **CRITICAL**: Only commit files directly related to the specific task you just completed. NEVER commit all unstaged changes at once. Be selective and intentional about what goes into each commit.
 
 - **CRITICAL**: Always run commits from the project root directory:
   ```bash
   cd $PRJ_ROOT  # or cd /workspace
-  jj commit path/to/files -m "commit message"
+  git add path/to/files
+  git commit -m "commit message"
   ```
 
-- Every time you finish one or more items on your TODO list that involved changing files, make a commit. Use `jj` if it is enabled in the repository.
+- Every time you finish one or more items on your TODO list that involved changing files, make a commit.
 
 - Don't add comments about generated with Claude or Co-Authored-By Claude when writing commit messages
 
-- Common `jj` commands:
-  - `jj status` - Show current status of the repository
-  - `jj commit -m "message"` - Create a commit with the specified message
-  - `jj commit file1 file2 ... -m "message"` - Commit only specific files
-  - `jj git push` - Push changes to the remote Git repository
+- Common Git commands:
+  - `git status --short --branch` - Show current status of the repository
+  - `git add path/to/files` - Stage only the files for the current task
+  - `git commit -m "message"` - Create a commit with the staged files
+  - `git push` - Push changes to the remote Git repository
 
 
 ## Development Commands Reference
@@ -107,13 +122,13 @@ When implementing features:
 **CRITICAL**: You MUST track changes with git both during and after implementation:
 
 1. **During Implementation**:
-   - Run `jj status` frequently to see changes
+   - Run `git status --short --branch` frequently to see changes
    - Make incremental commits as you complete subtasks
    - Use descriptive commit messages for each logical change
    - **ALWAYS commit from project root**: `cd $PRJ_ROOT` before committing
 
 2. **After Task Completion**:
-   - Review all changes with `jj status` from project root
+   - Review all changes with `git status --short --branch` from project root
    - Ensure all files are committed
    - Create a final summary commit if needed
    - Verify no files left uncommitted

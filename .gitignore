@@ -47,6 +47,8 @@ nix/app/main
 /.go/
 /.claude/
 /docs/external/
+/.jj/
+/.config/jj/
 
 # Playwright test outputs
 test-results/
