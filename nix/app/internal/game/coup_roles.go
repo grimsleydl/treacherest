@@ -123,8 +123,11 @@ func coupRoleCard(id int, name, text, winCondition string) *Card {
 			Supertype: "Coup",
 			Subtype:   name,
 		},
-		Text:    text,
-		Rulings: []string{"Win Condition: " + winCondition},
+		Text: text,
+		Rulings: []string{
+			"Role Goal: " + winCondition,
+			"Win Condition: " + winCondition,
+		},
 	}
 }
 

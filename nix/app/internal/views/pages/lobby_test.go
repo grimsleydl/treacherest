@@ -116,6 +116,14 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Red-to-Black Info").
 			AssertContains("Black-to-Red Info").
 			AssertContains("Black Network").
+			AssertContains("Coup Rules Reference").
+			AssertContains("Every other player remains an opponent").
+			AssertContains("Do not prove a hidden role").
+			AssertContains("Royal Guard").
+			AssertContains("Inquisition").
+			AssertContains("Green Eligibility").
+			AssertContains("Wasteland").
+			AssertContains("Advisory Win Prompts").
 			AssertContains("6 players").
 			AssertContains("King, Blue Knight, 2 Black Knights, Red Knight, Green Knight").
 			AssertContains(`@post(&#39;/room/COUP2/start&#39;)`)

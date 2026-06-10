@@ -81,6 +81,9 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 			</div>
 		</div>
 	</div>
+	if room.RulesMode == game.RulesModeCoup {
+		@CoupRulesReference()
+	}
 	// Show role configuration for the first player if no host is present
 	if canControl && room.RulesMode != game.RulesModeCoup && room.RoleConfig != nil {
 		@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
@@ -213,6 +216,23 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 		<button class="btn btn-error btn-outline" data-on:click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
 			Leave Room
 		</button>
+	</div>
+}
+
+templ CoupRulesReference() {
+	<div class="card bg-base-200 shadow-xl mb-6 max-w-3xl mx-auto">
+		<div class="card-body gap-3">
+			<h2 class="card-title">Coup Rules Reference</h2>
+			<ul class="list-disc pl-5 space-y-2 text-sm text-base-content/80">
+				<li>Commander free-for-all remains the default. Every other player remains an opponent for Magic card text.</li>
+				<li>Role claims may be true or false. Do not prove a hidden role by showing the app screen unless a Coup rule reveals it.</li>
+				<li>Royal Guard lets a revealed Blue Knight block for the King under the selected blocking setting.</li>
+				<li>Inquisition is called in-app by Blue at sorcery speed; the table follows the selected public or private result setting.</li>
+				<li>Green Eligibility is locked before the King falls. Blue dying because the King falls does not create Red-victory eligibility.</li>
+				<li>Wasteland is a chaos role for larger tables, wins alone, and never shares victory.</li>
+				<li>Advisory Win Prompts are reminders only. The table must confirm a win before the app ends the game.</li>
+			</ul>
+		</div>
 	</div>
 }
 
