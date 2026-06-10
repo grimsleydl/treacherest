@@ -61,3 +61,59 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 	sse := datastar.NewSSE(w, r)
 	h.renderLobby(sse, room, player)
 }
+
+// UpdateCoupInfoPolicy updates the selected Coup private information policy for a room.
+func (h *Handler) UpdateCoupInfoPolicy(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	if room.RulesMode != game.RulesModeCoup {
+		http.Error(w, "Room is not using Coup rules", http.StatusBadRequest)
+		return
+	}
+
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	policy := game.CoupInformationPolicy{
+		KingToBlue:   game.CoupKingToBluePolicy(r.FormValue("kingToBlue")),
+		RedToBlack:   game.CoupRedToBlackPolicy(r.FormValue("redToBlack")),
+		BlackToRed:   game.CoupBlackToRedPolicy(r.FormValue("blackToRed")),
+		BlackNetwork: game.CoupBlackNetworkPolicy(r.FormValue("blackNetwork")),
+	}
+	policy = game.NormalizeCoupInformationPolicy(policy)
+	if !game.IsValidCoupInformationPolicy(policy) {
+		http.Error(w, "Invalid Coup information policy", http.StatusBadRequest)
+		return
+	}
+
+	room.CoupInfoPolicy = policy
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	playerCookie, err := r.Cookie("player_" + room.Code)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	sse := datastar.NewSSE(w, r)
+	h.renderLobby(sse, room, player)
+}

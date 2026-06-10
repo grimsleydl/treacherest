@@ -197,7 +197,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) startCoupGame(w http.ResponseWriter, r *http.Request, room *game.Room) {
-	if err := game.AssignCoupRoles(room.GetPlayers(), room.CoupPreset); err != nil {
+	if err := game.AssignCoupRolesWithInformation(room.GetPlayers(), room.CoupPreset, room.CoupInfoPolicy); err != nil {
 		log.Printf("❌ Room cannot start: %s", err.Error())
 
 		sse := datastar.NewSSE(w, r)

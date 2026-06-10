@@ -1,6 +1,6 @@
 # Coup Information Policies
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -14,11 +14,20 @@ Add the documented variants in a way that keeps secret information scoped only t
 
 ## Acceptance criteria
 
-- [ ] King sees Blue Knight information according to the selected King-to-Blue Information Policy.
-- [ ] Red sees Black Knight information according to the selected Red-to-Black Information Policy.
-- [ ] Black Knights do not see Red or other Black Knights by default.
-- [ ] The Black-to-Red and Network variants can be selected and are reflected in private information.
-- [ ] Tests prove private information is not exposed to unintended players.
+- [x] King sees Blue Knight information according to the selected King-to-Blue Information Policy.
+- [x] Red sees Black Knight information according to the selected Red-to-Black Information Policy.
+- [x] Black Knights do not see Red or other Black Knights by default.
+- [x] The Black-to-Red and Network variants can be selected and are reflected in private information.
+- [x] Tests prove private information is not exposed to unintended players.
+
+## Completion notes
+
+- Added explicit Coup information policy types for King-to-Blue, Red-to-Black, Black-to-Red, and Black Network settings.
+- Default policy is King full Blue knowledge, Red all Black knowledge, no Black-to-Red knowledge, and no Black Network.
+- Added assignment-time private information notes scoped to the recipient's own role card.
+- Added setup selectors and Datastar handlers/routes for choosing information policies.
+- Wired room-selected policy through the Coup start path.
+- Added tests for default information, candidate knowledge, Red variants, Black-to-Red/Network variants, setup update routes, start-path propagation, and view-level privacy.
 
 ## Blocked by
 

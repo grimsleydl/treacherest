@@ -107,6 +107,53 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 						</select>
 					</form>
 					<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
+					<div class="divider my-1"></div>
+					<form
+						id="coup-info-form"
+						class="grid gap-3 sm:grid-cols-2"
+						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
+					>
+						<label class="form-control w-full">
+							<span class="label-text">King-to-Blue Info</span>
+							<select name="kingToBlue" class="select select-bordered select-sm w-full">
+								for _, option := range coupKingToBlueOptions() {
+									<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
+										{ option.Label }
+									</option>
+								}
+							</select>
+						</label>
+						<label class="form-control w-full">
+							<span class="label-text">Red-to-Black Info</span>
+							<select name="redToBlack" class="select select-bordered select-sm w-full">
+								for _, option := range coupRedToBlackOptions() {
+									<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
+										{ option.Label }
+									</option>
+								}
+							</select>
+						</label>
+						<label class="form-control w-full">
+							<span class="label-text">Black-to-Red Info</span>
+							<select name="blackToRed" class="select select-bordered select-sm w-full">
+								for _, option := range coupBlackToRedOptions() {
+									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
+										{ option.Label }
+									</option>
+								}
+							</select>
+						</label>
+						<label class="form-control w-full">
+							<span class="label-text">Black Network</span>
+							<select name="blackNetwork" class="select select-bordered select-sm w-full">
+								for _, option := range coupBlackNetworkOptions() {
+									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
+										{ option.Label }
+									</option>
+								}
+							</select>
+						</label>
+					</form>
 					if coupPresetMatchesActivePlayers(room) {
 						<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
 					} else {
@@ -217,4 +264,56 @@ func coupPresetValidationText(room *game.Room) string {
 		return "Select a supported Coup preset"
 	}
 	return fmt.Sprintf("Requires exactly %d active players", expected)
+}
+
+type coupPolicyOption struct {
+	Value string
+	Label string
+}
+
+func coupKingToBlueOptions() []coupPolicyOption {
+	return []coupPolicyOption{
+		{Value: string(game.CoupKingKnowsAllBlue), Label: "Full knowledge"},
+		{Value: string(game.CoupKingGetsBlueCandidates), Label: "One true, one decoy"},
+		{Value: string(game.CoupKingKnowsNoBlue), Label: "No knowledge"},
+	}
+}
+
+func coupRedToBlackOptions() []coupPolicyOption {
+	return []coupPolicyOption{
+		{Value: string(game.CoupRedKnowsAllBlack), Label: "All Black Knights"},
+		{Value: string(game.CoupRedKnowsOneBlack), Label: "One Black Knight"},
+		{Value: string(game.CoupRedKnowsNoBlack), Label: "No Black info"},
+	}
+}
+
+func coupBlackToRedOptions() []coupPolicyOption {
+	return []coupPolicyOption{
+		{Value: string(game.CoupBlackToRedNone), Label: "None"},
+		{Value: string(game.CoupBlackToRedOne), Label: "One Black knows Red"},
+		{Value: string(game.CoupBlackToRedAll), Label: "All Blacks know Red"},
+	}
+}
+
+func coupBlackNetworkOptions() []coupPolicyOption {
+	return []coupPolicyOption{
+		{Value: string(game.CoupBlackNetworkNone), Label: "No network"},
+		{Value: string(game.CoupBlackNetworkAll), Label: "Black Knights know each other"},
+	}
+}
+
+func selectedCoupKingToBlue(room *game.Room) string {
+	return string(game.NormalizeCoupInformationPolicy(room.CoupInfoPolicy).KingToBlue)
+}
+
+func selectedCoupRedToBlack(room *game.Room) string {
+	return string(game.NormalizeCoupInformationPolicy(room.CoupInfoPolicy).RedToBlack)
+}
+
+func selectedCoupBlackToRed(room *game.Room) string {
+	return string(game.NormalizeCoupInformationPolicy(room.CoupInfoPolicy).BlackToRed)
+}
+
+func selectedCoupBlackNetwork(room *game.Room) string {
+	return string(game.NormalizeCoupInformationPolicy(room.CoupInfoPolicy).BlackNetwork)
 }

@@ -277,3 +277,48 @@ func TestGameBody_CoupPrivacy(t *testing.T) {
 		AssertNotContains("Red Knight").
 		AssertNotContains("Green Knight")
 }
+
+func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room := &game.Room{
+		Code:       "COUP2",
+		State:      game.StatePlaying,
+		RulesMode:  game.RulesModeCoup,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 5,
+	}
+
+	kingCard := mockCoupCard(1001, "King")
+	kingCard.Rulings = []string{"Private information: Blue Knights: Blue Player"}
+
+	king := &game.Player{
+		ID:           "p1",
+		Name:         "King Player",
+		Role:         kingCard,
+		RoleRevealed: true,
+		FaceUp:       true,
+	}
+	blue := &game.Player{
+		ID:     "p2",
+		Name:   "Blue Player",
+		Role:   mockCoupCard(1002, "Blue Knight"),
+		FaceUp: false,
+	}
+	black := &game.Player{
+		ID:     "p3",
+		Name:   "Black Player",
+		Role:   mockCoupCard(1003, "Black Knight"),
+		FaceUp: false,
+	}
+	for _, player := range []*game.Player{king, blue, black} {
+		room.Players[player.ID] = player
+	}
+
+	renderer.Render(GameBody(room, king)).
+		AssertContains("Private information: Blue Knights: Blue Player")
+
+	renderer.Render(GameBody(room, black)).
+		AssertNotContains("Private information:").
+		AssertNotContains("Blue Knights:")
+}

@@ -461,6 +461,62 @@ func TestHandler_StartGame_CoupSixPlayerPreset(t *testing.T) {
 	}
 }
 
+func TestHandler_StartGame_CoupInformationPolicy(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetSix
+	room.CoupInfoPolicy = game.CoupInformationPolicy{
+		BlackToRed:   game.CoupBlackToRedAll,
+		BlackNetwork: game.CoupBlackNetworkAll,
+	}
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+		game.NewPlayer("p6", "Player 6", "session6"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: players[0].ID,
+	})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.StartGame(w, req)
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	red := findHandlerTestPlayerByRole(t, updatedRoom.GetActivePlayers(), game.RoleRedKnight)
+	blacks := findHandlerTestPlayersByRole(t, updatedRoom.GetActivePlayers(), game.RoleBlackKnight)
+	if len(blacks) != 2 {
+		t.Fatalf("expected 2 Black Knights, got %d", len(blacks))
+	}
+
+	for _, black := range blacks {
+		if !handlerTestRoleRulingsContain(black.Role, "Red Knight: "+red.Name) {
+			t.Fatalf("expected Black %q to know Red %q, got rulings %v", black.Name, red.Name, black.Role.Rulings)
+		}
+		for _, otherBlack := range blacks {
+			if !handlerTestRoleRulingsContain(black.Role, otherBlack.Name) {
+				t.Fatalf("expected Black %q to know Black network member %q, got rulings %v", black.Name, otherBlack.Name, black.Role.Rulings)
+			}
+		}
+	}
+}
+
 func TestHandler_StartGame_CoupEightPlayerChaosPreset(t *testing.T) {
 	h := newTestHandler()
 
@@ -744,4 +800,41 @@ func TestHandler_runCountdown(t *testing.T) {
 			t.Error("expected leader to be revealed")
 		}
 	})
+}
+
+func findHandlerTestPlayerByRole(t *testing.T, players []*game.Player, roleType game.RoleType) *game.Player {
+	t.Helper()
+	for _, player := range players {
+		if player.Role != nil && player.Role.GetRoleType() == roleType {
+			return player
+		}
+	}
+	t.Fatalf("expected to find %s in assigned players", roleType)
+	return nil
+}
+
+func findHandlerTestPlayersByRole(t *testing.T, players []*game.Player, roleType game.RoleType) []*game.Player {
+	t.Helper()
+	found := make([]*game.Player, 0)
+	for _, player := range players {
+		if player.Role != nil && player.Role.GetRoleType() == roleType {
+			found = append(found, player)
+		}
+	}
+	if len(found) == 0 {
+		t.Fatalf("expected to find %s in assigned players", roleType)
+	}
+	return found
+}
+
+func handlerTestRoleRulingsContain(card *game.Card, want string) bool {
+	if card == nil {
+		return false
+	}
+	for _, ruling := range card.Rulings {
+		if strings.Contains(ruling, want) {
+			return true
+		}
+	}
+	return false
 }

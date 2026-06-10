@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 )
 
@@ -23,6 +24,49 @@ const (
 
 // CoupPreset identifies a concrete Coup role distribution.
 type CoupPreset string
+
+// CoupKingToBluePolicy controls what the King learns about Blue Knights.
+type CoupKingToBluePolicy string
+
+const (
+	CoupKingKnowsAllBlue       CoupKingToBluePolicy = "king-knows-all-blue"
+	CoupKingGetsBlueCandidates CoupKingToBluePolicy = "king-gets-blue-candidates"
+	CoupKingKnowsNoBlue        CoupKingToBluePolicy = "king-knows-no-blue"
+)
+
+// CoupRedToBlackPolicy controls what Red learns about Black Knights.
+type CoupRedToBlackPolicy string
+
+const (
+	CoupRedKnowsAllBlack CoupRedToBlackPolicy = "red-knows-all-black"
+	CoupRedKnowsOneBlack CoupRedToBlackPolicy = "red-knows-one-black"
+	CoupRedKnowsNoBlack  CoupRedToBlackPolicy = "red-knows-no-black"
+)
+
+// CoupBlackToRedPolicy controls whether Black Knights learn Red.
+type CoupBlackToRedPolicy string
+
+const (
+	CoupBlackToRedNone CoupBlackToRedPolicy = "black-knows-no-red"
+	CoupBlackToRedOne  CoupBlackToRedPolicy = "one-black-knows-red"
+	CoupBlackToRedAll  CoupBlackToRedPolicy = "all-black-know-red"
+)
+
+// CoupBlackNetworkPolicy controls whether Black Knights know each other.
+type CoupBlackNetworkPolicy string
+
+const (
+	CoupBlackNetworkNone CoupBlackNetworkPolicy = "black-network-none"
+	CoupBlackNetworkAll  CoupBlackNetworkPolicy = "black-network-all"
+)
+
+// CoupInformationPolicy configures private information dealt with Coup roles.
+type CoupInformationPolicy struct {
+	KingToBlue   CoupKingToBluePolicy
+	RedToBlack   CoupRedToBlackPolicy
+	BlackToRed   CoupBlackToRedPolicy
+	BlackNetwork CoupBlackNetworkPolicy
+}
 
 var coupRoleCards = map[RoleType]*Card{
 	RoleKing:        coupRoleCard(1001, string(RoleKing), "Starts revealed. Political center of the table.", "Win if alive when Black, Red, and Wasteland threats are eliminated."),
@@ -156,8 +200,56 @@ func pluralCoupRole(role RoleType) string {
 	}
 }
 
+// NormalizeCoupInformationPolicy fills omitted policy fields with Coup defaults.
+func NormalizeCoupInformationPolicy(policy CoupInformationPolicy) CoupInformationPolicy {
+	if policy.KingToBlue == "" {
+		policy.KingToBlue = CoupKingKnowsAllBlue
+	}
+	if policy.RedToBlack == "" {
+		policy.RedToBlack = CoupRedKnowsAllBlack
+	}
+	if policy.BlackToRed == "" {
+		policy.BlackToRed = CoupBlackToRedNone
+	}
+	if policy.BlackNetwork == "" {
+		policy.BlackNetwork = CoupBlackNetworkNone
+	}
+	return policy
+}
+
+// IsValidCoupInformationPolicy reports whether all policy values are supported.
+func IsValidCoupInformationPolicy(policy CoupInformationPolicy) bool {
+	policy = NormalizeCoupInformationPolicy(policy)
+	switch policy.KingToBlue {
+	case CoupKingKnowsAllBlue, CoupKingGetsBlueCandidates, CoupKingKnowsNoBlue:
+	default:
+		return false
+	}
+	switch policy.RedToBlack {
+	case CoupRedKnowsAllBlack, CoupRedKnowsOneBlack, CoupRedKnowsNoBlack:
+	default:
+		return false
+	}
+	switch policy.BlackToRed {
+	case CoupBlackToRedNone, CoupBlackToRedOne, CoupBlackToRedAll:
+	default:
+		return false
+	}
+	switch policy.BlackNetwork {
+	case CoupBlackNetworkNone, CoupBlackNetworkAll:
+	default:
+		return false
+	}
+	return true
+}
+
 // AssignCoupRoles assigns a Coup role set for the selected preset.
 func AssignCoupRoles(players []*Player, preset CoupPreset) error {
+	return AssignCoupRolesWithInformation(players, preset, CoupInformationPolicy{})
+}
+
+// AssignCoupRolesWithInformation assigns Coup roles and attaches recipient-scoped private information.
+func AssignCoupRolesWithInformation(players []*Player, preset CoupPreset, policy CoupInformationPolicy) error {
 	activePlayers := make([]*Player, 0, len(players))
 	for _, player := range players {
 		if !player.IsHost {
@@ -194,5 +286,106 @@ func AssignCoupRoles(players []*Player, preset CoupPreset) error {
 		}
 	}
 
+	applyCoupInformation(activePlayers, NormalizeCoupInformationPolicy(policy))
+
 	return nil
+}
+
+func applyCoupInformation(players []*Player, policy CoupInformationPolicy) {
+	playersByRole := coupPlayersByRole(players)
+	kings := playersByRole[RoleKing]
+	blues := playersByRole[RoleBlueKnight]
+	reds := playersByRole[RoleRedKnight]
+	blacks := playersByRole[RoleBlackKnight]
+
+	if len(kings) > 0 && len(blues) > 0 {
+		switch policy.KingToBlue {
+		case CoupKingKnowsAllBlue:
+			appendCoupPrivateInfo(kings[0].Role, "Blue Knights: "+joinCoupPlayerNames(blues))
+		case CoupKingGetsBlueCandidates:
+			candidates := []*Player{blues[0]}
+			if decoy := firstCoupPlayerWithoutRoles(players, RoleKing, RoleBlueKnight); decoy != nil {
+				candidates = append(candidates, decoy)
+			}
+			appendCoupPrivateInfo(kings[0].Role, "Blue Knight candidates: "+joinCoupPlayerNames(candidates))
+		}
+	}
+	if len(reds) > 0 && len(blacks) > 0 {
+		switch policy.RedToBlack {
+		case CoupRedKnowsAllBlack:
+			appendCoupPrivateInfo(reds[0].Role, "Black Knights: "+joinCoupPlayerNames(blacks))
+		case CoupRedKnowsOneBlack:
+			appendCoupPrivateInfo(reds[0].Role, "Black Knights: "+joinCoupPlayerNames(blacks[:1]))
+		}
+	}
+	if len(reds) > 0 && len(blacks) > 0 {
+		switch policy.BlackToRed {
+		case CoupBlackToRedAll:
+			for _, black := range blacks {
+				appendCoupPrivateInfo(black.Role, "Red Knight: "+reds[0].Name)
+			}
+		case CoupBlackToRedOne:
+			appendCoupPrivateInfo(blacks[0].Role, "Red Knight: "+reds[0].Name)
+		}
+	}
+	if len(blacks) > 0 && policy.BlackNetwork == CoupBlackNetworkAll {
+		for _, black := range blacks {
+			appendCoupPrivateInfo(black.Role, "Black Knights: "+joinCoupPlayerNames(blacks))
+		}
+	}
+}
+
+func coupPlayersByRole(players []*Player) map[RoleType][]*Player {
+	playersByRole := make(map[RoleType][]*Player)
+	for _, player := range players {
+		if player.Role == nil {
+			continue
+		}
+		roleType := player.Role.GetRoleType()
+		playersByRole[roleType] = append(playersByRole[roleType], player)
+	}
+	for roleType := range playersByRole {
+		sort.Slice(playersByRole[roleType], func(i, j int) bool {
+			return playersByRole[roleType][i].Name < playersByRole[roleType][j].Name
+		})
+	}
+	return playersByRole
+}
+
+func appendCoupPrivateInfo(card *Card, info string) {
+	if card == nil || info == "" {
+		return
+	}
+	card.Rulings = append(card.Rulings, "Private information: "+info)
+}
+
+func firstCoupPlayerWithoutRoles(players []*Player, excludedRoles ...RoleType) *Player {
+	excluded := make(map[RoleType]bool, len(excludedRoles))
+	for _, role := range excludedRoles {
+		excluded[role] = true
+	}
+
+	candidates := make([]*Player, 0)
+	for _, player := range players {
+		if player.Role == nil || excluded[player.Role.GetRoleType()] {
+			continue
+		}
+		candidates = append(candidates, player)
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].Name < candidates[j].Name
+	})
+	if len(candidates) == 0 {
+		return nil
+	}
+	return candidates[0]
+}
+
+func joinCoupPlayerNames(players []*Player) string {
+	names := make([]string, 0, len(players))
+	for _, player := range players {
+		names = append(names, player.Name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }

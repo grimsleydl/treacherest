@@ -110,6 +110,12 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Coup Preset").
 			AssertContains("coup-preset-form").
 			AssertContains(`@post(&#39;/room/COUP2/config/coup-preset&#39;, {contentType: &#39;form&#39;})`).
+			AssertContains("coup-info-form").
+			AssertContains(`@post(&#39;/room/COUP2/config/coup-info&#39;, {contentType: &#39;form&#39;})`).
+			AssertContains("King-to-Blue Info").
+			AssertContains("Red-to-Black Info").
+			AssertContains("Black-to-Red Info").
+			AssertContains("Black Network").
 			AssertContains("6 players").
 			AssertContains("King, Blue Knight, 2 Black Knights, Red Knight, Green Knight").
 			AssertContains(`@post(&#39;/room/COUP2/start&#39;)`)
