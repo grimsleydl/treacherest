@@ -25,7 +25,8 @@ This slice does not need full Coup behavior yet. Coup can route to a minimal pla
 - Room creation defaults to Treachery and accepts Coup via the create-room form.
 - Invalid Rules Mode submissions are rejected before a room is created.
 - Lobby renders the selected Rules Mode.
-- Coup rooms show a disabled setup placeholder and cannot start through the legacy Treachery role assignment path.
+- Coup rooms initially showed a disabled setup placeholder and could not start through the legacy Treachery role assignment path.
+- Superseded by issue 02: valid five-player Coup rooms now start through the Coup assignment path; unsupported counts are still blocked.
 
 ## Blocked by
 

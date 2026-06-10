@@ -55,6 +55,22 @@ func mockAssassinCard() *game.Card {
 	}
 }
 
+func mockCoupCard(id int, name string) *game.Card {
+	return &game.Card{
+		ID:   id,
+		Name: name,
+		Types: game.CardTypes{
+			Supertype: "Coup",
+			Subtype:   name,
+		},
+		Text:        "Test " + name + " Card",
+		Type:        "Coup Role",
+		Rarity:      "Coup",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBD",
+	}
+}
+
 func TestGamePage(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 
@@ -203,4 +219,61 @@ func TestGameBody(t *testing.T) {
 			AssertContains("card").
 			AssertContains("border-error") // Assassin border
 	})
+}
+
+func TestGameBody_CoupPrivacy(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room := &game.Room{
+		Code:       "COUP1",
+		State:      game.StatePlaying,
+		RulesMode:  game.RulesModeCoup,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 5,
+	}
+
+	king := &game.Player{
+		ID:           "p1",
+		Name:         "King Player",
+		Role:         mockCoupCard(1001, "King"),
+		RoleRevealed: true,
+		FaceUp:       true,
+	}
+	blue := &game.Player{
+		ID:     "p2",
+		Name:   "Blue Player",
+		Role:   mockCoupCard(1002, "Blue Knight"),
+		FaceUp: false,
+	}
+	black := &game.Player{
+		ID:     "p3",
+		Name:   "Black Player",
+		Role:   mockCoupCard(1003, "Black Knight"),
+		FaceUp: false,
+	}
+	red := &game.Player{
+		ID:     "p4",
+		Name:   "Red Player",
+		Role:   mockCoupCard(1004, "Red Knight"),
+		FaceUp: false,
+	}
+	green := &game.Player{
+		ID:     "p5",
+		Name:   "Green Player",
+		Role:   mockCoupCard(1005, "Green Knight"),
+		FaceUp: false,
+	}
+	for _, player := range []*game.Player{king, blue, black, red, green} {
+		room.Players[player.ID] = player
+	}
+
+	component := GameBody(room, blue)
+
+	renderer.Render(component).
+		AssertContains("Blue Knight").
+		AssertContains("King Player").
+		AssertContains(`alt="King"`).
+		AssertNotContains("Black Knight").
+		AssertNotContains("Red Knight").
+		AssertNotContains("Green Knight")
 }

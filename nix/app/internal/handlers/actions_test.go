@@ -117,7 +117,7 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 	})
 
-	t.Run("does not start coup room before coup setup exists", func(t *testing.T) {
+	t.Run("rejects unsupported coup player count", func(t *testing.T) {
 		h := newTestHandler()
 
 		room, _ := h.store.CreateRoom()
@@ -146,11 +146,11 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 
 		body := w.Body.String()
-		if !strings.Contains(body, "Coup setup is not ready yet") {
-			t.Errorf("expected response to explain unavailable Coup setup, got: %s", body)
+		if !strings.Contains(body, "Coup currently requires exactly 5 active players") {
+			t.Errorf("expected response to explain unsupported Coup player count, got: %s", body)
 		}
 		if strings.Contains(body, "window.location.href") {
-			t.Errorf("expected no game redirect for unavailable Coup setup, got: %s", body)
+			t.Errorf("expected no game redirect for unsupported Coup player count, got: %s", body)
 		}
 
 		updatedRoom, _ := h.store.GetRoom(room.Code)
@@ -241,6 +241,95 @@ func TestHandler_StartGame(t *testing.T) {
 			t.Errorf("expected SSE error message for player not in room, got: %s", body)
 		}
 	})
+}
+
+func TestHandler_StartGame_CoupFivePlayerHappyPath(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: players[0].ID,
+	})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.StartGame(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+	body := w.Body.String()
+	expectedScript := "window.location.href = '/game/" + room.Code + "'"
+	if !strings.Contains(body, expectedScript) {
+		t.Errorf("expected response to contain redirect script %q, got: %s", expectedScript, body)
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.State != game.StateCountdown {
+		t.Errorf("expected state %s, got %s", game.StateCountdown, updatedRoom.State)
+	}
+	if updatedRoom.RulesMode != game.RulesModeCoup {
+		t.Errorf("expected rules mode %q, got %q", game.RulesModeCoup, updatedRoom.RulesMode)
+	}
+
+	gotRoles := make(map[string]int)
+	for _, player := range updatedRoom.GetActivePlayers() {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		gotRoles[player.Role.Name]++
+		if player.Role.Name == "King" {
+			if !player.RoleRevealed {
+				t.Error("expected King to be publicly revealed")
+			}
+			if !player.FaceUp {
+				t.Error("expected King to be face up")
+			}
+		} else {
+			if player.RoleRevealed {
+				t.Errorf("expected %s to start hidden", player.Role.Name)
+			}
+			if player.FaceUp {
+				t.Errorf("expected %s to start face down", player.Role.Name)
+			}
+		}
+	}
+
+	expectedRoles := map[string]int{
+		"King":         1,
+		"Blue Knight":  1,
+		"Black Knight": 1,
+		"Red Knight":   1,
+		"Green Knight": 1,
+	}
+	for roleName, expectedCount := range expectedRoles {
+		if gotRoles[roleName] != expectedCount {
+			t.Errorf("expected %d %s role(s), got %d in %v", expectedCount, roleName, gotRoles[roleName], gotRoles)
+		}
+	}
+	if len(gotRoles) != len(expectedRoles) {
+		t.Errorf("expected only Coup roles %v, got %v", expectedRoles, gotRoles)
+	}
 }
 
 func TestHandler_LeaveRoom(t *testing.T) {

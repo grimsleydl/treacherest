@@ -79,27 +79,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if room.RulesMode == game.RulesModeCoup {
-		message := "Coup setup is not ready yet"
-		log.Printf("❌ Room cannot start: %s", message)
-
-		sse := datastar.NewSSE(w, r)
-		errorHTML := `<div id="start-game-error" class="alert alert-error mt-4">
-			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-			</svg>
-			<span>Coup setup is not ready yet</span>
-		</div>`
-		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
-		sse.MarshalAndPatchSignals(map[string]interface{}{
-			"isStarting":        false,
-			"startError":        message,
-			"canStartGame":      false,
-			"validationMessage": message,
-		})
-		if flusher, ok := w.(http.Flusher); ok {
-			flusher.Flush()
-		}
-
+		h.startCoupGame(w, r, room)
 		return
 	}
 
@@ -211,6 +191,53 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	sse := datastar.NewSSE(w, r)
 	sse.ExecuteScript("window.location.href = '/game/" + roomCode + "'")
 	// Flush the response to ensure redirect is sent immediately
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+func (h *Handler) startCoupGame(w http.ResponseWriter, r *http.Request, room *game.Room) {
+	if err := game.AssignCoupRoles(room.GetPlayers()); err != nil {
+		log.Printf("❌ Room cannot start: %s", err.Error())
+
+		sse := datastar.NewSSE(w, r)
+		errorHTML := fmt.Sprintf(`<div id="start-game-error" class="alert alert-error mt-4">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 0118 0z" />
+			</svg>
+			<span>%s</span>
+		</div>`, html.EscapeString(err.Error()))
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
+			"isStarting":        false,
+			"startError":        err.Error(),
+			"canStartGame":      false,
+			"validationMessage": err.Error(),
+		})
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
+
+		return
+	}
+
+	room.State = game.StateCountdown
+	room.CountdownRemaining = 5
+	room.StartedAt = time.Now()
+	h.store.UpdateRoom(room)
+
+	go h.runCountdown(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "game_started",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	log.Printf("✅ Coup game started successfully for room %s", room.Code)
+
+	sse := datastar.NewSSE(w, r)
+	sse.ExecuteScript("window.location.href = '/game/" + room.Code + "'")
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
 	}

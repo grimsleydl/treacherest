@@ -51,6 +51,18 @@ func (c *Card) GetRoleType() RoleType {
 		return RoleAssassin
 	case "Traitor":
 		return RoleTraitor
+	case "King":
+		return RoleKing
+	case "Blue Knight":
+		return RoleBlueKnight
+	case "Black Knight":
+		return RoleBlackKnight
+	case "Red Knight":
+		return RoleRedKnight
+	case "Green Knight":
+		return RoleGreenKnight
+	case "Wasteland Knight":
+		return RoleWasteland
 	default:
 		return ""
 	}
@@ -67,6 +79,18 @@ func (c *Card) GetWinCondition() string {
 		return "The Assassins win if the Leader is eliminated."
 	case "Traitor":
 		return "The Traitor wins if they are the last player standing."
+	case "King":
+		return "Win if alive when Black, Red, and Wasteland threats are eliminated."
+	case "Blue Knight":
+		return "Win with the King. Lose when the King loses."
+	case "Black Knight":
+		return "Win if the King is dead, at least one Black Knight survives, and Red is dead."
+	case "Red Knight":
+		return "Win if the King is dead, Red survives, and all Black Knights are dead."
+	case "Green Knight":
+		return "Win with King or Red only when eligible under the selected Green rules."
+	case "Wasteland Knight":
+		return "Win alone when every other player is eliminated."
 	default:
 		return ""
 	}
