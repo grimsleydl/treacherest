@@ -1,6 +1,6 @@
 # Role-Card Prompt Tooling
 
-Status: ready-for-agent
+Status: needs-info
 
 ## Parent
 
@@ -21,3 +21,7 @@ Add secondary role-card prompt tooling for Coup after the art direction decision
 ## Blocked by
 
 - `.scratch/coup-rules-mode/issues/13-role-card-art-direction-decision.md`
+
+## Notes
+
+- Do not start this implementation until Issue 13 has a human-approved scope and initial art direction.
