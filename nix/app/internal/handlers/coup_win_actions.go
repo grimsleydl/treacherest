@@ -75,14 +75,8 @@ func (h *Handler) coupWinDecisionContext(w http.ResponseWriter, r *http.Request)
 		return nil, nil, false
 	}
 
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return nil, nil, false
-	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, room.Code)
+	if !ok {
 		return nil, nil, false
 	}
 	if !player.IsHost && !player.IsActiveInGame() {

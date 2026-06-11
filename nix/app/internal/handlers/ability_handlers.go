@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -27,6 +28,14 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 	player := room.GetPlayer(playerID)
 	if player == nil {
 		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use your own role ability", http.StatusForbidden)
 		return
 	}
 
@@ -171,16 +180,8 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -248,6 +249,10 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 	// Update player's role to the transformed card
 	player.Role = selectedCard
 
+	// Mark player as face up since they unveiled
+	player.FaceUp = true
+	player.RoleRevealed = true
+
 	// Resolve the pending ability
 	player.AbilityState.ResolvePendingAbility(abilityID)
 
@@ -277,16 +282,8 @@ func (h *Handler) ConfirmAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the confirming player (should be the Leader for "leader" confirmation role)
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	confirmer := room.GetPlayer(playerCookie.Value)
-	if confirmer == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	confirmer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -384,6 +381,14 @@ func (h *Handler) TriggerMetamorphAbility(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Player not found", http.StatusNotFound)
 		return
 	}
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use your own role ability", http.StatusForbidden)
+		return
+	}
 
 	// Verify player has The Metamorph (card ID 25)
 	if player.Role == nil || player.Role.GetID() != 25 {
@@ -437,6 +442,14 @@ func (h *Handler) StealRole(w http.ResponseWriter, r *http.Request) {
 	player := room.GetPlayer(playerID)
 	if player == nil {
 		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use your own role ability", http.StatusForbidden)
 		return
 	}
 
@@ -522,6 +535,14 @@ func (h *Handler) EndMetamorphEffect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Player not found", http.StatusNotFound)
 		return
 	}
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use your own role ability", http.StatusForbidden)
+		return
+	}
 
 	// Verify player has The Metamorph
 	if player.Role == nil || player.Role.GetID() != 25 {
@@ -560,16 +581,8 @@ func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the requesting player
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	requestingPlayer := room.GetPlayer(playerCookie.Value)
-	if requestingPlayer == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	requestingPlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -634,6 +647,14 @@ func (h *Handler) TriggerPuppetMasterAbility(w http.ResponseWriter, r *http.Requ
 	player := room.GetPlayer(playerID)
 	if player == nil {
 		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use your own role ability", http.StatusForbidden)
 		return
 	}
 
@@ -705,22 +726,16 @@ func (h *Handler) PuppetMasterSelectPlayers(w http.ResponseWriter, r *http.Reque
 	roomCode := chi.URLParam(r, "code")
 	abilityID := chi.URLParam(r, "abilityID")
 
+	log.Printf("🎭 PuppetMasterSelectPlayers called: room=%s, abilityID=%s", roomCode, abilityID)
+
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
 	}
 
-	// Get the requesting player
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -743,13 +758,19 @@ func (h *Handler) PuppetMasterSelectPlayers(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Parse selected players from form data
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+	// Parse selected players from JSON body
+	// Note: Datastar sends camelCase field names from signals
+	var requestBody struct {
+		SelectedPlayers []string `json:"selectedPlayers"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		log.Printf("🎭 Failed to parse JSON body: %v", err)
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
 		return
 	}
 
-	selectedPlayers := r.Form["selected_players"]
+	selectedPlayers := requestBody.SelectedPlayers
+	log.Printf("🎭 JSON parsed, selectedPlayers=%v", selectedPlayers)
 
 	// Validate selected players (must be living players, not the Puppet Master)
 	validatedPlayers := []string{}
@@ -806,15 +827,8 @@ func (h *Handler) PuppetMasterSkip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -855,15 +869,8 @@ func (h *Handler) PuppetMasterBack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -904,15 +911,8 @@ func (h *Handler) PuppetMasterExecute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -927,29 +927,33 @@ func (h *Handler) PuppetMasterExecute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse form data for assignments
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return
-	}
-
-	// Get selected players
+	// Get selected players from pending ability data
 	selectedPlayerIDs, ok := pendingAbility.Data["selected_players"].([]string)
 	if !ok || len(selectedPlayerIDs) < 2 {
 		http.Error(w, "Invalid selected players", http.StatusBadRequest)
 		return
 	}
 
-	// Build assignment map: playerID -> cardID they should receive
-	assignments := make(map[string]int)
+	// Parse JSON body for assignments
+	// Datastar sends camelCase field names from signals
+	var requestBody struct {
+		Assignments map[string]int `json:"assignments"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		log.Printf("🎭 Failed to parse JSON body in Execute: %v", err)
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	assignments := requestBody.Assignments
+	log.Printf("🎭 Execute: assignments=%v", assignments)
+
+	// Ensure all selected players have assignments
 	for _, pID := range selectedPlayerIDs {
-		cardIDStr := r.FormValue(fmt.Sprintf("assignment_%s", pID))
-		cardID, err := strconv.Atoi(cardIDStr)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid card assignment for player %s", pID), http.StatusBadRequest)
+		if _, exists := assignments[pID]; !exists {
+			http.Error(w, fmt.Sprintf("Missing assignment for player %s", pID), http.StatusBadRequest)
 			return
 		}
-		assignments[pID] = cardID
 	}
 
 	// Validate: each card should be assigned exactly once

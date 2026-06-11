@@ -165,9 +165,14 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					// For player events, only send player list update (not the entire lobby)
-					log.Printf("📤 DEBUG: Sending player list update to player %s in room %s", player.ID, roomCode)
-					h.sendPlayerListUpdate(sse, room, player)
-					log.Printf("📤 DEBUG: Player list update sent successfully to player %s", player.ID)
+					renderPlayer := h.effectivePlayerForRender(r, room, player)
+					if renderPlayer == nil {
+						log.Printf("📡 Effective player no longer in room %s, closing SSE", roomCode)
+						return
+					}
+					log.Printf("📤 DEBUG: Sending player list update to player %s in room %s", renderPlayer.ID, roomCode)
+					h.sendPlayerListUpdate(sse, room, renderPlayer)
+					log.Printf("📤 DEBUG: Player list update sent successfully to player %s", renderPlayer.ID)
 				} else {
 					log.Printf("🎮 Lobby event received but room %s not in lobby state, closing SSE", roomCode)
 					return
@@ -226,7 +231,12 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 					log.Printf("📡 Player no longer in room %s after Coup config update, closing SSE", roomCode)
 					return
 				}
-				h.sendLobbyUpdate(sse, room, player)
+				renderPlayer := h.effectivePlayerForRender(r, room, player)
+				if renderPlayer == nil {
+					log.Printf("📡 Effective player no longer in room %s after Coup config update, closing SSE", roomCode)
+					return
+				}
+				h.sendLobbyUpdate(sse, room, renderPlayer)
 			default:
 				log.Printf("📡 Unknown event type %s for room %s in lobby SSE", event.Type, roomCode)
 			}
@@ -266,7 +276,12 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 	// Send initial render
 	log.Printf("🎮 Initial render for room %s, state: %s, countdown: %d", roomCode, room.State, room.CountdownRemaining)
-	h.renderGame(sse, room, player)
+	renderPlayer := h.effectivePlayerForRender(r, room, player)
+	if renderPlayer == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+	h.renderGame(sse, room, renderPlayer)
 
 	// Send initial signals including countdown
 	signals := map[string]interface{}{
@@ -309,7 +324,11 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Re-render with updated state
-		h.renderGame(sse, room, player)
+		renderPlayer = h.effectivePlayerForRender(r, room, player)
+		if renderPlayer == nil {
+			return
+		}
+		h.renderGame(sse, room, renderPlayer)
 	}
 
 	// Set up a heartbeat to prevent timeouts
@@ -380,7 +399,11 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				// Transition to playing state - render and clear countdown
 				room, _ = h.store.GetRoom(roomCode)
 				player = room.GetPlayer(player.ID)
-				h.renderGame(sse, room, player)
+				renderPlayer := h.effectivePlayerForRender(r, room, player)
+				if renderPlayer == nil {
+					return
+				}
+				h.renderGame(sse, room, renderPlayer)
 
 				// Clear countdown signal
 				signals := map[string]interface{}{
@@ -395,7 +418,11 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				// All other events need full re-render
 				room, _ = h.store.GetRoom(roomCode)
 				player = room.GetPlayer(player.ID) // Refresh player data
-				h.renderGame(sse, room, player)
+				renderPlayer := h.effectivePlayerForRender(r, room, player)
+				if renderPlayer == nil {
+					return
+				}
+				h.renderGame(sse, room, renderPlayer)
 
 				// Clear any temporary modals (e.g., X input modal for Wearer of Masks)
 				h.clearModalContainer(sse)

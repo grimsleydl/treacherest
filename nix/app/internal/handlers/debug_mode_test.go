@@ -810,6 +810,8 @@ func TestDebugModeRoutes_OperatorViewClearsViewedPlayerOverride(t *testing.T) {
 	host.IsHost = true
 	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
 	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.FaceUp = false
+	blue.FaceUp = false
 	for _, player := range []*game.Player{host, blue} {
 		if err := room.AddPlayer(player); err != nil {
 			t.Fatalf("add player %s: %v", player.Name, err)
@@ -873,6 +875,8 @@ func TestDebugModeRoutes_OperatorViewReturnsPlayingOperatorToOwnPerspective(t *t
 	operator.Role = mockHandlerCoupCard(1001, "King")
 	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
 	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.FaceUp = false
+	blue.FaceUp = false
 	for _, player := range []*game.Player{operator, blue} {
 		if err := room.AddPlayer(player); err != nil {
 			t.Fatalf("add player %s: %v", player.Name, err)
@@ -1114,6 +1118,450 @@ func TestDebugModeRoutes_ViewedPlayerOverrideIsRoomScoped(t *testing.T) {
 	}
 	if strings.Contains(body, "Blue Knight") {
 		t.Fatalf("room one viewed-player override leaked into room two: %q", body)
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedRoyalGuardUsesViewedPlayerIdentity(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.FaceUp = false
+	for _, player := range []*game.Player{operator, blue} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = blue.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/royal-guard/"+blue.ID, nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected impersonated Royal Guard status 200, got %d body %q", w.Code, w.Body.String())
+	}
+
+	stored, err := gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get stored room: %v", err)
+	}
+	storedBlue := stored.GetPlayer(blue.ID)
+	if storedBlue == nil || !storedBlue.RoleRevealed || !storedBlue.FaceUp {
+		t.Fatalf("expected impersonated Royal Guard to reveal Blue, got %#v", storedBlue)
+	}
+}
+
+func TestDebugModeRoutes_RoyalGuardIgnoresViewedPlayerWhenDebugDisabled(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = false
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.FaceUp = false
+	for _, player := range []*game.Player{operator, blue} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = blue.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/royal-guard/"+blue.ID, nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected debug-disabled Royal Guard spoof to be forbidden, got %d body %q", w.Code, w.Body.String())
+	}
+	if blue.RoleRevealed || blue.FaceUp {
+		t.Fatalf("debug-disabled viewed-player override should not reveal Blue")
+	}
+}
+
+func TestDebugModeRoutes_NonOperatorCannotUseViewedPlayerForRoyalGuard(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	viewer := game.NewPlayer("viewer", "Viewer", "session-viewer")
+	viewer.Role = mockHandlerCoupCard(1001, "King")
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	blue.FaceUp = false
+	for _, player := range []*game.Player{viewer, blue} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = "session-operator"
+	room.DebugViewedPlayerID = blue.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/royal-guard/"+blue.ID, nil)
+	addPlayerSessionCookiesForTest(req, room, viewer)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected non-operator Royal Guard spoof to be forbidden, got %d body %q", w.Code, w.Body.String())
+	}
+	if blue.RoleRevealed || blue.FaceUp {
+		t.Fatalf("non-operator viewed-player override should not reveal Blue")
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedFaceStateUsesViewedPlayerIdentity(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	target := game.NewPlayer("target", "Target Player", "session-target")
+	target.Role = mockHandlerCoupCard(1005, "Green Knight")
+	target.FaceUp = false
+	for _, player := range []*game.Player{operator, target} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = target.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/facestate/"+target.ID, nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected impersonated face-state status 200, got %d body %q", w.Code, w.Body.String())
+	}
+	if !target.FaceUp {
+		t.Fatalf("expected effective viewed player face state to toggle")
+	}
+	if operator.FaceUp != true {
+		t.Fatalf("operator face state should not be used as the action target")
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedCoupInquisitionUsesViewedPlayers(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = mockHandlerCoupCard(1002, "Blue Knight")
+	red := game.NewPlayer("red", "Red Player", "session-red")
+	red.Role = mockHandlerCoupCard(1004, "Red Knight")
+	witness := game.NewPlayer("witness", "Witness Player", "session-witness")
+	witness.Role = mockHandlerCoupCard(1005, "Green Knight")
+	for _, player := range []*game.Player{operator, blue, red, witness} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = blue.ID
+	gameStore.UpdateRoom(room)
+
+	body := strings.NewReader("targetID=" + red.ID + "&currentLife=37")
+	callReq := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/inquisition/"+blue.ID, body)
+	callReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(callReq, room, operator)
+	callW := httptest.NewRecorder()
+	router.ServeHTTP(callW, callReq)
+	if callW.Code != http.StatusOK {
+		t.Fatalf("expected impersonated Inquisition call status 200, got %d body %q", callW.Code, callW.Body.String())
+	}
+	if room.CoupInquisition == nil || room.CoupInquisition.Pending == nil {
+		t.Fatalf("expected pending Inquisition")
+	}
+	if room.CoupInquisition.Pending.InquisitorID != blue.ID {
+		t.Fatalf("expected pending Inquisition by Blue, got %#v", room.CoupInquisition.Pending)
+	}
+
+	room.DebugViewedPlayerID = witness.ID
+	gameStore.UpdateRoom(room)
+	confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/inquisition/confirm", nil)
+	addPlayerSessionCookiesForTest(confirmReq, room, operator)
+	confirmW := httptest.NewRecorder()
+	router.ServeHTTP(confirmW, confirmReq)
+	if confirmW.Code != http.StatusOK {
+		t.Fatalf("expected impersonated Inquisition confirm status 200, got %d body %q", confirmW.Code, confirmW.Body.String())
+	}
+	if room.CoupInquisition.Pending != nil || room.CoupInquisition.Last == nil {
+		t.Fatalf("expected resolved Inquisition, got %#v", room.CoupInquisition)
+	}
+	if room.CoupInquisition.Last.ConfirmedBy != witness.ID {
+		t.Fatalf("expected witness confirmation by viewed player, got %#v", room.CoupInquisition.Last)
+	}
+	if !room.CoupInquisition.Last.Success {
+		t.Fatalf("expected successful Red identification, got %#v", room.CoupInquisition.Last)
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedDebugPlayerRevealAndElimination(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	debugPlayer := game.NewPlayer("debug-1", "Debug Player 1", "debug-session")
+	debugPlayer.IsDebug = true
+	debugPlayer.Role = mockHandlerCoupCard(1005, "Green Knight")
+	debugPlayer.RoleRevealed = false
+	debugPlayer.FaceUp = false
+	for _, player := range []*game.Player{operator, debugPlayer} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = debugPlayer.ID
+	gameStore.UpdateRoom(room)
+
+	revealReq := httptest.NewRequest("POST", "/room/"+room.Code+"/reveal/"+debugPlayer.ID, nil)
+	addPlayerSessionCookiesForTest(revealReq, room, operator)
+	revealW := httptest.NewRecorder()
+	router.ServeHTTP(revealW, revealReq)
+	if revealW.Code != http.StatusOK {
+		t.Fatalf("expected impersonated debug player reveal status 200, got %d body %q", revealW.Code, revealW.Body.String())
+	}
+	if !debugPlayer.RoleRevealed || !debugPlayer.FaceUp {
+		t.Fatalf("expected viewed Debug Player to reveal, got revealed=%v faceUp=%v", debugPlayer.RoleRevealed, debugPlayer.FaceUp)
+	}
+
+	eliminateReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/"+debugPlayer.ID+"/eliminate", nil)
+	addPlayerSessionCookiesForTest(eliminateReq, room, operator)
+	eliminateW := httptest.NewRecorder()
+	router.ServeHTTP(eliminateW, eliminateReq)
+	if eliminateW.Code != http.StatusOK {
+		t.Fatalf("expected impersonated debug player elimination status 200, got %d body %q", eliminateW.Code, eliminateW.Body.String())
+	}
+	if !debugPlayer.IsEliminated || !debugPlayer.RoleRevealed {
+		t.Fatalf("expected viewed Debug Player to be eliminated and revealed, got eliminated=%v revealed=%v", debugPlayer.IsEliminated, debugPlayer.RoleRevealed)
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedCoupWinConfirmationUsesViewedPlayer(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.IsHost = true
+	king := game.NewPlayer("king", "King Player", "session-king")
+	king.Role = mockHandlerCoupCard(1001, "King")
+	king.MarkEliminated()
+	black := game.NewPlayer("black", "Black Player", "session-black")
+	black.Role = mockHandlerCoupCard(1003, "Black Knight")
+	red := game.NewPlayer("red", "Red Player", "session-red")
+	red.Role = mockHandlerCoupCard(1004, "Red Knight")
+	red.MarkEliminated()
+	for _, player := range []*game.Player{operator, king, black, red} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = black.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/win/confirm", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected impersonated Coup win confirmation status 200, got %d body %q", w.Code, w.Body.String())
+	}
+	if room.State != game.StateEnded {
+		t.Fatalf("expected room to end after viewed active player confirmation, got %s", room.State)
+	}
+	if room.CoupWin == nil || room.CoupWin.Confirmed == nil || room.CoupWin.Confirmed.Outcome != game.CoupWinOutcomeBlack {
+		t.Fatalf("expected Black win confirmation, got %#v", room.CoupWin)
+	}
+}
+
+func TestDebugModeRoutes_ImpersonatedWearerAbilityUsesViewedPlayerIdentity(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	operator := game.NewPlayer("operator", "Operator", "session-operator")
+	operator.Role = mockHandlerCoupCard(1001, "King")
+	wearer := game.NewPlayer("wearer", "Wearer Player", "session-wearer")
+	wearer.Role = &game.Card{
+		ID:    31,
+		Name:  "The Wearer of Masks",
+		Type:  "Creature - Traitor",
+		Types: game.CardTypes{Subtype: "Traitor"},
+	}
+	for _, player := range []*game.Player{operator, wearer} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.CardPool = game.NewCardPool([]*game.Card{
+		{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
+	})
+	room.OperatorSessionID = operator.SessionID
+	room.DebugViewedPlayerID = wearer.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/"+wearer.ID+"/trigger-wearer/1", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected impersonated Wearer trigger status 200, got %d body %q", w.Code, w.Body.String())
+	}
+	if wearer.AbilityState == nil || len(wearer.AbilityState.PendingAbilities) != 1 {
+		t.Fatalf("expected viewed Wearer pending ability, got %#v", wearer.AbilityState)
+	}
+}
+
+func TestDebugModeRoutes_NonOperatorCannotSpoofWearerAbility(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	viewer := game.NewPlayer("viewer", "Viewer", "session-viewer")
+	viewer.Role = mockHandlerCoupCard(1001, "King")
+	wearer := game.NewPlayer("wearer", "Wearer Player", "session-wearer")
+	wearer.Role = &game.Card{
+		ID:    31,
+		Name:  "The Wearer of Masks",
+		Type:  "Creature - Traitor",
+		Types: game.CardTypes{Subtype: "Traitor"},
+	}
+	for _, player := range []*game.Player{viewer, wearer} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	room.CardPool = game.NewCardPool([]*game.Card{
+		{ID: 15, Name: "The Bodyguard", Type: "Creature - Guardian", Types: game.CardTypes{Subtype: "Guardian"}},
+	})
+	room.OperatorSessionID = "session-operator"
+	room.DebugViewedPlayerID = wearer.ID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/"+wearer.ID+"/trigger-wearer/1", nil)
+	addPlayerSessionCookiesForTest(req, room, viewer)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected non-operator Wearer spoof status 403, got %d body %q", w.Code, w.Body.String())
+	}
+	if wearer.AbilityState != nil && len(wearer.AbilityState.PendingAbilities) != 0 {
+		t.Fatalf("non-operator spoof should not create Wearer ability, got %#v", wearer.AbilityState)
 	}
 }
 

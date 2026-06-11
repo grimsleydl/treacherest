@@ -320,18 +320,8 @@ func (h *Handler) ToggleReveal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		log.Printf("❌ No player cookie for room: %s", roomCode)
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	me := room.GetPlayer(playerCookie.Value)
-	if me == nil {
-		log.Printf("❌ Player not found in room: %s", roomCode)
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	me, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -397,18 +387,8 @@ func (h *Handler) ToggleFaceState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		log.Printf("❌ No player cookie for room: %s", roomCode)
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	me := room.GetPlayer(playerCookie.Value)
-	if me == nil {
-		log.Printf("❌ Player not found in room: %s", roomCode)
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	me, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -472,16 +452,8 @@ func (h *Handler) GetRoleOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	_, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -523,16 +495,8 @@ func (h *Handler) DismissModal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -580,16 +544,8 @@ func (h *Handler) RestoreModal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	player, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -766,18 +722,8 @@ func (h *Handler) UnveilPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		log.Printf("❌ No player cookie for room: %s", roomCode)
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	me := room.GetPlayer(playerCookie.Value)
-	if me == nil {
-		log.Printf("❌ Player not found in room: %s", roomCode)
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	me, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
@@ -845,18 +791,8 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the requesting player is in the room
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		log.Printf("❌ No player cookie for room: %s", roomCode)
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-
-	me := room.GetPlayer(playerCookie.Value)
-	if me == nil {
-		log.Printf("❌ Player not found in room: %s", roomCode)
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	me, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 

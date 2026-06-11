@@ -52,6 +52,7 @@ func TestTriggerWearerAbility(t *testing.T) {
 
 	t.Run("Trigger ability successfully", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/5", nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
@@ -115,6 +116,7 @@ func TestTriggerWearerAbility(t *testing.T) {
 		memStore.UpdateRoom(freshRoom)
 
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player2/trigger-wearer/3", nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player2.ID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
@@ -216,6 +218,7 @@ func TestSelectWearerCard(t *testing.T) {
 
 	// Trigger ability first to create pending ability
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/5", nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	rctx.URLParams.Add("playerID", "player1")
@@ -326,6 +329,7 @@ func TestSelectWearerCard(t *testing.T) {
 
 		// Trigger ability
 		req := httptest.NewRequest("POST", "/room/"+room2.Code+"/player/player2/trigger-wearer/5", nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room2.Code, Value: player2.ID})
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room2.Code)
 		rctx.URLParams.Add("playerID", "player2")
@@ -456,6 +460,7 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 
 	// Trigger ability
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	rctx.URLParams.Add("playerID", "player1")
@@ -573,6 +578,7 @@ func TestConfirmAbility(t *testing.T) {
 
 		// Trigger the ability
 		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
+		triggerReq.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")
@@ -656,6 +662,7 @@ func TestConfirmAbility(t *testing.T) {
 
 		// Trigger the ability
 		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
+		triggerReq.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")
@@ -743,6 +750,7 @@ func TestConfirmAbility(t *testing.T) {
 
 		// Trigger the ability
 		triggerReq := httptest.NewRequest("POST", "/room/"+room.Code+"/player/player1/trigger-wearer/3", nil)
+		triggerReq.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player1.ID})
 		triggerRctx := chi.NewRouteContext()
 		triggerRctx.URLParams.Add("code", room.Code)
 		triggerRctx.URLParams.Add("playerID", "player1")

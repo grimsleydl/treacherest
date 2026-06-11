@@ -25,19 +25,18 @@ func (h *Handler) UseCoupRoyalGuard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-	if playerCookie.Value != playerID {
-		http.Error(w, "You can only use Royal Guard for your own role", http.StatusForbidden)
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
 	player := room.GetPlayer(playerID)
 	if player == nil {
 		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only use Royal Guard for your own role", http.StatusForbidden)
 		return
 	}
 	if player.Role == nil || player.Role.GetRoleType() != game.RoleBlueKnight {
@@ -79,19 +78,18 @@ func (h *Handler) CallCoupInquisition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-	if playerCookie.Value != playerID {
-		http.Error(w, "You can only call Inquisition for your own role", http.StatusForbidden)
+	effectivePlayer, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 
 	player := room.GetPlayer(playerID)
 	if player == nil {
 		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+	if effectivePlayer.ID != player.ID {
+		http.Error(w, "You can only call Inquisition for your own role", http.StatusForbidden)
 		return
 	}
 	if player.Role == nil || player.Role.GetRoleType() != game.RoleBlueKnight {
@@ -168,14 +166,8 @@ func (h *Handler) ConfirmCoupInquisition(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
-	if err != nil {
-		http.Error(w, "Not in room", http.StatusUnauthorized)
-		return
-	}
-	witness := room.GetPlayer(playerCookie.Value)
-	if witness == nil {
-		http.Error(w, "Player not found", http.StatusUnauthorized)
+	witness, ok := h.requireEffectivePlayer(w, r, room, roomCode)
+	if !ok {
 		return
 	}
 	if witness.IsHost || witness.IsEliminated || witness.ID == state.Pending.InquisitorID ||
