@@ -1,20 +1,24 @@
 package layouts
 
-import "treacherest/internal/views/components"
+import (
+	"strings"
+	"treacherest/internal/game"
+	"treacherest/internal/views/components"
+)
 
 templ Base(title string) {
-	@baseLayout(title, false, "") {
+	@baseLayout(title, false, "", nil) {
 		{ children... }
 	}
 }
 
-templ BaseWithDebug(title string, debugMode bool, debugRoomCode string) {
-	@baseLayout(title, debugMode, debugRoomCode) {
+templ BaseWithDebug(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room) {
+	@baseLayout(title, debugMode, debugRoomCode, debugRoom) {
 		{ children... }
 	}
 }
 
-templ baseLayout(title string, debugMode bool, debugRoomCode string) {
+templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dracula">
 		<head>
@@ -53,7 +57,7 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string) {
 				data-effect="$stateBackup && window.storeBackup($stateBackup)"
 			></div>
 			if debugMode {
-				@DebugPanel(debugRoomCode)
+				@DebugPanel(debugRoomCode, debugRoom)
 			}
 			<script>
 				// State backup handling for Cloud Run instance recovery
@@ -180,7 +184,7 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string) {
 	</html>
 }
 
-templ DebugPanel(roomCode string) {
+templ DebugPanel(roomCode string, room *game.Room) {
 	<div
 		id="debug-control-surface"
 		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
@@ -220,7 +224,11 @@ templ DebugPanel(roomCode string) {
 					</button>
 				}
 			</section>
-			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights"></section>
+			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights">
+				if room != nil {
+					@DebugInsights(room)
+				}
+			</section>
 			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player"></section>
 		</div>
 	</div>
@@ -325,4 +333,90 @@ templ DebugPanel(roomCode string) {
 			setInterval(updateDebugInfo, 2000);
 		})();
 	</script>
+}
+
+templ DebugInsights(room *game.Room) {
+	<div class="space-y-2 text-xs">
+		<h3 class="font-semibold uppercase text-base-content/70">Debug Insights</h3>
+		<div>Rules Mode: { string(room.RulesMode) }</div>
+		if room.RulesMode == game.RulesModeCoup {
+			<div>Coup Preset: { string(game.NormalizeCoupPreset(room.CoupPreset)) }</div>
+		}
+		<div>Debug Start: { string(room.DebugStartMode) }</div>
+		<div class="space-y-1">
+			for _, player := range room.GetActivePlayers() {
+				<div class="rounded bg-base-200 p-2 space-y-1">
+					<div class="font-semibold">{ player.Name }</div>
+					<div>Role: { debugRoleName(player) }</div>
+					<div>Revealed: { debugBool(player.RoleRevealed) }</div>
+					<div>Eliminated: { debugBool(player.IsEliminated) }</div>
+					<div>Debug Player: { debugBool(player.IsDebug) }</div>
+					if player.Role != nil {
+						for _, ruling := range debugPrivateRulings(player.Role) {
+							<div>{ ruling }</div>
+						}
+					}
+				</div>
+			}
+		</div>
+		if room.RulesMode == game.RulesModeCoup {
+			<div>King Fallen: { debugBool(room.CoupKingFallen) }</div>
+			<div>Green Eligible Before King Fall: { debugBool(room.CoupGreenEligibleBeforeKingFall) }</div>
+			<div>Inquisition: { debugCoupInquisitionStatus(room) }</div>
+			<div>Advisory Win: { debugCoupAdvisoryWin(room) }</div>
+		}
+	</div>
+}
+
+func debugBool(value bool) string {
+	if value {
+		return "yes"
+	}
+	return "no"
+}
+
+func debugRoleName(player *game.Player) string {
+	if player == nil || player.Role == nil {
+		return "none"
+	}
+	return player.Role.Name
+}
+
+func debugPrivateRulings(role *game.Card) []string {
+	rulings := make([]string, 0)
+	if role == nil {
+		return rulings
+	}
+	for _, ruling := range role.Rulings {
+		if strings.HasPrefix(ruling, "Private information:") {
+			rulings = append(rulings, ruling)
+		}
+	}
+	return rulings
+}
+
+func debugCoupInquisitionStatus(room *game.Room) string {
+	if room == nil || room.CoupInquisition == nil {
+		return "none"
+	}
+	if room.CoupInquisition.Pending != nil {
+		return "pending"
+	}
+	if room.CoupInquisition.Succeeded {
+		return "succeeded"
+	}
+	if room.CoupInquisition.Last != nil {
+		return "failed"
+	}
+	return "none"
+}
+
+func debugCoupAdvisoryWin(room *game.Room) string {
+	if room != nil && room.CoupWin != nil && room.CoupWin.Confirmed != nil {
+		return string(room.CoupWin.Confirmed.Outcome)
+	}
+	if prompt := game.CurrentCoupAdvisoryWin(room); prompt != nil {
+		return string(prompt.Outcome)
+	}
+	return "none"
 }

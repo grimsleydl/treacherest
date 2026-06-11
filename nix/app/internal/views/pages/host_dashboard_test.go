@@ -79,6 +79,7 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains(`id="debug-panel"`).
 		AssertNotContains(`id="debug-clear"`).
+		AssertNotContains("Debug Insights").
 		AssertNotContains("setupDebugPanel")
 
 	enabled := config.DefaultConfig()
@@ -87,6 +88,7 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 		AssertContains(`id="debug-control-surface"`).
 		AssertContains(`id="debug-panel"`).
 		AssertContains(`id="debug-clear"`).
+		AssertContains("Debug Insights").
 		AssertContains("setupDebugPanel")
 }
 
@@ -140,6 +142,7 @@ func TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer(t *testing.T) 
 	renderer.Render(HostDashboardLobby(room, nonHost, cfg, nil)).
 		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains("Debug Control Surface").
+		AssertNotContains("Debug Insights").
 		AssertNotContains(`id="debug-clear"`).
 		AssertNotContains("setupDebugPanel")
 }
@@ -160,6 +163,7 @@ func TestGamePage_DoesNotRenderDebugControlSurface(t *testing.T) {
 	renderer.Render(GamePage(room, player)).
 		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains("Debug Control Surface").
+		AssertNotContains("Debug Insights").
 		AssertNotContains(`id="debug-clear"`).
 		AssertNotContains("setupDebugPanel")
 }
@@ -188,4 +192,63 @@ func TestHostDashboardLobby_DebugPlayersAreVisiblyMarked(t *testing.T) {
 	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
 		AssertContains("Debug Player 1").
 		AssertContains(`<span class="badge badge-warning badge-sm">Debug</span>`)
+}
+
+func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	kingCard := mockCoupCard(1001, "King")
+	kingCard.Rulings = []string{"Private information: Blue Knights: Blue Player"}
+	room := &game.Room{
+		Code:                            "DBG01",
+		State:                           game.StatePlaying,
+		RulesMode:                       game.RulesModeCoup,
+		CoupPreset:                      game.CoupPresetFive,
+		DebugStartMode:                  game.DebugStartModeAsIs,
+		CoupKingFallen:                  true,
+		CoupGreenEligibleBeforeKingFall: true,
+		CoupInquisition: &game.CoupInquisitionState{
+			Succeeded: true,
+			Last: &game.CoupInquisitionAttempt{
+				InquisitorID: "blue",
+				TargetID:     "red",
+				Success:      true,
+			},
+		},
+		CoupWin: &game.CoupWinState{
+			Confirmed: &game.CoupWinPrompt{
+				Outcome: game.CoupWinOutcomeBlack,
+				Facts:   []string{"King has fallen"},
+			},
+		},
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	king := &game.Player{ID: "king", Name: "King Player", Role: kingCard, RoleRevealed: true, FaceUp: true}
+	blue := &game.Player{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")}
+	black := &game.Player{ID: "black", Name: "Black Player", Role: mockCoupCard(1003, "Black Knight"), IsEliminated: true, RoleRevealed: true}
+	red := &game.Player{ID: "red", Name: "Red Player", Role: mockCoupCard(1004, "Red Knight"), RoleRevealed: true}
+	debugPlayer := &game.Player{ID: "debug-1", Name: "Debug Player 1", Role: mockCoupCard(1005, "Green Knight"), IsDebug: true}
+	for _, player := range []*game.Player{host, king, blue, black, red, debugPlayer} {
+		room.Players[player.ID] = player
+	}
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains("Debug Insights").
+		AssertContains("Rules Mode: coup").
+		AssertContains("Coup Preset: coup-5").
+		AssertContains("Debug Start: as-is").
+		AssertContains("King Player").
+		AssertContains("Role: King").
+		AssertContains("Revealed: yes").
+		AssertContains("Black Player").
+		AssertContains("Eliminated: yes").
+		AssertContains("Debug Player 1").
+		AssertContains("Debug Player: yes").
+		AssertContains("Private information: Blue Knights: Blue Player").
+		AssertContains("King Fallen: yes").
+		AssertContains("Green Eligible Before King Fall: yes").
+		AssertContains("Inquisition: succeeded").
+		AssertContains("Advisory Win: black")
 }
