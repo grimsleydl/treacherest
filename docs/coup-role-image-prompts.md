@@ -10,6 +10,8 @@ Prompt scope is final role-card art only. Do not create separate AI prompts or s
 
 Target a vertical card-art aspect ratio with MTG-like portrait composition. Keep the main character and role-defining props centered enough to survive thumbnail crops, but do not bake a card frame, rules text, title text, mana symbols, logo, or UI into the image.
 
+Generated art should be purely illustrative. Role names, rules text, victory text, reveal state, and card layout must be rendered by Treacherest or a future print/export template so wording can change without regenerating art.
+
 ## Import Targets
 
 The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are ID-based.
