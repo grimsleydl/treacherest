@@ -152,6 +152,74 @@ func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
 		AssertContains("setDebugPanelMinimized")
 }
 
+func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "COUPH",
+		State:      game.StateLobby,
+		RulesMode:  game.RulesModeCoup,
+		CoupPreset: game.CoupPresetFive,
+		RoleConfig: &game.RoleConfiguration{
+			MaxPlayers: 5,
+			RoleTypes: map[string]*game.RoleTypeConfig{},
+		},
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains("Coup Preset").
+		AssertContains("King-to-Blue Info").
+		AssertContains("Red-to-Black Info").
+		AssertContains("Royal Guard Blockers").
+		AssertContains("Inquisition Result").
+		AssertContains("Coup Rules Reference").
+		AssertNotContains("Role Preset:").
+		AssertNotContains("Allow Leaderless Games").
+		AssertNotContains("Leaders").
+		AssertNotContains("Guardians").
+		AssertNotContains("Assassins").
+		AssertNotContains("Traitors")
+}
+
+func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:      "TRCHY",
+		State:     game.StateLobby,
+		RulesMode: game.RulesModeTreachery,
+		RoleConfig: &game.RoleConfiguration{
+			MaxPlayers: 5,
+			RoleTypes: map[string]*game.RoleTypeConfig{},
+		},
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains("Game Configuration").
+		AssertContains("Role Preset:").
+		AssertContains("Allow Leaderless Games").
+		AssertContains("Leaders").
+		AssertContains("Guardians").
+		AssertContains("Assassins").
+		AssertContains("Traitors").
+		AssertNotContains("Coup Preset").
+		AssertNotContains("King-to-Blue Info")
+}
+
 func TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{

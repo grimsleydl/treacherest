@@ -36,7 +36,7 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 
 templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	// Main grid: 1 column on mobile, 2 on tablets, 3 on desktop (if config is present)
-	<div class={ "grid gap-6", templ.KV("grid-cols-1 md:grid-cols-2", room.RoleConfig == nil), templ.KV("grid-cols-1 md:grid-cols-2 lg:grid-cols-3", room.RoleConfig != nil) }>
+	<div class={ "grid gap-6", templ.KV("grid-cols-1 md:grid-cols-2", !hostDashboardHasConfigPanel(room)), templ.KV("grid-cols-1 md:grid-cols-2 lg:grid-cols-3", hostDashboardHasConfigPanel(room)) }>
 		// QR Code Section
 		<div class="card bg-base-200 shadow-xl flex flex-col items-center justify-center p-8">
 			<h1 class="text-3xl font-bold mb-4">Scan to Join</h1>
@@ -91,11 +91,119 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 		// Desktop (lg:): 3rd column
 		// Tablet (md:): full width below the 2-column grid
 		// Mobile: stacked vertically
-		if room.RoleConfig != nil {
+		if room.RulesMode == game.RulesModeCoup {
+			<div class="md:col-span-2 lg:col-span-1 space-y-4">
+				@HostDashboardCoupSetup(room)
+				@CoupRulesReference()
+			</div>
+		} else if room.RoleConfig != nil {
 			<div class="md:col-span-2 lg:col-span-1">
 				@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
 			</div>
 		}
+	</div>
+}
+
+templ HostDashboardCoupSetup(room *game.Room) {
+	<div class="card bg-base-200 shadow-xl">
+		<div class="card-body gap-3">
+			<form
+				id="coup-preset-form"
+				class="form-control w-full"
+				data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-preset', {contentType: 'form'})", room.Code) }
+			>
+				<label class="label" for="coup-preset">
+					<span class="label-text">Coup Preset</span>
+				</label>
+				<select id="coup-preset" name="preset" class="select select-bordered select-sm w-full">
+					for _, preset := range game.CoupPresetOptions() {
+						<option value={ string(preset) } selected?={ game.NormalizeCoupPreset(room.CoupPreset) == preset }>
+							{ game.CoupPresetLabel(preset) }
+						</option>
+					}
+				</select>
+			</form>
+			<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
+			<div class="divider my-1"></div>
+			<form
+				id="coup-info-form"
+				class="grid gap-3 sm:grid-cols-2"
+				data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
+			>
+				<label class="form-control w-full">
+					<span class="label-text">King-to-Blue Info</span>
+					<select name="kingToBlue" class="select select-bordered select-sm w-full">
+						for _, option := range coupKingToBlueOptions() {
+							<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
+								{ option.Label }
+							</option>
+						}
+					</select>
+				</label>
+				<label class="form-control w-full">
+					<span class="label-text">Red-to-Black Info</span>
+					<select name="redToBlack" class="select select-bordered select-sm w-full">
+						for _, option := range coupRedToBlackOptions() {
+							<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
+								{ option.Label }
+							</option>
+						}
+					</select>
+				</label>
+				<label class="form-control w-full">
+					<span class="label-text">Black-to-Red Info</span>
+					<select name="blackToRed" class="select select-bordered select-sm w-full">
+						for _, option := range coupBlackToRedOptions() {
+							<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
+								{ option.Label }
+							</option>
+						}
+					</select>
+				</label>
+				<label class="form-control w-full">
+					<span class="label-text">Black Network</span>
+					<select name="blackNetwork" class="select select-bordered select-sm w-full">
+						for _, option := range coupBlackNetworkOptions() {
+							<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
+								{ option.Label }
+							</option>
+						}
+					</select>
+				</label>
+			</form>
+			<div class="divider my-1"></div>
+			<form
+				id="coup-royal-guard-form"
+				class="form-control w-full"
+				data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
+			>
+				<label class="label" for="coup-royal-guard-blockers"><span class="label-text">Royal Guard Blockers</span></label>
+				<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-full">
+					<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
+					<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
+					<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
+					<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
+				</select>
+			</form>
+			<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
+			<div class="divider my-1"></div>
+			<form
+				id="coup-inquisition-settings-form"
+				class="form-control w-full"
+				data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
+			>
+				<label class="label" for="coup-inquisition-result"><span class="label-text">Inquisition Result</span></label>
+				<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-full">
+					<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
+					<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
+				</select>
+			</form>
+			if coupPresetMatchesActivePlayers(room) {
+				<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
+			} else {
+				<p id="validation-help" class="text-sm text-warning" role="status" aria-live="polite">{ coupPresetValidationText(room) }</p>
+			}
+		</div>
 	</div>
 }
 
@@ -198,4 +306,8 @@ templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.S
 
 func hostDebugControlsEnabled(cfg *config.ServerConfig, player *game.Player) bool {
 	return cfg != nil && cfg.Server.DebugModeEnabled && player != nil && player.IsHost
+}
+
+func hostDashboardHasConfigPanel(room *game.Room) bool {
+	return room != nil && (room.RulesMode == game.RulesModeCoup || room.RoleConfig != nil)
 }
