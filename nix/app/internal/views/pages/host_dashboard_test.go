@@ -76,6 +76,7 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 	disabled := config.DefaultConfig()
 	disabled.Server.DebugModeEnabled = false
 	renderer.Render(HostDashboardLobby(room, host, disabled, nil)).
+		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains(`id="debug-panel"`).
 		AssertNotContains(`id="debug-clear"`).
 		AssertNotContains("setupDebugPanel")
@@ -83,7 +84,78 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 	enabled := config.DefaultConfig()
 	enabled.Server.DebugModeEnabled = true
 	renderer.Render(HostDashboardLobby(room, host, enabled, nil)).
+		AssertContains(`id="debug-control-surface"`).
 		AssertContains(`id="debug-panel"`).
 		AssertContains(`id="debug-clear"`).
 		AssertContains("setupDebugPanel")
+}
+
+func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "DEBUG",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains(`id="debug-control-surface"`).
+		AssertContains("Debug Control Surface").
+		AssertContains(`id="debug-persistence-controls"`).
+		AssertContains(`id="debug-start-override-controls"`).
+		AssertContains(`id="debug-insights-container"`).
+		AssertContains(`id="debug-view-as-player-container"`).
+		AssertContains(`id="debug-dump"`).
+		AssertContains(`id="debug-clear"`).
+		AssertContains(`id="debug-restore"`)
+}
+
+func TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "DEBUG",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	nonHost := &game.Player{
+		ID:   "player",
+		Name: "Player",
+	}
+	room.Players[nonHost.ID] = nonHost
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, nonHost, cfg, nil)).
+		AssertNotContains(`id="debug-control-surface"`).
+		AssertNotContains("Debug Control Surface").
+		AssertNotContains(`id="debug-clear"`).
+		AssertNotContains("setupDebugPanel")
+}
+
+func TestGamePage_DoesNotRenderDebugControlSurface(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "DEBUG",
+		State:   game.StatePlaying,
+		Players: make(map[string]*game.Player),
+	}
+	player := &game.Player{
+		ID:   "player",
+		Name: "Player",
+	}
+	room.Players[player.ID] = player
+
+	renderer.Render(GamePage(room, player)).
+		AssertNotContains(`id="debug-control-surface"`).
+		AssertNotContains("Debug Control Surface").
+		AssertNotContains(`id="debug-clear"`).
+		AssertNotContains("setupDebugPanel")
 }

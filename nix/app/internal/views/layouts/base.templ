@@ -182,16 +182,29 @@ templ baseLayout(title string, debugMode bool) {
 
 templ DebugPanel() {
 	<div
-		id="debug-panel"
-		class="fixed bottom-4 right-4 p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
+		id="debug-control-surface"
+		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
 		style="z-index: 99999;"
 	>
-		<div class="flex items-center gap-2 mb-2"><span class="badge badge-warning">DEBUG</span></div>
-		<div id="debug-info" class="text-xs mb-2">Loading...</div>
-		<div class="flex flex-col gap-2">
-			<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
-			<button id="debug-clear" class="btn btn-xs btn-error">Clear Room</button>
-			<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
+		<div class="flex items-center justify-between gap-2 mb-3">
+			<h2 class="text-sm font-bold">Debug Control Surface</h2>
+			<span class="badge badge-warning">Debug Mode</span>
+		</div>
+		<div id="debug-panel" class="space-y-3">
+			<section id="debug-persistence-controls" class="space-y-2">
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
+					<div id="debug-info" class="text-xs text-base-content/70">Loading...</div>
+				</div>
+				<div class="flex flex-col gap-2">
+					<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
+					<button id="debug-clear" class="btn btn-xs btn-error">Clear Room</button>
+					<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
+				</div>
+			</section>
+			<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls"></section>
+			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights"></section>
+			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player"></section>
 		</div>
 	</div>
 	<script>

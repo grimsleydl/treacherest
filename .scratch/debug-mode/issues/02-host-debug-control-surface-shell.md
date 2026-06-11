@@ -1,6 +1,6 @@
 # Host Debug Control Surface Shell
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -14,13 +14,31 @@ This slice is the UI shell for later Start Override, Debug Insights, and View As
 
 ## Acceptance criteria
 
-- [ ] A host can see a Debug Control Surface when Debug Mode is enabled.
-- [ ] A host cannot see the Debug Control Surface when Debug Mode is disabled.
-- [ ] Non-host player views do not render the Debug Control Surface.
-- [ ] Existing backup/debug persistence controls remain available to the host in Debug Mode.
-- [ ] The Debug Control Surface has stable targets/containers suitable for future Datastar updates.
-- [ ] Tests cover host rendering, non-host rendering, and disabled-debug rendering.
+- [x] A host can see a Debug Control Surface when Debug Mode is enabled.
+- [x] A host cannot see the Debug Control Surface when Debug Mode is disabled.
+- [x] Non-host player views do not render the Debug Control Surface.
+- [x] Existing backup/debug persistence controls remain available to the host in Debug Mode.
+- [x] The Debug Control Surface has stable targets/containers suitable for future Datastar updates.
+- [x] Tests cover host rendering, non-host rendering, and disabled-debug rendering.
 
 ## Blocked by
 
 - `.scratch/debug-mode/issues/01-debug-mode-boundary-and-host-authorization.md`
+
+## Completion notes
+
+- Reworked the debug-only host panel into a named `debug-control-surface` shell.
+- Preserved the existing backup persistence controls and client handler under `debug-persistence-controls`.
+- Added stable empty containers for future Start Override, Debug Insights, and View As Player updates:
+  - `debug-start-override-controls`
+  - `debug-insights-container`
+  - `debug-view-as-player-container`
+- Qualified host dashboard debug rendering on both server Debug Mode and the current room player being host.
+- Added player-page regression coverage so ordinary player views do not render the Debug Control Surface or debug-only script.
+
+## Verification
+
+- `templ fmt internal/views/layouts/base.templ internal/views/pages/host_dashboard.templ`
+- `build-templ`
+- `go test ./internal/views/layouts -run TestBaseLayout -count=1`
+- `go test ./internal/views/pages -run 'TestHostDashboardLobby_DebugPanelGatedByConfig|TestHostDashboardLobby_DebugControlSurfaceShell|TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer|TestGamePage_DoesNotRenderDebugControlSurface|TestHostDashboardPlaying' -count=1`
