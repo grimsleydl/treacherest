@@ -65,6 +65,7 @@ type Room struct {
 	CoupPreset                      CoupPreset
 	CoupRoleCounts                  CoupRoleCounts
 	CoupRoleCountsCustom            bool
+	CoupAllowUnsafeRoleCounts       bool
 	CoupInfoPolicy                  CoupInformationPolicy
 	CoupRoyalGuardBlockerLimit      int
 	CoupInquisition                 *CoupInquisitionState

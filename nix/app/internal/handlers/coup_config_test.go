@@ -117,6 +117,47 @@ func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupRoleCountsSetsUnsafeOverride(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("king", "0")
+	form.Add("blueKnight", "2")
+	form.Add("blackKnight", "2")
+	form.Add("redKnight", "0")
+	form.Add("greenKnight", "1")
+	form.Add("wastelandKnight", "0")
+	form.Add("unsafeRoleCounts", "on")
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-counts", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.UpdateCoupRoleCounts(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if !updatedRoom.CoupAllowUnsafeRoleCounts {
+		t.Fatal("expected unsafe role count override to be persisted")
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "game is probably broken") {
+		t.Errorf("expected unsafe override warning copy in response, got: %s", body)
+	}
+}
+
 func TestSetupRouter_RoutesCoupRoleCountUpdates(t *testing.T) {
 	h := newTestHandler()
 

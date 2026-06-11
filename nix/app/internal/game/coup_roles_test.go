@@ -221,6 +221,40 @@ func TestValidateCoupRoleCounts_ReportsNormalStartFailures(t *testing.T) {
 	}
 }
 
+func TestValidateCoupRoleCountsWithUnsafeOverride_SkipsOnlyKingRedCardinality(t *testing.T) {
+	missingKingAndRed := CoupRoleCounts{
+		RoleBlueKnight:  2,
+		RoleBlackKnight: 2,
+		RoleGreenKnight: 1,
+	}
+	if err := ValidateCoupRoleCountsWithUnsafeOverride(missingKingAndRed, 5, true); err != nil {
+		t.Fatalf("expected unsafe override to allow missing King and Red, got %v", err)
+	}
+
+	tooManyKingsAndReds := CoupRoleCounts{
+		RoleKing:       2,
+		RoleBlueKnight: 1,
+		RoleRedKnight:  2,
+	}
+	if err := ValidateCoupRoleCountsWithUnsafeOverride(tooManyKingsAndReds, 5, true); err != nil {
+		t.Fatalf("expected unsafe override to allow multiple Kings and Reds, got %v", err)
+	}
+
+	totalMismatch := CoupRoleCounts{
+		RoleBlueKnight:  2,
+		RoleBlackKnight: 2,
+		RoleGreenKnight: 1,
+		RoleWasteland:   1,
+	}
+	err := ValidateCoupRoleCountsWithUnsafeOverride(totalMismatch, 5, true)
+	if err == nil {
+		t.Fatal("expected unsafe override not to bypass total count validation")
+	}
+	if err.Error() != "Coup role counts total 6 but there are 5 active players" {
+		t.Fatalf("expected total mismatch error, got %q", err.Error())
+	}
+}
+
 func TestAssignCoupRolesWithCounts_UsesCustomPoolAndInformationPolicy(t *testing.T) {
 	players := makeCoupTestPlayers(6)
 	counts := CoupRoleCounts{
@@ -268,6 +302,40 @@ func TestAssignCoupRolesWithCounts_UsesCustomPoolAndInformationPolicy(t *testing
 	}
 	if !cardHasRulingContaining(red.Role, "Private information: Black Knights:") {
 		t.Fatalf("expected Red to receive Black Knight private info, got %#v", red.Role.Rulings)
+	}
+}
+
+func TestAssignCoupRolesWithCountsUnsafe_HandlesMissingKingAndRed(t *testing.T) {
+	players := makeCoupTestPlayers(5)
+	counts := CoupRoleCounts{
+		RoleBlueKnight:  2,
+		RoleBlackKnight: 2,
+		RoleGreenKnight: 1,
+	}
+
+	if err := AssignCoupRolesWithCountsAndInformationUnsafe(players, counts, CoupInformationPolicy{}, true); err != nil {
+		t.Fatalf("AssignCoupRolesWithCountsAndInformationUnsafe returned error: %v", err)
+	}
+
+	gotRoles := map[RoleType]int{}
+	for _, player := range players {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		roleType := player.Role.GetRoleType()
+		gotRoles[roleType]++
+		if player.RoleRevealed || player.FaceUp {
+			t.Fatalf("expected %s to start hidden when unsafe pool has no King", player.Name)
+		}
+	}
+
+	for role, wantCount := range counts {
+		if gotRoles[role] != wantCount {
+			t.Fatalf("expected %d %s role(s), got counts %v", wantCount, role, gotRoles)
+		}
+	}
+	if gotRoles[RoleKing] != 0 || gotRoles[RoleRedKnight] != 0 {
+		t.Fatalf("expected unsafe pool to omit King and Red, got counts %v", gotRoles)
 	}
 }
 

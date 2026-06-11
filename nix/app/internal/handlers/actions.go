@@ -216,7 +216,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) startCoupGame(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	var err error
 	if room.CoupRoleCountsCustom {
-		err = game.AssignCoupRolesWithCountsAndInformation(room.GetPlayers(), room.CoupRoleCounts, room.CoupInfoPolicy)
+		err = game.AssignCoupRolesWithCountsAndInformationUnsafe(room.GetPlayers(), room.CoupRoleCounts, room.CoupInfoPolicy, room.CoupAllowUnsafeRoleCounts)
 	} else {
 		err = game.AssignCoupRolesWithInformation(room.GetPlayers(), room.CoupPreset, room.CoupInfoPolicy)
 	}

@@ -242,6 +242,12 @@ func CoupRoleCountsTotal(counts CoupRoleCounts) int {
 
 // ValidateCoupRoleCounts enforces the normal safe Coup setup constraints.
 func ValidateCoupRoleCounts(counts CoupRoleCounts, activePlayerCount int) error {
+	return ValidateCoupRoleCountsWithUnsafeOverride(counts, activePlayerCount, false)
+}
+
+// ValidateCoupRoleCountsWithUnsafeOverride validates role counts, optionally
+// bypassing only the King/Red cardinality checks for explicit playtesting setups.
+func ValidateCoupRoleCountsWithUnsafeOverride(counts CoupRoleCounts, activePlayerCount int, allowUnsafeKingRed bool) error {
 	for role, count := range counts {
 		if !isCoupRoleCountRole(role) && count != 0 {
 			return fmt.Errorf("Coup role count for %s is not supported", role)
@@ -255,6 +261,9 @@ func ValidateCoupRoleCounts(counts CoupRoleCounts, activePlayerCount int) error 
 	total := CoupRoleCountsTotal(counts)
 	if total != activePlayerCount {
 		return fmt.Errorf("Coup role counts total %d but there are %d active players", total, activePlayerCount)
+	}
+	if allowUnsafeKingRed {
+		return nil
 	}
 	if counts[RoleKing] != 1 {
 		return fmt.Errorf("Coup role counts require exactly one King")
@@ -288,6 +297,9 @@ func CoupRoleCountsSummary(counts CoupRoleCounts) string {
 
 // CoupRoleCountModeLabel identifies whether role counts are preset-seeded or custom.
 func CoupRoleCountModeLabel(room *Room) string {
+	if room != nil && room.CoupAllowUnsafeRoleCounts {
+		return "Unsafe custom counts"
+	}
 	if room != nil && room.CoupRoleCountsCustom {
 		return "Custom role counts"
 	}
@@ -524,6 +536,12 @@ func AssignCoupRolesWithInformation(players []*Player, preset CoupPreset, policy
 
 // AssignCoupRolesWithCountsAndInformation assigns Coup roles from a custom role-count pool.
 func AssignCoupRolesWithCountsAndInformation(players []*Player, counts CoupRoleCounts, policy CoupInformationPolicy) error {
+	return AssignCoupRolesWithCountsAndInformationUnsafe(players, counts, policy, false)
+}
+
+// AssignCoupRolesWithCountsAndInformationUnsafe assigns Coup roles from a
+// custom role-count pool and allows explicit unsafe King/Red cardinality bypasses.
+func AssignCoupRolesWithCountsAndInformationUnsafe(players []*Player, counts CoupRoleCounts, policy CoupInformationPolicy, allowUnsafeKingRed bool) error {
 	activePlayers := make([]*Player, 0, len(players))
 	for _, player := range players {
 		if !player.IsHost {
@@ -531,7 +549,7 @@ func AssignCoupRolesWithCountsAndInformation(players []*Player, counts CoupRoleC
 		}
 	}
 
-	if err := ValidateCoupRoleCounts(counts, len(activePlayers)); err != nil {
+	if err := ValidateCoupRoleCountsWithUnsafeOverride(counts, len(activePlayers), allowUnsafeKingRed); err != nil {
 		return err
 	}
 

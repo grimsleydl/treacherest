@@ -578,6 +578,107 @@ func TestHandler_StartGame_CoupCustomRoleCountsRejectsStructuralErrors(t *testin
 	}
 }
 
+func TestHandler_StartGame_CoupUnsafeRoleCountsAllowsMissingKingAndRed(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupRoleCountsCustom = true
+	room.CoupAllowUnsafeRoleCounts = true
+	room.CoupRoleCounts = game.CoupRoleCounts{
+		game.RoleBlueKnight:  2,
+		game.RoleBlackKnight: 2,
+		game.RoleGreenKnight: 1,
+	}
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	markRoomOperatorForTest(room, players[0])
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	addPlayerSessionCookiesForTest(req, room, players[0])
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.StartGame(w, req)
+
+	if !strings.Contains(w.Body.String(), "window.location.href = '/game/"+room.Code+"'") {
+		t.Fatalf("expected unsafe custom Coup start to redirect, got %s", w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.State != game.StateCountdown {
+		t.Fatalf("expected state %s, got %s", game.StateCountdown, updatedRoom.State)
+	}
+	gotRoles := map[game.RoleType]int{}
+	for _, player := range updatedRoom.GetActivePlayers() {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		gotRoles[player.Role.GetRoleType()]++
+		if player.RoleRevealed || player.FaceUp {
+			t.Fatalf("expected no role to start revealed when unsafe pool has no King")
+		}
+	}
+	if gotRoles[game.RoleKing] != 0 || gotRoles[game.RoleRedKnight] != 0 {
+		t.Fatalf("expected unsafe pool to omit King and Red, got counts %v", gotRoles)
+	}
+}
+
+func TestHandler_StartGame_CoupUnsafeRoleCountsStillRejectsTotalMismatch(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupRoleCountsCustom = true
+	room.CoupAllowUnsafeRoleCounts = true
+	room.CoupRoleCounts = game.CoupRoleCounts{
+		game.RoleBlueKnight:  2,
+		game.RoleBlackKnight: 2,
+		game.RoleGreenKnight: 1,
+		game.RoleWasteland:   1,
+	}
+	players := []*game.Player{
+		game.NewPlayer("p1", "Player 1", "session1"),
+		game.NewPlayer("p2", "Player 2", "session2"),
+		game.NewPlayer("p3", "Player 3", "session3"),
+		game.NewPlayer("p4", "Player 4", "session4"),
+		game.NewPlayer("p5", "Player 5", "session5"),
+	}
+	for _, player := range players {
+		room.AddPlayer(player)
+	}
+	markRoomOperatorForTest(room, players[0])
+	h.store.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+	addPlayerSessionCookiesForTest(req, room, players[0])
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.StartGame(w, req)
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Coup role counts total 6 but there are 5 active players") {
+		t.Fatalf("expected total mismatch error, got %s", body)
+	}
+	if strings.Contains(body, "window.location.href") {
+		t.Fatalf("expected no redirect for unsafe total mismatch, got %s", body)
+	}
+}
+
 func TestToggleReveal_CoupHostCanRecordPublicReveal(t *testing.T) {
 	h := newTestHandler()
 	room, _ := h.store.CreateRoom()

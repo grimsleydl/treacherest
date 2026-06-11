@@ -47,6 +47,7 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 	room.CoupPreset = preset
 	room.CoupRoleCounts = counts
 	room.CoupRoleCountsCustom = false
+	room.CoupAllowUnsafeRoleCounts = false
 	h.store.UpdateRoom(room)
 
 	h.eventBus.Publish(Event{
@@ -106,6 +107,7 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 
 	room.CoupRoleCounts = game.NormalizeCoupRoleCounts(counts)
 	room.CoupRoleCountsCustom = true
+	room.CoupAllowUnsafeRoleCounts = r.FormValue("unsafeRoleCounts") == "on"
 	h.store.UpdateRoom(room)
 
 	h.eventBus.Publish(Event{

@@ -191,6 +191,9 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 		AssertContains(`name="redKnight"`).
 		AssertContains(`name="greenKnight"`).
 		AssertContains(`name="wastelandKnight"`).
+		AssertContains(`name="unsafeRoleCounts"`).
+		AssertContains("Unsafe Role Count Override").
+		AssertContains("game is probably broken").
 		AssertContains("King-to-Blue Info").
 		AssertContains("Red-to-Black Info").
 		AssertContains("Royal Guard Blockers").

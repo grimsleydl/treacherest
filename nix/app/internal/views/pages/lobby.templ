@@ -136,6 +136,18 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 									/>
 								</label>
 							}
+							<label class="sm:col-span-2 flex items-start gap-3 rounded border border-warning/40 bg-warning/10 p-3 text-sm">
+								<input
+									type="checkbox"
+									name="unsafeRoleCounts"
+									class="checkbox checkbox-warning checkbox-sm mt-1"
+									checked?={ room.CoupAllowUnsafeRoleCounts }
+								/>
+								<span>
+									<span class="font-semibold">Unsafe Role Count Override</span>
+									<span class="block text-base-content/80">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</span>
+								</span>
+							</label>
 						</form>
 						<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
 					</div>
@@ -311,7 +323,7 @@ func lobbyDebugControlsEnabled(cfg *config.ServerConfig, room *game.Room, player
 
 func coupPresetMatchesActivePlayers(room *game.Room) bool {
 	if room.CoupRoleCountsCustom {
-		return game.ValidateCoupRoleCounts(game.CoupRoleCountsForRoom(room), room.GetActivePlayerCount()) == nil
+		return game.ValidateCoupRoleCountsWithUnsafeOverride(game.CoupRoleCountsForRoom(room), room.GetActivePlayerCount(), room.CoupAllowUnsafeRoleCounts) == nil
 	}
 	expected, ok := game.CoupPresetPlayerCount(room.CoupPreset)
 	return ok && room.GetActivePlayerCount() == expected
@@ -319,7 +331,7 @@ func coupPresetMatchesActivePlayers(room *game.Room) bool {
 
 func coupPresetValidationText(room *game.Room) string {
 	if room.CoupRoleCountsCustom {
-		if err := game.ValidateCoupRoleCounts(game.CoupRoleCountsForRoom(room), room.GetActivePlayerCount()); err != nil {
+		if err := game.ValidateCoupRoleCountsWithUnsafeOverride(game.CoupRoleCountsForRoom(room), room.GetActivePlayerCount(), room.CoupAllowUnsafeRoleCounts); err != nil {
 			return err.Error()
 		}
 		return "Matches current player count"

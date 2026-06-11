@@ -147,6 +147,18 @@ templ HostDashboardCoupSetup(room *game.Room) {
 							/>
 						</label>
 					}
+					<label class="sm:col-span-2 flex items-start gap-3 rounded border border-warning/40 bg-warning/10 p-3 text-sm">
+						<input
+							type="checkbox"
+							name="unsafeRoleCounts"
+							class="checkbox checkbox-warning checkbox-sm mt-1"
+							checked?={ room.CoupAllowUnsafeRoleCounts }
+						/>
+						<span>
+							<span class="font-semibold">Unsafe Role Count Override</span>
+							<span class="block text-base-content/80">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</span>
+						</span>
+					</label>
 				</form>
 				<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
 			</div>
