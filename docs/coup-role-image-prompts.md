@@ -6,6 +6,8 @@ This document defines prompt guidance for generating Coup role-card art. Art is 
 
 Image generation is an external workflow. Treacherest should not call an AI image model or expose in-app prompt generation by default; it should consume completed image files through the importer.
 
+Prompt scope is final role-card art only. Do not create separate AI prompts or separate generated assets for thumbnails, setup lists, or debug panels unless a future UX pass proves those need distinct compositions. Small UI surfaces should crop or scale from the same imported final artwork.
+
 ## Import Targets
 
 The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are ID-based.
