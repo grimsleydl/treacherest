@@ -1,6 +1,6 @@
 # Coup Privacy Regression Coverage
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -12,12 +12,24 @@ Add focused regression coverage for Coup privacy boundaries. The tests should pr
 
 ## Acceptance criteria
 
-- [ ] Tests prove hidden Coup roles are not rendered to other players before Reveal.
-- [ ] Tests prove King-to-Blue information is visible only to King.
-- [ ] Tests prove Red-to-Black information is visible only to Red.
-- [ ] Tests prove Black-to-Red and Network variants only reveal information to intended players.
-- [ ] Tests prove Private Inquisition Result is visible only to the Blue inquisitor.
-- [ ] Tests include a multi-client or equivalent integration path for SSE/privacy behavior.
+- [x] Tests prove hidden Coup roles are not rendered to other players before Reveal.
+- [x] Tests prove King-to-Blue information is visible only to King.
+- [x] Tests prove Red-to-Black information is visible only to Red.
+- [x] Tests prove Black-to-Red and Network variants only reveal information to intended players.
+- [x] Tests prove Private Inquisition Result is visible only to the Blue inquisitor.
+- [x] Tests include a multi-client or equivalent integration path for SSE/privacy behavior.
+
+## Completion notes
+
+- Added page-level regression coverage for generated Coup information policy output.
+- Covered King-to-Blue, Red-to-Black, Black-to-Red, and Black Network privacy boundaries.
+- Added public Inquisition result visibility coverage and reused the private Inquisition regression.
+- Added a handler-level multi-client equivalent test using the same `renderToString(pages.GameContent(...))` path used by game SSE updates.
+
+## Verification
+
+- `go test ./internal/views/pages -run 'TestGameBody_CoupInformationPolicyPrivacyBoundaries|TestGameBody_CoupPublicInquisitionResultVisibleToAllClients|TestGameBody_CoupPrivateInquisitionResultOnlyInformsInquisitor|TestGameBody_CoupPrivacy|TestGameBody_CoupPrivateInformationScopedToRecipient'`
+- `go test ./internal/handlers -run 'TestRenderGameContent_CoupPrivacyIsScopedPerClientLikeSSE'`
 
 ## Blocked by
 
