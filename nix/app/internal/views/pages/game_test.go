@@ -142,7 +142,7 @@ func TestGamePage(t *testing.T) {
 	})
 }
 
-func TestGamePageWithDebug_NonHostDebugSurface(t *testing.T) {
+func TestGamePageWithDebug_OperatorDebugSurface(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
 		Code:       "DBGPG",
@@ -160,12 +160,12 @@ func TestGamePageWithDebug_NonHostDebugSurface(t *testing.T) {
 	renderer.Render(GamePageWithDebug(room, player, true)).
 		AssertContains(`id="debug-control-surface"`).
 		AssertContains("Debug Control Surface").
-		AssertContains("Player Perspective: Test Player").
 		AssertContains(`id="debug-panel-toggle"`).
-		AssertNotContains(`id="debug-clear"`).
-		AssertNotContains("Debug Insights").
-		AssertNotContains("Start with Debug Players").
-		AssertNotContains("View As Player")
+		AssertContains(`id="debug-clear"`).
+		AssertContains("Debug Insights").
+		AssertContains("Start with Debug Players").
+		AssertContains("View As Player").
+		AssertNotContains("Player Perspective: Test Player")
 
 	renderer.Render(GamePageWithDebug(room, player, false)).
 		AssertNotContains(`id="debug-control-surface"`).

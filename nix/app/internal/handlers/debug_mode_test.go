@@ -548,7 +548,7 @@ func TestDebugModeRoutes_StartAsIsRejectsNonHost(t *testing.T) {
 	}
 }
 
-func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPlayerFullUIPerspective(t *testing.T) {
+func TestDebugModeRoutes_ViewAsPlayerPersistsSelectionWithoutPatchFragment(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 	gameStore := store.NewMemoryStore(cfg)
@@ -569,32 +569,12 @@ func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPlayerFullUIPerspective(t *t
 	if err := room.AddPlayer(host); err != nil {
 		t.Fatalf("add host: %v", err)
 	}
-	kingRole := mockHandlerCoupCard(1001, "King")
-	kingRole.Rulings = []string{"Private information: Blue Knights: Blue Player"}
-	king := game.NewPlayer("king", "King Player", "session-king")
-	king.Role = kingRole
-	king.RoleRevealed = true
 	blueRole := mockHandlerCoupCard(1002, "Blue Knight")
 	blueRole.Rulings = []string{"Private information: King: King Player"}
 	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
 	blue.Role = blueRole
-	blackRole := mockHandlerCoupCard(1003, "Black Knight")
-	blackRole.Rulings = []string{"Private information: Red Knight: Red Player"}
-	black := game.NewPlayer("black", "Black Player", "session-black")
-	black.Role = blackRole
-	red := game.NewPlayer("red", "Red Player", "session-red")
-	red.Role = mockHandlerCoupCard(1004, "Red Knight")
-	if err := room.AddPlayer(king); err != nil {
-		t.Fatalf("add king: %v", err)
-	}
 	if err := room.AddPlayer(blue); err != nil {
 		t.Fatalf("add blue: %v", err)
-	}
-	if err := room.AddPlayer(black); err != nil {
-		t.Fatalf("add black: %v", err)
-	}
-	if err := room.AddPlayer(red); err != nil {
-		t.Fatalf("add red: %v", err)
 	}
 	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
@@ -605,44 +585,21 @@ func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPlayerFullUIPerspective(t *t
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d body %q", w.Code, w.Body.String())
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d body %q", w.Code, w.Body.String())
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, `id="host-dashboard-content"`) {
-		t.Fatalf("expected View As Player to morph main room content, got %q", body)
-	}
-	if !strings.Contains(body, `id="debug-view-as-perspective"`) {
-		t.Fatalf("expected selected perspective wrapper, got %q", body)
-	}
-	if strings.Contains(body, "inert") || strings.Contains(body, "Read Only: yes") {
-		t.Fatalf("expected selected perspective to be full impersonation, got %q", body)
-	}
-	if !strings.Contains(body, `id="game-container"`) {
-		t.Fatalf("expected selected player's normal game UI, got %q", body)
-	}
-	if !strings.Contains(body, "View As Player: Blue Player") {
-		t.Fatalf("expected selected player heading, got %q", body)
-	}
-	if !strings.Contains(body, "Blue Knight") || !strings.Contains(body, "Test Blue Knight Card") {
-		t.Fatalf("expected selected player's role card UI, got %q", body)
-	}
-	if !strings.Contains(body, "Private information: King: King Player") {
-		t.Fatalf("expected selected player private info, got %q", body)
-	}
-	if strings.Contains(body, "Private information: Red Knight: Red Player") {
-		t.Fatalf("view-as leaked another player's private info: %q", body)
-	}
-	if !strings.Contains(body, "Royal Guard") || !strings.Contains(body, "Call Inquisition") {
-		t.Fatalf("expected selected player's normal Coup controls in full perspective, got %q", body)
-	}
-	if !strings.Contains(body, `@post(&#39;/room/`+room.Code+`/coup/inquisition/blue&#39;`) {
-		t.Fatalf("expected selected player's actions to target the selected player, got %q", body)
-	}
-	for _, forbidden := range []string{"Record Reveal", "Record Elimination"} {
+	for _, forbidden := range []string{`id="host-dashboard-content"`, `id="debug-view-as-perspective"`, `id="game-container"`, "Private information:"} {
 		if strings.Contains(body, forbidden) {
-			t.Fatalf("view-as should not expose host control %q in %q", forbidden, body)
+			t.Fatalf("view-as selection response should not send patchable UI fragment %q in %q", forbidden, body)
 		}
+	}
+	stored, err := gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get stored room: %v", err)
+	}
+	if stored.DebugViewedPlayerID != blue.ID {
+		t.Fatalf("expected viewed player override %q, got %q", blue.ID, stored.DebugViewedPlayerID)
 	}
 }
 
@@ -686,14 +643,20 @@ func TestDebugModeRoutes_ViewAsPlayerSwitchesPerspectiveWithoutLeakingPreviousSe
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	blueBody := w.Body.String()
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected blue perspective status 200, got %d body %q", w.Code, blueBody)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected blue perspective status 204, got %d body %q", w.Code, blueBody)
 	}
-	if !strings.Contains(blueBody, "Private information: Blue-only clue") {
-		t.Fatalf("expected blue private info, got %q", blueBody)
+	stored, err := gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get room after blue selection: %v", err)
 	}
-	if strings.Contains(blueBody, "Private information: Debug-only clue") {
-		t.Fatalf("blue perspective leaked debug player private info: %q", blueBody)
+	if stored.DebugViewedPlayerID != blue.ID {
+		t.Fatalf("expected blue viewed player override %q, got %q", blue.ID, stored.DebugViewedPlayerID)
+	}
+	for _, forbidden := range []string{"Private information: Blue-only clue", "Private information: Debug-only clue", `id="game-container"`} {
+		if strings.Contains(blueBody, forbidden) {
+			t.Fatalf("selection response should not include UI fragment %q in %q", forbidden, blueBody)
+		}
 	}
 
 	req = httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+debugPlayer.ID, nil)
@@ -701,17 +664,20 @@ func TestDebugModeRoutes_ViewAsPlayerSwitchesPerspectiveWithoutLeakingPreviousSe
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	debugBody := w.Body.String()
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected debug player perspective status 200, got %d body %q", w.Code, debugBody)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected debug player perspective status 204, got %d body %q", w.Code, debugBody)
 	}
-	if !strings.Contains(debugBody, "View As Player: Debug Player 1") {
-		t.Fatalf("expected debug player heading, got %q", debugBody)
+	stored, err = gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get room after debug selection: %v", err)
 	}
-	if !strings.Contains(debugBody, "Private information: Debug-only clue") {
-		t.Fatalf("expected debug player private info, got %q", debugBody)
+	if stored.DebugViewedPlayerID != debugPlayer.ID {
+		t.Fatalf("expected debug viewed player override %q, got %q", debugPlayer.ID, stored.DebugViewedPlayerID)
 	}
-	if strings.Contains(debugBody, "Private information: Blue-only clue") {
-		t.Fatalf("debug player perspective leaked previous selected player private info: %q", debugBody)
+	for _, forbidden := range []string{"View As Player: Debug Player 1", "Private information: Debug-only clue", "Private information: Blue-only clue", `id="game-container"`} {
+		if strings.Contains(debugBody, forbidden) {
+			t.Fatalf("selection response should not include UI fragment %q in %q", forbidden, debugBody)
+		}
 	}
 }
 
@@ -753,8 +719,11 @@ func TestDebugModeRoutes_ViewAsPlayerPersistsAcrossGameReload(t *testing.T) {
 	addPlayerSessionCookiesForTest(selectReq, room, host)
 	selectW := httptest.NewRecorder()
 	router.ServeHTTP(selectW, selectReq)
-	if selectW.Code != http.StatusOK {
-		t.Fatalf("expected view-as select status 200, got %d body %q", selectW.Code, selectW.Body.String())
+	if selectW.Code != http.StatusNoContent {
+		t.Fatalf("expected view-as select status 204, got %d body %q", selectW.Code, selectW.Body.String())
+	}
+	if selectW.Body.String() != "" {
+		t.Fatalf("expected view-as select response not to send a patch fragment, got %q", selectW.Body.String())
 	}
 
 	stored, err := gameStore.GetRoom(room.Code)
@@ -825,8 +794,11 @@ func TestDebugModeRoutes_OperatorViewClearsViewedPlayerOverride(t *testing.T) {
 	addPlayerSessionCookiesForTest(clearReq, room, host)
 	clearW := httptest.NewRecorder()
 	router.ServeHTTP(clearW, clearReq)
-	if clearW.Code != http.StatusOK {
-		t.Fatalf("expected operator view status 200, got %d body %q", clearW.Code, clearW.Body.String())
+	if clearW.Code != http.StatusNoContent {
+		t.Fatalf("expected operator view status 204, got %d body %q", clearW.Code, clearW.Body.String())
+	}
+	if clearW.Body.String() != "" {
+		t.Fatalf("expected operator view response not to send a patch fragment, got %q", clearW.Body.String())
 	}
 
 	stored, err := gameStore.GetRoom(room.Code)
@@ -890,8 +862,11 @@ func TestDebugModeRoutes_OperatorViewReturnsPlayingOperatorToOwnPerspective(t *t
 	addPlayerSessionCookiesForTest(clearReq, room, operator)
 	clearW := httptest.NewRecorder()
 	router.ServeHTTP(clearW, clearReq)
-	if clearW.Code != http.StatusOK {
-		t.Fatalf("expected operator view status 200, got %d body %q", clearW.Code, clearW.Body.String())
+	if clearW.Code != http.StatusNoContent {
+		t.Fatalf("expected operator view status 204, got %d body %q", clearW.Code, clearW.Body.String())
+	}
+	if clearW.Body.String() != "" {
+		t.Fatalf("expected operator view response not to send a patch fragment, got %q", clearW.Body.String())
 	}
 
 	reloadReq := httptest.NewRequest("GET", "/game/"+room.Code, nil)

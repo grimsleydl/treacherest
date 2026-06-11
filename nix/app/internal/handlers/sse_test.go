@@ -14,6 +14,38 @@ import (
 	datastar "github.com/starfederation/datastar-go/datastar"
 )
 
+func TestHandler_emitStateBackupUsesLocalOnlySignal(t *testing.T) {
+	h := newTestHandler()
+	backupService, err := game.NewBackupService("", false)
+	if err != nil {
+		t.Fatalf("new backup service: %v", err)
+	}
+	h.backupService = backupService
+
+	room, err := h.store.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	player := game.NewPlayer("p1", "Player 1", "session-1")
+	if err := room.AddPlayer(player); err != nil {
+		t.Fatalf("add player: %v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/sse/lobby/"+room.Code, nil)
+	w := httptest.NewRecorder()
+	sse := datastar.NewSSE(w, req)
+
+	h.emitStateBackup(sse, room)
+
+	body := w.Body.String()
+	if !strings.Contains(body, `"_stateBackup"`) {
+		t.Fatalf("expected local-only state backup signal, got %q", body)
+	}
+	if strings.Contains(body, `"stateBackup"`) {
+		t.Fatalf("state backup signal should not be server-visible, got %q", body)
+	}
+}
+
 func TestHandler_StreamLobby(t *testing.T) {
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
 		h := newTestHandler()

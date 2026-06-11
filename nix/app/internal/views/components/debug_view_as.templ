@@ -8,7 +8,7 @@ templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
 			<button
 				id="debug-operator-view"
 				class="btn btn-xs btn-outline w-full"
-				data-on:click={ "@get('/room/" + roomCode + "/debug/operator-view')" }
+				data-on:click={ debugOperatorViewAction(roomCode) }
 			>
 				Operator View
 			</button>
@@ -16,7 +16,7 @@ templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
 			<select
 				id="debug-view-as-player-select"
 				class="select select-bordered select-xs w-full"
-				data-on:change={ "@get('/room/" + roomCode + "/debug/view-as/' + evt.target.value)" }
+				data-on:change={ debugViewAsPlayerAction(roomCode) }
 			>
 				<option value="" selected?={ room.DebugViewedPlayerID == "" } disabled>Choose player</option>
 				for _, player := range room.GetActivePlayers() {
@@ -26,4 +26,12 @@ templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
 			<div id="debug-view-as-player-result"></div>
 		</div>
 	}
+}
+
+func debugOperatorViewAction(roomCode string) string {
+	return "fetch('/room/" + roomCode + "/debug/operator-view').then(resp => { if (!resp.ok) return resp.text().then(text => { throw new Error(text || resp.statusText) }); window.location.reload(); }).catch(err => alert('Debug operator view failed: ' + err.message))"
+}
+
+func debugViewAsPlayerAction(roomCode string) string {
+	return "evt.target.value && fetch('/room/" + roomCode + "/debug/view-as/' + encodeURIComponent(evt.target.value)).then(resp => { if (!resp.ok) return resp.text().then(text => { throw new Error(text || resp.statusText) }); window.location.reload(); }).catch(err => alert('Debug view-as failed: ' + err.message))"
 }

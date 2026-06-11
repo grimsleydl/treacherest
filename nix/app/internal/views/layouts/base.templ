@@ -59,8 +59,8 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *
 			<div
 				id="backup-handler"
 				style="display:none"
-				data-signals:stateBackup__ifmissing=""
-				data-effect="$stateBackup && window.storeBackup($stateBackup)"
+				data-signals:_stateBackup__ifmissing=""
+				data-effect="$_stateBackup && window.storeBackup($_stateBackup)"
 			></div>
 			if debugMode {
 				@DebugPanel(debugRoomCode, debugRoom, debugViewer)

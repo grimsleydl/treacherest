@@ -169,7 +169,7 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 		CoupPreset: game.CoupPresetFive,
 		RoleConfig: &game.RoleConfiguration{
 			MaxPlayers: 5,
-			RoleTypes: map[string]*game.RoleTypeConfig{},
+			RoleTypes:  map[string]*game.RoleTypeConfig{},
 		},
 		Players: make(map[string]*game.Player),
 	}
@@ -204,7 +204,7 @@ func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing
 		RulesMode: game.RulesModeTreachery,
 		RoleConfig: &game.RoleConfiguration{
 			MaxPlayers: 5,
-			RoleTypes: map[string]*game.RoleTypeConfig{},
+			RoleTypes:  map[string]*game.RoleTypeConfig{},
 		},
 		Players: make(map[string]*game.Player),
 	}
@@ -381,12 +381,14 @@ func TestHostDashboardLobby_ViewAsPlayerSelectorIncludesDebugPlayers(t *testing.
 	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
 		AssertContains(`id="debug-operator-view"`).
 		AssertContains("Operator View").
-		AssertContains(`@get(&#39;/room/VIEW1/debug/operator-view&#39;)`).
+		AssertContains(`fetch(&#39;/room/VIEW1/debug/operator-view&#39;`).
+		AssertNotContains(`@get(&#39;/room/VIEW1/debug/operator-view&#39;)`).
 		AssertContains(`id="debug-view-as-player-select"`).
 		AssertContains(`value="player-1"`).
 		AssertContains("Real Player").
 		AssertContains(`value="debug-1"`).
 		AssertContains(`selected`).
 		AssertContains("Debug Player 1").
-		AssertContains(`@get(&#39;/room/VIEW1/debug/view-as/&#39; + evt.target.value)`)
+		AssertContains(`fetch(&#39;/room/VIEW1/debug/view-as/&#39; + encodeURIComponent(evt.target.value)`).
+		AssertNotContains(`@get(&#39;/room/VIEW1/debug/view-as/&#39; + evt.target.value)`)
 }

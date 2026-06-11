@@ -38,6 +38,16 @@ func TestBaseLayout(t *testing.T) {
 			AssertContains("datastar")
 	})
 
+	t.Run("keeps state backup signal local-only", func(t *testing.T) {
+		component := Base("Backup Signal Test")
+
+		renderer.Render(component).
+			AssertContains(`data-signals:_stateBackup__ifmissing`).
+			AssertContains(`$_stateBackup && window.storeBackup($_stateBackup)`).
+			AssertNotContains(`data-signals:stateBackup__ifmissing`).
+			AssertNotContains(`$stateBackup && window.storeBackup($stateBackup)`)
+	})
+
 	t.Run("does not render debug UI by default", func(t *testing.T) {
 		component := Base("Non Debug Test")
 

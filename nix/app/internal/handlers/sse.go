@@ -574,7 +574,7 @@ func (h *Handler) emitStateBackup(sse *datastar.ServerSentEventGenerator, room *
 
 	// Send backup as a signal - handled by dedicated #backup-handler element's data-effect
 	err = sse.MarshalAndPatchSignals(map[string]interface{}{
-		"stateBackup": backup,
+		"_stateBackup": backup,
 	})
 	if err != nil {
 		log.Printf("❌ Failed to send state backup signal for room %s: %v", room.Code, err)
