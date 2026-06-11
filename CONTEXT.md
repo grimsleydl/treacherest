@@ -36,6 +36,14 @@ _Avoid_: Role assignment, rules reference
 A non-production operating mode for playtesting and inspecting Treacherest games with privileged aids that bypass or expose normal hidden-role flow.
 _Avoid_: Dev mode, admin mode, moderator mode
 
+**Debug Control Surface**:
+A host-only set of Debug Mode controls for inspecting or mutating a room outside normal player-facing flows.
+_Avoid_: Player controls, public overlay
+
+**Debug Impersonation**:
+A Debug Mode aid where the host views or drives the game from a selected player's perspective without making that player a real host.
+_Avoid_: Player login, ownership transfer
+
 **Reveal**:
 A public transition where a hidden role becomes known to the table.
 _Avoid_: Private view, screen peek
