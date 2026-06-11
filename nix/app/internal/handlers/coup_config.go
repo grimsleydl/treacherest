@@ -38,8 +38,74 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Coup preset", http.StatusBadRequest)
 		return
 	}
+	counts, ok := game.CoupRoleCountsForPreset(preset)
+	if !ok {
+		http.Error(w, "Invalid Coup preset", http.StatusBadRequest)
+		return
+	}
 
 	room.CoupPreset = preset
+	room.CoupRoleCounts = counts
+	room.CoupRoleCountsCustom = false
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	playerCookie, err := r.Cookie("player_" + room.Code)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	sse := datastar.NewSSE(w, r)
+	h.renderLobby(sse, room, player)
+}
+
+// UpdateCoupRoleCounts updates the editable Coup role-count pool for a room.
+func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	if room.RulesMode != game.RulesModeCoup {
+		http.Error(w, "Room is not using Coup rules", http.StatusBadRequest)
+		return
+	}
+
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	counts := make(game.CoupRoleCounts, len(game.CoupRoleCountOptions()))
+	for _, role := range game.CoupRoleCountOptions() {
+		rawCount := r.FormValue(game.CoupRoleCountFormName(role))
+		if rawCount == "" {
+			rawCount = "0"
+		}
+		count, err := strconv.Atoi(rawCount)
+		if err != nil || count < 0 {
+			http.Error(w, "Invalid Coup role count", http.StatusBadRequest)
+			return
+		}
+		counts[role] = count
+	}
+
+	room.CoupRoleCounts = game.NormalizeCoupRoleCounts(counts)
+	room.CoupRoleCountsCustom = true
 	h.store.UpdateRoom(room)
 
 	h.eventBus.Publish(Event{

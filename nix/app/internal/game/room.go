@@ -63,6 +63,8 @@ type Room struct {
 	State                           GameState
 	RulesMode                       RulesMode
 	CoupPreset                      CoupPreset
+	CoupRoleCounts                  CoupRoleCounts
+	CoupRoleCountsCustom            bool
 	CoupInfoPolicy                  CoupInformationPolicy
 	CoupRoyalGuardBlockerLimit      int
 	CoupInquisition                 *CoupInquisitionState

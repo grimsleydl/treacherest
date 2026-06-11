@@ -214,7 +214,13 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) startCoupGame(w http.ResponseWriter, r *http.Request, room *game.Room) {
-	if err := game.AssignCoupRolesWithInformation(room.GetPlayers(), room.CoupPreset, room.CoupInfoPolicy); err != nil {
+	var err error
+	if room.CoupRoleCountsCustom {
+		err = game.AssignCoupRolesWithCountsAndInformation(room.GetPlayers(), room.CoupRoleCounts, room.CoupInfoPolicy)
+	} else {
+		err = game.AssignCoupRolesWithInformation(room.GetPlayers(), room.CoupPreset, room.CoupInfoPolicy)
+	}
+	if err != nil {
 		log.Printf("❌ Room cannot start: %s", err.Error())
 
 		sse := datastar.NewSSE(w, r)

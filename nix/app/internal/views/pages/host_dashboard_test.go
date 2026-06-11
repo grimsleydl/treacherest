@@ -183,6 +183,14 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
 		AssertContains("Coup Preset").
+		AssertContains("Role Counts").
+		AssertContains(`id="coup-role-counts-form"`).
+		AssertContains(`name="king"`).
+		AssertContains(`name="blueKnight"`).
+		AssertContains(`name="blackKnight"`).
+		AssertContains(`name="redKnight"`).
+		AssertContains(`name="greenKnight"`).
+		AssertContains(`name="wastelandKnight"`).
 		AssertContains("King-to-Blue Info").
 		AssertContains("Red-to-Black Info").
 		AssertContains("Royal Guard Blockers").

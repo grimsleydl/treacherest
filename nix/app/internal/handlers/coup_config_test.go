@@ -44,6 +44,12 @@ func TestUpdateCoupPreset(t *testing.T) {
 	if updatedRoom.CoupPreset != game.CoupPresetEightChaos {
 		t.Fatalf("expected Coup preset %q, got %q", game.CoupPresetEightChaos, updatedRoom.CoupPreset)
 	}
+	if updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected preset selection to leave Coup role counts in preset mode")
+	}
+	if updatedRoom.CoupRoleCounts[game.RoleWasteland] != 1 {
+		t.Fatalf("expected preset selection to seed Wasteland count 1, got counts %v", updatedRoom.CoupRoleCounts)
+	}
 
 	body := w.Body.String()
 	if !strings.Contains(body, "8 players, chaos") {
@@ -51,6 +57,101 @@ func TestUpdateCoupPreset(t *testing.T) {
 	}
 	if !strings.Contains(body, "Wasteland Knight") {
 		t.Errorf("expected updated Coup role summary in response, got: %s", body)
+	}
+}
+
+func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("king", "1")
+	form.Add("blueKnight", "2")
+	form.Add("blackKnight", "0")
+	form.Add("redKnight", "1")
+	form.Add("greenKnight", "1")
+	form.Add("wastelandKnight", "0")
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-counts", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupRoleCounts(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if !updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected count edit to switch Coup setup to custom role counts")
+	}
+	want := game.CoupRoleCounts{
+		game.RoleKing:        1,
+		game.RoleBlueKnight:  2,
+		game.RoleBlackKnight: 0,
+		game.RoleRedKnight:   1,
+		game.RoleGreenKnight: 1,
+		game.RoleWasteland:   0,
+	}
+	for role, wantCount := range want {
+		if updatedRoom.CoupRoleCounts[role] != wantCount {
+			t.Fatalf("expected %s count %d, got %d in %v", role, wantCount, updatedRoom.CoupRoleCounts[role], updatedRoom.CoupRoleCounts)
+		}
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Custom role counts") {
+		t.Errorf("expected custom role count state in response, got: %s", body)
+	}
+}
+
+func TestSetupRouter_RoutesCoupRoleCountUpdates(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	form := url.Values{}
+	form.Add("king", "1")
+	form.Add("blueKnight", "1")
+	form.Add("blackKnight", "1")
+	form.Add("redKnight", "1")
+	form.Add("greenKnight", "1")
+	form.Add("wastelandKnight", "0")
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-counts", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if !updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected route to set custom Coup role counts")
 	}
 }
 

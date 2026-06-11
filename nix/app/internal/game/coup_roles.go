@@ -25,6 +25,9 @@ const (
 // CoupPreset identifies a concrete Coup role distribution.
 type CoupPreset string
 
+// CoupRoleCounts stores the role distribution used by custom Coup setup.
+type CoupRoleCounts map[RoleType]int
+
 // CoupKingToBluePolicy controls what the King learns about Blue Knights.
 type CoupKingToBluePolicy string
 
@@ -113,6 +116,15 @@ var coupRoleSummaryOrder = []RoleType{
 	RoleWasteland,
 }
 
+var coupRoleCountFieldNames = map[RoleType]string{
+	RoleKing:        "king",
+	RoleBlueKnight:  "blueKnight",
+	RoleBlackKnight: "blackKnight",
+	RoleRedKnight:   "redKnight",
+	RoleGreenKnight: "greenKnight",
+	RoleWasteland:   "wastelandKnight",
+}
+
 func coupRoleCard(id int, name, text, winCondition string) *Card {
 	return &Card{
 		ID:     id,
@@ -162,6 +174,124 @@ func CoupPresetOptions() []CoupPreset {
 	options := make([]CoupPreset, len(coupPresetOrder))
 	copy(options, coupPresetOrder)
 	return options
+}
+
+// CoupRoleCountOptions returns supported Coup role types in setup display order.
+func CoupRoleCountOptions() []RoleType {
+	options := make([]RoleType, len(coupRoleSummaryOrder))
+	copy(options, coupRoleSummaryOrder)
+	return options
+}
+
+// CoupRoleCountFormName returns the stable HTML form field name for a role count.
+func CoupRoleCountFormName(role RoleType) string {
+	if fieldName, ok := coupRoleCountFieldNames[role]; ok {
+		return fieldName
+	}
+	return string(role)
+}
+
+// CoupRoleCountsForPreset returns editable role counts seeded from a preset.
+func CoupRoleCountsForPreset(preset CoupPreset) (CoupRoleCounts, bool) {
+	roles, ok := coupPresetRoles[NormalizeCoupPreset(preset)]
+	if !ok {
+		return nil, false
+	}
+	counts := emptyCoupRoleCounts()
+	for _, role := range roles {
+		counts[role]++
+	}
+	return counts, true
+}
+
+// CoupRoleCountsForRoom returns custom counts when configured, otherwise preset counts.
+func CoupRoleCountsForRoom(room *Room) CoupRoleCounts {
+	if room == nil {
+		counts, _ := CoupRoleCountsForPreset(CoupPresetFive)
+		return counts
+	}
+	if room.CoupRoleCounts != nil {
+		return NormalizeCoupRoleCounts(room.CoupRoleCounts)
+	}
+	counts, ok := CoupRoleCountsForPreset(room.CoupPreset)
+	if !ok {
+		counts, _ = CoupRoleCountsForPreset(CoupPresetFive)
+	}
+	return counts
+}
+
+// NormalizeCoupRoleCounts returns a copy containing every supported Coup role key.
+func NormalizeCoupRoleCounts(counts CoupRoleCounts) CoupRoleCounts {
+	normalized := emptyCoupRoleCounts()
+	for role, count := range counts {
+		if _, ok := normalized[role]; ok {
+			normalized[role] = count
+		}
+	}
+	return normalized
+}
+
+// CoupRoleCountsTotal returns the number of player role seats in the distribution.
+func CoupRoleCountsTotal(counts CoupRoleCounts) int {
+	total := 0
+	for _, count := range NormalizeCoupRoleCounts(counts) {
+		total += count
+	}
+	return total
+}
+
+// ValidateCoupRoleCounts enforces the normal safe Coup setup constraints.
+func ValidateCoupRoleCounts(counts CoupRoleCounts, activePlayerCount int) error {
+	for role, count := range counts {
+		if !isCoupRoleCountRole(role) && count != 0 {
+			return fmt.Errorf("Coup role count for %s is not supported", role)
+		}
+		if count < 0 {
+			return fmt.Errorf("Coup role count for %s cannot be negative", role)
+		}
+	}
+
+	counts = NormalizeCoupRoleCounts(counts)
+	total := CoupRoleCountsTotal(counts)
+	if total != activePlayerCount {
+		return fmt.Errorf("Coup role counts total %d but there are %d active players", total, activePlayerCount)
+	}
+	if counts[RoleKing] != 1 {
+		return fmt.Errorf("Coup role counts require exactly one King")
+	}
+	if counts[RoleRedKnight] != 1 {
+		return fmt.Errorf("Coup role counts require exactly one Red Knight")
+	}
+	return nil
+}
+
+// CoupRoleCountsSummary returns a readable role-count summary for custom setup.
+func CoupRoleCountsSummary(counts CoupRoleCounts) string {
+	counts = NormalizeCoupRoleCounts(counts)
+	parts := make([]string, 0, len(coupRoleSummaryOrder))
+	for _, role := range coupRoleSummaryOrder {
+		count := counts[role]
+		switch count {
+		case 0:
+			continue
+		case 1:
+			parts = append(parts, string(role))
+		default:
+			parts = append(parts, fmt.Sprintf("%d %s", count, pluralCoupRole(role)))
+		}
+	}
+	if len(parts) == 0 {
+		return "No roles configured"
+	}
+	return strings.Join(parts, ", ")
+}
+
+// CoupRoleCountModeLabel identifies whether role counts are preset-seeded or custom.
+func CoupRoleCountModeLabel(room *Room) string {
+	if room != nil && room.CoupRoleCountsCustom {
+		return "Custom role counts"
+	}
+	return "Preset role counts"
 }
 
 // CoupPresetSummary returns a readable role-count summary for a Coup preset.
@@ -224,6 +354,23 @@ func pluralCoupRole(role RoleType) string {
 	default:
 		return string(role) + "s"
 	}
+}
+
+func emptyCoupRoleCounts() CoupRoleCounts {
+	counts := make(CoupRoleCounts, len(coupRoleSummaryOrder))
+	for _, role := range coupRoleSummaryOrder {
+		counts[role] = 0
+	}
+	return counts
+}
+
+func isCoupRoleCountRole(role RoleType) bool {
+	for _, knownRole := range coupRoleSummaryOrder {
+		if role == knownRole {
+			return true
+		}
+	}
+	return false
 }
 
 // NormalizeCoupInformationPolicy fills omitted policy fields with Coup defaults.
@@ -359,6 +506,53 @@ func AssignCoupRolesWithInformation(players []*Player, preset CoupPreset, policy
 	})
 
 	for i, player := range shuffled {
+		role := *coupRoleCards[roleTypes[i]]
+		player.Role = &role
+		if role.GetRoleType() == RoleKing {
+			player.RoleRevealed = true
+			player.FaceUp = true
+		} else {
+			player.RoleRevealed = false
+			player.FaceUp = false
+		}
+	}
+
+	applyCoupInformation(activePlayers, NormalizeCoupInformationPolicy(policy))
+
+	return nil
+}
+
+// AssignCoupRolesWithCountsAndInformation assigns Coup roles from a custom role-count pool.
+func AssignCoupRolesWithCountsAndInformation(players []*Player, counts CoupRoleCounts, policy CoupInformationPolicy) error {
+	activePlayers := make([]*Player, 0, len(players))
+	for _, player := range players {
+		if !player.IsHost {
+			activePlayers = append(activePlayers, player)
+		}
+	}
+
+	if err := ValidateCoupRoleCounts(counts, len(activePlayers)); err != nil {
+		return err
+	}
+
+	counts = NormalizeCoupRoleCounts(counts)
+	roleTypes := make([]RoleType, 0, len(activePlayers))
+	for _, role := range coupRoleSummaryOrder {
+		for i := 0; i < counts[role]; i++ {
+			roleTypes = append(roleTypes, role)
+		}
+	}
+
+	shuffledPlayers := make([]*Player, len(activePlayers))
+	copy(shuffledPlayers, activePlayers)
+	rand.Shuffle(len(shuffledPlayers), func(i, j int) {
+		shuffledPlayers[i], shuffledPlayers[j] = shuffledPlayers[j], shuffledPlayers[i]
+	})
+	rand.Shuffle(len(roleTypes), func(i, j int) {
+		roleTypes[i], roleTypes[j] = roleTypes[j], roleTypes[i]
+	})
+
+	for i, player := range shuffledPlayers {
 		role := *coupRoleCards[roleTypes[i]]
 		player.Role = &role
 		if role.GetRoleType() == RoleKing {

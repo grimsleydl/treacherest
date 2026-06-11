@@ -1,6 +1,9 @@
 package game
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAssignCoupRoles_DocumentedPresetMatrix(t *testing.T) {
 	tests := []struct {
@@ -113,6 +116,161 @@ func TestAssignCoupRoles_DocumentedPresetMatrix(t *testing.T) {
 	}
 }
 
+func TestCoupRoleCountsForPreset_SeedsEditableCounts(t *testing.T) {
+	counts, ok := CoupRoleCountsForPreset(CoupPresetEightChaos)
+	if !ok {
+		t.Fatal("expected eight-player chaos preset counts")
+	}
+
+	want := CoupRoleCounts{
+		RoleKing:        1,
+		RoleBlueKnight:  2,
+		RoleBlackKnight: 2,
+		RoleRedKnight:   1,
+		RoleGreenKnight: 1,
+		RoleWasteland:   1,
+	}
+	for role, wantCount := range want {
+		if counts[role] != wantCount {
+			t.Fatalf("expected %s count %d, got %d in %v", role, wantCount, counts[role], counts)
+		}
+	}
+
+	counts[RoleWasteland] = 0
+	freshCounts, _ := CoupRoleCountsForPreset(CoupPresetEightChaos)
+	if freshCounts[RoleWasteland] != 1 {
+		t.Fatal("expected preset counts to be returned as a defensive copy")
+	}
+}
+
+func TestValidateCoupRoleCounts_ReportsNormalStartFailures(t *testing.T) {
+	tests := []struct {
+		name        string
+		counts      CoupRoleCounts
+		players     int
+		wantMessage string
+	}{
+		{
+			name: "total mismatch",
+			counts: CoupRoleCounts{
+				RoleKing:        1,
+				RoleBlueKnight:  1,
+				RoleBlackKnight: 1,
+				RoleRedKnight:   1,
+				RoleGreenKnight: 1,
+			},
+			players:     6,
+			wantMessage: "Coup role counts total 5 but there are 6 active players",
+		},
+		{
+			name: "missing King",
+			counts: CoupRoleCounts{
+				RoleBlueKnight:  2,
+				RoleBlackKnight: 1,
+				RoleRedKnight:   1,
+				RoleGreenKnight: 1,
+			},
+			players:     5,
+			wantMessage: "Coup role counts require exactly one King",
+		},
+		{
+			name: "missing Red",
+			counts: CoupRoleCounts{
+				RoleKing:        1,
+				RoleBlueKnight:  2,
+				RoleBlackKnight: 1,
+				RoleGreenKnight: 1,
+			},
+			players:     5,
+			wantMessage: "Coup role counts require exactly one Red Knight",
+		},
+		{
+			name: "multiple Kings",
+			counts: CoupRoleCounts{
+				RoleKing:        2,
+				RoleBlueKnight:  1,
+				RoleRedKnight:   1,
+				RoleGreenKnight: 1,
+			},
+			players:     5,
+			wantMessage: "Coup role counts require exactly one King",
+		},
+		{
+			name: "multiple Reds",
+			counts: CoupRoleCounts{
+				RoleKing:        1,
+				RoleBlueKnight:  1,
+				RoleRedKnight:   2,
+				RoleGreenKnight: 1,
+			},
+			players:     5,
+			wantMessage: "Coup role counts require exactly one Red Knight",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateCoupRoleCounts(tt.counts, tt.players)
+			if err == nil {
+				t.Fatal("expected validation error")
+			}
+			if err.Error() != tt.wantMessage {
+				t.Fatalf("expected %q, got %q", tt.wantMessage, err.Error())
+			}
+		})
+	}
+}
+
+func TestAssignCoupRolesWithCounts_UsesCustomPoolAndInformationPolicy(t *testing.T) {
+	players := makeCoupTestPlayers(6)
+	counts := CoupRoleCounts{
+		RoleKing:        1,
+		RoleBlueKnight:  2,
+		RoleBlackKnight: 1,
+		RoleRedKnight:   1,
+		RoleGreenKnight: 1,
+	}
+	policy := CoupInformationPolicy{
+		KingToBlue: CoupKingKnowsAllBlue,
+		RedToBlack: CoupRedKnowsAllBlack,
+	}
+
+	if err := AssignCoupRolesWithCountsAndInformation(players, counts, policy); err != nil {
+		t.Fatalf("AssignCoupRolesWithCountsAndInformation returned error: %v", err)
+	}
+
+	gotRoles := map[RoleType]int{}
+	for _, player := range players {
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		roleType := player.Role.GetRoleType()
+		gotRoles[roleType]++
+		if roleType == RoleKing {
+			if !player.RoleRevealed || !player.FaceUp {
+				t.Fatalf("expected King %s to start revealed", player.Name)
+			}
+		} else if player.RoleRevealed || player.FaceUp {
+			t.Fatalf("expected non-King %s to start hidden", player.Name)
+		}
+	}
+
+	for role, wantCount := range counts {
+		if gotRoles[role] != wantCount {
+			t.Fatalf("expected %d %s role(s), got counts %v", wantCount, role, gotRoles)
+		}
+	}
+
+	king := findCoupTestPlayer(t, players, RoleKing)
+	red := findCoupTestPlayer(t, players, RoleRedKnight)
+	if !cardHasRulingContaining(king.Role, "Private information: Blue Knights:") {
+		t.Fatalf("expected King to receive Blue Knight private info, got %#v", king.Role.Rulings)
+	}
+	if !cardHasRulingContaining(red.Role, "Private information: Black Knights:") {
+		t.Fatalf("expected Red to receive Black Knight private info, got %#v", red.Role.Rulings)
+	}
+}
+
 func makeCoupTestPlayers(count int) []*Player {
 	players := make([]*Player, 0, count)
 	for i := 0; i < count; i++ {
@@ -120,4 +278,16 @@ func makeCoupTestPlayers(count int) []*Player {
 		players = append(players, NewPlayer(id, "Player "+id, "session-"+id))
 	}
 	return players
+}
+
+func cardHasRulingContaining(card *Card, needle string) bool {
+	if card == nil {
+		return false
+	}
+	for _, ruling := range card.Rulings {
+		if strings.Contains(ruling, needle) {
+			return true
+		}
+	}
+	return false
 }
