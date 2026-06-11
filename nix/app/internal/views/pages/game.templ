@@ -308,7 +308,13 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
 				<h3 class="font-bold text-primary">Inquisition Result</h3>
 				if room.CoupInquisition.Last.Success {
-					<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
+					if game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic {
+						<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
+					} else if currentPlayer.ID == room.CoupInquisition.Last.InquisitorID {
+						<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red.</p>
+					} else {
+						<p class="text-sm text-success">Inquisition succeeded. The result was shown privately to the inquisitor.</p>
+					}
 				} else {
 					<p class="text-sm text-error">Inquisition failed. { coupPlayerName(room, room.CoupInquisition.Last.InquisitorID) } should lose { fmt.Sprintf("%d", room.CoupInquisition.Last.PenaltyLife) } life.</p>
 				}

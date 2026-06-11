@@ -126,6 +126,28 @@ func TestConfirmCoupInquisition_CorrectGuessRevealsRedAndRecordsSuccess(t *testi
 	}
 }
 
+func TestConfirmCoupInquisition_PrivateResultRecordsSuccessWithoutRevealingRed(t *testing.T) {
+	h := newTestHandler()
+	room, blue, red, green := setupCoupInquisitionRoom(t, h)
+	room.CoupInquisitionResultPolicy = game.CoupInquisitionResultPrivate
+	h.store.UpdateRoom(room)
+	callCoupInquisitionForTest(t, h, room, blue, red, 39)
+
+	confirmCoupInquisitionForTest(t, h, room, green)
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	updatedRed := updatedRoom.GetPlayer(red.ID)
+	if updatedRed.RoleRevealed || updatedRed.FaceUp {
+		t.Fatal("expected private Inquisition result not to publicly reveal Red")
+	}
+	if updatedRoom.CoupInquisition == nil || !updatedRoom.CoupInquisition.Succeeded {
+		t.Fatal("expected private Inquisition success to be recorded")
+	}
+	if updatedRoom.CoupInquisition.Last == nil || !updatedRoom.CoupInquisition.Last.Success {
+		t.Fatal("expected private successful result to be recorded")
+	}
+}
+
 func TestConfirmCoupInquisition_RejectsBlueWitnessAndKeepsPending(t *testing.T) {
 	h := newTestHandler()
 	room, blue, red, green := setupCoupInquisitionRoom(t, h)

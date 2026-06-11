@@ -1,5 +1,13 @@
 package game
 
+// CoupInquisitionResultPolicy controls who sees a successful Inquisition result.
+type CoupInquisitionResultPolicy string
+
+const (
+	CoupInquisitionResultPublic  CoupInquisitionResultPolicy = "public"
+	CoupInquisitionResultPrivate CoupInquisitionResultPolicy = "private"
+)
+
 // CoupInquisitionState tracks public/default Inquisition flow state.
 type CoupInquisitionState struct {
 	Attempts  map[string]CoupInquisitionAttempt
@@ -36,4 +44,14 @@ func CoupInquisitionPenalty(currentLife int) int {
 		return 0
 	}
 	return (currentLife + 1) / 2
+}
+
+// NormalizeCoupInquisitionResultPolicy returns the default public result policy.
+func NormalizeCoupInquisitionResultPolicy(policy CoupInquisitionResultPolicy) CoupInquisitionResultPolicy {
+	switch policy {
+	case CoupInquisitionResultPrivate:
+		return CoupInquisitionResultPrivate
+	default:
+		return CoupInquisitionResultPublic
+	}
 }

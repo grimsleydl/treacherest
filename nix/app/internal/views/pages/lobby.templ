@@ -172,6 +172,18 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 						</select>
 					</form>
 					<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
+					<div class="divider my-1"></div>
+					<form
+						id="coup-inquisition-settings-form"
+						class="form-control w-full"
+						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
+					>
+						<label class="label" for="coup-inquisition-result"><span class="label-text">Inquisition Result</span></label>
+						<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-full">
+							<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
+							<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
+						</select>
+					</form>
 					if coupPresetMatchesActivePlayers(room) {
 						<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
 					} else {

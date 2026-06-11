@@ -195,8 +195,10 @@ func (h *Handler) ConfirmCoupInquisition(w http.ResponseWriter, r *http.Request)
 	result.Resolved = true
 	result.Success = target.Role != nil && target.Role.GetRoleType() == game.RoleRedKnight
 	if result.Success {
-		target.RoleRevealed = true
-		target.FaceUp = true
+		if game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic {
+			target.RoleRevealed = true
+			target.FaceUp = true
+		}
 		state.Succeeded = true
 	}
 	state.Last = &result
