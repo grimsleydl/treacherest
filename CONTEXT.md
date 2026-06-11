@@ -49,7 +49,7 @@ A Debug Mode aid that starts a room outside normal start validation for playtest
 _Avoid_: Normal start, production bypass
 
 **Debug Player**:
-A synthetic active player used in Debug Mode to fill a table seat without requiring a real connected player.
+A stable synthetic active player used in Debug Mode to fill a visible table seat without requiring a real connected player.
 _Avoid_: Dummy player, host, spectator, bot
 
 **Reveal**:
