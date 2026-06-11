@@ -111,6 +111,8 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		AssertContains("Debug Control Surface").
 		AssertContains(`id="debug-persistence-controls"`).
 		AssertContains(`id="debug-start-override-controls"`).
+		AssertContains(`id="debug-start-with-debug-players"`).
+		AssertContains(`@post(&#39;/room/DEBUG/debug/start-with-debug-players&#39;)`).
 		AssertContains(`id="debug-insights-container"`).
 		AssertContains(`id="debug-view-as-player-container"`).
 		AssertContains(`id="debug-dump"`).
@@ -158,4 +160,30 @@ func TestGamePage_DoesNotRenderDebugControlSurface(t *testing.T) {
 		AssertNotContains("Debug Control Surface").
 		AssertNotContains(`id="debug-clear"`).
 		AssertNotContains("setupDebugPanel")
+}
+
+func TestHostDashboardLobby_DebugPlayersAreVisiblyMarked(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "ROOM1",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	debugPlayer := &game.Player{
+		ID:      "debug-1",
+		Name:    "Debug Player 1",
+		IsDebug: true,
+	}
+	room.Players[host.ID] = host
+	room.Players[debugPlayer.ID] = debugPlayer
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains("Debug Player 1").
+		AssertContains(`<span class="badge badge-warning badge-sm">Debug</span>`)
 }

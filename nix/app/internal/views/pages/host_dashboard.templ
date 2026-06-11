@@ -9,7 +9,7 @@ import (
 )
 
 templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebug("Host Dashboard", hostDebugControlsEnabled(cfg, player)) {
+	@layouts.BaseWithDebug("Host Dashboard", hostDebugControlsEnabled(cfg, player), room.Code) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
@@ -69,6 +69,9 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 					<div class="flex items-center p-4 rounded-lg bg-base-300 text-lg">
 						<div class="badge badge-primary badge-lg mr-4">{ i + 1 }</div>
 						<span>{ player.Name }</span>
+						if player.IsDebug {
+							<span class="badge badge-warning badge-sm">Debug</span>
+						}
 					</div>
 				}
 			</div>
@@ -121,6 +124,9 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 						<div class="flex items-center gap-3 min-w-0">
 							<div class="badge badge-primary badge-lg">{ i + 1 }</div>
 							<span class={ templ.KV("text-lg truncate", true), templ.KV("line-through opacity-60", p.IsEliminated) }>{ p.Name }</span>
+							if p.IsDebug {
+								<span class="badge badge-warning badge-sm">Debug</span>
+							}
 							if p.IsEliminated {
 								<span class="badge badge-error badge-sm">Eliminated</span>
 							}
@@ -173,19 +179,19 @@ templ HostDashboardEnded(room *game.Room, player *game.Player) {
 
 // Full page versions for direct navigation (not SSE updates)
 templ HostDashboardCountdownPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebug("Host Dashboard - Starting", hostDebugControlsEnabled(cfg, player)) {
+	@layouts.BaseWithDebug("Host Dashboard - Starting", hostDebugControlsEnabled(cfg, player), room.Code) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
 
 templ HostDashboardPlayingPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebug("Host Dashboard - Game", hostDebugControlsEnabled(cfg, player)) {
+	@layouts.BaseWithDebug("Host Dashboard - Game", hostDebugControlsEnabled(cfg, player), room.Code) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
 
 templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebug("Host Dashboard - Game Over", hostDebugControlsEnabled(cfg, player)) {
+	@layouts.BaseWithDebug("Host Dashboard - Game Over", hostDebugControlsEnabled(cfg, player), room.Code) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }

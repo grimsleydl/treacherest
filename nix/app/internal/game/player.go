@@ -14,6 +14,7 @@ type Player struct {
 	JoinedAt     time.Time
 	SessionID    string // Used for reconnection
 	IsHost       bool   // Indicates if the player is the host who created the room but doesn't participate
+	IsDebug      bool   // Indicates a synthetic Debug Mode player seat
 
 	// Ability system
 	AbilityState *ability.AbilityState // Tracks pending abilities, transformations, active effects

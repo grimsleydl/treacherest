@@ -3,18 +3,18 @@ package layouts
 import "treacherest/internal/views/components"
 
 templ Base(title string) {
-	@baseLayout(title, false) {
+	@baseLayout(title, false, "") {
 		{ children... }
 	}
 }
 
-templ BaseWithDebug(title string, debugMode bool) {
-	@baseLayout(title, debugMode) {
+templ BaseWithDebug(title string, debugMode bool, debugRoomCode string) {
+	@baseLayout(title, debugMode, debugRoomCode) {
 		{ children... }
 	}
 }
 
-templ baseLayout(title string, debugMode bool) {
+templ baseLayout(title string, debugMode bool, debugRoomCode string) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dracula">
 		<head>
@@ -53,7 +53,7 @@ templ baseLayout(title string, debugMode bool) {
 				data-effect="$stateBackup && window.storeBackup($stateBackup)"
 			></div>
 			if debugMode {
-				@DebugPanel()
+				@DebugPanel(debugRoomCode)
 			}
 			<script>
 				// State backup handling for Cloud Run instance recovery
@@ -180,7 +180,7 @@ templ baseLayout(title string, debugMode bool) {
 	</html>
 }
 
-templ DebugPanel() {
+templ DebugPanel(roomCode string) {
 	<div
 		id="debug-control-surface"
 		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
@@ -202,7 +202,17 @@ templ DebugPanel() {
 					<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
 				</div>
 			</section>
-			<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls"></section>
+			<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls">
+				if roomCode != "" {
+					<button
+						id="debug-start-with-debug-players"
+						class="btn btn-xs btn-warning w-full"
+						data-on:click={ "@post('/room/" + roomCode + "/debug/start-with-debug-players')" }
+					>
+						Start with Debug Players
+					</button>
+				}
+			</section>
 			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights"></section>
 			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player"></section>
 		</div>
