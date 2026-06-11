@@ -32,6 +32,10 @@ _Avoid_: Rules engine, automated adjudication
 Recording play events after roles are assigned, such as reveals, deaths, Inquisition outcomes, and victory eligibility.
 _Avoid_: Role assignment, rules reference
 
+**Debug Mode**:
+A non-production operating mode for playtesting and inspecting Treacherest games with privileged aids that bypass or expose normal hidden-role flow.
+_Avoid_: Dev mode, admin mode, moderator mode
+
 **Reveal**:
 A public transition where a hidden role becomes known to the table.
 _Avoid_: Private view, screen peek
