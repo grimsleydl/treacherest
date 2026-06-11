@@ -37,6 +37,8 @@ Use role colors as accents rather than full-image color washes. King should read
 
 Avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams. Role colors, heraldry, and props are useful, but the art should preserve suspicion and shifting incentives rather than visually declaring stable team membership.
 
+Wasteland Knight should be visually distinct through gray ruin, exile, and lone-survivor cues, but it should still use the same painterly court-intrigue role-card language as the rest of the Coup set.
+
 Global prompt prefix:
 
 ```text
@@ -96,7 +98,7 @@ The Green Knight, an opportunist envoy watching rival factions from a garden bal
 ```text
 Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
-The Wasteland Knight, a solitary gray-armored exile standing amid the ruined outskirts of the kingdom. Ash-gray armor, cracked banner, abandoned crown fragment in the dust, storm-lit wasteland behind them. The image should imply a lone survivor who shares victory with no one. Dominant accent color: gray.
+The Wasteland Knight, a solitary gray-armored exile standing amid the ruined outskirts of the kingdom while still feeling like part of the same court-intrigue role-card set. Ash-gray armor, cracked banner, abandoned crown fragment in the dust, storm-lit wasteland behind them. The image should imply a lone survivor who shares victory with no one. Dominant accent color: gray.
 ```
 
 ## Optional Style Packs
