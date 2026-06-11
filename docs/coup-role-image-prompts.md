@@ -33,6 +33,8 @@ Importer entry point: `nix/app/scripts/coup-images/import_coup_images.go`.
 
 Use Canonical Coup Art Direction by default: neutral court-intrigue fantasy role-card art. The goal is political tension, hidden incentives, and readable role identity without making the roles look like fixed hard teams.
 
+Avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams. Role colors, heraldry, and props are useful, but the art should preserve suspicion and shifting incentives rather than visually declaring stable team membership.
+
 Global prompt prefix:
 
 ```text
@@ -42,7 +44,7 @@ Vertical fantasy role-card illustration for a hidden-role Commander table varian
 Recommended negative prompt:
 
 ```text
-readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, modern gun, blurry face, extra limbs
+readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, matching team uniforms, modern gun, blurry face, extra limbs
 ```
 
 ## Canonical Role Prompts
