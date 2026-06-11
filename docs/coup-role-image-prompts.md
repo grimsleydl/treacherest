@@ -37,18 +37,20 @@ Use role colors as accents rather than full-image color washes. King should read
 
 Avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams. Role colors, heraldry, and props are useful, but the art should preserve suspicion and shifting incentives rather than visually declaring stable team membership.
 
+Use one primary identifiable role figure per image. Anonymous silhouettes, courtiers, shadows, or partial figures are fine for atmosphere, but the art should not show multiple identifiable role characters together in ways that imply private information, fixed alliances, or role relationships.
+
 Wasteland Knight should be visually distinct through gray ruin, exile, and lone-survivor cues, but it should still use the same painterly court-intrigue role-card language as the rest of the Coup set.
 
 Global prompt prefix:
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, rich palette with role-color accents instead of monochrome color wash, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition with one primary identifiable role figure, centered crop-safe character and symbolic props, rich lighting, clean silhouette, rich palette with role-color accents instead of monochrome color wash, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 ```
 
 Recommended negative prompt:
 
 ```text
-readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, matching team uniforms, monochrome color wash, single-color card, modern gun, blurry face, extra limbs
+readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, matching team uniforms, multiple identifiable role characters, explicit alliance scene, monochrome color wash, single-color card, modern gun, blurry face, extra limbs
 ```
 
 ## Canonical Role Prompts

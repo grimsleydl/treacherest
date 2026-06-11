@@ -495,6 +495,7 @@ Potential state values:
 - Role colors should appear as accents, not full-image color washes.
 - Wasteland art should feel gray, ruined, and exiled while still belonging to the same Coup court-intrigue set.
 - Art should avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams.
+- Art should use one primary identifiable role figure, with only anonymous silhouettes or courtiers for atmosphere.
 - Optional visual style packs are prompt guidance only for now, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
 - The import pipeline should keep one image per Coup role until a later UI need justifies multiple image sets.
 - Printable/exportable role cards.
