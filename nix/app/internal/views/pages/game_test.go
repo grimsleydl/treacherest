@@ -309,6 +309,108 @@ func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {
 		AssertNotContains("any number of untapped creatures")
 }
 
+func TestGameBody_CoupInquisitionCallUI(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, blue, _, _ := makeCoupInquisitionViewRoom()
+
+	renderer.Render(GameBody(room, blue)).
+		AssertContains("Inquisition").
+		AssertContains("coup-inquisition-form").
+		AssertContains(`@post(&#39;/room/COUPINQ/coup/inquisition/blue&#39;, {contentType: &#39;form&#39;})`).
+		AssertContains(`name="targetID"`).
+		AssertContains("Red Player").
+		AssertContains(`name="currentLife"`)
+}
+
+func TestGameBody_CoupInquisitionPendingNoticeHidesResultUntilConfirmed(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, blue, red, green := makeCoupInquisitionViewRoom()
+	blue.RoleRevealed = true
+	blue.FaceUp = true
+	room.CoupInquisition = &game.CoupInquisitionState{
+		Attempts: map[string]game.CoupInquisitionAttempt{
+			blue.ID: {
+				InquisitorID: blue.ID,
+				TargetID:     red.ID,
+				CurrentLife:  39,
+				PenaltyLife:  20,
+			},
+		},
+		Pending: &game.CoupInquisitionAttempt{
+			InquisitorID: blue.ID,
+			TargetID:     red.ID,
+			CurrentLife:  39,
+			PenaltyLife:  20,
+		},
+	}
+
+	renderer.Render(GameBody(room, green)).
+		AssertContains("Inquisition Notice").
+		AssertContains("Blue Player named Red Player").
+		AssertContains(`@post(&#39;/room/COUPINQ/coup/inquisition/confirm&#39;)`).
+		AssertNotContains("Red Knight")
+}
+
+func TestGameBody_CoupInquisitionFailureResultShowsPenalty(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, blue, _, green := makeCoupInquisitionViewRoom()
+	room.CoupInquisition = &game.CoupInquisitionState{
+		Attempts: map[string]game.CoupInquisitionAttempt{
+			blue.ID: {
+				InquisitorID: blue.ID,
+				TargetID:     green.ID,
+				CurrentLife:  39,
+				PenaltyLife:  20,
+				Resolved:     true,
+			},
+		},
+		Last: &game.CoupInquisitionAttempt{
+			InquisitorID: blue.ID,
+			TargetID:     green.ID,
+			CurrentLife:  39,
+			PenaltyLife:  20,
+			Resolved:     true,
+			Success:      false,
+		},
+	}
+
+	renderer.Render(GameBody(room, blue)).
+		AssertContains("Inquisition failed").
+		AssertContains("lose 20 life")
+}
+
+func makeCoupInquisitionViewRoom() (*game.Room, *game.Player, *game.Player, *game.Player) {
+	room := &game.Room{
+		Code:       "COUPINQ",
+		State:      game.StatePlaying,
+		RulesMode:  game.RulesModeCoup,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 5,
+	}
+	blue := &game.Player{
+		ID:     "blue",
+		Name:   "Blue Player",
+		Role:   mockCoupCard(1002, "Blue Knight"),
+		FaceUp: false,
+	}
+	red := &game.Player{
+		ID:     "red",
+		Name:   "Red Player",
+		Role:   mockCoupCard(1004, "Red Knight"),
+		FaceUp: false,
+	}
+	green := &game.Player{
+		ID:     "green",
+		Name:   "Green Player",
+		Role:   mockCoupCard(1005, "Green Knight"),
+		FaceUp: false,
+	}
+	for _, player := range []*game.Player{blue, red, green} {
+		room.Players[player.ID] = player
+	}
+	return room, blue, red, green
+}
+
 func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 

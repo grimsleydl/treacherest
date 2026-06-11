@@ -56,6 +56,7 @@ type Room struct {
 	CoupPreset                 CoupPreset
 	CoupInfoPolicy             CoupInformationPolicy
 	CoupRoyalGuardBlockerLimit int
+	CoupInquisition            *CoupInquisitionState
 	Players                    map[string]*Player
 
 	MaxPlayers int

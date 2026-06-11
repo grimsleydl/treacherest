@@ -110,6 +110,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				<!-- Leader confirmation prompts for pending ability reveals -->
 				@components.LeaderConfirmationPrompts(room, currentPlayer)
 				@CoupRoyalGuardPanel(room, currentPlayer)
+				@CoupInquisitionPanel(room, currentPlayer)
 				<!-- Unveil button and face state toggle for current player -->
 				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
 					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
@@ -282,6 +283,70 @@ templ CoupRoyalGuardPanel(room *game.Room, currentPlayer *game.Player) {
 	}
 }
 
+templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
+	if room.RulesMode == game.RulesModeCoup && room.State == game.StatePlaying {
+		if room.CoupInquisition != nil && room.CoupInquisition.Pending != nil {
+			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
+				<h3 class="font-bold text-primary">Inquisition Notice</h3>
+				<p class="text-sm text-base-content/80">
+					{ coupPlayerName(room, room.CoupInquisition.Pending.InquisitorID) } named { coupPlayerName(room, room.CoupInquisition.Pending.TargetID) }.
+				</p>
+				<p class="text-xs text-base-content/60">Waiting for one living non-Blue witness to confirm the table was notified.</p>
+				if coupCanConfirmInquisition(room, currentPlayer) {
+					<div class="mt-3">
+						<button
+							class="btn btn-sm btn-outline btn-primary"
+							data-on:click={ fmt.Sprintf("@post('/room/%s/coup/inquisition/confirm')", room.Code) }
+						>
+							Confirm Notice
+						</button>
+					</div>
+				}
+			</div>
+		}
+		if room.CoupInquisition != nil && room.CoupInquisition.Last != nil {
+			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
+				<h3 class="font-bold text-primary">Inquisition Result</h3>
+				if room.CoupInquisition.Last.Success {
+					<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
+				} else {
+					<p class="text-sm text-error">Inquisition failed. { coupPlayerName(room, room.CoupInquisition.Last.InquisitorID) } should lose { fmt.Sprintf("%d", room.CoupInquisition.Last.PenaltyLife) } life.</p>
+				}
+			</div>
+		}
+		if currentPlayer.Role != nil &&
+			currentPlayer.Role.GetRoleType() == game.RoleBlueKnight &&
+			!currentPlayer.IsEliminated &&
+			!coupHasCalledInquisition(room, currentPlayer.ID) &&
+			(room.CoupInquisition == nil || room.CoupInquisition.Pending == nil) {
+			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
+				<h3 class="font-bold text-primary">Inquisition</h3>
+				<form
+					id="coup-inquisition-form"
+					class="space-y-3"
+					data-on:submit={ fmt.Sprintf("evt.preventDefault(); @post('/room/%s/coup/inquisition/%s', {contentType: 'form'})", room.Code, currentPlayer.ID) }
+				>
+					<label class="form-control w-full">
+						<span class="label-text">Name suspected Red player</span>
+						<select name="targetID" class="select select-bordered select-sm w-full">
+							for _, player := range coupInquisitionTargets(room, currentPlayer) {
+								<option value={ player.ID }>{ player.Name }</option>
+							}
+						</select>
+					</label>
+					<label class="form-control w-full">
+						<span class="label-text">Current life total</span>
+						<input name="currentLife" type="number" min="0" value="40" class="input input-bordered input-sm w-full"/>
+					</label>
+					<button class="btn btn-sm btn-outline btn-primary" type="submit">
+						Call Inquisition
+					</button>
+				</form>
+			</div>
+		}
+	}
+}
+
 // MiniRoleCard renders a compact role card for inline reveals
 templ MiniRoleCard(card *game.Card) {
 	if card == nil {
@@ -336,4 +401,43 @@ templ FormatRulings(rulings []string) {
 			}
 		}
 	</div>
+}
+
+func coupPlayerName(room *game.Room, playerID string) string {
+	if player := room.GetPlayer(playerID); player != nil {
+		return player.Name
+	}
+	return "Unknown player"
+}
+
+func coupHasCalledInquisition(room *game.Room, playerID string) bool {
+	if room.CoupInquisition == nil || room.CoupInquisition.Attempts == nil {
+		return false
+	}
+	_, ok := room.CoupInquisition.Attempts[playerID]
+	return ok
+}
+
+func coupCanConfirmInquisition(room *game.Room, currentPlayer *game.Player) bool {
+	if room.CoupInquisition == nil || room.CoupInquisition.Pending == nil || currentPlayer == nil {
+		return false
+	}
+	if currentPlayer.IsHost || currentPlayer.IsEliminated || currentPlayer.ID == room.CoupInquisition.Pending.InquisitorID {
+		return false
+	}
+	return currentPlayer.Role == nil || currentPlayer.Role.GetRoleType() != game.RoleBlueKnight
+}
+
+func coupInquisitionTargets(room *game.Room, currentPlayer *game.Player) []*game.Player {
+	targets := make([]*game.Player, 0)
+	for _, player := range room.GetActivePlayers() {
+		if currentPlayer != nil && player.ID == currentPlayer.ID {
+			continue
+		}
+		if player.IsEliminated {
+			continue
+		}
+		targets = append(targets, player)
+	}
+	return targets
 }
