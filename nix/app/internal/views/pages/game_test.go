@@ -353,6 +353,25 @@ func TestGameBody_CoupInquisitionCallUI(t *testing.T) {
 		AssertContains(`name="currentLife"`)
 }
 
+func TestCoupInquisitionPanel_ExcludesKingFromTargets(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, blue, _, _ := makeCoupInquisitionViewRoom()
+	king := &game.Player{
+		ID:           "king",
+		Name:         "King Player",
+		Role:         mockCoupCard(1001, "King"),
+		RoleRevealed: true,
+		FaceUp:       true,
+	}
+	room.Players[king.ID] = king
+
+	renderer.Render(CoupInquisitionPanel(room, blue)).
+		AssertContains(`name="targetID"`).
+		AssertContains("Red Player").
+		AssertContains("Green Player").
+		AssertNotContains("King Player")
+}
+
 func TestGameBody_CoupInquisitionPendingNoticeHidesResultUntilConfirmed(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room, blue, red, green := makeCoupInquisitionViewRoom()

@@ -86,6 +86,56 @@ func TestCallCoupInquisition_RejectsSecondAttemptBySameBlue(t *testing.T) {
 	}
 }
 
+func TestCallCoupInquisition_RejectsKingTargetWithoutMutatingState(t *testing.T) {
+	h := newTestHandler()
+	room, blue, _, _ := setupCoupInquisitionRoom(t, h)
+	king := game.NewPlayer("king", "King Player", "session-king")
+	king.Role = mockHandlerCoupCard(1001, "King")
+	king.RoleRevealed = true
+	king.FaceUp = true
+	room.AddPlayer(king)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("targetID", king.ID)
+	form.Add("currentLife", "39")
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/coup/inquisition/"+blue.ID, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: blue.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("playerID", blue.ID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	h.CallCoupInquisition(w, req)
+
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status 400 for King target, got %d: %s", w.Result().StatusCode, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.GetPlayer(blue.ID).RoleRevealed || updatedRoom.GetPlayer(blue.ID).FaceUp {
+		t.Fatal("expected rejected King target not to reveal Blue")
+	}
+	updatedKing := updatedRoom.GetPlayer(king.ID)
+	if !updatedKing.RoleRevealed || !updatedKing.FaceUp {
+		t.Fatal("expected rejected King target not to mutate King reveal state")
+	}
+	if updatedRoom.CoupInquisition == nil {
+		return
+	}
+	if updatedRoom.CoupInquisition.Pending != nil {
+		t.Fatalf("expected rejected King target not to create pending Inquisition, got %#v", updatedRoom.CoupInquisition.Pending)
+	}
+	if _, ok := updatedRoom.CoupInquisition.Attempts[blue.ID]; ok {
+		t.Fatal("expected rejected King target not to consume Blue's Inquisition attempt")
+	}
+}
+
 func TestConfirmCoupInquisition_CorrectGuessRevealsRedAndRecordsSuccess(t *testing.T) {
 	h := newTestHandler()
 	room, blue, red, green := setupCoupInquisitionRoom(t, h)

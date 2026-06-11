@@ -509,6 +509,9 @@ func coupInquisitionTargets(room *game.Room, currentPlayer *game.Player) []*game
 		if player.IsEliminated {
 			continue
 		}
+		if player.Role != nil && player.Role.GetRoleType() == game.RoleKing {
+			continue
+		}
 		targets = append(targets, player)
 	}
 	return targets

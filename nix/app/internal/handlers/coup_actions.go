@@ -117,6 +117,10 @@ func (h *Handler) CallCoupInquisition(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Inquisition target", http.StatusBadRequest)
 		return
 	}
+	if target.Role != nil && target.Role.GetRoleType() == game.RoleKing {
+		http.Error(w, "King is not a valid Inquisition target", http.StatusBadRequest)
+		return
+	}
 	currentLife, err := strconv.Atoi(r.FormValue("currentLife"))
 	if err != nil || currentLife < 0 {
 		http.Error(w, "Invalid current life total", http.StatusBadRequest)
