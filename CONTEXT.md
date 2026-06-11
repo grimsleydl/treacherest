@@ -36,13 +36,45 @@ _Avoid_: Role assignment, rules reference
 A non-production operating mode for playtesting and inspecting Treacherest games with privileged aids that bypass or expose normal hidden-role flow.
 _Avoid_: Dev mode, admin mode, moderator mode
 
+**Host**:
+A non-playing room participant or display surface used to manage or present a room without receiving a hidden role.
+_Avoid_: Room creator, room operator, debug operator
+
+**Room Operator**:
+The room-authorized person who can manage a room. The room creator is a Room Operator whether they are playing in the game or using a non-playing Host surface. Operator authority is creator-only unless a future co-host feature explicitly defines delegation.
+_Avoid_: Host, first player, active player, co-host
+
+**Operator Session**:
+A browser session that has Room Operator authority for a specific room. Operator authority is established when the room is created and is not inferred from Host status, player order, or room participation.
+_Avoid_: Player cookie, host cookie, viewed player
+
+**Debug Operator**:
+A Room Operator using Debug Mode authority for a room.
+_Avoid_: Impersonated player, non-host player, public user
+
+**Room Management Control**:
+A room-level action such as configuring variants or starting the game. Room Management Controls require Room Operator authority.
+_Avoid_: Player action, debug control, first-player control
+
 **Debug Control Surface**:
-A host-only set of Debug Mode controls for inspecting or mutating a room outside normal player-facing flows.
+A Debug Operator-only set of controls for inspecting or mutating a room outside normal player-facing flows.
 _Avoid_: Player controls, public overlay
 
 **Debug Impersonation**:
-A Debug Mode aid where the host views the game from a selected player's perspective without making that player a real host. Its player-facing label should be "View As Player" while it remains read-only.
-_Avoid_: Player login, ownership transfer, acting as player
+A Debug Mode aid where the Debug Operator uses a selected player's perspective and normal player actions without granting that player operator authority. Its player-facing label should be "View As Player" unless a more explicit action label is needed.
+_Avoid_: Player login, ownership transfer, operator transfer
+
+**Viewed Player**:
+The player identity currently being rendered and acted as by a Room Operator during Debug Impersonation.
+_Avoid_: Current operator, host, authenticated player
+
+**Debug Perspective Override**:
+A per-room Operator Session selection that makes player-facing room surfaces render as a Viewed Player until cleared. It only affects rendering and actions while Debug Mode is active. Eliminated players remain valid Viewed Players; removed players do not.
+_Avoid_: Global impersonation, role reassignment, player transfer
+
+**Operator View**:
+The Debug Mode perspective with no Viewed Player selected. A playing Room Operator sees their own player-facing room surface with debug controls; a non-playing Host sees the host dashboard with debug controls.
+_Avoid_: Self, default player, selected player
 
 **Start Override**:
 A Debug Mode aid that starts a room outside normal start validation for playtesting incomplete or unusual table states.
@@ -53,7 +85,7 @@ A stable synthetic active player used in Debug Mode to fill a visible table seat
 _Avoid_: Dummy player, host, spectator, bot
 
 **Debug Insights**:
-A host-only Debug Mode view of normally hidden or derived room facts used to verify hidden-role setup and state tracking.
+A Debug Operator-only view of normally hidden or derived room facts used to verify hidden-role setup and state tracking.
 _Avoid_: Public rules reference, player view
 
 **Reveal**:
