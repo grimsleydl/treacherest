@@ -41,7 +41,7 @@ A host-only set of Debug Mode controls for inspecting or mutating a room outside
 _Avoid_: Player controls, public overlay
 
 **Debug Impersonation**:
-A Debug Mode aid where the host views the game from a selected player's perspective without making that player a real host.
+A Debug Mode aid where the host views the game from a selected player's perspective without making that player a real host. Its player-facing label should be "View As Player" while it remains read-only.
 _Avoid_: Player login, ownership transfer, acting as player
 
 **Start Override**:
