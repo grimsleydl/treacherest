@@ -371,6 +371,71 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Advisory Win: black")
 }
 
+func TestHostDashboardLobby_DebugInsightsAreRoleColoredAndClickable(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:                "DBG10",
+		State:               game.StatePlaying,
+		RulesMode:           game.RulesModeCoup,
+		CoupPreset:          game.CoupPresetNine,
+		Players:             make(map[string]*game.Player),
+		DebugViewedPlayerID: "debug-1",
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
+	players := []*game.Player{
+		host,
+		{ID: "king", Name: "King Player", Role: mockCoupCard(1001, "King")},
+		{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")},
+		{ID: "black", Name: "Black Player", Role: mockCoupCard(1003, "Black Knight")},
+		{ID: "red", Name: "Red Player", Role: mockCoupCard(1004, "Red Knight")},
+		{ID: "green", Name: "Green Player", Role: mockCoupCard(1005, "Green Knight")},
+		{ID: "wasteland", Name: "Wasteland Player", Role: mockCoupCard(1006, "Wasteland Knight")},
+		{ID: "debug-1", Name: "Debug Player 1", Role: mockCoupCard(1005, "Green Knight"), IsDebug: true},
+	}
+	for _, player := range players {
+		room.Players[player.ID] = player
+	}
+	room.OperatorSessionID = host.SessionID
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains(`data-debug-role-accent="gold"`).
+		AssertContains(`data-debug-role-accent="blue"`).
+		AssertContains(`data-debug-role-accent="black"`).
+		AssertContains(`data-debug-role-accent="red"`).
+		AssertContains(`data-debug-role-accent="green"`).
+		AssertContains(`data-debug-role-accent="gray"`).
+		AssertContains(`id="debug-insight-player-debug-1"`).
+		AssertContains(`data-debug-viewed-player="true"`).
+		AssertContains("Debug Player 1").
+		AssertContains("Debug Player: yes").
+		AssertContains(`fetch(&#39;/room/DBG10/debug/view-as/blue&#39;`).
+		AssertContains(`fetch(&#39;/room/DBG10/debug/view-as/debug-1&#39;`)
+}
+
+func TestHostDashboardLobby_DebugInsightsDoNotLeakToNonOperator(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:      "DBG11",
+		State:     game.StatePlaying,
+		RulesMode: game.RulesModeCoup,
+		Players:  make(map[string]*game.Player),
+	}
+	operator := &game.Player{ID: "operator", Name: "Operator", SessionID: "session-operator"}
+	viewer := &game.Player{ID: "viewer", Name: "Viewer", SessionID: "session-viewer", Role: mockCoupCard(1004, "Red Knight")}
+	room.Players[operator.ID] = operator
+	room.Players[viewer.ID] = viewer
+	room.OperatorSessionID = operator.SessionID
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, viewer, cfg, nil)).
+		AssertNotContains(`id="debug-control-surface"`).
+		AssertNotContains(`data-debug-role-accent=`).
+		AssertNotContains(`/debug/view-as/`)
+}
+
 func TestHostDashboardLobby_DebugInsightsShowGreenRedShareLockPendingBeforeKingFall(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{

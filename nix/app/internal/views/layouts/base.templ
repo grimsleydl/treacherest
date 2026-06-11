@@ -248,7 +248,7 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 				</section>
 				<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights">
 					if room != nil {
-						@DebugInsights(room)
+						@DebugInsights(room, roomCode)
 					}
 				</section>
 				<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
@@ -415,7 +415,7 @@ func debugViewerName(viewer *game.Player) string {
 	return viewer.Name
 }
 
-templ DebugInsights(room *game.Room) {
+templ DebugInsights(room *game.Room, roomCode string) {
 	<div class="space-y-2 text-xs">
 		<h3 class="font-semibold uppercase text-base-content/70">Debug Insights</h3>
 		<div>Rules Mode: { string(room.RulesMode) }</div>
@@ -425,7 +425,15 @@ templ DebugInsights(room *game.Room) {
 		<div>Debug Start: { string(room.DebugStartMode) }</div>
 		<div class="space-y-1">
 			for _, player := range room.GetActivePlayers() {
-				<div class="rounded bg-base-200 p-2 space-y-1">
+				<button
+					id={ debugInsightPlayerElementID(player) }
+					type="button"
+					class={ debugInsightPlayerClass(room, player) }
+					style={ debugRoleAccentStyle(player) }
+					data-debug-role-accent={ debugRoleAccent(player) }
+					data-debug-viewed-player={ debugTrueFalse(player.ID == room.DebugViewedPlayerID) }
+					data-on:click={ debugViewAsPlayerButtonAction(roomCode, player.ID) }
+				>
 					<div class="font-semibold">{ player.Name }</div>
 					<div>Role: { debugRoleName(player) }</div>
 					<div>Revealed: { debugBool(player.RoleRevealed) }</div>
@@ -436,7 +444,7 @@ templ DebugInsights(room *game.Room) {
 							<div>{ ruling }</div>
 						}
 					}
-				</div>
+				</button>
 			}
 		</div>
 		if room.RulesMode == game.RulesModeCoup {
@@ -453,6 +461,77 @@ func debugBool(value bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+func debugTrueFalse(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}
+
+func debugInsightPlayerElementID(player *game.Player) string {
+	if player == nil {
+		return "debug-insight-player-unknown"
+	}
+	replacer := strings.NewReplacer(" ", "-", "/", "-", "\\", "-", ":", "-", ".", "-")
+	return "debug-insight-player-" + replacer.Replace(player.ID)
+}
+
+func debugInsightPlayerClass(room *game.Room, player *game.Player) string {
+	className := "w-full rounded bg-base-200 p-2 space-y-1 border text-left transition-colors hover:bg-base-100"
+	if room != nil && player != nil && player.ID == room.DebugViewedPlayerID {
+		className += " ring-2 ring-warning"
+	}
+	return className
+}
+
+func debugRoleAccent(player *game.Player) string {
+	if player == nil || player.Role == nil {
+		return "none"
+	}
+	switch player.Role.GetRoleType() {
+	case game.RoleKing:
+		return "gold"
+	case game.RoleBlueKnight:
+		return "blue"
+	case game.RoleBlackKnight:
+		return "black"
+	case game.RoleRedKnight:
+		return "red"
+	case game.RoleGreenKnight:
+		return "green"
+	case game.RoleWasteland:
+		return "gray"
+	default:
+		return "none"
+	}
+}
+
+func debugRoleAccentStyle(player *game.Player) string {
+	switch debugRoleAccent(player) {
+	case "gold":
+		return "border-color:#d4af37;background:rgba(212,175,55,0.16);"
+	case "blue":
+		return "border-color:#3b82f6;background:rgba(59,130,246,0.14);"
+	case "black":
+		return "border-color:#111827;background:rgba(17,24,39,0.18);"
+	case "red":
+		return "border-color:#ef4444;background:rgba(239,68,68,0.14);"
+	case "green":
+		return "border-color:#22c55e;background:rgba(34,197,94,0.14);"
+	case "gray":
+		return "border-color:#6b7280;background:rgba(107,114,128,0.14);"
+	default:
+		return ""
+	}
+}
+
+func debugViewAsPlayerButtonAction(roomCode string, playerID string) string {
+	if roomCode == "" || playerID == "" {
+		return ""
+	}
+	return "fetch('/room/" + roomCode + "/debug/view-as/" + playerID + "').then(resp => { if (!resp.ok) return resp.text().then(text => { throw new Error(text || resp.statusText) }); window.location.reload(); }).catch(err => alert('Debug view-as failed: ' + err.message))"
 }
 
 func debugRoleName(player *game.Player) string {
