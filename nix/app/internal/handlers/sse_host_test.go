@@ -295,6 +295,61 @@ func TestStreamHostCoupRevealUpdatesDashboard(t *testing.T) {
 	assert.Contains(t, body, "Blue Knight", "host dashboard should refresh after a public reveal")
 }
 
+func TestStreamHostCoupConfigUpdatesDashboard(t *testing.T) {
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+
+	room, err := gameStore.CreateRoom()
+	require.NoError(t, err)
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+
+	host := game.NewPlayer("host-123", "Host", "session-123")
+	host.IsHost = true
+	room.AddPlayer(host)
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	sseStarted := make(chan bool)
+	go func() {
+		sseStarted <- true
+		h.StreamHost(w, req)
+	}()
+
+	<-sseStarted
+	time.Sleep(100 * time.Millisecond)
+
+	counts, ok := game.CoupRoleCountsForPreset(game.CoupPresetSix)
+	require.True(t, ok)
+	room.CoupPreset = game.CoupPresetSix
+	room.CoupRoleCounts = counts
+	gameStore.UpdateRoom(room)
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	require.Eventually(t, func() bool {
+		return strings.Contains(w.Body.String(), "2 Black Knights")
+	}, time.Second, 10*time.Millisecond, "host dashboard should refresh after Coup setup changes")
+
+	cancel()
+	time.Sleep(100 * time.Millisecond)
+}
+
 // TestQRCodeGeneration tests QR code generation
 func TestQRCodeGeneration(t *testing.T) {
 	url := "http://example.com/room/ABC123"

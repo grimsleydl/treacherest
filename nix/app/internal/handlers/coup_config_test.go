@@ -60,6 +60,48 @@ func TestUpdateCoupPreset(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupPresetFromHostDashboardPatchesHostSurface(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	host := game.NewPlayer("host", "Host", "host-session")
+	host.IsHost = true
+	room.AddPlayer(host)
+	markRoomOperatorForTest(room, host)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("preset", string(game.CoupPresetSix))
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-preset", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, host)
+	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupPreset(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("expected host dashboard patch in response, got: %s", body)
+	}
+	if strings.Contains(body, "lobby-content") {
+		t.Fatalf("host dashboard preset update should not target lobby content, got: %s", body)
+	}
+	if !strings.Contains(body, "2 Black Knights") {
+		t.Fatalf("expected host response to include updated 6-player role counts, got: %s", body)
+	}
+}
+
 func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
 	h := newTestHandler()
 

@@ -728,8 +728,8 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 			log.Printf("📡 Host SSE event received for %s: %s", roomCode, event.Type)
 
 			switch event.Type {
-			case "player_joined", "player_left", "player_updated", "role_config_updated":
-				// Re-render host dashboard for player changes or role config updates
+			case "player_joined", "player_left", "player_updated", "role_config_updated", "coup_config_updated":
+				// Re-render host dashboard for player changes or setup config updates.
 				room, _ = h.store.GetRoom(roomCode)
 				if room.State == game.StateLobby {
 					// Refresh player reference in case it was updated

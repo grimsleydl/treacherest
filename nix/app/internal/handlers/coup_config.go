@@ -56,19 +56,7 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	sse := datastar.NewSSE(w, r)
-	h.renderLobby(sse, room, player)
+	h.renderCoupConfigResponse(w, r, room)
 }
 
 // UpdateCoupRoleCounts updates the editable Coup role-count pool for a room.
@@ -116,19 +104,7 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	sse := datastar.NewSSE(w, r)
-	h.renderLobby(sse, room, player)
+	h.renderCoupConfigResponse(w, r, room)
 }
 
 // UpdateCoupInfoPolicy updates the selected Coup private information policy for a room.
@@ -172,19 +148,7 @@ func (h *Handler) UpdateCoupInfoPolicy(w http.ResponseWriter, r *http.Request) {
 		Data:     room,
 	})
 
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	sse := datastar.NewSSE(w, r)
-	h.renderLobby(sse, room, player)
+	h.renderCoupConfigResponse(w, r, room)
 }
 
 // UpdateCoupRoyalGuardSettings updates Coup Royal Guard rule settings for a room.
@@ -222,19 +186,7 @@ func (h *Handler) UpdateCoupRoyalGuardSettings(w http.ResponseWriter, r *http.Re
 		Data:     room,
 	})
 
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	sse := datastar.NewSSE(w, r)
-	h.renderLobby(sse, room, player)
+	h.renderCoupConfigResponse(w, r, room)
 }
 
 // UpdateCoupInquisitionSettings updates Coup Inquisition rule settings for a room.
@@ -267,6 +219,10 @@ func (h *Handler) UpdateCoupInquisitionSettings(w http.ResponseWriter, r *http.R
 		Data:     room,
 	})
 
+	h.renderCoupConfigResponse(w, r, room)
+}
+
+func (h *Handler) renderCoupConfigResponse(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	playerCookie, err := r.Cookie("player_" + room.Code)
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
@@ -279,5 +235,9 @@ func (h *Handler) UpdateCoupInquisitionSettings(w http.ResponseWriter, r *http.R
 	}
 
 	sse := datastar.NewSSE(w, r)
+	if player.IsHost {
+		h.renderHostDashboard(sse, room, player)
+		return
+	}
 	h.renderLobby(sse, room, player)
 }
