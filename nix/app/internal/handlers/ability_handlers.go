@@ -593,6 +593,11 @@ func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mark the player as eliminated
+	if room.RulesMode == game.RulesModeCoup &&
+		targetPlayer.Role != nil &&
+		targetPlayer.Role.GetRoleType() == game.RoleKing {
+		game.RecordCoupKingFall(room)
+	}
 	targetPlayer.MarkEliminated()
 
 	h.store.UpdateRoom(room)

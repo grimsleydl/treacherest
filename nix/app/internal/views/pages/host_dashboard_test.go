@@ -38,3 +38,22 @@ func TestHostDashboardPlaying_CoupModeratorControls(t *testing.T) {
 		AssertContains(`@post(&#39;/room/HOST1/player/p1/eliminate&#39;)`).
 		AssertNotContains("Blue Knight")
 }
+
+func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, _ := makeCoupWinViewRoom()
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+
+	renderer.Render(HostDashboardPlaying(room, host)).
+		AssertContains("Looks like Black might have just won???").
+		AssertContains("King has fallen").
+		AssertContains("Confirm Win").
+		AssertContains("Reject Prompt").
+		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/confirm&#39;)`).
+		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/reject&#39;)`)
+}

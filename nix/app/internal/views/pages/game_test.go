@@ -415,6 +415,32 @@ func TestGameBody_CoupPrivateInquisitionResultOnlyInformsInquisitor(t *testing.T
 		AssertNotContains("Red Knight")
 }
 
+func TestGameBody_CoupAdvisoryWinPromptRequiresConfirmation(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, actor := makeCoupWinViewRoom()
+
+	renderer.Render(GameBody(room, actor)).
+		AssertContains("Looks like Black might have just won???").
+		AssertContains("King has fallen").
+		AssertContains("Confirm Win").
+		AssertContains("Reject Prompt").
+		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/confirm&#39;)`).
+		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/reject&#39;)`)
+}
+
+func TestGameBody_CoupConfirmedWinShowsOutcome(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, actor := makeCoupWinViewRoom()
+	prompt := game.DetectCoupAdvisoryWin(room)
+	game.ConfirmCoupWin(room, prompt)
+	room.State = game.StateEnded
+
+	renderer.Render(GameBody(room, actor)).
+		AssertContains("Confirmed Coup Win").
+		AssertContains("Black win confirmed").
+		AssertContains("King has fallen")
+}
+
 func makeCoupInquisitionViewRoom() (*game.Room, *game.Player, *game.Player, *game.Player) {
 	room := &game.Room{
 		Code:       "COUPINQ",
@@ -445,6 +471,41 @@ func makeCoupInquisitionViewRoom() (*game.Room, *game.Player, *game.Player, *gam
 		room.Players[player.ID] = player
 	}
 	return room, blue, red, green
+}
+
+func makeCoupWinViewRoom() (*game.Room, *game.Player) {
+	room := &game.Room{
+		Code:      "COUPWIN",
+		State:     game.StatePlaying,
+		RulesMode: game.RulesModeCoup,
+		Players:   make(map[string]*game.Player),
+	}
+	king := &game.Player{
+		ID:           "king",
+		Name:         "King Player",
+		Role:         mockCoupCard(1001, "King"),
+		RoleRevealed: true,
+		FaceUp:       true,
+		IsEliminated: true,
+	}
+	black := &game.Player{
+		ID:     "black",
+		Name:   "Black Player",
+		Role:   mockCoupCard(1003, "Black Knight"),
+		FaceUp: false,
+	}
+	red := &game.Player{
+		ID:           "red",
+		Name:         "Red Player",
+		Role:         mockCoupCard(1004, "Red Knight"),
+		RoleRevealed: true,
+		FaceUp:       true,
+		IsEliminated: true,
+	}
+	for _, player := range []*game.Player{king, black, red} {
+		room.Players[player.ID] = player
+	}
+	return room, black
 }
 
 func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {

@@ -50,15 +50,18 @@ type ValidationState struct {
 
 // Room represents a game room
 type Room struct {
-	Code                        string
-	State                       GameState
-	RulesMode                   RulesMode
-	CoupPreset                  CoupPreset
-	CoupInfoPolicy              CoupInformationPolicy
-	CoupRoyalGuardBlockerLimit  int
-	CoupInquisition             *CoupInquisitionState
-	CoupInquisitionResultPolicy CoupInquisitionResultPolicy
-	Players                     map[string]*Player
+	Code                            string
+	State                           GameState
+	RulesMode                       RulesMode
+	CoupPreset                      CoupPreset
+	CoupInfoPolicy                  CoupInformationPolicy
+	CoupRoyalGuardBlockerLimit      int
+	CoupInquisition                 *CoupInquisitionState
+	CoupInquisitionResultPolicy     CoupInquisitionResultPolicy
+	CoupKingFallen                  bool
+	CoupGreenEligibleBeforeKingFall bool
+	CoupWin                         *CoupWinState
+	Players                         map[string]*Player
 
 	MaxPlayers int
 	CreatedAt  time.Time

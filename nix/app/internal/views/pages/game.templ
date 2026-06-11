@@ -109,6 +109,8 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 				}
 				<!-- Leader confirmation prompts for pending ability reveals -->
 				@components.LeaderConfirmationPrompts(room, currentPlayer)
+				@CoupConfirmedWinPanel(room)
+				@CoupAdvisoryWinPanel(room, currentPlayer)
 				@CoupRoyalGuardPanel(room, currentPlayer)
 				@CoupInquisitionPanel(room, currentPlayer)
 				<!-- Unveil button and face state toggle for current player -->
@@ -353,6 +355,56 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 	}
 }
 
+templ CoupAdvisoryWinPanel(room *game.Room, currentPlayer *game.Player) {
+	if game.CurrentCoupAdvisoryWin(room) != nil {
+		@CoupWinPromptCard(room, currentPlayer, game.CurrentCoupAdvisoryWin(room))
+	}
+}
+
+templ CoupConfirmedWinPanel(room *game.Room) {
+	if room.RulesMode == game.RulesModeCoup && room.CoupWin != nil && room.CoupWin.Confirmed != nil {
+		<div class="card bg-success text-success-content shadow-lg p-4 max-w-md w-full">
+			<h3 class="font-bold">Confirmed Coup Win</h3>
+			<p class="text-sm">{ coupWinOutcomeLabel(room.CoupWin.Confirmed.Outcome) }</p>
+			<ul class="mt-3 list-disc pl-5 text-sm space-y-1">
+				for _, fact := range room.CoupWin.Confirmed.Facts {
+					<li>{ fact }</li>
+				}
+			</ul>
+		</div>
+	}
+}
+
+templ CoupWinPromptCard(room *game.Room, currentPlayer *game.Player, prompt *game.CoupWinPrompt) {
+	<div class="card bg-warning text-warning-content shadow-lg p-4 max-w-md w-full">
+		<h3 class="font-bold">{ prompt.Title }</h3>
+		<p class="text-sm mt-1">{ prompt.Summary }</p>
+		<ul class="mt-3 list-disc pl-5 text-sm space-y-1">
+			for _, fact := range prompt.Facts {
+				<li>{ fact }</li>
+			}
+		</ul>
+		if coupCanDecideWinPrompt(currentPlayer) {
+			<div class="mt-4 flex flex-wrap gap-2">
+				<button
+					class="btn btn-sm btn-success"
+					data-on:click={ fmt.Sprintf("@post('/room/%s/coup/win/confirm')", room.Code) }
+					onclick="return confirm('Confirm this Coup win after table agreement?')"
+				>
+					Confirm Win
+				</button>
+				<button
+					class="btn btn-sm btn-outline"
+					data-on:click={ fmt.Sprintf("@post('/room/%s/coup/win/reject')", room.Code) }
+					onclick="return confirm('Reject this advisory prompt after table agreement?')"
+				>
+					Reject Prompt
+				</button>
+			</div>
+		}
+	</div>
+}
+
 // MiniRoleCard renders a compact role card for inline reveals
 templ MiniRoleCard(card *game.Card) {
 	if card == nil {
@@ -446,4 +498,23 @@ func coupInquisitionTargets(room *game.Room, currentPlayer *game.Player) []*game
 		targets = append(targets, player)
 	}
 	return targets
+}
+
+func coupCanDecideWinPrompt(player *game.Player) bool {
+	return player != nil && (player.IsHost || player.IsActiveInGame())
+}
+
+func coupWinOutcomeLabel(outcome game.CoupWinOutcome) string {
+	switch outcome {
+	case game.CoupWinOutcomeKingSide:
+		return "King-side win confirmed"
+	case game.CoupWinOutcomeBlack:
+		return "Black win confirmed"
+	case game.CoupWinOutcomeRed:
+		return "Red win confirmed"
+	case game.CoupWinOutcomeWasteland:
+		return "Wasteland win confirmed"
+	default:
+		return "Coup win confirmed"
+	}
 }

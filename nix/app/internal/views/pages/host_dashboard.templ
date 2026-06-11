@@ -110,6 +110,9 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 			<h1 class="text-4xl font-bold text-primary mb-4">Game in Progress</h1>
 			<div class="text-5xl font-bold tracking-[0.2em] text-primary">{ room.Code }</div>
 		</div>
+		<div class="mb-6 flex justify-center">
+			@CoupAdvisoryWinPanel(room, player)
+		</div>
 		<div class="card bg-base-200 shadow-lg p-6">
 			<h2 class="text-2xl font-bold mb-4 text-primary">Players</h2>
 			<div class="space-y-2">
@@ -159,6 +162,9 @@ templ HostDashboardEnded(room *game.Room, player *game.Player) {
 	<div class="container mx-auto px-4 py-8 text-center">
 		<h1 class="text-4xl font-bold text-primary mb-4">Game Over</h1>
 		<div class="text-5xl font-bold tracking-[0.2em] text-primary mb-8">{ room.Code }</div>
+		<div class="mb-8 flex justify-center text-left">
+			@CoupConfirmedWinPanel(room)
+		</div>
 		<button class="btn btn-primary btn-lg" data-on:click="@post('/room/new')">
 			Start New Game
 		</button>
