@@ -33,18 +33,20 @@ Importer entry point: `nix/app/scripts/coup-images/import_coup_images.go`.
 
 Use Canonical Coup Art Direction by default: neutral court-intrigue fantasy role-card art. The goal is political tension, hidden incentives, and readable role identity without making the roles look like fixed hard teams.
 
+Use role colors as accents rather than full-image color washes. King should read gold, Blue Knight blue, Black Knight black, Red Knight red, Green Knight green, and Wasteland Knight gray, but each image should still have a rich palette, environmental contrast, and readable material detail.
+
 Avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams. Role colors, heraldry, and props are useful, but the art should preserve suspicion and shifting incentives rather than visually declaring stable team membership.
 
 Global prompt prefix:
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, rich palette with role-color accents instead of monochrome color wash, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 ```
 
 Recommended negative prompt:
 
 ```text
-readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, matching team uniforms, modern gun, blurry face, extra limbs
+readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, matching team uniforms, monochrome color wash, single-color card, modern gun, blurry face, extra limbs
 ```
 
 ## Canonical Role Prompts
