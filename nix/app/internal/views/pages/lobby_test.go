@@ -70,6 +70,23 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Player Two")
 	})
 
+	t.Run("shows constrained debug surface when debug enabled", func(t *testing.T) {
+		debugCfg := config.DefaultConfig()
+		debugCfg.Server.DebugModeEnabled = true
+
+		component := LobbyPage(room, player1, debugCfg, cardService)
+
+		renderer.Render(component).
+			AssertContains(`id="debug-control-surface"`).
+			AssertContains("Debug Control Surface").
+			AssertContains("Player Perspective: Player One").
+			AssertContains(`id="debug-panel-toggle"`).
+			AssertNotContains(`id="debug-clear"`).
+			AssertNotContains("Debug Insights").
+			AssertNotContains("Start with Debug Players").
+			AssertNotContains("View As Player")
+	})
+
 	t.Run("shows selected rules mode", func(t *testing.T) {
 		coupRoom := &game.Room{
 			Code:       "COUP1",

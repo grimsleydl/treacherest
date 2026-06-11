@@ -617,6 +617,49 @@ func TestHandler_GamePage(t *testing.T) {
 		}
 	})
 
+	t.Run("shows constrained debug surface for non-host player when debug enabled", func(t *testing.T) {
+		h := newTestHandler()
+		h.config.Server.DebugModeEnabled = true
+
+		room, _ := h.store.CreateRoom()
+		player := game.NewPlayer("p1", "Test Player", "session1")
+		player.Role = mockGuardianCard()
+		room.AddPlayer(player)
+		room.State = game.StatePlaying
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: player.ID,
+		})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		resp := w.Result()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+
+		body := w.Body.String()
+		if !strings.Contains(body, `id="debug-control-surface"`) {
+			t.Fatal("expected debug control surface for non-host player page in Debug Mode")
+		}
+		if !strings.Contains(body, "Player Perspective: Test Player") {
+			t.Fatal("expected player-perspective debug context")
+		}
+		if strings.Contains(body, `id="debug-clear"`) {
+			t.Fatal("non-host player debug surface should not render host-only clear control")
+		}
+		if strings.Contains(body, "Debug Insights") {
+			t.Fatal("non-host player debug surface should not render debug insights")
+		}
+	})
+
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
 		h := newTestHandler()
 

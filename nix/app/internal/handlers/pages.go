@@ -275,7 +275,7 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		}
 		component.Render(r.Context(), w)
 	} else {
-		component := pages.GamePage(room, player)
+		component := pages.GamePageWithDebug(room, player, h.config.Server.DebugModeEnabled)
 		component.Render(r.Context(), w)
 	}
 }

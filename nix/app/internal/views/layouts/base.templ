@@ -7,18 +7,24 @@ import (
 )
 
 templ Base(title string) {
-	@baseLayout(title, false, "", nil) {
+	@baseLayout(title, false, "", nil, nil) {
 		{ children... }
 	}
 }
 
 templ BaseWithDebug(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room) {
-	@baseLayout(title, debugMode, debugRoomCode, debugRoom) {
+	@baseLayout(title, debugMode, debugRoomCode, debugRoom, nil) {
 		{ children... }
 	}
 }
 
-templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room) {
+templ BaseWithDebugForPlayer(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room, debugViewer *game.Player) {
+	@baseLayout(title, debugMode, debugRoomCode, debugRoom, debugViewer) {
+		{ children... }
+	}
+}
+
+templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room, debugViewer *game.Player) {
 	<!DOCTYPE html>
 	<html lang="en" data-theme="dracula">
 		<head>
@@ -57,7 +63,7 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *
 				data-effect="$stateBackup && window.storeBackup($stateBackup)"
 			></div>
 			if debugMode {
-				@DebugPanel(debugRoomCode, debugRoom)
+				@DebugPanel(debugRoomCode, debugRoom, debugViewer)
 			}
 			<script>
 				// State backup handling for Cloud Run instance recovery
@@ -184,7 +190,7 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *
 	</html>
 }
 
-templ DebugPanel(roomCode string, room *game.Room) {
+templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 	<div
 		id="debug-control-surface"
 		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
@@ -210,45 +216,53 @@ templ DebugPanel(roomCode string, room *game.Room) {
 			Debug Mode minimized
 		</div>
 		<div id="debug-panel" class="space-y-3">
-			<section id="debug-persistence-controls" class="space-y-2">
-				<div class="flex items-center justify-between gap-2">
-					<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
-					<div id="debug-info" class="text-xs text-base-content/70">Loading...</div>
-				</div>
-				<div class="flex flex-col gap-2">
-					<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
-					<button id="debug-clear" class="btn btn-xs btn-error">Clear Room</button>
-					<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
-				</div>
-			</section>
-			<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls">
-				if roomCode != "" {
-					<button
-						id="debug-start-with-debug-players"
-						class="btn btn-xs btn-warning w-full"
-						data-on:click={ "@post('/room/" + roomCode + "/debug/start-with-debug-players')" }
-					>
-						Start with Debug Players
-					</button>
-					<button
-						id="debug-start-as-is"
-						class="btn btn-xs btn-outline btn-warning w-full"
-						data-on:click={ "@post('/room/" + roomCode + "/debug/start-as-is')" }
-					>
-						Start As-Is
-					</button>
-				}
-			</section>
-			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights">
-				if room != nil {
-					@DebugInsights(room)
-				}
-			</section>
-			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
-				if room != nil {
-					@components.DebugViewAsPlayerSelector(room, roomCode)
-				}
-			</section>
+			if debugPanelShowsHostControls(viewer) {
+				<section id="debug-persistence-controls" class="space-y-2">
+					<div class="flex items-center justify-between gap-2">
+						<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
+						<div id="debug-info" class="text-xs text-base-content/70">Loading...</div>
+					</div>
+					<div class="flex flex-col gap-2">
+						<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
+						<button id="debug-clear" class="btn btn-xs btn-error">Clear Room</button>
+						<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
+					</div>
+				</section>
+				<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls">
+					if roomCode != "" {
+						<button
+							id="debug-start-with-debug-players"
+							class="btn btn-xs btn-warning w-full"
+							data-on:click={ "@post('/room/" + roomCode + "/debug/start-with-debug-players')" }
+						>
+							Start with Debug Players
+						</button>
+						<button
+							id="debug-start-as-is"
+							class="btn btn-xs btn-outline btn-warning w-full"
+							data-on:click={ "@post('/room/" + roomCode + "/debug/start-as-is')" }
+						>
+							Start As-Is
+						</button>
+					}
+				</section>
+				<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights">
+					if room != nil {
+						@DebugInsights(room)
+					}
+				</section>
+				<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
+					if room != nil {
+						@components.DebugViewAsPlayerSelector(room, roomCode)
+					}
+				</section>
+			} else {
+				<section id="debug-player-context" class="space-y-2 text-xs">
+					<h3 class="font-semibold uppercase text-base-content/70">Player Perspective: { debugViewerName(viewer) }</h3>
+					<div>Debug Mode active</div>
+					<div>Host-only controls are unavailable from this player view.</div>
+				</section>
+			}
 		</div>
 	</div>
 	<script>
@@ -388,6 +402,17 @@ templ DebugPanel(roomCode string, room *game.Room) {
 			setInterval(updateDebugInfo, 2000);
 		})();
 	</script>
+}
+
+func debugPanelShowsHostControls(viewer *game.Player) bool {
+	return viewer == nil || viewer.IsHost
+}
+
+func debugViewerName(viewer *game.Player) string {
+	if viewer == nil {
+		return "unknown"
+	}
+	return viewer.Name
 }
 
 templ DebugInsights(room *game.Room) {

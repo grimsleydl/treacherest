@@ -10,7 +10,7 @@ import (
 )
 
 templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.Base("Lobby") {
+	@layouts.BaseWithDebugForPlayer("Lobby", lobbyDebugControlsEnabled(cfg, currentPlayer), room.Code, room, currentPlayer) {
 		@LobbyBody(room, currentPlayer, cfg, cardService)
 	}
 }
@@ -298,6 +298,10 @@ func rulesModeLabel(mode game.RulesMode) string {
 	default:
 		return "Treachery"
 	}
+}
+
+func lobbyDebugControlsEnabled(cfg *config.ServerConfig, player *game.Player) bool {
+	return cfg != nil && cfg.Server.DebugModeEnabled && player != nil
 }
 
 func coupPresetMatchesActivePlayers(room *game.Room) bool {

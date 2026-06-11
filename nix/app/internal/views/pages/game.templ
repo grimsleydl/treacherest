@@ -9,7 +9,11 @@ import (
 )
 
 templ GamePage(room *game.Room, currentPlayer *game.Player) {
-	@layouts.Base("Game") {
+	@GamePageWithDebug(room, currentPlayer, false)
+}
+
+templ GamePageWithDebug(room *game.Room, currentPlayer *game.Player, debugMode bool) {
+	@layouts.BaseWithDebugForPlayer("Game", debugMode, room.Code, room, currentPlayer) {
 		@GameBody(room, currentPlayer)
 	}
 }
@@ -84,7 +88,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 								}
 								<p class="text-xs text-base-content/60 mt-4"><em>Art by { currentPlayer.Role.Artist }</em></p>
 							</div>
-							</div>
+						</div>
 					</div>
 				}
 				<!-- Transformation status display -->
@@ -127,7 +131,8 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 							<button
 								class="btn btn-sm btn-outline btn-secondary"
 								data-on:click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
-								title="Turn your card face down (may end transformations)">
+								title="Turn your card face down (may end transformations)"
+							>
 								🃏 Turn Face Down
 							</button>
 						}
@@ -150,7 +155,8 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 							class="btn btn-sm btn-outline btn-error"
 							data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
 							onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
-							title="Mark yourself as eliminated from the game">
+							title="Mark yourself as eliminated from the game"
+						>
 							💀 I've Been Eliminated
 						</button>
 					</div>
@@ -192,9 +198,12 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 										}
 									</div>
 									<!-- Peek button for accessibility -->
-									<label for={ fmt.Sprintf("reveal-%s", p.ID) } class="btn btn-ghost btn-xs"
-									       aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
-									       title="Click to see role card">
+									<label
+										for={ fmt.Sprintf("reveal-%s", p.ID) }
+										class="btn btn-ghost btn-xs"
+										aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
+										title="Click to see role card"
+									>
 										Peek
 									</label>
 								</div>
@@ -425,8 +434,13 @@ templ MiniRoleCard(card *game.Card) {
 				<strong class="truncate">{ card.Name }</strong>
 				<span class="badge badge-outline">{ string(card.GetRoleType()) }</span>
 				if card.URI != "" {
-					<a href={ templ.SafeURL(card.URI) } target="_blank" rel="noopener noreferrer"
-					   class="link link-primary text-xs" title="View on Oracle">
+					<a
+						href={ templ.SafeURL(card.URI) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="link link-primary text-xs"
+						title="View on Oracle"
+					>
 						Oracle
 					</a>
 				}
