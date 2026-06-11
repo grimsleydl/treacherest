@@ -44,6 +44,14 @@ _Avoid_: Player controls, public overlay
 A Debug Mode aid where the host views the game from a selected player's perspective without making that player a real host.
 _Avoid_: Player login, ownership transfer, acting as player
 
+**Start Override**:
+A Debug Mode aid that starts a room outside normal start validation for playtesting incomplete or unusual table states.
+_Avoid_: Normal start, production bypass
+
+**Debug Player**:
+A synthetic active player used in Debug Mode to fill a table seat without requiring a real connected player.
+_Avoid_: Dummy player, host, spectator, bot
+
 **Reveal**:
 A public transition where a hidden role becomes known to the table.
 _Avoid_: Private view, screen peek
