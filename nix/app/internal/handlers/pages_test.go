@@ -94,6 +94,9 @@ func TestHandler_CreateRoom(t *testing.T) {
 		if playerCookie == nil {
 			t.Error("player cookie not set")
 		}
+		if sessionCookie != nil && !room.IsOperatorSession(sessionCookie.Value) {
+			t.Error("creator session should be the room operator")
+		}
 	})
 
 	t.Run("creates coup rules mode room", func(t *testing.T) {
@@ -233,6 +236,54 @@ func TestHandler_CreateRoom(t *testing.T) {
 			if player.SessionID != existingSession {
 				t.Errorf("expected player to have session %s, got %s", existingSession, player.SessionID)
 			}
+		}
+		if !room.IsOperatorSession(existingSession) {
+			t.Error("existing creator session should be the room operator")
+		}
+	})
+
+	t.Run("records host-only creator session as room operator", func(t *testing.T) {
+		h := newTestHandler()
+
+		existingSession := "host-only-session-123"
+
+		form := url.Values{}
+		form.Add("playerName", "Host Player")
+		form.Add("hostOnly", "true")
+
+		req := httptest.NewRequest("POST", "/create-room", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{
+			Name:  "session",
+			Value: existingSession,
+		})
+		w := httptest.NewRecorder()
+
+		h.CreateRoom(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected status 303, got %d", w.Code)
+		}
+
+		location := w.Result().Header.Get("Location")
+		roomCode := strings.TrimPrefix(location, "/room/")
+		room, err := h.store.GetRoom(roomCode)
+		if err != nil {
+			t.Fatalf("room not found in store: %v", err)
+		}
+		if !room.IsOperatorSession(existingSession) {
+			t.Error("host-only creator session should be the room operator")
+		}
+
+		var foundHost bool
+		for _, player := range room.Players {
+			if player.Name == "Host Player" && player.IsHost {
+				foundHost = true
+				break
+			}
+		}
+		if !foundHost {
+			t.Error("expected host-only creator to be marked as Host")
 		}
 	})
 }
@@ -617,13 +668,16 @@ func TestHandler_GamePage(t *testing.T) {
 		}
 	})
 
-	t.Run("shows constrained debug surface for non-host player when debug enabled", func(t *testing.T) {
+	t.Run("does not render debug surface for non-operator player when debug enabled", func(t *testing.T) {
 		h := newTestHandler()
 		h.config.Server.DebugModeEnabled = true
 
 		room, _ := h.store.CreateRoom()
+		operator := game.NewPlayer("operator", "Operator", "session-operator")
 		player := game.NewPlayer("p1", "Test Player", "session1")
 		player.Role = mockGuardianCard()
+		room.OperatorSessionID = operator.SessionID
+		room.AddPlayer(operator)
 		room.AddPlayer(player)
 		room.State = game.StatePlaying
 		h.store.UpdateRoom(room)
@@ -646,17 +700,48 @@ func TestHandler_GamePage(t *testing.T) {
 		}
 
 		body := w.Body.String()
+		if strings.Contains(body, `id="debug-control-surface"`) {
+			t.Fatal("non-operator player page should not render debug control surface")
+		}
+		if strings.Contains(body, "Debug Control Surface") || strings.Contains(body, "Debug Mode active") {
+			t.Fatal("non-operator player page should not render debug panel copy")
+		}
+	})
+
+	t.Run("renders full debug surface for playing room operator when debug enabled", func(t *testing.T) {
+		h := newTestHandler()
+		h.config.Server.DebugModeEnabled = true
+
+		room, _ := h.store.CreateRoom()
+		operator := game.NewPlayer("p1", "Operator", "session-operator")
+		operator.Role = mockGuardianCard()
+		room.OperatorSessionID = operator.SessionID
+		room.AddPlayer(operator)
+		room.State = game.StatePlaying
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		addPlayerSessionCookiesForTest(req, room, operator)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Result().StatusCode)
+		}
+
+		body := w.Body.String()
 		if !strings.Contains(body, `id="debug-control-surface"`) {
-			t.Fatal("expected debug control surface for non-host player page in Debug Mode")
+			t.Fatal("playing room operator should see debug control surface")
 		}
-		if !strings.Contains(body, "Player Perspective: Test Player") {
-			t.Fatal("expected player-perspective debug context")
+		if !strings.Contains(body, `id="debug-clear"`) {
+			t.Fatal("playing room operator should see debug controls")
 		}
-		if strings.Contains(body, `id="debug-clear"`) {
-			t.Fatal("non-host player debug surface should not render host-only clear control")
-		}
-		if strings.Contains(body, "Debug Insights") {
-			t.Fatal("non-host player debug surface should not render debug insights")
+		if strings.Contains(body, "Host-only controls are unavailable") {
+			t.Fatal("playing room operator should not see constrained non-host debug copy")
 		}
 	})
 

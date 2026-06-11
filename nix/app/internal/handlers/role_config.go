@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
 )
@@ -95,46 +94,7 @@ func (h *Handler) UpdateRoleCount(w http.ResponseWriter, r *http.Request) {
 // Helper functions
 
 func (h *Handler) isRoomCreator(r *http.Request, room *game.Room) bool {
-	playerCookie, err := r.Cookie("player_" + room.Code)
-	if err != nil {
-		return false
-	}
-
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil {
-		return false
-	}
-
-	// Check if this player is the host
-	if player.IsHost {
-		return true
-	}
-
-	// If no host, check if this is the first player (room creator)
-	hasHost := false
-	for _, p := range room.Players {
-		if p.IsHost {
-			hasHost = true
-			break
-		}
-	}
-
-	if !hasHost {
-		// Find the first player
-		var firstPlayer *game.Player
-		var firstJoinTime time.Time
-
-		for _, p := range room.Players {
-			if !p.IsHost && (firstPlayer == nil || p.JoinedAt.Before(firstJoinTime)) {
-				firstPlayer = p
-				firstJoinTime = p.JoinedAt
-			}
-		}
-
-		return firstPlayer != nil && player.ID == firstPlayer.ID
-	}
-
-	return false
+	return h.isRoomOperator(r, room)
 }
 
 func (h *Handler) updatePlayerLimits(room *game.Room) {

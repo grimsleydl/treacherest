@@ -12,6 +12,21 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func markRoomOperatorForTest(room *game.Room, player *game.Player) {
+	room.OperatorSessionID = player.SessionID
+}
+
+func addPlayerSessionCookiesForTest(req *http.Request, room *game.Room, player *game.Player) {
+	req.AddCookie(&http.Cookie{
+		Name:  "session",
+		Value: player.SessionID,
+	})
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: player.ID,
+	})
+}
+
 func TestHandler_StartGame(t *testing.T) {
 	t.Run("starts game successfully", func(t *testing.T) {
 		h := newTestHandler()
@@ -27,14 +42,12 @@ func TestHandler_StartGame(t *testing.T) {
 		room.AddPlayer(player2)
 		room.AddPlayer(player3)
 		room.AddPlayer(player4)
+		markRoomOperatorForTest(room, player1)
 		h.store.UpdateRoom(room)
 
 		// Create request with chi context
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "player_" + room.Code,
-			Value: player1.ID,
-		})
+		addPlayerSessionCookiesForTest(req, room, player1)
 
 		// Add chi URL params to context
 		rctx := chi.NewRouteContext()
@@ -80,14 +93,12 @@ func TestHandler_StartGame(t *testing.T) {
 		room, _ := h.store.CreateRoom()
 		player1 := game.NewPlayer("p1", "Player 1", "session1")
 		room.AddPlayer(player1)
+		markRoomOperatorForTest(room, player1)
 		h.store.UpdateRoom(room)
 
 		// Create request with chi context
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "player_" + room.Code,
-			Value: player1.ID,
-		})
+		addPlayerSessionCookiesForTest(req, room, player1)
 
 		// Add chi URL params to context
 		rctx := chi.NewRouteContext()
@@ -117,6 +128,37 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects non-operator player start", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		operator := game.NewPlayer("p1", "Operator", "session-operator")
+		nonOperator := game.NewPlayer("p2", "Non Operator", "session-player")
+		room.OperatorSessionID = operator.SessionID
+		room.AddPlayer(operator)
+		room.AddPlayer(nonOperator)
+		h.store.UpdateRoom(room)
+
+		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
+		addPlayerSessionCookiesForTest(req, room, nonOperator)
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("code", room.Code)
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		w := httptest.NewRecorder()
+
+		h.StartGame(w, req)
+
+		updatedRoom, _ := h.store.GetRoom(room.Code)
+		if updatedRoom.State != game.StateLobby {
+			t.Fatalf("expected non-operator start to leave room in lobby, got %s", updatedRoom.State)
+		}
+		if strings.Contains(w.Body.String(), "window.location.href") {
+			t.Fatalf("expected no redirect script for non-operator start, got %s", w.Body.String())
+		}
+	})
+
 	t.Run("rejects unsupported coup player count", func(t *testing.T) {
 		h := newTestHandler()
 
@@ -124,13 +166,11 @@ func TestHandler_StartGame(t *testing.T) {
 		room.RulesMode = game.RulesModeCoup
 		player1 := game.NewPlayer("p1", "Player 1", "session1")
 		room.AddPlayer(player1)
+		markRoomOperatorForTest(room, player1)
 		h.store.UpdateRoom(room)
 
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "player_" + room.Code,
-			Value: player1.ID,
-		})
+		addPlayerSessionCookiesForTest(req, room, player1)
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
@@ -183,13 +223,11 @@ func TestHandler_StartGame(t *testing.T) {
 		for _, player := range players {
 			room.AddPlayer(player)
 		}
+		markRoomOperatorForTest(room, players[0])
 		h.store.UpdateRoom(room)
 
 		req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-		req.AddCookie(&http.Cookie{
-			Name:  "player_" + room.Code,
-			Value: players[0].ID,
-		})
+		addPlayerSessionCookiesForTest(req, room, players[0])
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", room.Code)
@@ -314,13 +352,11 @@ func TestHandler_StartGame_CoupFivePlayerHappyPath(t *testing.T) {
 	for _, player := range players {
 		room.AddPlayer(player)
 	}
+	markRoomOperatorForTest(room, players[0])
 	h.store.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: players[0].ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, players[0])
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
@@ -608,13 +644,11 @@ func TestHandler_StartGame_CoupSixPlayerPreset(t *testing.T) {
 	for _, player := range players {
 		room.AddPlayer(player)
 	}
+	markRoomOperatorForTest(room, players[0])
 	h.store.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: players[0].ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, players[0])
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
@@ -685,13 +719,11 @@ func TestHandler_StartGame_CoupInformationPolicy(t *testing.T) {
 	for _, player := range players {
 		room.AddPlayer(player)
 	}
+	markRoomOperatorForTest(room, players[0])
 	h.store.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: players[0].ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, players[0])
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
@@ -739,13 +771,11 @@ func TestHandler_StartGame_CoupEightPlayerChaosPreset(t *testing.T) {
 	for _, player := range players {
 		room.AddPlayer(player)
 	}
+	markRoomOperatorForTest(room, players[0])
 	h.store.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/start", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: players[0].ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, players[0])
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)

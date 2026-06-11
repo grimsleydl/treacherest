@@ -4,6 +4,41 @@ import (
 	"testing"
 )
 
+func TestRoom_IsOperatorSession(t *testing.T) {
+	t.Run("requires explicit operator session metadata", func(t *testing.T) {
+		room := &Room{
+			Code:       "TEST1",
+			State:      StateLobby,
+			Players:    make(map[string]*Player),
+			MaxPlayers: 4,
+		}
+		host := NewPlayer("host", "Host", "session-host")
+		host.IsHost = true
+		firstPlayer := NewPlayer("p1", "Player 1", "session-player")
+		if err := room.AddPlayer(host); err != nil {
+			t.Fatalf("add host: %v", err)
+		}
+		if err := room.AddPlayer(firstPlayer); err != nil {
+			t.Fatalf("add first player: %v", err)
+		}
+
+		if room.IsOperatorSession(host.SessionID) {
+			t.Error("Host status alone should not grant room operator authority")
+		}
+		if room.IsOperatorSession(firstPlayer.SessionID) {
+			t.Error("first active player should not grant room operator authority")
+		}
+
+		room.OperatorSessionID = "session-operator"
+		if !room.IsOperatorSession("session-operator") {
+			t.Error("explicit operator session should grant room operator authority")
+		}
+		if room.IsOperatorSession("") {
+			t.Error("empty session should not grant room operator authority")
+		}
+	})
+}
+
 func TestRoom_AddPlayer(t *testing.T) {
 	t.Run("successfully adds new player", func(t *testing.T) {
 		room := &Room{

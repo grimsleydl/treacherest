@@ -57,10 +57,11 @@ func TestDebugModeRoutes_DebugClearRejectsNonHost(t *testing.T) {
 	if err := room.AddPlayer(player); err != nil {
 		t.Fatalf("add player: %v", err)
 	}
+	room.OperatorSessionID = "session-operator"
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/clear", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player.ID})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -92,10 +93,11 @@ func TestDebugModeRoutes_DebugClearAllowsHostWhenEnabled(t *testing.T) {
 	if err := room.AddPlayer(host); err != nil {
 		t.Fatalf("add host: %v", err)
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/clear", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -108,6 +110,41 @@ func TestDebugModeRoutes_DebugClearAllowsHostWhenEnabled(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), `"status": "cleared"`) && !strings.Contains(w.Body.String(), `"status":"cleared"`) {
 		t.Fatalf("expected cleared JSON response, got %q", w.Body.String())
+	}
+}
+
+func TestDebugModeRoutes_DebugClearAllowsPlayingRoomOperatorWhenEnabled(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	operator := game.NewPlayer("operator-1", "Operator", "session-operator")
+	if err := room.AddPlayer(operator); err != nil {
+		t.Fatalf("add operator: %v", err)
+	}
+	room.OperatorSessionID = operator.SessionID
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/clear", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected playing room operator debug clear to succeed, got %d body %q", w.Code, w.Body.String())
+	}
+	if gameStore.RoomExists(room.Code) {
+		t.Fatalf("playing room operator debug clear did not delete room %s", room.Code)
 	}
 }
 
@@ -136,10 +173,11 @@ func TestDebugModeRoutes_StartWithDebugPlayersFillsCoupPresetAndAssignsRoles(t *
 	if err := room.AddPlayer(realPlayer); err != nil {
 		t.Fatalf("add real player: %v", err)
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-with-debug-players", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -249,10 +287,11 @@ func TestDebugModeRoutes_StartWithDebugPlayersRejectsNonHost(t *testing.T) {
 	if err := room.AddPlayer(player); err != nil {
 		t.Fatalf("add player: %v", err)
 	}
+	room.OperatorSessionID = "session-operator"
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-with-debug-players", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player.ID})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -297,10 +336,11 @@ func TestDebugModeRoutes_DebugPlayersCanBeEliminatedAsActiveSeats(t *testing.T) 
 	if err := room.AddPlayer(realPlayer); err != nil {
 		t.Fatalf("add real player: %v", err)
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	startReq := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-with-debug-players", nil)
-	startReq.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(startReq, room, host)
 	startW := httptest.NewRecorder()
 	router.ServeHTTP(startW, startReq)
 	if startW.Code != http.StatusOK {
@@ -375,10 +415,11 @@ func TestDebugModeRoutes_StartAsIsUnderfilledCoupIncludesKingWithoutDebugPlayers
 	if err := room.AddPlayer(player2); err != nil {
 		t.Fatalf("add player 2: %v", err)
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-as-is", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -480,10 +521,11 @@ func TestDebugModeRoutes_StartAsIsRejectsNonHost(t *testing.T) {
 	if err := room.AddPlayer(player); err != nil {
 		t.Fatalf("add player: %v", err)
 	}
+	room.OperatorSessionID = "session-operator"
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-as-is", nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player.ID})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -554,10 +596,11 @@ func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPlayerUIPerspectiveReadOnly(
 	if err := room.AddPlayer(red); err != nil {
 		t.Fatalf("add red: %v", err)
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+blue.ID, nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -632,10 +675,11 @@ func TestDebugModeRoutes_ViewAsPlayerSwitchesPerspectiveWithoutLeakingPreviousSe
 			t.Fatalf("add player %s: %v", player.Name, err)
 		}
 	}
+	room.OperatorSessionID = host.SessionID
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+blue.ID, nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	blueBody := w.Body.String()
@@ -650,7 +694,7 @@ func TestDebugModeRoutes_ViewAsPlayerSwitchesPerspectiveWithoutLeakingPreviousSe
 	}
 
 	req = httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+debugPlayer.ID, nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	addPlayerSessionCookiesForTest(req, room, host)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	debugBody := w.Body.String()
@@ -724,10 +768,11 @@ func TestDebugModeRoutes_ViewAsPlayerRejectsNonHost(t *testing.T) {
 	if err := room.AddPlayer(target); err != nil {
 		t.Fatalf("add target: %v", err)
 	}
+	room.OperatorSessionID = "session-operator"
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+target.ID, nil)
-	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: viewer.ID})
+	addPlayerSessionCookiesForTest(req, room, viewer)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)

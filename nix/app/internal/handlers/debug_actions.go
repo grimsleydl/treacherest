@@ -120,14 +120,13 @@ func (h *Handler) requireDebugHostRoom(w http.ResponseWriter, r *http.Request, r
 		return nil, false
 	}
 
-	playerCookie, err := r.Cookie("player_" + roomCode)
+	sessionCookie, err := r.Cookie("session")
 	if err != nil {
-		http.Error(w, "Host access required", http.StatusUnauthorized)
+		http.Error(w, "Debug operator access required", http.StatusUnauthorized)
 		return nil, false
 	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil || !player.IsHost {
-		http.Error(w, "Host access required", http.StatusForbidden)
+	if !room.IsOperatorSession(sessionCookie.Value) {
+		http.Error(w, "Debug operator access required", http.StatusForbidden)
 		return nil, false
 	}
 

@@ -21,17 +21,20 @@ func TestLobbyPage(t *testing.T) {
 	}
 
 	player1 := &game.Player{
-		ID:   "p1",
-		Name: "Player One",
+		ID:        "p1",
+		Name:      "Player One",
+		SessionID: "session-one",
 	}
 
 	player2 := &game.Player{
-		ID:   "p2",
-		Name: "Player Two",
+		ID:        "p2",
+		Name:      "Player Two",
+		SessionID: "session-two",
 	}
 
 	room.Players[player1.ID] = player1
 	room.Players[player2.ID] = player2
+	room.OperatorSessionID = player1.SessionID
 
 	// Set player1 as the first player (simulating room creator)
 	player1.JoinedAt = room.CreatedAt
@@ -70,7 +73,7 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Player Two")
 	})
 
-	t.Run("shows constrained debug surface when debug enabled", func(t *testing.T) {
+	t.Run("shows full debug surface for room operator when debug enabled", func(t *testing.T) {
 		debugCfg := config.DefaultConfig()
 		debugCfg.Server.DebugModeEnabled = true
 
@@ -79,12 +82,23 @@ func TestLobbyPage(t *testing.T) {
 		renderer.Render(component).
 			AssertContains(`id="debug-control-surface"`).
 			AssertContains("Debug Control Surface").
-			AssertContains("Player Perspective: Player One").
 			AssertContains(`id="debug-panel-toggle"`).
-			AssertNotContains(`id="debug-clear"`).
-			AssertNotContains("Debug Insights").
-			AssertNotContains("Start with Debug Players").
-			AssertNotContains("View As Player")
+			AssertContains(`id="debug-clear"`).
+			AssertContains("Debug Insights").
+			AssertContains("Start with Debug Players").
+			AssertContains("View As Player")
+	})
+
+	t.Run("hides debug surface from non-operator when debug enabled", func(t *testing.T) {
+		debugCfg := config.DefaultConfig()
+		debugCfg.Server.DebugModeEnabled = true
+
+		component := LobbyPage(room, player2, debugCfg, cardService)
+
+		renderer.Render(component).
+			AssertNotContains(`id="debug-control-surface"`).
+			AssertNotContains("Debug Control Surface").
+			AssertNotContains("Debug Mode active")
 	})
 
 	t.Run("shows selected rules mode", func(t *testing.T) {
@@ -115,11 +129,12 @@ func TestLobbyPage(t *testing.T) {
 			MaxPlayers: 4,
 		}
 		for i := 1; i <= 6; i++ {
-			player := game.NewPlayer(string(rune('a'+i)), "Coup Player", "session")
+			player := game.NewPlayer(string(rune('a'+i)), "Coup Player", "session"+string(rune('a'+i)))
 			player.JoinedAt = time.Unix(int64(i), 0)
 			coupRoom.Players[player.ID] = player
 		}
 		currentPlayer := coupRoom.Players["b"]
+		coupRoom.OperatorSessionID = currentPlayer.SessionID
 
 		component := LobbyPage(coupRoom, currentPlayer, cfg, cardService)
 
@@ -153,6 +168,31 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("6 players").
 			AssertContains("King, Blue Knight, 2 Black Knights, Red Knight, Green Knight").
 			AssertContains(`@post(&#39;/room/COUP2/start&#39;)`)
+	})
+
+	t.Run("hides room management controls from first active non-operator", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:       "COUP3",
+			State:      game.StateLobby,
+			RulesMode:  game.RulesModeCoup,
+			CoupPreset: game.CoupPresetSix,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 4,
+		}
+		firstPlayer := game.NewPlayer("p1", "First Player", "session-first")
+		operator := game.NewPlayer("p2", "Operator", "session-operator")
+		firstPlayer.JoinedAt = time.Unix(1, 0)
+		operator.JoinedAt = time.Unix(2, 0)
+		coupRoom.Players[firstPlayer.ID] = firstPlayer
+		coupRoom.Players[operator.ID] = operator
+		coupRoom.OperatorSessionID = operator.SessionID
+
+		component := LobbyPage(coupRoom, firstPlayer, cfg, cardService)
+
+		renderer.Render(component).
+			AssertNotContains("coup-preset-form").
+			AssertNotContains(`@post(&#39;/room/COUP3/start&#39;)`).
+			AssertContains("Leave Room")
 	})
 
 	t.Run("shows need more players message", func(t *testing.T) {
@@ -199,11 +239,13 @@ func TestLobbyBody(t *testing.T) {
 	}
 
 	player := &game.Player{
-		ID:   "p1",
-		Name: "Test Player",
+		ID:        "p1",
+		Name:      "Test Player",
+		SessionID: "session-test",
 	}
 
 	room.Players[player.ID] = player
+	room.OperatorSessionID = player.SessionID
 
 	// Create config and card service
 	cfg := config.DefaultConfig()

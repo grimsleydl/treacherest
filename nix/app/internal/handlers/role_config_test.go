@@ -50,42 +50,49 @@ func TestUpdateRolePreset(t *testing.T) {
 	}
 
 	player := &game.Player{
-		ID:       "player1",
-		Name:     "Test Player",
-		IsHost:   true,
-		JoinedAt: time.Now(),
+		ID:        "player1",
+		Name:      "Test Player",
+		IsHost:    true,
+		SessionID: "session-player1",
+		JoinedAt:  time.Now(),
 	}
 	room.Players[player.ID] = player
+	room.OperatorSessionID = player.SessionID
 	s.UpdateRoom(room)
 
 	tests := []struct {
 		name       string
 		preset     string
 		playerID   string
+		sessionID  string
 		wantStatus int
 	}{
 		{
 			name:       "valid preset update",
 			preset:     "test-preset",
 			playerID:   "player1",
+			sessionID:  player.SessionID,
 			wantStatus: http.StatusOK,
 		},
 		{
 			name:       "custom preset",
 			preset:     "custom",
 			playerID:   "player1",
+			sessionID:  player.SessionID,
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "unauthorized player",
+			name:       "unauthorized session",
 			preset:     "test-preset",
-			playerID:   "unauthorized",
+			playerID:   "player1",
+			sessionID:  "session-unauthorized",
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
 			name:       "empty preset",
 			preset:     "",
 			playerID:   "player1",
+			sessionID:  player.SessionID,
 			wantStatus: http.StatusBadRequest,
 		},
 	}
@@ -102,6 +109,10 @@ func TestUpdateRolePreset(t *testing.T) {
 			req.AddCookie(&http.Cookie{
 				Name:  "player_TEST1",
 				Value: tt.playerID,
+			})
+			req.AddCookie(&http.Cookie{
+				Name:  "session",
+				Value: tt.sessionID,
 			})
 
 			// Add route params

@@ -216,7 +216,7 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 			Debug Mode minimized
 		</div>
 		<div id="debug-panel" class="space-y-3">
-			if debugPanelShowsHostControls(viewer) {
+			if debugPanelShowsOperatorControls(room, viewer) {
 				<section id="debug-persistence-controls" class="space-y-2">
 					<div class="flex items-center justify-between gap-2">
 						<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
@@ -404,8 +404,11 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 	</script>
 }
 
-func debugPanelShowsHostControls(viewer *game.Player) bool {
-	return viewer == nil || viewer.IsHost
+func debugPanelShowsOperatorControls(room *game.Room, viewer *game.Player) bool {
+	if viewer == nil {
+		return true
+	}
+	return room != nil && room.IsOperatorSession(viewer.SessionID)
 }
 
 func debugViewerName(viewer *game.Player) string {

@@ -71,6 +71,7 @@ type Room struct {
 	CoupGreenEligibleBeforeKingFall bool
 	CoupWin                         *CoupWinState
 	Players                         map[string]*Player
+	OperatorSessionID               string
 	DebugStartMode                  DebugStartMode
 
 	MaxPlayers int
@@ -95,6 +96,14 @@ type Room struct {
 	RoleOptionsManager *RoleOptionsManager
 
 	mu sync.RWMutex
+}
+
+// IsOperatorSession reports whether a browser session has Room Operator authority.
+func (r *Room) IsOperatorSession(sessionID string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	return r.OperatorSessionID != "" && sessionID != "" && r.OperatorSessionID == sessionID
 }
 
 // AddPlayer adds a player to the room

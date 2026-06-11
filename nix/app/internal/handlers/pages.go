@@ -40,6 +40,7 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Create player
 	sessionID := getOrCreateSession(w, r)
+	room.OperatorSessionID = sessionID
 	player := game.NewPlayer(generatePlayerID(), playerName, sessionID)
 
 	// Set host flag if requested
@@ -275,7 +276,7 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		}
 		component.Render(r.Context(), w)
 	} else {
-		component := pages.GamePageWithDebug(room, player, h.config.Server.DebugModeEnabled)
+		component := pages.GamePageWithDebug(room, player, h.config.Server.DebugModeEnabled && h.isRoomOperator(r, room))
 		component.Render(r.Context(), w)
 	}
 }

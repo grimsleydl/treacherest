@@ -2,7 +2,6 @@ package pages
 
 import (
 	"fmt"
-	"time"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/views/components"
@@ -10,7 +9,7 @@ import (
 )
 
 templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebugForPlayer("Lobby", lobbyDebugControlsEnabled(cfg, currentPlayer), room.Code, room, currentPlayer) {
+	@layouts.BaseWithDebugForPlayer("Lobby", lobbyDebugControlsEnabled(cfg, room, currentPlayer), room.Code, room, currentPlayer) {
 		@LobbyBody(room, currentPlayer, cfg, cardService)
 	}
 }
@@ -28,7 +27,7 @@ templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 
 templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
 	// Only add signals for players who can control the game
-	if !hasHost(room) && currentPlayer.ID == getFirstPlayerID(room) {
+	if canManageRoom(room, currentPlayer) {
 		<div
 			data-signals:is-starting="false"
 			data-signals:start-error=""
@@ -263,32 +262,8 @@ templ CoupRulesReference() {
 	</div>
 }
 
-// Helper function to check if there's a host in the room
-func hasHost(room *game.Room) bool {
-	for _, player := range room.Players {
-		if player.IsHost {
-			return true
-		}
-	}
-	return false
-}
-
-// Helper function to get the first player ID (room creator)
-func getFirstPlayerID(room *game.Room) string {
-	var firstPlayer *game.Player
-	var firstJoinTime time.Time
-
-	for _, player := range room.Players {
-		if !player.IsHost && (firstPlayer == nil || player.JoinedAt.Before(firstJoinTime)) {
-			firstPlayer = player
-			firstJoinTime = player.JoinedAt
-		}
-	}
-
-	if firstPlayer != nil {
-		return firstPlayer.ID
-	}
-	return ""
+func canManageRoom(room *game.Room, player *game.Player) bool {
+	return room != nil && player != nil && room.IsOperatorSession(player.SessionID)
 }
 
 func rulesModeLabel(mode game.RulesMode) string {
@@ -300,8 +275,8 @@ func rulesModeLabel(mode game.RulesMode) string {
 	}
 }
 
-func lobbyDebugControlsEnabled(cfg *config.ServerConfig, player *game.Player) bool {
-	return cfg != nil && cfg.Server.DebugModeEnabled && player != nil
+func lobbyDebugControlsEnabled(cfg *config.ServerConfig, room *game.Room, player *game.Player) bool {
+	return cfg != nil && cfg.Server.DebugModeEnabled && canManageRoom(room, player)
 }
 
 func coupPresetMatchesActivePlayers(room *game.Room) bool {

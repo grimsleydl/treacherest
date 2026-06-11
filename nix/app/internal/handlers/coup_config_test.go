@@ -20,16 +20,14 @@ func TestUpdateCoupPreset(t *testing.T) {
 	room.CoupPreset = game.CoupPresetFive
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	form := url.Values{}
 	form.Add("preset", string(game.CoupPresetEightChaos))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-preset", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -56,6 +54,48 @@ func TestUpdateCoupPreset(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupPresetRejectsFirstActivePlayerWhoIsNotRoomOperator(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	firstPlayer := game.NewPlayer("p1", "First Player", "session-first")
+	operator := game.NewPlayer("p2", "Operator", "session-operator")
+	room.AddPlayer(firstPlayer)
+	room.AddPlayer(operator)
+	room.OperatorSessionID = operator.SessionID
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("preset", string(game.CoupPresetEightChaos))
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-preset", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{
+		Name:  "session",
+		Value: firstPlayer.SessionID,
+	})
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: firstPlayer.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupPreset(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupPreset != game.CoupPresetFive {
+		t.Fatalf("expected Coup preset to remain %q, got %q", game.CoupPresetFive, updatedRoom.CoupPreset)
+	}
+}
+
 func TestSetupRouter_RoutesCoupPresetUpdates(t *testing.T) {
 	h := newTestHandler()
 
@@ -63,6 +103,7 @@ func TestSetupRouter_RoutesCoupPresetUpdates(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	router := SetupRouter(h, h.config, &RouterOptions{
@@ -74,10 +115,7 @@ func TestSetupRouter_RoutesCoupPresetUpdates(t *testing.T) {
 	form.Add("preset", string(game.CoupPresetSix))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-preset", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -98,6 +136,7 @@ func TestUpdateCoupInfoPolicy(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	form := url.Values{}
@@ -107,10 +146,7 @@ func TestUpdateCoupInfoPolicy(t *testing.T) {
 	form.Add("blackNetwork", string(game.CoupBlackNetworkAll))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-info", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -142,6 +178,7 @@ func TestSetupRouter_RoutesCoupInfoPolicyUpdates(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	router := SetupRouter(h, h.config, &RouterOptions{
@@ -153,10 +190,7 @@ func TestSetupRouter_RoutesCoupInfoPolicyUpdates(t *testing.T) {
 	form.Add("blackToRed", string(game.CoupBlackToRedAll))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-info", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -177,16 +211,14 @@ func TestUpdateCoupRoyalGuardSettings(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	form := url.Values{}
 	form.Add("blockerLimit", "1")
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-royal-guard", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -212,6 +244,7 @@ func TestSetupRouter_RoutesCoupRoyalGuardSettings(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	router := SetupRouter(h, h.config, &RouterOptions{
@@ -223,10 +256,7 @@ func TestSetupRouter_RoutesCoupRoyalGuardSettings(t *testing.T) {
 	form.Add("blockerLimit", "3")
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-royal-guard", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -247,16 +277,14 @@ func TestUpdateCoupInquisitionSettings(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	form := url.Values{}
 	form.Add("resultPolicy", string(game.CoupInquisitionResultPrivate))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-inquisition", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -282,6 +310,7 @@ func TestSetupRouter_RoutesCoupInquisitionSettings(t *testing.T) {
 	room.RulesMode = game.RulesModeCoup
 	player := game.NewPlayer("p1", "Player 1", "session1")
 	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
 	h.store.UpdateRoom(room)
 
 	router := SetupRouter(h, h.config, &RouterOptions{
@@ -293,10 +322,7 @@ func TestSetupRouter_RoutesCoupInquisitionSettings(t *testing.T) {
 	form.Add("resultPolicy", string(game.CoupInquisitionResultPrivate))
 	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-inquisition", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: player.ID,
-	})
+	addPlayerSessionCookiesForTest(req, room, player)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)

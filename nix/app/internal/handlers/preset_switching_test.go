@@ -86,12 +86,14 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 	room.RoleConfig, _ = roleService.CreateFromPreset("standard", room.MaxPlayers)
 
 	player := &game.Player{
-		ID:       "player1",
-		Name:     "Test Player",
-		IsHost:   true,
-		JoinedAt: time.Now(),
+		ID:        "player1",
+		Name:      "Test Player",
+		IsHost:    true,
+		SessionID: "session-player1",
+		JoinedAt:  time.Now(),
 	}
 	room.Players[player.ID] = player
+	room.OperatorSessionID = player.SessionID
 	s.UpdateRoom(room)
 
 	// Verify initial leader count
@@ -108,6 +110,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/TEST1/config/preset", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.AddCookie(&http.Cookie{Name: "player_TEST1", Value: player.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "TEST1")
@@ -134,6 +137,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/TEST1/config/toggle", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.AddCookie(&http.Cookie{Name: "player_TEST1", Value: player.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "TEST1")
@@ -170,6 +174,7 @@ func TestPresetSwitchingLeaderCount(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/TEST1/config/preset", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.AddCookie(&http.Cookie{Name: "player_TEST1", Value: player.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "TEST1")
@@ -232,12 +237,14 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 	}
 
 	player := &game.Player{
-		ID:       "player1",
-		Name:     "Test Player",
-		IsHost:   true,
-		JoinedAt: time.Now(),
+		ID:        "player1",
+		Name:      "Test Player",
+		IsHost:    true,
+		SessionID: "session-player1",
+		JoinedAt:  time.Now(),
 	}
 	room.Players[player.ID] = player
+	room.OperatorSessionID = player.SessionID
 	s.UpdateRoom(room)
 
 	// Enable leader role
@@ -247,6 +254,7 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/CUSTOM1/config/toggle", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.AddCookie(&http.Cookie{Name: "player_CUSTOM1", Value: player.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "CUSTOM1")
@@ -273,6 +281,7 @@ func TestCustomModeRoleCountInit(t *testing.T) {
 		req := httptest.NewRequest("POST", "/room/CUSTOM1/config/toggle", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.AddCookie(&http.Cookie{Name: "player_CUSTOM1", Value: player.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
 
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("code", "CUSTOM1")

@@ -78,6 +78,23 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 		log.Printf("  - Player: %s (Host: %v)", p.Name, p.IsHost)
 	}
 
+	if !h.isRoomOperator(r, room) {
+		log.Printf("❌ Non-operator player %s attempted to start room %s", player.ID, roomCode)
+		sse := datastar.NewSSE(w, r)
+		errorHTML := `<div id="start-game-error" class="alert alert-error mt-4">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 0118 0z" />
+			</svg>
+			<span>Only the room operator can start the game</span>
+		</div>`
+		sse.PatchElements(errorHTML, datastar.WithSelector("#error-container"))
+		sse.MarshalAndPatchSignals(map[string]interface{}{
+			"isStarting": false,
+			"startError": "Only the room operator can start the game",
+		})
+		return
+	}
+
 	if room.RulesMode == game.RulesModeCoup {
 		h.startCoupGame(w, r, room)
 		return
@@ -639,9 +656,9 @@ func (h *Handler) SetRoleOption(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req struct {
-		CardID int                    `json:"card_id"`
-		Key    string                 `json:"key"`
-		Value  interface{}            `json:"value"`
+		CardID int         `json:"card_id"`
+		Key    string      `json:"key"`
+		Value  interface{} `json:"value"`
 	}
 
 	if err := r.ParseForm(); err == nil && r.Method == "POST" {
@@ -994,14 +1011,13 @@ func (h *Handler) DebugClearRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
 	}
-	playerCookie, err := r.Cookie("player_" + roomCode)
+	sessionCookie, err := r.Cookie("session")
 	if err != nil {
-		http.Error(w, "Host access required", http.StatusUnauthorized)
+		http.Error(w, "Debug operator access required", http.StatusUnauthorized)
 		return
 	}
-	player := room.GetPlayer(playerCookie.Value)
-	if player == nil || !player.IsHost {
-		http.Error(w, "Host access required", http.StatusForbidden)
+	if !room.IsOperatorSession(sessionCookie.Value) {
+		http.Error(w, "Debug operator access required", http.StatusForbidden)
 		return
 	}
 

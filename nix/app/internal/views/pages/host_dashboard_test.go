@@ -44,11 +44,13 @@ func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room, _ := makeCoupWinViewRoom()
 	host := &game.Player{
-		ID:     "host",
-		Name:   "Host",
-		IsHost: true,
+		ID:        "host",
+		Name:      "Host",
+		IsHost:    true,
+		SessionID: "session-host",
 	}
 	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
 
 	renderer.Render(HostDashboardPlaying(room, host)).
 		AssertContains("Looks like Black might have just won???").
@@ -67,11 +69,13 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 		Players: make(map[string]*game.Player),
 	}
 	host := &game.Player{
-		ID:     "host",
-		Name:   "Host",
-		IsHost: true,
+		ID:        "host",
+		Name:      "Host",
+		IsHost:    true,
+		SessionID: "session-host",
 	}
 	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
 
 	disabled := config.DefaultConfig()
 	disabled.Server.DebugModeEnabled = false
@@ -101,11 +105,13 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		Players: make(map[string]*game.Player),
 	}
 	host := &game.Player{
-		ID:     "host",
-		Name:   "Host",
-		IsHost: true,
+		ID:        "host",
+		Name:      "Host",
+		IsHost:    true,
+		SessionID: "session-host",
 	}
 	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
@@ -133,11 +139,13 @@ func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
 		Players: make(map[string]*game.Player),
 	}
 	host := &game.Player{
-		ID:     "host",
-		Name:   "Host",
-		IsHost: true,
+		ID:        "host",
+		Name:      "Host",
+		IsHost:    true,
+		SessionID: "session-host",
 	}
 	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
@@ -220,22 +228,24 @@ func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing
 		AssertNotContains("King-to-Blue Info")
 }
 
-func TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer(t *testing.T) {
+func TestHostDashboardLobby_DebugControlSurfaceRequiresRoomOperator(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
 		Code:    "DEBUG",
 		State:   game.StateLobby,
 		Players: make(map[string]*game.Player),
 	}
-	nonHost := &game.Player{
-		ID:   "player",
-		Name: "Player",
+	legacyHost := &game.Player{
+		ID:        "host",
+		Name:      "Legacy Host",
+		IsHost:    true,
+		SessionID: "session-host",
 	}
-	room.Players[nonHost.ID] = nonHost
+	room.Players[legacyHost.ID] = legacyHost
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
-	renderer.Render(HostDashboardLobby(room, nonHost, cfg, nil)).
+	renderer.Render(HostDashboardLobby(room, legacyHost, cfg, nil)).
 		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains("Debug Control Surface").
 		AssertNotContains("Debug Insights").
@@ -318,7 +328,7 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		},
 		Players: make(map[string]*game.Player),
 	}
-	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
 	king := &game.Player{ID: "king", Name: "King Player", Role: kingCard, RoleRevealed: true, FaceUp: true}
 	blue := &game.Player{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")}
 	black := &game.Player{ID: "black", Name: "Black Player", Role: mockCoupCard(1003, "Black Knight"), IsEliminated: true, RoleRevealed: true}
@@ -327,6 +337,7 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 	for _, player := range []*game.Player{host, king, blue, black, red, debugPlayer} {
 		room.Players[player.ID] = player
 	}
+	room.OperatorSessionID = host.SessionID
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
@@ -356,12 +367,13 @@ func TestHostDashboardLobby_ViewAsPlayerSelectorIncludesDebugPlayers(t *testing.
 		State:   game.StateLobby,
 		Players: make(map[string]*game.Player),
 	}
-	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
 	realPlayer := &game.Player{ID: "player-1", Name: "Real Player"}
 	debugPlayer := &game.Player{ID: "debug-1", Name: "Debug Player 1", IsDebug: true}
 	for _, player := range []*game.Player{host, realPlayer, debugPlayer} {
 		room.Players[player.ID] = player
 	}
+	room.OperatorSessionID = host.SessionID
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
