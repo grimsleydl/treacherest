@@ -492,9 +492,9 @@ Potential state values:
 - Art should use portrait card-art composition without baked-in frames, text, logos, mana symbols, or UI.
 - Role names, rules text, victory text, reveal state, and card layout remain app/template-rendered.
 - Canonical default visual theme: neutral Coup court-intrigue fantasy.
-- Optional visual style packs, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
+- Optional visual style packs are prompt guidance only for now, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
+- The import pipeline should keep one image per Coup role until a later UI need justifies multiple image sets.
 - Printable/exportable role cards.
-- Additional role-card style packs.
 
 ## Acceptance Criteria
 

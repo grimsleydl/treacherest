@@ -37,8 +37,8 @@ The table-facing explanation of a rules mode's roles, goals, and optional varian
 _Avoid_: Rules engine, automated adjudication
 
 **Role Image Prompt Pack**:
-A named set of visual prompt guidance for generating role-card art across a rules mode's roles.
-_Avoid_: Required game rules, role ability text
+A named set of visual prompt guidance for generating role-card art across a rules mode's roles. A prompt pack does not imply separate imported image sets unless a future feature explicitly adds that.
+_Avoid_: Required game rules, role ability text, image-set selector
 
 **External Image Generation Workflow**:
 The out-of-app process of using Role Image Prompt Packs to generate role art, then importing finished image files into Treacherest.

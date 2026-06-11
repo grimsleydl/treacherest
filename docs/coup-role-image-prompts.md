@@ -12,6 +12,8 @@ Target a vertical card-art aspect ratio with MTG-like portrait composition. Keep
 
 Generated art should be purely illustrative. Role names, rules text, victory text, reveal state, and card layout must be rendered by Treacherest or a future print/export template so wording can change without regenerating art.
 
+The current import pipeline supports one image per Coup role. Optional style packs are prompt guidance only for now; they should not create parallel image sets or an in-app style selector until a later UI need is proven.
+
 ## Import Targets
 
 The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are ID-based.
