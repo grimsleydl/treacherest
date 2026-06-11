@@ -14,3 +14,8 @@ var TreacheryCardsJSON []byte
 //
 //go:embed static/images/cards/*.jpg
 var CardImagesFS embed.FS
+
+// Embed optional Coup role images
+//
+//go:embed static/images/coup/*
+var CoupRoleImagesFS embed.FS

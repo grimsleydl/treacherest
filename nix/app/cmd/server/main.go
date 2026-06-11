@@ -39,6 +39,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize card service: ", err)
 	}
+	if err := game.LoadCoupRoleImages(treacherest.CoupRoleImagesFS); err != nil {
+		log.Fatal("Failed to initialize Coup role images: ", err)
+	}
 
 	// Create BackupService for game state backup/restore
 	backupService, err := game.NewBackupService(
