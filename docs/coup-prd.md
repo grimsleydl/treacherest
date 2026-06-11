@@ -486,8 +486,9 @@ Potential state values:
 
 ### Phase 3: Content And Art Tooling
 
-- Role-card art and prompt generation.
-- Optional visual themes.
+- Role-card art and prompt generation using `docs/coup-role-image-prompts.md`.
+- Canonical default visual theme: neutral Coup court-intrigue fantasy.
+- Optional visual style packs, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
 - Printable/exportable role cards.
 - Additional role-card style packs.
 
@@ -520,4 +521,3 @@ Potential state values:
 - Should Softened Knowledge candidate sets include only living players at setup, or can they include future decoys such as host/spectator labels? Recommended: only active players.
 - Should Wasteland be available at 8 players by default as a selectable chaos preset or hidden behind advanced settings?
 - Should Coup eventually replace the existing Treachery-first home flow, or live beside it as a mode selector?
-- Should role-card art/prompt generation use the frog/scorpion visual theme as a named style pack?

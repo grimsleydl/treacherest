@@ -36,6 +36,14 @@ _Avoid_: Default setup, supported preset, silent invalid configuration
 The table-facing explanation of a rules mode's roles, goals, and optional variants.
 _Avoid_: Rules engine, automated adjudication
 
+**Role Image Prompt Pack**:
+A named set of visual prompt guidance for generating role-card art across a rules mode's roles.
+_Avoid_: Required game rules, role ability text
+
+**Canonical Coup Art Direction**:
+The default Role Image Prompt Pack for Coup: neutral court-intrigue fantasy role-card art with clear role identity, political tension, and no parody-specific or animal-parable theme.
+_Avoid_: Frog/scorpion default, Treachery clone, hard-team faction art
+
 **Game State Tracking**:
 Recording play events after roles are assigned, such as reveals, deaths, Inquisition outcomes, and victory eligibility.
 _Avoid_: Role assignment, rules reference
