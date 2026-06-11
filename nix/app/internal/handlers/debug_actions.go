@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar-go/datastar"
 	"treacherest/internal/game"
-	"treacherest/internal/views/components"
+	"treacherest/internal/views/pages"
 )
 
 func (h *Handler) DebugStartWithDebugPlayers(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (h *Handler) DebugViewAsPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	components.DebugViewAsPlayerPerspective(room, selected).Render(r.Context(), w)
+	pages.DebugViewAsPlayerPerspective(room, selected, h.config, h.cardService).Render(r.Context(), w)
 }
 
 func (h *Handler) finishDebugStartedRoom(w http.ResponseWriter, r *http.Request, room *game.Room) {

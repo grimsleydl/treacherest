@@ -506,7 +506,7 @@ func TestDebugModeRoutes_StartAsIsRejectsNonHost(t *testing.T) {
 	}
 }
 
-func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPerspectiveReadOnly(t *testing.T) {
+func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPlayerUIPerspectiveReadOnly(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 	gameStore := store.NewMemoryStore(cfg)
@@ -532,19 +532,31 @@ func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPerspectiveReadOnly(t *testi
 	king := game.NewPlayer("king", "King Player", "session-king")
 	king.Role = kingRole
 	king.RoleRevealed = true
+	blueRole := mockHandlerCoupCard(1002, "Blue Knight")
+	blueRole.Rulings = []string{"Private information: King: King Player"}
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = blueRole
 	blackRole := mockHandlerCoupCard(1003, "Black Knight")
 	blackRole.Rulings = []string{"Private information: Red Knight: Red Player"}
 	black := game.NewPlayer("black", "Black Player", "session-black")
 	black.Role = blackRole
+	red := game.NewPlayer("red", "Red Player", "session-red")
+	red.Role = mockHandlerCoupCard(1004, "Red Knight")
 	if err := room.AddPlayer(king); err != nil {
 		t.Fatalf("add king: %v", err)
+	}
+	if err := room.AddPlayer(blue); err != nil {
+		t.Fatalf("add blue: %v", err)
 	}
 	if err := room.AddPlayer(black); err != nil {
 		t.Fatalf("add black: %v", err)
 	}
+	if err := room.AddPlayer(red); err != nil {
+		t.Fatalf("add red: %v", err)
+	}
 	gameStore.UpdateRoom(room)
 
-	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+king.ID, nil)
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+blue.ID, nil)
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	w := httptest.NewRecorder()
 
@@ -554,25 +566,105 @@ func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPerspectiveReadOnly(t *testi
 		t.Fatalf("expected status 200, got %d body %q", w.Code, w.Body.String())
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "View As Player: King Player") {
+	if !strings.Contains(body, `id="host-dashboard-content"`) {
+		t.Fatalf("expected View As Player to morph main room content, got %q", body)
+	}
+	if !strings.Contains(body, `id="debug-view-as-perspective"`) || !strings.Contains(body, "inert") {
+		t.Fatalf("expected selected perspective to be rendered read-only with inert wrapper, got %q", body)
+	}
+	if !strings.Contains(body, `id="game-container"`) {
+		t.Fatalf("expected selected player's normal game UI, got %q", body)
+	}
+	if !strings.Contains(body, "View As Player: Blue Player") {
 		t.Fatalf("expected selected player heading, got %q", body)
 	}
-	if !strings.Contains(body, "Role: King") {
-		t.Fatalf("expected selected player role, got %q", body)
+	if !strings.Contains(body, "Blue Knight") || !strings.Contains(body, "Test Blue Knight Card") {
+		t.Fatalf("expected selected player's role card UI, got %q", body)
 	}
-	if !strings.Contains(body, "Private information: Blue Knights: Blue Player") {
+	if !strings.Contains(body, "Private information: King: King Player") {
 		t.Fatalf("expected selected player private info, got %q", body)
 	}
 	if strings.Contains(body, "Private information: Red Knight: Red Player") {
 		t.Fatalf("view-as leaked another player's private info: %q", body)
 	}
+	if !strings.Contains(body, "Royal Guard") || !strings.Contains(body, "Call Inquisition") {
+		t.Fatalf("expected selected player's normal Coup controls in read-only perspective, got %q", body)
+	}
 	if !strings.Contains(body, "Read Only: yes") {
 		t.Fatalf("expected read-only marker, got %q", body)
 	}
-	for _, forbidden := range []string{"Call Inquisition", "Royal Guard", "Record Reveal", "Record Elimination"} {
+	for _, forbidden := range []string{"Record Reveal", "Record Elimination"} {
 		if strings.Contains(body, forbidden) {
-			t.Fatalf("view-as should not expose action control %q in %q", forbidden, body)
+			t.Fatalf("view-as should not expose host control %q in %q", forbidden, body)
 		}
+	}
+}
+
+func TestDebugModeRoutes_ViewAsPlayerSwitchesPerspectiveWithoutLeakingPreviousSelection(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	host := game.NewPlayer("host-1", "Host", "session-host")
+	host.IsHost = true
+	blueRole := mockHandlerCoupCard(1002, "Blue Knight")
+	blueRole.Rulings = []string{"Private information: Blue-only clue"}
+	blue := game.NewPlayer("blue", "Blue Player", "session-blue")
+	blue.Role = blueRole
+	debugRole := mockHandlerCoupCard(1005, "Green Knight")
+	debugRole.Rulings = []string{"Private information: Debug-only clue"}
+	debugPlayer := game.NewPlayer("debug-1", "Debug Player 1", "debug-session")
+	debugPlayer.IsDebug = true
+	debugPlayer.Role = debugRole
+	for _, player := range []*game.Player{host, blue, debugPlayer} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("add player %s: %v", player.Name, err)
+		}
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+blue.ID, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	blueBody := w.Body.String()
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected blue perspective status 200, got %d body %q", w.Code, blueBody)
+	}
+	if !strings.Contains(blueBody, "Private information: Blue-only clue") {
+		t.Fatalf("expected blue private info, got %q", blueBody)
+	}
+	if strings.Contains(blueBody, "Private information: Debug-only clue") {
+		t.Fatalf("blue perspective leaked debug player private info: %q", blueBody)
+	}
+
+	req = httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+debugPlayer.ID, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	debugBody := w.Body.String()
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected debug player perspective status 200, got %d body %q", w.Code, debugBody)
+	}
+	if !strings.Contains(debugBody, "View As Player: Debug Player 1") {
+		t.Fatalf("expected debug player heading, got %q", debugBody)
+	}
+	if !strings.Contains(debugBody, "Private information: Debug-only clue") {
+		t.Fatalf("expected debug player private info, got %q", debugBody)
+	}
+	if strings.Contains(debugBody, "Private information: Blue-only clue") {
+		t.Fatalf("debug player perspective leaked previous selected player private info: %q", debugBody)
 	}
 }
 
