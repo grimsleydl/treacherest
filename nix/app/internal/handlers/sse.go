@@ -524,10 +524,11 @@ func (h *Handler) renderLobby(sse *datastar.ServerSentEventGenerator, room *game
 		log.Printf("📝 Full HTML: %s", html)
 	}
 
-	// Send fragment directly to #lobby-content
-	// This preserves the DOM structure (lobby-container stays intact)
+	// Send the target wrapper too, so morphing #lobby-content keeps the
+	// element that future patches target.
+	wrappedHTML := fmt.Sprintf(`<div id="lobby-content">%s</div>`, html)
 	log.Printf("📤 DEBUG: Sending fragment with selector #lobby-content, merge mode: morph")
-	sse.PatchElements(html,
+	sse.PatchElements(wrappedHTML,
 		datastar.WithSelector("#lobby-content"))
 	log.Printf("✅ Sent lobby fragment update for room %s to player %s", room.Code, player.ID)
 }

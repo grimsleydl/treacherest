@@ -148,6 +148,9 @@ func TestUpdateCoupPlayerCountIncrementsPresetAndRoleCounts(t *testing.T) {
 	if !strings.Contains(body, `name="blackKnight" value="2"`) {
 		t.Fatalf("expected response to render updated Black Knight count, got: %s", body)
 	}
+	if !strings.Contains(body, `data: elements <div id="lobby-content"`) {
+		t.Fatalf("expected lobby patch to preserve #lobby-content wrapper, got: %s", body)
+	}
 }
 
 func TestUpdateCoupPlayerCountFromHostCookiePatchesHostSurface(t *testing.T) {
