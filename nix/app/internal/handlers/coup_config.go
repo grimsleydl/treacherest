@@ -96,7 +96,7 @@ func (h *Handler) updateCoupPlayerCount(w http.ResponseWriter, r *http.Request, 
 
 	preset, ok := game.CoupDefaultPresetForPlayerCount(currentCount + delta)
 	if !ok {
-		http.Error(w, "Unsupported Coup player count", http.StatusBadRequest)
+		h.renderCoupConfigResponse(w, r, room)
 		return
 	}
 	counts, ok := game.CoupRoleCountsForPreset(preset)
@@ -296,9 +296,14 @@ func (h *Handler) renderCoupConfigResponse(w http.ResponseWriter, r *http.Reques
 	}
 
 	sse := datastar.NewSSE(w, r)
-	if player.IsHost {
+	if player.IsHost || requestHasHostDashboardCookie(r, room.Code) {
 		h.renderHostDashboard(sse, room, player)
 		return
 	}
 	h.renderLobby(sse, room, player)
+}
+
+func requestHasHostDashboardCookie(r *http.Request, roomCode string) bool {
+	hostCookie, err := r.Cookie("host_" + roomCode)
+	return err == nil && hostCookie.Value == "true"
 }

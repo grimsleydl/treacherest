@@ -150,6 +150,82 @@ func TestUpdateCoupPlayerCountIncrementsPresetAndRoleCounts(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupPlayerCountFromHostCookiePatchesHostSurface(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	operator := game.NewPlayer("p1", "Operator", "session1")
+	room.AddPlayer(operator)
+	markRoomOperatorForTest(room, operator)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("expected host dashboard patch from host-cookie surface, got: %s", body)
+	}
+	if strings.Contains(body, "lobby-content") {
+		t.Fatalf("host-cookie Coup player-count update should not target lobby content, got: %s", body)
+	}
+}
+
+func TestUpdateCoupPlayerCountAtMaximumRerendersCurrentState(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetNine
+	host := game.NewPlayer("host", "Host", "host-session")
+	host.IsHost = true
+	room.AddPlayer(host)
+	markRoomOperatorForTest(room, host)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, host)
+	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected max-count increment to rerender with status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupPreset != game.CoupPresetNine {
+		t.Fatalf("expected max-count increment to leave preset at %q, got %q", game.CoupPresetNine, updatedRoom.CoupPreset)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "9 players") {
+		t.Fatalf("expected response to render current 9-player setup, got: %s", body)
+	}
+	if !strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("expected host dashboard patch at max count, got: %s", body)
+	}
+}
+
 func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
 	h := newTestHandler()
 
