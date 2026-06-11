@@ -40,6 +40,10 @@ _Avoid_: Rules engine, automated adjudication
 A named set of visual prompt guidance for generating role-card art across a rules mode's roles.
 _Avoid_: Required game rules, role ability text
 
+**External Image Generation Workflow**:
+The out-of-app process of using Role Image Prompt Packs to generate role art, then importing finished image files into Treacherest.
+_Avoid_: In-app AI generation, runtime prompt execution
+
 **Canonical Coup Art Direction**:
 The default Role Image Prompt Pack for Coup: neutral court-intrigue fantasy role-card art with clear role identity, political tension, and no parody-specific or animal-parable theme.
 _Avoid_: Frog/scorpion default, Treachery clone, hard-team faction art
