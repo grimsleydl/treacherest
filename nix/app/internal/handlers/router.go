@@ -135,6 +135,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 			r.Post("/room/{code}/debug/clear", h.DebugClearRoom)
 			r.Post("/room/{code}/debug/start-with-debug-players", h.DebugStartWithDebugPlayers)
 			r.Post("/room/{code}/debug/start-as-is", h.DebugStartAsIs)
+			r.Get("/room/{code}/debug/view-as/{playerID}", h.DebugViewAsPlayer)
 		}
 	})
 

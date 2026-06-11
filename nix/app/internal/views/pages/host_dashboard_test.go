@@ -252,3 +252,28 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Inquisition: succeeded").
 		AssertContains("Advisory Win: black")
 }
+
+func TestHostDashboardLobby_ViewAsPlayerSelectorIncludesDebugPlayers(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "VIEW1",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	realPlayer := &game.Player{ID: "player-1", Name: "Real Player"}
+	debugPlayer := &game.Player{ID: "debug-1", Name: "Debug Player 1", IsDebug: true}
+	for _, player := range []*game.Player{host, realPlayer, debugPlayer} {
+		room.Players[player.ID] = player
+	}
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains(`id="debug-view-as-player-select"`).
+		AssertContains(`value="player-1"`).
+		AssertContains("Real Player").
+		AssertContains(`value="debug-1"`).
+		AssertContains("Debug Player 1").
+		AssertContains(`@get(&#39;/room/VIEW1/debug/view-as/&#39; + evt.target.value)`)
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar-go/datastar"
 	"treacherest/internal/game"
+	"treacherest/internal/views/components"
 )
 
 func (h *Handler) DebugStartWithDebugPlayers(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +68,23 @@ func (h *Handler) DebugStartAsIs(w http.ResponseWriter, r *http.Request) {
 
 	room.DebugStartMode = game.DebugStartModeAsIs
 	h.finishDebugStartedRoom(w, r, room)
+}
+
+func (h *Handler) DebugViewAsPlayer(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	room, ok := h.requireDebugHostRoom(w, r, roomCode)
+	if !ok {
+		return
+	}
+
+	playerID := chi.URLParam(r, "playerID")
+	selected := room.GetPlayer(playerID)
+	if selected == nil || selected.IsHost {
+		http.Error(w, "Player not found", http.StatusNotFound)
+		return
+	}
+
+	components.DebugViewAsPlayerPerspective(room, selected).Render(r.Context(), w)
 }
 
 func (h *Handler) finishDebugStartedRoom(w http.ResponseWriter, r *http.Request, room *game.Room) {

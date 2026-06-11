@@ -229,7 +229,11 @@ templ DebugPanel(roomCode string, room *game.Room) {
 					@DebugInsights(room)
 				}
 			</section>
-			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player"></section>
+			<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
+				if room != nil {
+					@components.DebugViewAsPlayerSelector(room, roomCode)
+				}
+			</section>
 		</div>
 	</div>
 	<script>

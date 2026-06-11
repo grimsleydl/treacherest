@@ -1,0 +1,57 @@
+package components
+
+import "treacherest/internal/game"
+
+templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
+	if room != nil && roomCode != "" {
+		<div class="space-y-2">
+			<label for="debug-view-as-player-select" class="text-xs font-semibold uppercase text-base-content/70">View As Player</label>
+			<select
+				id="debug-view-as-player-select"
+				class="select select-bordered select-xs w-full"
+				data-on:change={ "@get('/room/" + roomCode + "/debug/view-as/' + evt.target.value)" }
+			>
+				<option value="">Select player</option>
+				for _, player := range room.GetActivePlayers() {
+					<option value={ player.ID }>{ player.Name }</option>
+				}
+			</select>
+			<div id="debug-view-as-player-result"></div>
+		</div>
+	}
+}
+
+templ DebugViewAsPlayerPerspective(room *game.Room, selected *game.Player) {
+	<div id="debug-view-as-player-result" class="space-y-2 text-xs">
+		<div class="font-semibold">View As Player: { selected.Name }</div>
+		<div>Read Only: yes</div>
+		if selected.Role != nil {
+			<div>Role: { selected.Role.Name }</div>
+			if selected.Role.Text != "" {
+				<div>{ selected.Role.Text }</div>
+			}
+			for _, ruling := range selected.Role.Rulings {
+				<div>{ ruling }</div>
+			}
+		} else {
+			<div>Role: none</div>
+		}
+		if room != nil {
+			<div class="space-y-1">
+				for _, player := range room.GetActivePlayers() {
+					<div>{ player.Name }: { debugViewAsVisibleRoleName(selected, player) }</div>
+				}
+			</div>
+		}
+	</div>
+}
+
+func debugViewAsVisibleRoleName(viewer *game.Player, player *game.Player) string {
+	if viewer == nil || player == nil || player.Role == nil {
+		return "hidden"
+	}
+	if viewer.ID == player.ID || player.RoleRevealed {
+		return player.Role.Name
+	}
+	return "hidden"
+}

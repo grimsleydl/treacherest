@@ -505,3 +505,145 @@ func TestDebugModeRoutes_StartAsIsRejectsNonHost(t *testing.T) {
 		t.Fatalf("expected non-host Start As-Is rejection not to assign a role")
 	}
 }
+
+func TestDebugModeRoutes_ViewAsPlayerRendersSelectedPerspectiveReadOnly(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.State = game.StatePlaying
+	host := game.NewPlayer("host-1", "Host", "session-host")
+	host.IsHost = true
+	if err := room.AddPlayer(host); err != nil {
+		t.Fatalf("add host: %v", err)
+	}
+	kingRole := mockHandlerCoupCard(1001, "King")
+	kingRole.Rulings = []string{"Private information: Blue Knights: Blue Player"}
+	king := game.NewPlayer("king", "King Player", "session-king")
+	king.Role = kingRole
+	king.RoleRevealed = true
+	blackRole := mockHandlerCoupCard(1003, "Black Knight")
+	blackRole.Rulings = []string{"Private information: Red Knight: Red Player"}
+	black := game.NewPlayer("black", "Black Player", "session-black")
+	black.Role = blackRole
+	if err := room.AddPlayer(king); err != nil {
+		t.Fatalf("add king: %v", err)
+	}
+	if err := room.AddPlayer(black); err != nil {
+		t.Fatalf("add black: %v", err)
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+king.ID, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body %q", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "View As Player: King Player") {
+		t.Fatalf("expected selected player heading, got %q", body)
+	}
+	if !strings.Contains(body, "Role: King") {
+		t.Fatalf("expected selected player role, got %q", body)
+	}
+	if !strings.Contains(body, "Private information: Blue Knights: Blue Player") {
+		t.Fatalf("expected selected player private info, got %q", body)
+	}
+	if strings.Contains(body, "Private information: Red Knight: Red Player") {
+		t.Fatalf("view-as leaked another player's private info: %q", body)
+	}
+	if !strings.Contains(body, "Read Only: yes") {
+		t.Fatalf("expected read-only marker, got %q", body)
+	}
+	for _, forbidden := range []string{"Call Inquisition", "Royal Guard", "Record Reveal", "Record Elimination"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("view-as should not expose action control %q in %q", forbidden, body)
+		}
+	}
+}
+
+func TestDebugModeRoutes_DisabledRouterDoesNotExposeViewAsPlayer(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = false
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	player := game.NewPlayer("player-1", "Player 1", "session-1")
+	if err := room.AddPlayer(player); err != nil {
+		t.Fatalf("add player: %v", err)
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+player.ID, nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected debug route to be absent with 404, got %d body %q", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "Debug endpoints") {
+		t.Fatalf("expected route absence, got debug handler response %q", w.Body.String())
+	}
+}
+
+func TestDebugModeRoutes_ViewAsPlayerRejectsNonHost(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	viewer := game.NewPlayer("viewer", "Viewer", "session-viewer")
+	target := game.NewPlayer("target", "Target", "session-target")
+	target.Role = mockHandlerCoupCard(1001, "King")
+	if err := room.AddPlayer(viewer); err != nil {
+		t.Fatalf("add viewer: %v", err)
+	}
+	if err := room.AddPlayer(target); err != nil {
+		t.Fatalf("add target: %v", err)
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/debug/view-as/"+target.ID, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: viewer.ID})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected non-host View As Player to be rejected with 403, got %d body %q", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "Role: King") {
+		t.Fatalf("non-host rejection leaked selected player role: %q", w.Body.String())
+	}
+}
