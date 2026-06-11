@@ -182,6 +182,9 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 	cfg := config.DefaultConfig()
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains("Player Count").
+		AssertContains(`@post(&#39;/room/COUPH/config/coup-player-count/decrement&#39;)`).
+		AssertContains(`@post(&#39;/room/COUPH/config/coup-player-count/increment&#39;)`).
 		AssertContains("Coup Preset").
 		AssertContains("Role Counts").
 		AssertContains(`id="coup-role-counts-form"`).
@@ -420,7 +423,7 @@ func TestHostDashboardLobby_DebugInsightsDoNotLeakToNonOperator(t *testing.T) {
 		Code:      "DBG11",
 		State:     game.StatePlaying,
 		RulesMode: game.RulesModeCoup,
-		Players:  make(map[string]*game.Player),
+		Players:   make(map[string]*game.Player),
 	}
 	operator := &game.Player{ID: "operator", Name: "Operator", SessionID: "session-operator"}
 	viewer := &game.Player{ID: "viewer", Name: "Viewer", SessionID: "session-viewer", Role: mockCoupCard(1004, "Red Knight")}

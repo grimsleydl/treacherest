@@ -59,6 +59,67 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 	h.renderCoupConfigResponse(w, r, room)
 }
 
+// IncrementCoupPlayerCount selects the next supported default Coup preset.
+func (h *Handler) IncrementCoupPlayerCount(w http.ResponseWriter, r *http.Request) {
+	h.updateCoupPlayerCount(w, r, 1)
+}
+
+// DecrementCoupPlayerCount selects the previous supported default Coup preset.
+func (h *Handler) DecrementCoupPlayerCount(w http.ResponseWriter, r *http.Request) {
+	h.updateCoupPlayerCount(w, r, -1)
+}
+
+func (h *Handler) updateCoupPlayerCount(w http.ResponseWriter, r *http.Request, delta int) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	if room.RulesMode != game.RulesModeCoup {
+		http.Error(w, "Room is not using Coup rules", http.StatusBadRequest)
+		return
+	}
+
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	currentCount, ok := game.CoupPresetPlayerCount(room.CoupPreset)
+	if !ok {
+		http.Error(w, "Current Coup preset is unsupported", http.StatusBadRequest)
+		return
+	}
+
+	preset, ok := game.CoupDefaultPresetForPlayerCount(currentCount + delta)
+	if !ok {
+		http.Error(w, "Unsupported Coup player count", http.StatusBadRequest)
+		return
+	}
+	counts, ok := game.CoupRoleCountsForPreset(preset)
+	if !ok {
+		http.Error(w, "Invalid Coup preset", http.StatusBadRequest)
+		return
+	}
+
+	room.CoupPreset = preset
+	room.CoupRoleCounts = counts
+	room.CoupRoleCountsCustom = false
+	room.CoupAllowUnsafeRoleCounts = false
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	h.renderCoupConfigResponse(w, r, room)
+}
+
 // UpdateCoupRoleCounts updates the editable Coup role-count pool for a room.
 func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")

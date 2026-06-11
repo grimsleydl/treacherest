@@ -143,6 +143,47 @@ func TestCoupRoleCountsForPreset_SeedsEditableCounts(t *testing.T) {
 	}
 }
 
+func TestCoupRoleCountsForRoom_IgnoresStalePresetSeedWhenNotCustom(t *testing.T) {
+	staleFivePlayerCounts, ok := CoupRoleCountsForPreset(CoupPresetFive)
+	if !ok {
+		t.Fatal("expected five-player preset counts")
+	}
+
+	room := &Room{
+		CoupPreset:           CoupPresetSix,
+		CoupRoleCounts:       staleFivePlayerCounts,
+		CoupRoleCountsCustom: false,
+	}
+
+	counts := CoupRoleCountsForRoom(room)
+	if counts[RoleBlackKnight] != 2 {
+		t.Fatalf("expected non-custom counts to come from selected 6-player preset, got %v", counts)
+	}
+}
+
+func TestCoupDefaultPresetForPlayerCount(t *testing.T) {
+	tests := []struct {
+		playerCount int
+		want        CoupPreset
+	}{
+		{playerCount: 5, want: CoupPresetFive},
+		{playerCount: 6, want: CoupPresetSix},
+		{playerCount: 7, want: CoupPresetSeven},
+		{playerCount: 8, want: CoupPresetEight},
+		{playerCount: 9, want: CoupPresetNine},
+	}
+
+	for _, tt := range tests {
+		got, ok := CoupDefaultPresetForPlayerCount(tt.playerCount)
+		if !ok {
+			t.Fatalf("expected default preset for %d players", tt.playerCount)
+		}
+		if got != tt.want {
+			t.Fatalf("expected %d players to use %q, got %q", tt.playerCount, tt.want, got)
+		}
+	}
+}
+
 func TestValidateCoupRoleCounts_ReportsNormalStartFailures(t *testing.T) {
 	tests := []struct {
 		name        string

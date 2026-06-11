@@ -102,6 +102,54 @@ func TestUpdateCoupPresetFromHostDashboardPatchesHostSurface(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupPlayerCountIncrementsPresetAndRoleCounts(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	staleCounts, _ := game.CoupRoleCountsForPreset(game.CoupPresetFive)
+	room.CoupRoleCounts = staleCounts
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupPreset != game.CoupPresetSix {
+		t.Fatalf("expected increment to select %q, got %q", game.CoupPresetSix, updatedRoom.CoupPreset)
+	}
+	if updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected player-count change to reset to preset role counts")
+	}
+	counts := game.CoupRoleCountsForRoom(updatedRoom)
+	if counts[game.RoleBlackKnight] != 2 {
+		t.Fatalf("expected 6-player role counts after increment, got %v", counts)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "6 players") {
+		t.Fatalf("expected response to render 6-player setup, got: %s", body)
+	}
+	if !strings.Contains(body, `name="blackKnight" value="2"`) {
+		t.Fatalf("expected response to render updated Black Knight count, got: %s", body)
+	}
+}
+
 func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
 	h := newTestHandler()
 

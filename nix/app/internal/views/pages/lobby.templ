@@ -96,6 +96,32 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 		if canControl && room.RulesMode == game.RulesModeCoup {
 			<div class="card bg-base-200 shadow-xl max-w-md w-full">
 				<div class="card-body gap-3">
+					<div class="form-control w-full">
+						<label class="label">
+							<span class="label-text">Player Count</span>
+						</label>
+						<div class="join w-full">
+							<button
+								type="button"
+								class="btn btn-primary btn-sm join-item"
+								data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/decrement')", room.Code) }
+								disabled?={ !coupCanDecrementPlayerCount(room) }
+							>
+								-
+							</button>
+							<div class="join-item input input-bordered input-sm flex flex-1 items-center justify-center font-semibold">
+								{ fmt.Sprintf("%d players", coupSelectedPlayerCount(room)) }
+							</div>
+							<button
+								type="button"
+								class="btn btn-primary btn-sm join-item"
+								data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/increment')", room.Code) }
+								disabled?={ !coupCanIncrementPlayerCount(room) }
+							>
+								+
+							</button>
+						</div>
+					</div>
 					<form
 						id="coup-preset-form"
 						class="form-control w-full"
@@ -114,7 +140,7 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 					</form>
 					<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
 					<div class="divider my-1"></div>
-					<div>
+					<div id={ coupRoleCountsRenderKey(room) }>
 						<div class="flex items-center justify-between gap-3 mb-2">
 							<h3 class="font-semibold">Role Counts</h3>
 							<span class="badge badge-outline">{ game.CoupRoleCountModeLabel(room) }</span>
@@ -319,6 +345,51 @@ func rulesModeLabel(mode game.RulesMode) string {
 
 func lobbyDebugControlsEnabled(cfg *config.ServerConfig, room *game.Room, player *game.Player) bool {
 	return cfg != nil && cfg.Server.DebugModeEnabled && canManageRoom(room, player)
+}
+
+func coupSelectedPlayerCount(room *game.Room) int {
+	if room == nil {
+		return 5
+	}
+	count, ok := game.CoupPresetPlayerCount(room.CoupPreset)
+	if !ok {
+		return 5
+	}
+	return count
+}
+
+func coupCanIncrementPlayerCount(room *game.Room) bool {
+	_, ok := game.CoupDefaultPresetForPlayerCount(coupSelectedPlayerCount(room) + 1)
+	return ok
+}
+
+func coupCanDecrementPlayerCount(room *game.Room) bool {
+	_, ok := game.CoupDefaultPresetForPlayerCount(coupSelectedPlayerCount(room) - 1)
+	return ok
+}
+
+func coupRoleCountsRenderKey(room *game.Room) string {
+	counts := game.CoupRoleCountsForRoom(room)
+	preset := game.CoupPresetFive
+	custom := false
+	unsafe := false
+	if room != nil {
+		preset = game.NormalizeCoupPreset(room.CoupPreset)
+		custom = room.CoupRoleCountsCustom
+		unsafe = room.CoupAllowUnsafeRoleCounts
+	}
+	return fmt.Sprintf(
+		"coup-role-counts-%s-%t-%t-%d-%d-%d-%d-%d-%d",
+		preset,
+		custom,
+		unsafe,
+		counts[game.RoleKing],
+		counts[game.RoleBlueKnight],
+		counts[game.RoleBlackKnight],
+		counts[game.RoleRedKnight],
+		counts[game.RoleGreenKnight],
+		counts[game.RoleWasteland],
+	)
 }
 
 func coupPresetMatchesActivePlayers(room *game.Room) bool {

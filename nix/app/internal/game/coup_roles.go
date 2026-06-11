@@ -107,6 +107,14 @@ var coupPresetLabels = map[CoupPreset]string{
 	CoupPresetNine:       "9 players",
 }
 
+var coupDefaultPresetByPlayerCount = map[int]CoupPreset{
+	5: CoupPresetFive,
+	6: CoupPresetSix,
+	7: CoupPresetSeven,
+	8: CoupPresetEight,
+	9: CoupPresetNine,
+}
+
 var coupRoleSummaryOrder = []RoleType{
 	RoleKing,
 	RoleBlueKnight,
@@ -176,6 +184,12 @@ func CoupPresetOptions() []CoupPreset {
 	return options
 }
 
+// CoupDefaultPresetForPlayerCount returns the non-chaos preset for a player count.
+func CoupDefaultPresetForPlayerCount(playerCount int) (CoupPreset, bool) {
+	preset, ok := coupDefaultPresetByPlayerCount[playerCount]
+	return preset, ok
+}
+
 // CoupRoleCountOptions returns supported Coup role types in setup display order.
 func CoupRoleCountOptions() []RoleType {
 	options := make([]RoleType, len(coupRoleSummaryOrder))
@@ -210,7 +224,7 @@ func CoupRoleCountsForRoom(room *Room) CoupRoleCounts {
 		counts, _ := CoupRoleCountsForPreset(CoupPresetFive)
 		return counts
 	}
-	if room.CoupRoleCounts != nil {
+	if room.CoupRoleCountsCustom {
 		return NormalizeCoupRoleCounts(room.CoupRoleCounts)
 	}
 	counts, ok := CoupRoleCountsForPreset(room.CoupPreset)

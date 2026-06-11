@@ -139,6 +139,9 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(coupRoom, currentPlayer, cfg, cardService)
 
 		renderer.Render(component).
+			AssertContains("Player Count").
+			AssertContains(`@post(&#39;/room/COUP2/config/coup-player-count/decrement&#39;)`).
+			AssertContains(`@post(&#39;/room/COUP2/config/coup-player-count/increment&#39;)`).
 			AssertContains("Coup Preset").
 			AssertContains("coup-preset-form").
 			AssertContains(`@post(&#39;/room/COUP2/config/coup-preset&#39;, {contentType: &#39;form&#39;})`).
