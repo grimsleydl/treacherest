@@ -10,8 +10,6 @@ templ DebugViewAsPlayerPerspective(room *game.Room, selected *game.Player, cfg *
 		<div
 			id="debug-view-as-perspective"
 			data-debug-view-as-player={ selected.ID }
-			data-debug-read-only="true"
-			inert
 		>
 			if room.State == game.StateLobby {
 				@LobbyContent(room, selected, cfg, cardService)
@@ -22,6 +20,5 @@ templ DebugViewAsPlayerPerspective(room *game.Room, selected *game.Player, cfg *
 	</div>
 	<div id="debug-view-as-player-result" class="space-y-2 text-xs">
 		<div class="font-semibold">View As Player: { selected.Name }</div>
-		<div>Read Only: yes</div>
 	</div>
 }

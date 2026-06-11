@@ -66,7 +66,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Get("/", h.Home)
 		r.Post("/room/new", h.CreateRoom) // Changed from /room/create to match form action
 		r.Get("/room/{code}", h.JoinRoom)
-		r.Post("/join-room", h.JoinRoomPost) // New POST endpoint for joining rooms
+		r.Post("/join-room", h.JoinRoomPost)   // New POST endpoint for joining rooms
 		r.Post("/room/restore", h.RestoreRoom) // Restore room from client backup
 		r.Post("/room/{code}/leave", h.LeaveRoom)
 		r.Post("/room/{code}/start", h.StartGame)
@@ -135,6 +135,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 			r.Post("/room/{code}/debug/clear", h.DebugClearRoom)
 			r.Post("/room/{code}/debug/start-with-debug-players", h.DebugStartWithDebugPlayers)
 			r.Post("/room/{code}/debug/start-as-is", h.DebugStartAsIs)
+			r.Get("/room/{code}/debug/operator-view", h.DebugOperatorView)
 			r.Get("/room/{code}/debug/view-as/{playerID}", h.DebugViewAsPlayer)
 		}
 	})

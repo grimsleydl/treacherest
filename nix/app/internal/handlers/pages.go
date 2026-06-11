@@ -97,6 +97,17 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		// Player already in room
 		player := room.GetPlayer(playerCookie.Value)
 		if player != nil {
+			if h.debugControlsEnabled(r, room) {
+				if viewedPlayer := h.debugViewedPlayer(room); viewedPlayer != nil {
+					if room.State == game.StateLobby {
+						component := pages.LobbyPageWithDebug(room, viewedPlayer, h.config, h.cardService, true)
+						component.Render(r.Context(), w)
+					} else {
+						http.Redirect(w, r, "/game/"+roomCode, http.StatusSeeOther)
+					}
+					return
+				}
+			}
 
 			// Show appropriate page based on player type and game state
 			if player.IsHost {
@@ -260,6 +271,15 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	debugMode := h.debugControlsEnabled(r, room)
+	if debugMode {
+		if viewedPlayer := h.debugViewedPlayer(room); viewedPlayer != nil {
+			component := pages.GamePageWithDebug(room, viewedPlayer, true)
+			component.Render(r.Context(), w)
+			return
+		}
+	}
+
 	// Show appropriate view based on player type
 	if player.IsHost {
 		var component templ.Component
@@ -276,7 +296,7 @@ func (h *Handler) GamePage(w http.ResponseWriter, r *http.Request) {
 		}
 		component.Render(r.Context(), w)
 	} else {
-		component := pages.GamePageWithDebug(room, player, h.config.Server.DebugModeEnabled && h.isRoomOperator(r, room))
+		component := pages.GamePageWithDebug(room, player, debugMode)
 		component.Render(r.Context(), w)
 	}
 }

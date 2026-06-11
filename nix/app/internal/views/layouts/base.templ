@@ -405,10 +405,7 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 }
 
 func debugPanelShowsOperatorControls(room *game.Room, viewer *game.Player) bool {
-	if viewer == nil {
-		return true
-	}
-	return room != nil && room.IsOperatorSession(viewer.SessionID)
+	return true
 }
 
 func debugViewerName(viewer *game.Player) string {

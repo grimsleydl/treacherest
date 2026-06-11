@@ -84,7 +84,23 @@ func (h *Handler) DebugViewAsPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	room.DebugViewedPlayerID = selected.ID
+	h.store.UpdateRoom(room)
+
 	pages.DebugViewAsPlayerPerspective(room, selected, h.config, h.cardService).Render(r.Context(), w)
+}
+
+func (h *Handler) DebugOperatorView(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	room, ok := h.requireDebugHostRoom(w, r, roomCode)
+	if !ok {
+		return
+	}
+
+	room.DebugViewedPlayerID = ""
+	h.store.UpdateRoom(room)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) finishDebugStartedRoom(w http.ResponseWriter, r *http.Request, room *game.Room) {

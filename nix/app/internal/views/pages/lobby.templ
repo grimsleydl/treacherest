@@ -9,7 +9,11 @@ import (
 )
 
 templ LobbyPage(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.BaseWithDebugForPlayer("Lobby", lobbyDebugControlsEnabled(cfg, room, currentPlayer), room.Code, room, currentPlayer) {
+	@LobbyPageWithDebug(room, currentPlayer, cfg, cardService, lobbyDebugControlsEnabled(cfg, room, currentPlayer))
+}
+
+templ LobbyPageWithDebug(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService, debugMode bool) {
+	@layouts.BaseWithDebugForPlayer("Lobby", debugMode, room.Code, room, currentPlayer) {
 		@LobbyBody(room, currentPlayer, cfg, cardService)
 	}
 }

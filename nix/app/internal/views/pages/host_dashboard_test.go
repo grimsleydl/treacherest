@@ -374,14 +374,19 @@ func TestHostDashboardLobby_ViewAsPlayerSelectorIncludesDebugPlayers(t *testing.
 		room.Players[player.ID] = player
 	}
 	room.OperatorSessionID = host.SessionID
+	room.DebugViewedPlayerID = debugPlayer.ID
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains(`id="debug-operator-view"`).
+		AssertContains("Operator View").
+		AssertContains(`@get(&#39;/room/VIEW1/debug/operator-view&#39;)`).
 		AssertContains(`id="debug-view-as-player-select"`).
 		AssertContains(`value="player-1"`).
 		AssertContains("Real Player").
 		AssertContains(`value="debug-1"`).
+		AssertContains(`selected`).
 		AssertContains("Debug Player 1").
 		AssertContains(`@get(&#39;/room/VIEW1/debug/view-as/&#39; + evt.target.value)`)
 }

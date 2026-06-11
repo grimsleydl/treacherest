@@ -5,15 +5,22 @@ import "treacherest/internal/game"
 templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
 	if room != nil && roomCode != "" {
 		<div class="space-y-2">
+			<button
+				id="debug-operator-view"
+				class="btn btn-xs btn-outline w-full"
+				data-on:click={ "@get('/room/" + roomCode + "/debug/operator-view')" }
+			>
+				Operator View
+			</button>
 			<label for="debug-view-as-player-select" class="text-xs font-semibold uppercase text-base-content/70">View As Player</label>
 			<select
 				id="debug-view-as-player-select"
 				class="select select-bordered select-xs w-full"
 				data-on:change={ "@get('/room/" + roomCode + "/debug/view-as/' + evt.target.value)" }
 			>
-				<option value="">Select player</option>
+				<option value="" selected?={ room.DebugViewedPlayerID == "" } disabled>Choose player</option>
 				for _, player := range room.GetActivePlayers() {
-					<option value={ player.ID }>{ player.Name }</option>
+					<option value={ player.ID } selected?={ player.ID == room.DebugViewedPlayerID }>{ player.Name }</option>
 				}
 			</select>
 			<div id="debug-view-as-player-result"></div>

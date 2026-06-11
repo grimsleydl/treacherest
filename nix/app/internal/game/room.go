@@ -72,6 +72,7 @@ type Room struct {
 	CoupWin                         *CoupWinState
 	Players                         map[string]*Player
 	OperatorSessionID               string
+	DebugViewedPlayerID             string
 	DebugStartMode                  DebugStartMode
 
 	MaxPlayers int
