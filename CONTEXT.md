@@ -24,6 +24,14 @@ _Avoid_: Coup, default rules
 The act of giving each player a hidden role and any private information that follows from that role.
 _Avoid_: Role engine, game enforcement
 
+**Role Count Configuration**:
+The pre-start selection of how many copies of each role are included in a rules mode's assignment pool, usually starting from a recommended Role Preset.
+_Avoid_: Hard-coded role list, post-assignment role editing
+
+**Unsafe Role Count Override**:
+An explicit pre-start opt-in that allows a room to start with a Role Count Configuration that violates normal structural assumptions, such as missing King or Red.
+_Avoid_: Default setup, supported preset, silent invalid configuration
+
 **Rules Reference**:
 The table-facing explanation of a rules mode's roles, goals, and optional variants.
 _Avoid_: Rules engine, automated adjudication
@@ -85,8 +93,12 @@ A stable synthetic active player used in Debug Mode to fill a visible table seat
 _Avoid_: Dummy player, host, spectator, bot
 
 **Debug Insights**:
-A Debug Operator-only view of normally hidden or derived room facts used to verify hidden-role setup and state tracking.
-_Avoid_: Public rules reference, player view
+A Debug Operator-only view of normally hidden or derived room facts used to verify hidden-role setup and state tracking. Debug Insights may also act as the operator's entry point for Debug Impersonation because each visible player entry represents a selectable Viewed Player.
+_Avoid_: Public rules reference, player view, public player list
+
+**Debug Role Color Coding**:
+Debug-only visual grouping of player entries by hidden role to speed playtesting and inspection. King is gold, roles with a color in the role name use that color, and Wasteland is gray. It must not imply public table knowledge.
+_Avoid_: Public role reveal, player-facing team color, permanent faction marker
 
 **Reveal**:
 A public transition where a hidden role becomes known to the table.
@@ -165,8 +177,8 @@ Whether Green is allowed to share a King-side or Red-side victory under the sele
 _Avoid_: Green team membership
 
 **Inquisition**:
-A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct.
-_Avoid_: Investigation, vote
+A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct. The revealed King is not a valid Inquisition target.
+_Avoid_: Investigation, vote, naming the King
 
 **Inquisition Notice**:
 A public acknowledgement that an Inquisition has been called before its result is shown.

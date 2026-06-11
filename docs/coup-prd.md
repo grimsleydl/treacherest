@@ -51,6 +51,7 @@ The current app already has useful building blocks:
 - Lobby, countdown, playing, and ended states.
 - Player records with hidden role, public reveal, face-up state, and elimination state.
 - Role presets and configurable role counts.
+- Pre-start role-count tuning similar to the existing Treachery mode.
 - Host mode.
 - Server-rendered Templ UI with Datastar/SSE updates.
 
@@ -65,8 +66,9 @@ The current user-facing role taxonomy is Treachery-oriented: Leader, Guardian, A
 3. User selects player count.
 4. User adds or confirms player names.
 5. User selects a Coup role preset.
-6. User selects rules variants.
-7. App validates that the preset and settings match the player count.
+6. User optionally tunes the number of each Coup role before assignment.
+7. User selects rules variants.
+8. App validates that the role count configuration and settings match the player count.
 
 ### Assign Roles Secretly
 
@@ -87,7 +89,7 @@ The current user-facing role taxonomy is Treachery-oriented: Leader, Guardian, A
 ### Use Inquisition
 
 1. A revealed or unrevealed Blue Knight chooses to call Inquisition in-app.
-2. Blue names the suspected Red Knight.
+2. Blue names the suspected Red Knight. King is not a valid target.
 3. Blue is revealed when calling Inquisition.
 4. App broadcasts an Inquisition Notice popup.
 5. Any one living non-Blue player confirms Blue announced the Inquisition.
@@ -170,7 +172,14 @@ The current user-facing role taxonomy is Treachery-oriented: Leader, Guardian, A
 
 ## Role Presets
 
-Treat these as configurable presets, not permanent hard-coded rules.
+Treat these as configurable presets, not permanent hard-coded rules. The room creator should be able to start from a recommended preset and tune the number of each Coup role before the game starts, similar to Treachery mode. The final role count configuration must still match the number of participating players.
+
+Default structural validation:
+
+- A normal Coup role count configuration requires exactly one King.
+- A normal Coup role count configuration requires exactly one Red Knight.
+- Blue, Black, Green, and Wasteland counts may be tuned within player-count validation.
+- The room creator may explicitly enable an Unsafe Role Count Override to start without a King or Red Knight, with the understanding that core Coup win logic, Inquisition, and table balance may be broken.
 
 | Players | Default roles |
 | --- | --- |
@@ -228,6 +237,7 @@ Default:
 - Each Blue Knight may call Inquisition once per game.
 - Blue reveals when calling Inquisition.
 - Blue names the suspected Red Knight.
+- King is excluded from possible Inquisition targets.
 - One living non-Blue player must confirm the Inquisition Notice before result display.
 - If Blue is correct:
   - Inquisition succeeds.
@@ -332,6 +342,10 @@ Wasteland wins only if they are the sole surviving player. Wasteland never share
 
 - Player count must determine available/recommended role presets.
 - Role presets must be visible before game start.
+- The room creator must be able to tune the number of each Coup role before the game starts.
+- The app must validate that the final role count configuration equals the number of participating players.
+- By default, the app must require exactly one King and exactly one Red Knight before starting Coup.
+- The room creator must be able to explicitly acknowledge and enable an Unsafe Role Count Override to bypass the normal King/Red structural requirement.
 - Rules variants must be explicit and reviewable before game start.
 - Defaults must be selected for teachability.
 
@@ -353,6 +367,7 @@ Wasteland wins only if they are the sole surviving player. Wasteland never share
 ### Inquisition Tracking
 
 - The app must require a witness confirmation before result display.
+- The app must exclude King from possible Inquisition targets and reject attempts to name King.
 - The app must support Public Inquisition Result and Private Inquisition Result.
 - The app must track whether Inquisition succeeded.
 - The app must record failed Inquisition life-loss guidance.
@@ -386,6 +401,7 @@ Potential state values:
 
 - `kingAlive`
 - `kingFallen`
+- `unsafeRoleCountOverrideEnabled`
 - `inquisitionSucceeded`
 - `greenEligibleBeforeKingFall`
 - `broadAmnestyEnabled`
@@ -420,6 +436,8 @@ Potential state values:
 
 ## Edge Cases
 
+- Unsafe Role Count Override with no King.
+- Unsafe Role Count Override with no Red Knight.
 - Multiple Blue Knights and Inquisition attempts.
 - Multiple Black Knights with no Network.
 - Red eliminated before King.
