@@ -134,6 +134,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		if cfg.Server.DebugModeEnabled {
 			r.Post("/room/{code}/debug/clear", h.DebugClearRoom)
 			r.Post("/room/{code}/debug/start-with-debug-players", h.DebugStartWithDebugPlayers)
+			r.Post("/room/{code}/debug/start-as-is", h.DebugStartAsIs)
 		}
 	})
 

@@ -345,3 +345,163 @@ func TestDebugModeRoutes_DebugPlayersCanBeEliminatedAsActiveSeats(t *testing.T) 
 		t.Fatalf("expected eliminated debug player %s role to be revealed", finalDebugPlayer.Name)
 	}
 }
+
+func TestDebugModeRoutes_StartAsIsUnderfilledCoupIncludesKingWithoutDebugPlayers(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	host := game.NewPlayer("host-1", "Host", "session-host")
+	host.IsHost = true
+	if err := room.AddPlayer(host); err != nil {
+		t.Fatalf("add host: %v", err)
+	}
+	player1 := game.NewPlayer("player-1", "Player 1", "session-1")
+	player2 := game.NewPlayer("player-2", "Player 2", "session-2")
+	if err := room.AddPlayer(player1); err != nil {
+		t.Fatalf("add player 1: %v", err)
+	}
+	if err := room.AddPlayer(player2); err != nil {
+		t.Fatalf("add player 2: %v", err)
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-as-is", nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body %q", w.Code, w.Body.String())
+	}
+
+	updatedRoom, err := gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get updated room: %v", err)
+	}
+	if updatedRoom.State != game.StateCountdown {
+		t.Fatalf("expected room state %s, got %s", game.StateCountdown, updatedRoom.State)
+	}
+	if updatedRoom.DebugStartMode != game.DebugStartModeAsIs {
+		t.Fatalf("expected debug start mode %q, got %q", game.DebugStartModeAsIs, updatedRoom.DebugStartMode)
+	}
+	activePlayers := updatedRoom.GetActivePlayers()
+	if len(activePlayers) != 2 {
+		t.Fatalf("expected Start As-Is to keep 2 active players, got %d", len(activePlayers))
+	}
+	allowedRoles := map[game.RoleType]bool{
+		game.RoleKing:        true,
+		game.RoleBlueKnight:  true,
+		game.RoleBlackKnight: true,
+		game.RoleRedKnight:   true,
+		game.RoleGreenKnight: true,
+	}
+	kingCount := 0
+	for _, player := range activePlayers {
+		if player.IsDebug {
+			t.Fatalf("Start As-Is should not create debug players, got %s", player.Name)
+		}
+		if player.Role == nil {
+			t.Fatalf("expected player %s to have a role", player.Name)
+		}
+		roleType := player.Role.GetRoleType()
+		if !allowedRoles[roleType] {
+			t.Fatalf("expected role %s to come from Coup 5 preset pool", roleType)
+		}
+		if roleType == game.RoleKing {
+			kingCount++
+			if !player.RoleRevealed || !player.FaceUp {
+				t.Fatalf("expected Start As-Is King %s to start revealed and face up", player.Name)
+			}
+		}
+	}
+	if kingCount != 1 {
+		t.Fatalf("expected exactly one King in Start As-Is Coup assignment, got %d", kingCount)
+	}
+}
+
+func TestDebugModeRoutes_DisabledRouterDoesNotExposeStartAsIs(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = false
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-as-is", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected debug route to be absent with 404, got %d body %q", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "Debug endpoints") {
+		t.Fatalf("expected route absence, got debug handler response %q", w.Body.String())
+	}
+}
+
+func TestDebugModeRoutes_StartAsIsRejectsNonHost(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+	router := SetupRouter(h, cfg, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	room, err := gameStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	player := game.NewPlayer("player-1", "Player 1", "session-1")
+	if err := room.AddPlayer(player); err != nil {
+		t.Fatalf("add player: %v", err)
+	}
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/debug/start-as-is", nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player.ID})
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected non-host Start As-Is to be rejected with 403, got %d body %q", w.Code, w.Body.String())
+	}
+	updatedRoom, err := gameStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("get updated room: %v", err)
+	}
+	if updatedRoom.State != game.StateLobby {
+		t.Fatalf("expected room to remain in lobby, got %s", updatedRoom.State)
+	}
+	if updatedRoom.DebugStartMode != game.DebugStartModeNone {
+		t.Fatalf("expected debug start mode to remain unset, got %q", updatedRoom.DebugStartMode)
+	}
+	if player.Role != nil {
+		t.Fatalf("expected non-host Start As-Is rejection not to assign a role")
+	}
+}

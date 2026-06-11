@@ -274,6 +274,64 @@ func AssignCoupRoles(players []*Player, preset CoupPreset) error {
 	return AssignCoupRolesWithInformation(players, preset, CoupInformationPolicy{})
 }
 
+// AssignCoupRolesBestEffort assigns Coup roles to the current active players without
+// requiring the selected preset's exact player count. It always includes King when
+// at least one active player exists, then fills remaining players from the preset pool.
+func AssignCoupRolesBestEffort(players []*Player, preset CoupPreset, policy CoupInformationPolicy) error {
+	activePlayers := make([]*Player, 0, len(players))
+	for _, player := range players {
+		if !player.IsHost {
+			activePlayers = append(activePlayers, player)
+		}
+	}
+	if len(activePlayers) == 0 {
+		return fmt.Errorf("Start As-Is requires at least one active player")
+	}
+
+	preset = NormalizeCoupPreset(preset)
+	roleTypes, ok := coupPresetRoles[preset]
+	if !ok {
+		return fmt.Errorf("unknown Coup preset %q", preset)
+	}
+	if len(activePlayers) > len(roleTypes) {
+		return fmt.Errorf("Coup preset %s has %d roles, got %d active players", preset, len(roleTypes), len(activePlayers))
+	}
+
+	shuffledPlayers := make([]*Player, len(activePlayers))
+	copy(shuffledPlayers, activePlayers)
+	rand.Shuffle(len(shuffledPlayers), func(i, j int) {
+		shuffledPlayers[i], shuffledPlayers[j] = shuffledPlayers[j], shuffledPlayers[i]
+	})
+
+	remainingRoles := make([]RoleType, 0, len(roleTypes)-1)
+	for _, roleType := range roleTypes {
+		if roleType != RoleKing {
+			remainingRoles = append(remainingRoles, roleType)
+		}
+	}
+	rand.Shuffle(len(remainingRoles), func(i, j int) {
+		remainingRoles[i], remainingRoles[j] = remainingRoles[j], remainingRoles[i]
+	})
+
+	selectedRoles := []RoleType{RoleKing}
+	selectedRoles = append(selectedRoles, remainingRoles[:len(activePlayers)-1]...)
+	for i, player := range shuffledPlayers {
+		role := *coupRoleCards[selectedRoles[i]]
+		player.Role = &role
+		if role.GetRoleType() == RoleKing {
+			player.RoleRevealed = true
+			player.FaceUp = true
+		} else {
+			player.RoleRevealed = false
+			player.FaceUp = false
+		}
+	}
+
+	applyCoupInformation(activePlayers, NormalizeCoupInformationPolicy(policy))
+
+	return nil
+}
+
 // AssignCoupRolesWithInformation assigns Coup roles and attaches recipient-scoped private information.
 func AssignCoupRolesWithInformation(players []*Player, preset CoupPreset, policy CoupInformationPolicy) error {
 	activePlayers := make([]*Player, 0, len(players))

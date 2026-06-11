@@ -211,6 +211,13 @@ templ DebugPanel(roomCode string) {
 					>
 						Start with Debug Players
 					</button>
+					<button
+						id="debug-start-as-is"
+						class="btn btn-xs btn-outline btn-warning w-full"
+						data-on:click={ "@post('/room/" + roomCode + "/debug/start-as-is')" }
+					>
+						Start As-Is
+					</button>
 				}
 			</section>
 			<section id="debug-insights-container" class="space-y-2" aria-label="Debug insights"></section>

@@ -113,6 +113,8 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		AssertContains(`id="debug-start-override-controls"`).
 		AssertContains(`id="debug-start-with-debug-players"`).
 		AssertContains(`@post(&#39;/room/DEBUG/debug/start-with-debug-players&#39;)`).
+		AssertContains(`id="debug-start-as-is"`).
+		AssertContains(`@post(&#39;/room/DEBUG/debug/start-as-is&#39;)`).
 		AssertContains(`id="debug-insights-container"`).
 		AssertContains(`id="debug-view-as-player-container"`).
 		AssertContains(`id="debug-dump"`).

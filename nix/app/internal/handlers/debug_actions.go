@@ -3,8 +3,10 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	datastar "github.com/starfederation/datastar-go/datastar"
 	"treacherest/internal/game"
 )
 
@@ -28,9 +30,64 @@ func (h *Handler) DebugStartWithDebugPlayers(w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	room.DebugStartMode = game.DebugStartModeWithDebugPlayers
 	h.store.UpdateRoom(room)
 
 	h.StartGame(w, r)
+}
+
+func (h *Handler) DebugStartAsIs(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+	room, ok := h.requireDebugHostRoom(w, r, roomCode)
+	if !ok {
+		return
+	}
+	if room.State != game.StateLobby {
+		http.Error(w, "Debug start override requires a room in lobby state", http.StatusConflict)
+		return
+	}
+	if room.GetActivePlayerCount() == 0 {
+		http.Error(w, "Start As-Is requires at least one active player", http.StatusBadRequest)
+		return
+	}
+
+	if room.RulesMode == game.RulesModeCoup {
+		if err := game.AssignCoupRolesBestEffort(room.GetPlayers(), room.CoupPreset, room.CoupInfoPolicy); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		if h.cardService == nil {
+			http.Error(w, "Internal server error: Cannot assign roles", http.StatusInternalServerError)
+			return
+		}
+		roleService := game.NewRoleConfigService(h.config)
+		game.AssignRolesWithConfig(room.GetPlayers(), h.cardService, room.RoleConfig, roleService)
+	}
+
+	room.DebugStartMode = game.DebugStartModeAsIs
+	h.finishDebugStartedRoom(w, r, room)
+}
+
+func (h *Handler) finishDebugStartedRoom(w http.ResponseWriter, r *http.Request, room *game.Room) {
+	room.State = game.StateCountdown
+	room.CountdownRemaining = 5
+	room.StartedAt = time.Now()
+	h.store.UpdateRoom(room)
+
+	go h.runCountdown(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "game_started",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	sse := datastar.NewSSE(w, r)
+	sse.ExecuteScript("window.location.href = '/game/" + room.Code + "'")
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }
 
 func (h *Handler) requireDebugHostRoom(w http.ResponseWriter, r *http.Request, roomCode string) (*game.Room, bool) {

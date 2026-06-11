@@ -19,6 +19,15 @@ const (
 	StateEnded     GameState = "ended"
 )
 
+// DebugStartMode records which Debug Mode start override, if any, started a room.
+type DebugStartMode string
+
+const (
+	DebugStartModeNone             DebugStartMode = ""
+	DebugStartModeWithDebugPlayers DebugStartMode = "with-debug-players"
+	DebugStartModeAsIs             DebugStartMode = "as-is"
+)
+
 // RoleTypeConfig represents configuration for a specific role type (Leader, Guardian, etc)
 type RoleTypeConfig struct {
 	Count        int             `json:"count"`        // Desired number of this type
@@ -62,6 +71,7 @@ type Room struct {
 	CoupGreenEligibleBeforeKingFall bool
 	CoupWin                         *CoupWinState
 	Players                         map[string]*Player
+	DebugStartMode                  DebugStartMode
 
 	MaxPlayers int
 	CreatedAt  time.Time
