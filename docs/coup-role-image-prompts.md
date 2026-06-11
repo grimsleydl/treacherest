@@ -107,6 +107,8 @@ The Wasteland Knight, a solitary gray-armored exile standing amid the ruined out
 
 Optional style packs should transform the same six role concepts without changing rules text or default role identity.
 
+The frog/scorpion parable pack is explicitly optional and should not become the default visual language for Coup. The canonical default remains neutral court-intrigue fantasy.
+
 ### Frog/Scorpion Parable
 
 - King: Frog King or great toad sovereign.

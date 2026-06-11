@@ -45,7 +45,7 @@ The out-of-app process of using Role Image Prompt Packs to generate role art, th
 _Avoid_: In-app AI generation, runtime prompt execution
 
 **Canonical Coup Art Direction**:
-The default Role Image Prompt Pack for Coup: neutral court-intrigue fantasy role-card art with clear role identity, political tension, and role colors used as accents rather than full-image washes.
+The default Role Image Prompt Pack for Coup: neutral court-intrigue fantasy role-card art with clear role identity, political tension, and role colors used as accents rather than full-image washes. Frog/scorpion parable imagery is optional and not part of this default.
 _Avoid_: Frog/scorpion default, Treachery clone, hard-team faction art, monochrome role art
 
 **Game State Tracking**:

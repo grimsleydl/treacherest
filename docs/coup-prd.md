@@ -497,6 +497,7 @@ Potential state values:
 - Art should avoid visual language that makes Blue/King or Red/Black look like obvious permanent teams.
 - Art should use one primary identifiable role figure, with only anonymous silhouettes or courtiers for atmosphere.
 - Optional visual style packs are prompt guidance only for now, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
+- The frog/scorpion parable style pack must remain optional and must not replace the neutral court-intrigue default.
 - The import pipeline should keep one image per Coup role until a later UI need justifies multiple image sets.
 - Printable/exportable role cards.
 
