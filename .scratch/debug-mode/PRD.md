@@ -1,6 +1,6 @@
 # Debug Mode PRD
 
-Status: ready-for-agent
+Status: done
 
 ## Problem Statement
 
@@ -94,3 +94,12 @@ Outside Debug Mode, debug routes, debug UI, and debug-only client scripts should
 - This PRD applies across Treacherest, not only Coup. Coup has the sharpest MVP requirements because its private information and win logic are more complex.
 - Treachery/legacy Start As-Is anchor-role behavior was not explicitly resolved. A conservative implementation should preserve existing assignment semantics where possible and avoid adding Treachery-specific role guarantees unless separately decided.
 - The current code already has a `DebugModeEnabled` configuration field, a development config with Debug Mode enabled, an SSE debug signal, and a small backup-oriented debug panel. The new work should harden the boundary and expand the host-only surface rather than creating a parallel debug concept.
+
+## Completion Summary
+
+- Implemented all six debug-mode tracker issues.
+- Debug routes and UI are absent outside Debug Mode.
+- Debug actions are host-only and server-authorized.
+- Host Debug Control Surface includes persistence controls, Start Override controls, Debug Insights, and read-only View As Player.
+- Start Override supports stable Debug Players and Start As-Is best-effort assignment.
+- Debug Insights and View As Player expose privileged inspection only through host-only debug surfaces.
