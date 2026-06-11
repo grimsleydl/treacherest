@@ -189,10 +189,25 @@ templ DebugPanel(roomCode string, room *game.Room) {
 		id="debug-control-surface"
 		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
 		style="z-index: 99999;"
+		data-debug-panel-minimized="false"
 	>
 		<div class="flex items-center justify-between gap-2 mb-3">
 			<h2 class="text-sm font-bold">Debug Control Surface</h2>
-			<span class="badge badge-warning">Debug Mode</span>
+			<div class="flex items-center gap-2">
+				<button
+					id="debug-panel-toggle"
+					type="button"
+					class="btn btn-xs btn-ghost"
+					aria-controls="debug-panel"
+					aria-expanded="true"
+				>
+					Minimize
+				</button>
+				<span class="badge badge-warning">Debug Mode</span>
+			</div>
+		</div>
+		<div id="debug-panel-minimized" class="hidden text-xs text-base-content/70">
+			Debug Mode minimized
 		</div>
 		<div id="debug-panel" class="space-y-3">
 			<section id="debug-persistence-controls" class="space-y-2">
@@ -239,6 +254,7 @@ templ DebugPanel(roomCode string, room *game.Room) {
 	<script>
 		(function () {
 			const BACKUP_KEY_PREFIX = "treacherest_backup_";
+			const DEBUG_PANEL_STATE_KEY_PREFIX = "treacherest_debug_panel_minimized_";
 
 			function getRoomCode() {
 				const path = window.location.pathname;
@@ -261,9 +277,44 @@ templ DebugPanel(roomCode string, room *game.Room) {
 				const roomCode = getRoomCode();
 				if (!roomCode) return;
 
+				const surface = document.getElementById("debug-control-surface");
+				const panel = document.getElementById("debug-panel");
+				const minimizedPanel = document.getElementById("debug-panel-minimized");
+				const panelToggleBtn = document.getElementById("debug-panel-toggle");
 				const dumpBtn = document.getElementById("debug-dump");
 				const clearBtn = document.getElementById("debug-clear");
 				const restoreBtn = document.getElementById("debug-restore");
+
+				function setDebugPanelMinimized(minimized) {
+					if (!surface || !panel || !minimizedPanel || !panelToggleBtn) return;
+
+					panel.hidden = minimized;
+					panel.classList.toggle("hidden", minimized);
+					minimizedPanel.hidden = !minimized;
+					minimizedPanel.classList.toggle("hidden", !minimized);
+					surface.dataset.debugPanelMinimized = minimized ? "true" : "false";
+					panelToggleBtn.setAttribute(
+						"aria-expanded",
+						minimized ? "false" : "true",
+					);
+					panelToggleBtn.textContent = minimized ? "Expand" : "Minimize";
+					localStorage.setItem(
+						DEBUG_PANEL_STATE_KEY_PREFIX + roomCode,
+						minimized ? "true" : "false",
+					);
+				}
+
+				if (panelToggleBtn) {
+					setDebugPanelMinimized(
+						localStorage.getItem(DEBUG_PANEL_STATE_KEY_PREFIX + roomCode) ===
+							"true",
+					);
+					panelToggleBtn.onclick = () => {
+						setDebugPanelMinimized(
+							panelToggleBtn.getAttribute("aria-expanded") === "true",
+						);
+					};
+				}
 
 				if (dumpBtn) {
 					dumpBtn.onclick = () => {

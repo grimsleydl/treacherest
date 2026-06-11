@@ -78,6 +78,7 @@ func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
 	renderer.Render(HostDashboardLobby(room, host, disabled, nil)).
 		AssertNotContains(`id="debug-control-surface"`).
 		AssertNotContains(`id="debug-panel"`).
+		AssertNotContains(`id="debug-panel-toggle"`).
 		AssertNotContains(`id="debug-clear"`).
 		AssertNotContains("Debug Insights").
 		AssertNotContains("setupDebugPanel")
@@ -122,6 +123,33 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		AssertContains(`id="debug-dump"`).
 		AssertContains(`id="debug-clear"`).
 		AssertContains(`id="debug-restore"`)
+}
+
+func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "DEBUG",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains(`id="debug-panel-toggle"`).
+		AssertContains(`aria-controls="debug-panel"`).
+		AssertContains(`aria-expanded="true"`).
+		AssertContains("Minimize").
+		AssertContains(`id="debug-panel-minimized"`).
+		AssertContains("Debug Mode minimized").
+		AssertContains("treacherest_debug_panel_minimized_").
+		AssertContains("setDebugPanelMinimized")
 }
 
 func TestHostDashboardLobby_DebugControlSurfaceRequiresHostPlayer(t *testing.T) {
