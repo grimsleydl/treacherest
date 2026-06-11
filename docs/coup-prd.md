@@ -489,6 +489,7 @@ Potential state values:
 - Role-card art and prompt generation using `docs/coup-role-image-prompts.md`.
 - Keep AI image generation outside the app; Treacherest consumes completed imported images.
 - Prompt scope is final role-card art only; thumbnails and compact UI art derive from imported final artwork.
+- Art should use portrait card-art composition without baked-in frames, text, logos, mana symbols, or UI.
 - Canonical default visual theme: neutral Coup court-intrigue fantasy.
 - Optional visual style packs, including frog/scorpion parable, Treachery-like fantasy, classic court intrigue, sci-fi resistance, investigative satire, and White Rabbit conspiracy sci-fi.
 - Printable/exportable role cards.

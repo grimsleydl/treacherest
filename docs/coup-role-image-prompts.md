@@ -8,6 +8,8 @@ Image generation is an external workflow. Treacherest should not call an AI imag
 
 Prompt scope is final role-card art only. Do not create separate AI prompts or separate generated assets for thumbnails, setup lists, or debug panels unless a future UX pass proves those need distinct compositions. Small UI surfaces should crop or scale from the same imported final artwork.
 
+Target a vertical card-art aspect ratio with MTG-like portrait composition. Keep the main character and role-defining props centered enough to survive thumbnail crops, but do not bake a card frame, rules text, title text, mana symbols, logo, or UI into the image.
+
 ## Import Targets
 
 The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are ID-based.
@@ -30,13 +32,13 @@ Use Canonical Coup Art Direction by default: neutral court-intrigue fantasy role
 Global prompt prefix:
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 ```
 
 Recommended negative prompt:
 
 ```text
-readable text, typography, logo, watermark, card border, UI, photorealistic celebrity, existing character, gore, meme, hard team emblem, modern gun, blurry face, extra limbs
+readable text, typography, title, rules text, logo, watermark, card border, card frame, UI, mana symbols, photorealistic celebrity, existing character, gore, meme, hard team emblem, modern gun, blurry face, extra limbs
 ```
 
 ## Canonical Role Prompts
@@ -44,7 +46,7 @@ readable text, typography, logo, watermark, card border, UI, photorealistic cele
 ### King
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The King, a revealed sovereign at the center of a dangerous council chamber. Gold crown, gold cloak, throne room map table, guarded confidence mixed with suspicion, courtiers and shadowed rivals implied at the edge of the scene. The mood should suggest political gravity and vulnerability rather than battlefield command. Dominant accent color: gold.
 ```
@@ -52,7 +54,7 @@ The King, a revealed sovereign at the center of a dangerous council chamber. Gol
 ### Blue Knight
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The Blue Knight, a royal guard and inquisitor sworn to protect the King. Blue enamel armor, shield angled toward an unseen threat, lantern or sealed warrant in one hand, palace corridor behind them, watchful and restrained. The image should imply defense, investigation, and a difficult choice about when to reveal loyalty. Dominant accent color: blue.
 ```
@@ -60,7 +62,7 @@ The Blue Knight, a royal guard and inquisitor sworn to protect the King. Blue en
 ### Black Knight
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The Black Knight, a hired assassin in dark ceremonial armor moving through a candlelit palace passage. Black cloak, hidden dagger, broken contract seal, face partly obscured but expressive. The scene should suggest a killer who intends to betray the person who hired them, with no explicit violence. Dominant accent color: black.
 ```
@@ -68,7 +70,7 @@ The Black Knight, a hired assassin in dark ceremonial armor moving through a can
 ### Red Knight
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The Red Knight, a charismatic usurper in red court armor, standing over a war map and a half-sealed bargain. Red cloak, signet ring, torchlight, ambitious expression, unaware of the betrayal hidden in the bargain. The image should imply a coup plot, confidence, and danger from supposed allies. Dominant accent color: red.
 ```
@@ -76,7 +78,7 @@ The Red Knight, a charismatic usurper in red court armor, standing over a war ma
 ### Green Knight
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The Green Knight, an opportunist envoy watching rival factions from a garden balcony beside the council hall. Green cloak, coin or treaty token balanced in one hand, vine-carved railings, expression that could be friendly or calculating. The image should imply temporary alliances and flexible incentives, not a fixed team. Dominant accent color: green.
 ```
@@ -84,7 +86,7 @@ The Green Knight, an opportunist envoy watching rival factions from a garden bal
 ### Wasteland Knight
 
 ```text
-Vertical fantasy role-card illustration for a hidden-role Commander table variant. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, detailed costume and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no gore, no existing copyrighted character.
+Vertical fantasy role-card illustration for a hidden-role Commander table variant, portrait card-art aspect ratio. Court intrigue, political tension, polished painterly board-game card art, dramatic but readable single-role composition, centered crop-safe character and symbolic props, rich lighting, clean silhouette, no readable text, no logo, no watermark, no card frame, no UI, no mana symbols, no gore, no existing copyrighted character.
 
 The Wasteland Knight, a solitary gray-armored exile standing amid the ruined outskirts of the kingdom. Ash-gray armor, cracked banner, abandoned crown fragment in the dust, storm-lit wasteland behind them. The image should imply a lone survivor who shares victory with no one. Dominant accent color: gray.
 ```
