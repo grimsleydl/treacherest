@@ -2,6 +2,7 @@ package pages
 
 import (
 	"testing"
+	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
 )
@@ -56,4 +57,33 @@ func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
 		AssertContains("Reject Prompt").
 		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/confirm&#39;)`).
 		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/reject&#39;)`)
+}
+
+func TestHostDashboardLobby_DebugPanelGatedByConfig(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:    "DEBUG",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{
+		ID:     "host",
+		Name:   "Host",
+		IsHost: true,
+	}
+	room.Players[host.ID] = host
+
+	disabled := config.DefaultConfig()
+	disabled.Server.DebugModeEnabled = false
+	renderer.Render(HostDashboardLobby(room, host, disabled, nil)).
+		AssertNotContains(`id="debug-panel"`).
+		AssertNotContains(`id="debug-clear"`).
+		AssertNotContains("setupDebugPanel")
+
+	enabled := config.DefaultConfig()
+	enabled.Server.DebugModeEnabled = true
+	renderer.Render(HostDashboardLobby(room, host, enabled, nil)).
+		AssertContains(`id="debug-panel"`).
+		AssertContains(`id="debug-clear"`).
+		AssertContains("setupDebugPanel")
 }

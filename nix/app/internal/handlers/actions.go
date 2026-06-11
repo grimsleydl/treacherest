@@ -989,6 +989,22 @@ func (h *Handler) DebugClearRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Host access required", http.StatusUnauthorized)
+		return
+	}
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil || !player.IsHost {
+		http.Error(w, "Host access required", http.StatusForbidden)
+		return
+	}
+
 	// Delete the room
 	h.store.DeleteRoom(roomCode)
 

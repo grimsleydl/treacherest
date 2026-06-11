@@ -38,6 +38,15 @@ func TestBaseLayout(t *testing.T) {
 			AssertContains("datastar")
 	})
 
+	t.Run("does not render debug UI by default", func(t *testing.T) {
+		component := Base("Non Debug Test")
+
+		renderer.Render(component).
+			AssertNotContains(`id="debug-panel"`).
+			AssertNotContains(`id="debug-clear"`).
+			AssertNotContains("setupDebugPanel")
+	})
+
 	t.Run("includes custom CSS", func(t *testing.T) {
 		component := Base("Style Test")
 

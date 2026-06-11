@@ -9,7 +9,7 @@ import (
 )
 
 templ HostDashboardLobby(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.Base("Host Dashboard") {
+	@layouts.BaseWithDebug("Host Dashboard", cfg.Server.DebugModeEnabled) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
@@ -173,19 +173,19 @@ templ HostDashboardEnded(room *game.Room, player *game.Player) {
 
 // Full page versions for direct navigation (not SSE updates)
 templ HostDashboardCountdownPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.Base("Host Dashboard - Starting") {
+	@layouts.BaseWithDebug("Host Dashboard - Starting", cfg.Server.DebugModeEnabled) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
 
 templ HostDashboardPlayingPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.Base("Host Dashboard - Game") {
+	@layouts.BaseWithDebug("Host Dashboard - Game", cfg.Server.DebugModeEnabled) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }
 
 templ HostDashboardEndedPage(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	@layouts.Base("Host Dashboard - Game Over") {
+	@layouts.BaseWithDebug("Host Dashboard - Game Over", cfg.Server.DebugModeEnabled) {
 		@HostDashboardBody(room, player, cfg, cardService)
 	}
 }

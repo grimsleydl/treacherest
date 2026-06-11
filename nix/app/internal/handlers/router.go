@@ -131,8 +131,9 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/config/card-toggle-fast", h.ToggleRoleCardFast)
 		r.Post("/room/{code}/config/card-toggle-optimistic", h.ToggleRoleCardOptimistic)
 
-		// Debug endpoint (only works when debugModeEnabled: true)
-		r.Post("/room/{code}/debug/clear", h.DebugClearRoom)
+		if cfg.Server.DebugModeEnabled {
+			r.Post("/room/{code}/debug/clear", h.DebugClearRoom)
+		}
 	})
 
 	// Group for SSE routes with NO timeout at all
