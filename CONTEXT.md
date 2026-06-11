@@ -176,6 +176,10 @@ _Avoid_: Team, party, alliance
 Whether Green is allowed to share a King-side or Red-side victory under the selected Coup rules.
 _Avoid_: Green team membership
 
+**Green Red-Share Lock**:
+The Red-side Green Eligibility latch recorded when King Fall happens. Before King Fall it is pending; after King Fall it is either eligible or not eligible and is not recomputed later.
+_Avoid_: Live Green eligibility, Blue death after King Fall
+
 **Inquisition**:
 A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct. The revealed King is not a valid Inquisition target.
 _Avoid_: Investigation, vote, naming the King

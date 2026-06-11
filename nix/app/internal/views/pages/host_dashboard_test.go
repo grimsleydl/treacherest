@@ -355,9 +355,29 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Debug Player: yes").
 		AssertContains("Private information: Blue Knights: Blue Player").
 		AssertContains("King Fallen: yes").
-		AssertContains("Green Eligible Before King Fall: yes").
+		AssertContains("Green Red-Share Lock: eligible").
 		AssertContains("Inquisition: succeeded").
 		AssertContains("Advisory Win: black")
+}
+
+func TestHostDashboardLobby_DebugInsightsShowGreenRedShareLockPendingBeforeKingFall(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "DBG02",
+		State:      game.StatePlaying,
+		RulesMode:  game.RulesModeCoup,
+		CoupPreset: game.CoupPresetFive,
+		Players:    make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
+	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
+	cfg := config.DefaultConfig()
+	cfg.Server.DebugModeEnabled = true
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
+		AssertContains("Green Red-Share Lock: pending").
+		AssertNotContains("Green Eligible Before King Fall")
 }
 
 func TestHostDashboardLobby_ViewAsPlayerSelectorIncludesDebugPlayers(t *testing.T) {
