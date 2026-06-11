@@ -52,6 +52,10 @@ _Avoid_: Normal start, production bypass
 A stable synthetic active player used in Debug Mode to fill a visible table seat without requiring a real connected player.
 _Avoid_: Dummy player, host, spectator, bot
 
+**Debug Insights**:
+A host-only Debug Mode view of normally hidden or derived room facts used to verify hidden-role setup and state tracking.
+_Avoid_: Public rules reference, player view
+
 **Reveal**:
 A public transition where a hidden role becomes known to the table.
 _Avoid_: Private view, screen peek
