@@ -105,9 +105,12 @@ in {
       }
       {
         name = "run";
-        help = "Run the server (builds templates first)";
+        help = "Run the server on localhost:8888 by default (builds templates first)";
         command = ''
           cd $PRJ_ROOT/nix/app
+          export HOST="''${HOST:-localhost}"
+          export PORT="''${PORT:-8888}"
+          export CONFIG_PATH="''${CONFIG_PATH:-../../configs/server-development.yaml}"
           templ generate
           go run cmd/server/main.go
         '';
