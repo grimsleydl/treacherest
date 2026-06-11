@@ -1,6 +1,6 @@
 # Role-Card Art Direction Decision
 
-Status: ready-for-human
+Status: done
 
 ## Parent
 
@@ -14,10 +14,22 @@ This is a HITL decision issue. Do not build art tooling until the scope and init
 
 ## Acceptance criteria
 
-- [ ] The project has a documented decision on whether role-card art/prompt tooling is near-term scope.
-- [ ] If in scope, the project has a documented initial style direction.
-- [ ] If out of scope, the project has a documented revisit trigger.
-- [ ] Follow-up AFK implementation work can proceed without re-asking the art direction question.
+- [x] The project has a documented decision on whether role-card art/prompt tooling is near-term scope.
+- [x] If in scope, the project has a documented initial style direction.
+- [x] If out of scope, the project has a documented revisit trigger.
+- [x] Follow-up AFK implementation work can proceed without re-asking the art direction question.
+
+## Decision
+
+Role-card prompt generation and generated art direction are not near-term scope.
+
+Near-term scope is tooling and repository structure for user-provided Coup role images. The user will provide role images later; the app should be able to consume those files, place them at canonical role-image paths, embed them into the binary like Treachery card images, and attach them to the Coup role cards.
+
+No initial generated-art style pack is canonical at this time. Revisit prompt-generation styles only if the user later asks for generated role-card prompts or generated image production.
+
+## Follow-up
+
+- Implement image-ingest/embed tooling in `.scratch/coup-rules-mode/issues/14-role-card-prompt-tooling.md`.
 
 ## Blocked by
 

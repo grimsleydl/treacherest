@@ -1,6 +1,6 @@
-# Role-Card Prompt Tooling
+# Coup Role-Image Ingest And Embed Tooling
 
-Status: needs-info
+Status: ready-for-agent
 
 ## Parent
 
@@ -8,20 +8,22 @@ Status: needs-info
 
 ## What to build
 
-Add secondary role-card prompt tooling for Coup after the art direction decision is resolved. The tool should help generate prompts for Coup roles and optional style packs without becoming part of the critical role assignment or state tracking path.
+Add secondary tooling and repository structure for user-provided Coup role images. The user will provide the images later. The tooling should consume local role-image files, copy them into canonical static paths, and let the app embed and attach them to Coup role cards the same way Treachery role images are embedded.
 
 ## Acceptance criteria
 
-- [ ] Prompt tooling supports the approved initial art direction.
-- [ ] Prompt tooling can generate prompts for King, Blue Knight, Black Knight, Red Knight, Green Knight, and Wasteland Knight.
-- [ ] Prompt tooling is clearly secondary and does not block core Coup gameplay.
-- [ ] Generated prompts preserve Coup terminology from `CONTEXT.md`.
-- [ ] Tests or fixtures cover representative prompt outputs.
+- [ ] Repository contains a stable place for Coup role images.
+- [ ] A script can consume local image files for King, Blue Knight, Black Knight, Red Knight, Green Knight, and Wasteland Knight.
+- [ ] The script copies supported image formats into canonical role-image filenames tied to Coup role IDs.
+- [ ] The app embeds Coup role images and attaches them to Coup role cards when files are present.
+- [ ] The tooling is clearly secondary and does not block core Coup gameplay when images are missing.
+- [ ] Tests cover representative image-loading and import behavior.
 
 ## Blocked by
 
-- `.scratch/coup-rules-mode/issues/13-role-card-art-direction-decision.md`
+- Resolved by `.scratch/coup-rules-mode/issues/13-role-card-art-direction-decision.md`.
 
 ## Notes
 
-- Do not start this implementation until Issue 13 has a human-approved scope and initial art direction.
+- User-provided role images are the near-term path.
+- Generated prompts and generated-art style packs are out of near-term scope.
