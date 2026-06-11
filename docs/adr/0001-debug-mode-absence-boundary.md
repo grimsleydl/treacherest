@@ -5,3 +5,5 @@ Treacherest has privileged debug aids for playtesting hidden-role flows, but tho
 When Debug Mode is enabled, debug controls remain host-only. Client-side Datastar behavior may keep the interface responsive, but authorization must be checked on the server by resolving the current room player and confirming host status. Debug Impersonation is a host capability, not a way for a non-host player client to gain debug privileges.
 
 Debug Impersonation starts as view-only: the host may inspect a selected player's perspective, but player actions such as Inquisition or Royal Guard should still require the real player flow unless a later decision explicitly introduces action-capable impersonation.
+
+Start Override may either fill missing seats with Debug Players or start with the current active players as-is. When starting Coup as-is, the assignment should still include the King when at least one player exists, then randomly fill the remaining real players from the selected role pool.
