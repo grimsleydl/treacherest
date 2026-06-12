@@ -84,6 +84,10 @@ _Avoid_: Host dashboard when referring to authority, player lobby, public table 
 The default visual theme for Treacherest: candlelit court surfaces, restrained gold accents, and parchment material for private information. Legacy DaisyUI themes may remain selectable for regression and accessibility checks, but the Treacherest Theme is the product default.
 _Avoid_: Dracula as product default, role-color theme, decorative fantasy skin
 
+**Privy Panel**:
+A player-private UI region for that player's own hidden role, win condition, and private rules-mode information. A Privy Panel may be visually concealed for shoulder-surfing protection, but authorization still comes from the server deciding whose private information is rendered.
+_Avoid_: Public card panel, security boundary, role-proof screen
+
 **Debug Control Surface**:
 A Debug Operator-only set of controls for inspecting or mutating a room outside normal player-facing flows.
 _Avoid_: Player controls, public overlay
