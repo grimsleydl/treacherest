@@ -80,6 +80,10 @@ _Avoid_: Player action, debug control, first-player control
 The Room Operator-facing surface for managing a room, including join instructions, table state, setup controls, start controls, and Debug Control Surface access when Debug Mode is enabled. A non-playing Host may use the Operator Dashboard, but the dashboard belongs to Room Operator authority rather than Host status.
 _Avoid_: Host dashboard when referring to authority, player lobby, public table view
 
+**Treacherest Theme**:
+The default visual theme for Treacherest: candlelit court surfaces, restrained gold accents, and parchment material for private information. Legacy DaisyUI themes may remain selectable for regression and accessibility checks, but the Treacherest Theme is the product default.
+_Avoid_: Dracula as product default, role-color theme, decorative fantasy skin
+
 **Debug Control Surface**:
 A Debug Operator-only set of controls for inspecting or mutating a room outside normal player-facing flows.
 _Avoid_: Player controls, public overlay
