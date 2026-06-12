@@ -92,6 +92,10 @@ _Avoid_: Operator Dashboard, Host view, debug view
 A player-private UI region for that player's own hidden role, win condition, and private rules-mode information. A Privy Panel may be visually concealed for shoulder-surfing protection, but authorization still comes from the server deciding whose private information is rendered.
 _Avoid_: Public card panel, security boundary, role-proof screen
 
+**Confirm-Twice Button**:
+An in-app confirmation control for consequential actions. The first activation changes the button into a short-lived confirmation state; the second activation performs the action.
+_Avoid_: Browser confirm dialog, accidental single-tap destructive action, modal for every minor confirmation
+
 **Debug Control Surface**:
 A Debug Operator-only set of controls for inspecting or mutating a room outside normal player-facing flows.
 _Avoid_: Player controls, public overlay
