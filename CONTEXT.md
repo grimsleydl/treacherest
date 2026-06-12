@@ -77,12 +77,16 @@ A room-level action such as configuring variants or starting the game. Room Mana
 _Avoid_: Player action, debug control, first-player control
 
 **Operator Dashboard**:
-The Room Operator-facing surface for managing a room, including join instructions, table state, setup controls, start controls, and Debug Control Surface access when Debug Mode is enabled. A non-playing Host may use the Operator Dashboard, but the dashboard belongs to Room Operator authority rather than Host status.
-_Avoid_: Host dashboard when referring to authority, player lobby, public table view
+The Room Operator-facing surface for managing a room, including join instructions, public table state, setup controls, start controls, and Debug Control Surface access when Debug Mode is enabled. The Operator Dashboard is not a hidden-role viewer; outside explicit debug-only controls, it must not reveal other players' private roles or private rules-mode information. A non-playing Host may use the Operator Dashboard, but the dashboard belongs to Room Operator authority rather than Host status.
+_Avoid_: Host dashboard when referring to authority, player lobby, hidden-role admin view
 
 **Treacherest Theme**:
 The default visual theme for Treacherest: candlelit court surfaces, restrained gold accents, and parchment material for private information. Legacy DaisyUI themes may remain selectable for regression and accessibility checks, but the Treacherest Theme is the product default.
 _Avoid_: Dracula as product default, role-color theme, decorative fantasy skin
+
+**Player View**:
+The participant-facing room surface for a player. A Player View may include that player's own Privy Panel and player actions, but it must not include Room Management Controls unless those controls are intentionally reached through the Operator Dashboard.
+_Avoid_: Operator Dashboard, Host view, debug view
 
 **Privy Panel**:
 A player-private UI region for that player's own hidden role, win condition, and private rules-mode information. A Privy Panel may be visually concealed for shoulder-surfing protection, but authorization still comes from the server deciding whose private information is rendered.
