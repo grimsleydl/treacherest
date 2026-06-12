@@ -76,6 +76,10 @@ _Avoid_: Impersonated player, non-host player, public user
 A room-level action such as configuring variants or starting the game. Room Management Controls require Room Operator authority.
 _Avoid_: Player action, debug control, first-player control
 
+**Operator Dashboard**:
+The Room Operator-facing surface for managing a room, including join instructions, table state, setup controls, start controls, and Debug Control Surface access when Debug Mode is enabled. A non-playing Host may use the Operator Dashboard, but the dashboard belongs to Room Operator authority rather than Host status.
+_Avoid_: Host dashboard when referring to authority, player lobby, public table view
+
 **Debug Control Surface**:
 A Debug Operator-only set of controls for inspecting or mutating a room outside normal player-facing flows.
 _Avoid_: Player controls, public overlay
