@@ -111,6 +111,7 @@ in {
           export HOST="''${HOST:-localhost}"
           export PORT="''${PORT:-8080}"
           export CONFIG_PATH="''${CONFIG_PATH:-../../configs/server-production.yaml}"
+          export SHUTDOWN_TIMEOUT="''${SHUTDOWN_TIMEOUT:-250ms}"
           templ generate
           go run cmd/server/main.go
         '';

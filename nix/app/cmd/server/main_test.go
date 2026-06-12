@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"treacherest/internal/config"
@@ -53,7 +56,7 @@ func setupTestRouter() (*chi.Mux, *handlers.Handler) {
 	gameStore.SetCardService(cardService)
 
 	// Initialize handlers
-	h := handlers.New(gameStore, cardService, cfg)
+	h := handlers.New(gameStore, cardService, cfg, nil)
 
 	// Set up router
 	r := chi.NewRouter()
@@ -276,6 +279,7 @@ func TestStartGameIntegration(t *testing.T) {
 		)
 		room.AddPlayer(player)
 	}
+	room.OperatorSessionID = "session1"
 	h.Store().UpdateRoom(room)
 
 	t.Run("POST /room/{code}/start starts game", func(t *testing.T) {
@@ -283,6 +287,10 @@ func TestStartGameIntegration(t *testing.T) {
 		req.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
 			Value: "p", // First player
+		})
+		req.AddCookie(&http.Cookie{
+			Name:  "session",
+			Value: "session1",
 		})
 		w := httptest.NewRecorder()
 
@@ -380,7 +388,7 @@ func TestMainFunction(t *testing.T) {
 			t.Fatal("failed to create store")
 		}
 
-		h := handlers.New(gameStore, createMockCardService(), cfg)
+		h := handlers.New(gameStore, createMockCardService(), cfg, nil)
 		if h == nil {
 			t.Fatal("failed to create handlers")
 		}
@@ -418,3 +426,124 @@ func TestMainFunction(t *testing.T) {
 		server.Shutdown(ctx)
 	})
 }
+
+func TestHTTPServerBaseContextCancelsActiveRequests(t *testing.T) {
+	baseCtx, cancelBase := context.WithCancel(context.Background())
+	requestDone := make(chan struct{})
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Error("expected response writer to support flushing")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		if _, err := w.Write([]byte("data: started\n\n")); err != nil {
+			t.Errorf("write SSE prelude: %v", err)
+			return
+		}
+		flusher.Flush()
+
+		<-r.Context().Done()
+		close(requestDone)
+	})
+
+	cfg := &config.ServerConfig{
+		Server: config.ServerSettings{
+			ReadTimeout:  time.Second,
+			WriteTimeout: time.Minute,
+			IdleTimeout:  0,
+		},
+	}
+	server := newHTTPServer("127.0.0.1:0", handler, cfg, baseCtx)
+
+	clientConn, serverConn := net.Pipe()
+	defer clientConn.Close()
+	listener := newOneShotListener(serverConn)
+
+	serveDone := make(chan error, 1)
+	go func() {
+		serveDone <- server.Serve(listener)
+	}()
+
+	if _, err := clientConn.Write([]byte("GET / HTTP/1.1\r\nHost: treacherest.test\r\n\r\n")); err != nil {
+		t.Fatalf("write request: %v", err)
+	}
+	resp, err := http.ReadResponse(bufio.NewReader(clientConn), nil)
+	if err != nil {
+		t.Fatalf("read response: %v", err)
+	}
+	defer resp.Body.Close()
+
+	cancelBase()
+
+	select {
+	case <-requestDone:
+	case <-time.After(time.Second):
+		t.Fatal("active request context was not canceled")
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		t.Fatalf("close response body: %v", err)
+	}
+	if err := clientConn.Close(); err != nil {
+		t.Fatalf("close client connection: %v", err)
+	}
+
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), time.Second)
+	defer cancelShutdown()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		t.Fatalf("shutdown should finish after active request context cancellation: %v", err)
+	}
+
+	select {
+	case err := <-serveDone:
+		if err != nil && err != http.ErrServerClosed {
+			t.Fatalf("serve returned unexpected error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("server did not stop after shutdown")
+	}
+}
+
+type oneShotListener struct {
+	conn   chan net.Conn
+	closed chan struct{}
+	once   sync.Once
+}
+
+func newOneShotListener(conn net.Conn) *oneShotListener {
+	l := &oneShotListener{
+		conn:   make(chan net.Conn, 1),
+		closed: make(chan struct{}),
+	}
+	l.conn <- conn
+	return l
+}
+
+func (l *oneShotListener) Accept() (net.Conn, error) {
+	select {
+	case conn := <-l.conn:
+		return conn, nil
+	case <-l.closed:
+		return nil, net.ErrClosed
+	}
+}
+
+func (l *oneShotListener) Close() error {
+	l.once.Do(func() {
+		close(l.closed)
+	})
+	return nil
+}
+
+func (l *oneShotListener) Addr() net.Addr {
+	return pipeAddr("treacherest-test")
+}
+
+type pipeAddr string
+
+func (a pipeAddr) Network() string { return "pipe" }
+
+func (a pipeAddr) String() string { return string(a) }

@@ -43,6 +43,7 @@ func LoadConfig(configPath string) (*ServerConfig, error) {
 	v.BindEnv("server.ratelimitburst", "RATE_LIMIT_BURST")
 	v.BindEnv("server.maxrequestsize", "MAX_REQUEST_SIZE")
 	v.BindEnv("server.maxsseconnections", "MAX_SSE_CONNECTIONS")
+	v.BindEnv("server.shutdowntimeout", "SHUTDOWN_TIMEOUT")
 	v.BindEnv("server.enablemetrics", "ENABLE_METRICS")
 	v.BindEnv("server.metricsport", "METRICS_PORT")
 

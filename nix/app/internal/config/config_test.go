@@ -82,6 +82,19 @@ roles:
 			t.Errorf("expected 1 preset, got %d", len(config.Roles.Presets))
 		}
 	})
+
+	t.Run("ShutdownTimeoutEnvOverride", func(t *testing.T) {
+		t.Setenv("SHUTDOWN_TIMEOUT", "250ms")
+
+		config, err := LoadConfig("nonexistent.yaml")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if config.Server.ShutdownTimeout != 250*time.Millisecond {
+			t.Fatalf("expected ShutdownTimeout env override 250ms, got %v", config.Server.ShutdownTimeout)
+		}
+	})
 }
 
 func TestConfigValidation(t *testing.T) {

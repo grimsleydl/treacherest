@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"treacherest"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
@@ -68,14 +70,11 @@ func main() {
 	// Start server with production configuration
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
 
+	serverCtx, stopServer := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stopServer()
+
 	// Create custom server with production settings
-	server := &http.Server{
-		Addr:         addr,
-		Handler:      r,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-		IdleTimeout:  cfg.Server.IdleTimeout, // 0 for SSE support
-	}
+	server := newHTTPServer(addr, r, cfg, serverCtx)
 
 	// Start server in goroutine
 	go func() {
@@ -85,21 +84,46 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	// Wait for interrupt signal to gracefully shutdown the server.
+	<-serverCtx.Done()
+	stopServer()
 
 	log.Println("Shutting down server...")
 
 	// Create shutdown context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	shutdownTimeout := cfg.Server.ShutdownTimeout
+	if shutdownTimeout <= 0 {
+		shutdownTimeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	// Attempt graceful shutdown
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		log.Printf("Graceful shutdown timed out: %v", err)
+		if closeErr := server.Close(); closeErr != nil {
+			log.Fatal("Server forced shutdown failed:", closeErr)
+		}
+		log.Println("Server forced to stop")
+		return
 	}
 
 	log.Println("Server gracefully stopped")
+}
+
+func newHTTPServer(addr string, handler http.Handler, cfg *config.ServerConfig, baseCtx context.Context) *http.Server {
+	if baseCtx == nil {
+		baseCtx = context.Background()
+	}
+
+	return &http.Server{
+		Addr:         addr,
+		Handler:      handler,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout, // 0 for SSE support
+		BaseContext: func(net.Listener) context.Context {
+			return baseCtx
+		},
+	}
 }
