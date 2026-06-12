@@ -125,7 +125,7 @@ A stable synthetic active player used in Debug Mode to fill a visible table seat
 _Avoid_: Dummy player, host, spectator, bot
 
 **Debug Insights**:
-A Debug Operator-only view of normally hidden or derived room facts used to verify hidden-role setup and state tracking. Debug Insights may also act as the operator's entry point for Debug Impersonation because each visible player entry represents a selectable Viewed Player.
+A Debug Operator-only view of normally hidden or derived room facts used to verify hidden-role setup and state tracking. Debug Insights may also act as the operator's entry point for Debug Impersonation because each visible player entry represents a selectable Viewed Player. Debug Insights may redact hidden-role spoilers by default for screen-sharing safety, but this redaction is not a security boundary.
 _Avoid_: Public rules reference, player view, public player list
 
 **Debug Role Color Coding**:
