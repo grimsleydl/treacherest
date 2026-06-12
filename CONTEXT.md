@@ -213,7 +213,7 @@ The Red-side Green Eligibility latch recorded when King Fall happens. Before Kin
 _Avoid_: Live Green eligibility, Blue death after King Fall
 
 **Inquisition**:
-A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct. The revealed King is not a valid Inquisition target.
+A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct. The revealed King is not a valid Inquisition target. The caller form is private capability UI and belongs inside the Blue Knight's Privy Panel; public notices and public results belong in public table notices.
 _Avoid_: Investigation, vote, naming the King
 
 **Inquisition Notice**:
