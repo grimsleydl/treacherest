@@ -7,44 +7,56 @@ import (
 )
 
 templ Base(title string) {
-	@baseLayout(title, false, "", nil, nil) {
+	@baseLayout(title, false, "", nil, nil, false) {
 		{ children... }
 	}
 }
 
 templ BaseWithDebug(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room) {
-	@baseLayout(title, debugMode, debugRoomCode, debugRoom, nil) {
+	@baseLayout(title, debugMode, debugRoomCode, debugRoom, nil, true) {
 		{ children... }
 	}
 }
 
 templ BaseWithDebugForPlayer(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room, debugViewer *game.Player) {
-	@baseLayout(title, debugMode, debugRoomCode, debugRoom, debugViewer) {
+	@baseLayout(title, debugMode, debugRoomCode, debugRoom, debugViewer, false) {
 		{ children... }
 	}
 }
 
-templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room, debugViewer *game.Player) {
+templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *game.Room, debugViewer *game.Player, operatorSurface bool) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="dracula">
+	<html lang="en" data-theme="treacherest">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<meta name="robots" content="noindex"/>
 			<title>{ title } - MTG Treacherest</title>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet"/>
 			<link href="/static/css/output.css" rel="stylesheet"/>
 			<link href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css"/>
 			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.1/bundles/datastar.js"></script>
 		</head>
 		<body
-			data-signals:theme="localStorage.getItem('theme') || 'dracula'"
+			data-signals:theme="localStorage.getItem('theme') || 'treacherest'"
 			data-effect="document.documentElement.setAttribute('data-theme', $theme); localStorage.setItem('theme', $theme)"
 		>
-			<nav class="navbar bg-base-100 shadow-lg">
-				<div class="flex-1">
-					<a class="btn btn-ghost normal-case text-xl" href="/">MTG Treacherest</a>
+			<nav class="navbar border-b border-base-300 bg-base-100/95 shadow-sm">
+				<div class="flex-1 min-w-0">
+					<a class="btn btn-ghost normal-case px-2 text-2xl font-semibold tracking-normal font-display" href="/">Treacherest</a>
 				</div>
-				<div class="flex-none">
+				<div class="flex-none flex items-center gap-2">
+					if strings.TrimSpace(debugRoomCode) != "" {
+						<span id="app-room-code-chip" class="badge badge-outline badge-lg gap-1" aria-label={ "Room code " + debugRoomCode }>
+							<span class="text-base-content/60">Room</span>
+							<span class="font-mono font-semibold tracking-wider">{ debugRoomCode }</span>
+						</span>
+					}
+					if operatorSurface {
+						<span id="app-operator-chip" class="badge badge-warning badge-outline badge-lg">OPERATOR</span>
+					}
 					@components.ThemeSwitcher()
 				</div>
 			</nav>
