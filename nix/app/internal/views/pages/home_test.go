@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"strings"
 	"testing"
 	"treacherest/internal/testhelpers"
 )
@@ -14,7 +15,7 @@ func TestHomePage(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertValid().
-			AssertContains("MTG Treacherest").
+			AssertContains("Treacherest").
 			AssertContains("A game of deception")
 	})
 
@@ -74,25 +75,64 @@ func TestHomePage(t *testing.T) {
 			AssertContains("Join Existing Game")
 	})
 
-	t.Run("has host mode checkbox", func(t *testing.T) {
+	t.Run("has non-playing operator checkbox", func(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
-			AssertContains("Host mode").
+			AssertContains("Run the table without playing").
 			AssertContains(`name="hostOnly"`).
 			AssertContains(`type="checkbox"`).
-			AssertContains("don't play, just manage")
+			AssertContains(`value="true"`).
+			AssertNotContains("don't play, just manage")
 	})
 
-	t.Run("has rules mode selector", func(t *testing.T) {
+	t.Run("has rules mode choices", func(t *testing.T) {
 		component := Home()
 
 		renderer.Render(component).
 			AssertContains("Rules Mode").
+			AssertContains(`type="radio"`).
 			AssertContains(`name="rulesMode"`).
 			AssertContains(`value="treachery"`).
 			AssertContains(`value="coup"`).
 			AssertContains("Treachery").
-			AssertContains("Coup")
+			AssertContains("Coup").
+			AssertNotContains(`<select id="rulesMode"`).
+			AssertNotContains(`<select name="rulesMode"`)
+	})
+
+	t.Run("puts join before create", func(t *testing.T) {
+		component := Home()
+		body := renderer.Render(component).GetHTML()
+
+		joinIndex := strings.Index(body, "Join Existing Game")
+		createIndex := strings.Index(body, "Create New Game")
+		if joinIndex < 0 || createIndex < 0 {
+			t.Fatalf("expected join and create sections in %q", body)
+		}
+		if joinIndex > createIndex {
+			t.Fatalf("expected join section before create section")
+		}
+	})
+
+	t.Run("uses rules mode radio cards with existing submitted values", func(t *testing.T) {
+		component := Home()
+
+		renderer.Render(component).
+			AssertContains(`type="radio"`).
+			AssertContains(`name="rulesMode"`).
+			AssertContains(`value="treachery"`).
+			AssertContains(`value="coup"`).
+			AssertNotContains(`<select id="rulesMode"`)
+	})
+
+	t.Run("renames non-playing creation option without changing submitted value", func(t *testing.T) {
+		component := Home()
+
+		renderer.Render(component).
+			AssertContains("Run the table without playing").
+			AssertContains(`name="hostOnly"`).
+			AssertContains(`value="true"`).
+			AssertNotContains("Host mode (don't play, just manage)")
 	})
 }

@@ -4,13 +4,48 @@ import "treacherest/internal/views/layouts"
 
 templ Home() {
 	@layouts.Base("Welcome") {
-		<div class="min-h-screen bg-base-200 flex items-center justify-center p-4" data-signals:host-mode="false">
-			<div class="max-w-2xl w-full mx-auto">
-				<h1 class="text-4xl font-bold text-center mb-2">MTG Treacherest</h1>
-				<p class="text-xl text-center text-base-content/70 mb-8">A game of deception and hidden roles</p>
-				<div class="grid grid-cols-1 gap-8 place-items-center">
+		<div class="min-h-screen bg-base-200 p-4 sm:p-6" data-signals:host-mode="false">
+			<div class="mx-auto flex w-full max-w-3xl flex-col gap-6 py-8 sm:py-12">
+				<header class="text-center">
+					<h1 class="font-display text-4xl font-semibold sm:text-5xl">Treacherest</h1>
+					<p class="mt-2 text-base text-base-content/70 sm:text-lg">A game of deception and hidden roles</p>
+				</header>
+				<div class="grid grid-cols-1 gap-5">
+					<!-- Join game card -->
+					<div class="card bg-base-100 shadow-xl w-full min-w-0">
+						<div class="card-body gap-4">
+							<h2 class="card-title text-2xl">Join Existing Game</h2>
+							<form
+								action="/join-room"
+								method="POST"
+								data-on:submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()"
+								class="space-y-4"
+							>
+								<div class="form-control">
+									<label class="label" for="roomCode">
+										<span class="label-text">Room code</span>
+									</label>
+									<input
+										type="text"
+										id="roomCode"
+										name="room_code"
+										placeholder="ABC12"
+										pattern="[A-Za-z0-9]{5}"
+										maxlength="5"
+										autocapitalize="characters"
+										autocomplete="off"
+										required
+										class="input input-bordered input-lg w-full text-center font-mono text-xl uppercase tracking-[0.35em]"
+									/>
+								</div>
+								<button type="submit" class="btn btn-primary btn-lg min-h-11 w-full">
+									Join Room
+								</button>
+							</form>
+						</div>
+					</div>
 					<!-- Create game card -->
-					<div class="card bg-base-100 shadow-xl w-full max-w-[60vw] min-w-0 ">
+					<div class="card bg-base-100 shadow-xl w-full min-w-0">
 						<div class="card-body">
 							<h2 class="text-2xl font-semibold mb-4 text-center">Create New Game</h2>
 							<form action="/room/new" method="POST" class="space-y-4 w-full">
@@ -22,19 +57,31 @@ templ Home() {
 										class="input input-bordered w-full text-lg"
 									/>
 								</div>
-								<div class="form-control w-full">
-									<label class="label" for="rulesMode">
+								<fieldset class="form-control w-full">
+									<legend class="label">
 										<span class="label-text">Rules Mode</span>
-									</label>
-									<select id="rulesMode" name="rulesMode" class="select select-bordered w-full">
-										<option value="treachery" selected>Treachery</option>
-										<option value="coup">Coup</option>
-									</select>
-								</div>
+									</legend>
+									<div class="grid gap-3 sm:grid-cols-2">
+										<label class="label cursor-pointer items-start gap-3 rounded-box border border-base-300 bg-base-200 p-4">
+											<input type="radio" name="rulesMode" value="treachery" class="radio radio-primary mt-1" checked/>
+											<span class="flex-1">
+												<span class="block font-semibold">Treachery</span>
+												<span class="block text-sm text-base-content/70">Classic hidden-role Commander.</span>
+											</span>
+										</label>
+										<label class="label cursor-pointer items-start gap-3 rounded-box border border-base-300 bg-base-200 p-4">
+											<input type="radio" name="rulesMode" value="coup" class="radio radio-primary mt-1"/>
+											<span class="flex-1">
+												<span class="block font-semibold">Coup</span>
+												<span class="block text-sm text-base-content/70">Free-for-all Commander with secret incentives.</span>
+											</span>
+										</label>
+									</div>
+								</fieldset>
 								<div class="form-control w-full">
 									<label class="label cursor-pointer gap-3 flex-wrap items-center w-full min-w-0">
 										<input type="checkbox" name="hostOnly" value="true" class="toggle" data-bind:host-mode/>
-										<span class="label-text break-words flex-1 min-w-0" style="white-space:normal">Host mode (don't play, just manage)</span>
+										<span class="label-text break-words flex-1 min-w-0" style="white-space:normal">Run the table without playing</span>
 									</label>
 									<div class="text-sm text-base-content/70 mt-2 px-1 break-words max-w-full" data-text="$hostMode ? 'You will manage the game and display it on this device for others to join' : 'You will join as a player and participate in the game'">
 										You will join as a player and participate in the game
@@ -42,29 +89,6 @@ templ Home() {
 								</div>
 								<button type="submit" class="btn btn-primary btn-lg w-full">
 									Create Room
-								</button>
-							</form>
-						</div>
-					</div>
-					<div class="divider max-w-xs">OR</div>
-					<!-- Join game card -->
-					<div class="card bg-base-100 shadow-xl w-full max-w-[60vw] min-w-0 ">
-						<div class="card-body">
-							<h2 class="text-2xl font-semibold mb-4 text-center">Join Existing Game</h2>
-							<form data-on:submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()" class="space-y-4">
-								<div class="form-control">
-									<input
-										type="text"
-										id="roomCode"
-										placeholder="Enter room code (e.g., ABC12)"
-										pattern="[A-Za-z0-9]{5}"
-										maxlength="5"
-										required
-										class="input input-bordered w-full text-lg text-center uppercase tracking-wider"
-									/>
-								</div>
-								<button type="submit" class="btn btn-secondary btn-lg w-full">
-									Join Room
 								</button>
 							</form>
 						</div>
