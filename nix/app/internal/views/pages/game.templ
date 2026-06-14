@@ -106,10 +106,9 @@ templ GameNoticesZone(room *game.Room, currentPlayer *game.Player) {
 		@CoupInquisitionPanel(room, currentPlayer)
 		<!-- Eliminated status display -->
 		if currentPlayer.IsEliminated {
-			<div class="alert alert-error max-w-md w-full">
-				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				<span class="text-lg font-bold">You have been eliminated</span>
-			</div>
+			@components.NoticeCard("error", "You are out of the game") {
+				<p>Table state is read-only from here. The Room Operator can undo this if it was marked in error.</p>
+			}
 		}
 	</section>
 }
@@ -137,28 +136,14 @@ templ GameActionsZone(room *game.Room, currentPlayer *game.Player) {
 					</button>
 				}
 				if !currentPlayer.RoleRevealed && !currentPlayer.IsHost {
-					<button
-						class="btn btn-sm btn-outline btn-warning"
-						data-on:click={ fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID) }
-						onclick="return confirm('Reveal your role publicly to the table?')"
-						title="Publicly reveal your role to the table"
-					>
-						Publicly Reveal Role
-					</button>
+					@components.ConfirmTwiceButton("_confirmReveal", "Publicly Reveal Role", "Confirm Reveal Role", fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID), "warning")
 				}
 			</div>
 		}
 		<!-- Elimination button for self-elimination -->
 		if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated && !currentPlayer.IsHost {
 			<div class="max-w-md w-full flex justify-center">
-				<button
-					class="btn btn-sm btn-outline btn-error"
-					data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
-					onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
-					title="Mark yourself as eliminated from the game"
-				>
-					💀 I've Been Eliminated
-				</button>
+				@components.ConfirmTwiceButton("_confirmEliminated", "I've Been Eliminated", "Confirm Eliminated", fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID), "error")
 			</div>
 		}
 	</section>

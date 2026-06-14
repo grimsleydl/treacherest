@@ -542,6 +542,73 @@ func playerRosterHiddenCard() *game.Card {
 	return card
 }
 
+func TestGameActions_UseConfirmTwiceAndEliminatedNotice(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "ACTS1",
+		State:      game.StatePlaying,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 4,
+	}
+	player := &game.Player{
+		ID:     "p1",
+		Name:   "Action Player",
+		Role:   mockGuardianCard(),
+		FaceUp: true,
+	}
+	room.Players[player.ID] = player
+
+	html := renderer.Render(GameBody(room, player)).GetHTML()
+	actionsHTML := extractBetween(t, html, `id="zone-actions"`, `id="zone-roster"`)
+	for _, expected := range []string{
+		"_confirmReveal",
+		"Publicly Reveal Role",
+		"Confirm Reveal Role",
+		`@post(&#39;/room/ACTS1/reveal/p1&#39;)`,
+		"_confirmEliminated",
+		"I&#39;ve Been Eliminated",
+		"Confirm Eliminated",
+		`@post(&#39;/room/ACTS1/player/p1/eliminate&#39;)`,
+	} {
+		if !strings.Contains(actionsHTML, expected) {
+			t.Fatalf("expected %q in actions HTML: %s", expected, actionsHTML)
+		}
+	}
+	for _, forbidden := range []string{"onclick=", "confirm("} {
+		if strings.Contains(actionsHTML, forbidden) {
+			t.Fatalf("did not expect browser confirm %q in actions HTML: %s", forbidden, actionsHTML)
+		}
+	}
+
+	player.RoleRevealed = true
+	revealedHTML := renderer.Render(GameBody(room, player)).GetHTML()
+	revealedActions := extractBetween(t, revealedHTML, `id="zone-actions"`, `id="zone-roster"`)
+	if strings.Contains(revealedActions, "Publicly Reveal Role") {
+		t.Fatalf("revealed player should not receive reveal control: %s", revealedActions)
+	}
+
+	player.IsEliminated = true
+	eliminatedHTML := renderer.Render(GameBody(room, player)).GetHTML()
+	eliminatedActions := extractBetween(t, eliminatedHTML, `id="zone-actions"`, `id="zone-roster"`)
+	eliminatedNotices := extractBetween(t, eliminatedHTML, `id="zone-notices"`, `id="zone-actions"`)
+	for _, forbidden := range []string{"Publicly Reveal Role", "I've Been Eliminated", "_confirmReveal", "_confirmEliminated"} {
+		if strings.Contains(eliminatedActions, forbidden) {
+			t.Fatalf("eliminated player action bar should be removed server-side: %s", eliminatedActions)
+		}
+	}
+	for _, expected := range []string{
+		"notice-card",
+		"alert-error",
+		"You are out of the game",
+		"Room Operator can undo",
+		`id="zone-privy"`,
+	} {
+		if !strings.Contains(eliminatedHTML, expected) && !strings.Contains(eliminatedNotices, expected) {
+			t.Fatalf("expected eliminated state to contain %q in notice/game HTML", expected)
+		}
+	}
+}
+
 func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 

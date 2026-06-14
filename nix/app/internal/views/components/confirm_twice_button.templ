@@ -1,0 +1,31 @@
+package components
+
+templ ConfirmTwiceButton(signal string, idleLabel string, confirmLabel string, action string, tier string) {
+	<button
+		type="button"
+		class={ "btn min-h-11", confirmTwiceTierClass(tier) }
+		data-signals={ "{" + signal + ": false}" }
+		data-class:btn-error={ "$" + signal }
+		data-on:click={ "$" + signal + " ? " + action + " : ($" + signal + " = true)" }
+		data-on:click__outside={ "$" + signal + " = false" }
+		data-on:interval__duration.3s={ "$" + signal + " = false" }
+		data-text={ "$" + signal + " ? '" + confirmLabel + "' : '" + idleLabel + "'" }
+		data-attr:aria-label={ "$" + signal + " ? '" + confirmLabel + "' : '" + idleLabel + "'" }
+		aria-label={ idleLabel }
+	>
+		{ idleLabel }
+	</button>
+}
+
+func confirmTwiceTierClass(tier string) string {
+	switch tier {
+	case "error":
+		return "btn-outline btn-error"
+	case "warning":
+		return "btn-outline btn-warning"
+	case "primary":
+		return "btn-primary"
+	default:
+		return "btn-outline"
+	}
+}
