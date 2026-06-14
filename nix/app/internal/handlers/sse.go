@@ -89,6 +89,18 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to send initial validation state: %v", err)
 	}
 
+	baseURL := getBaseURL(r)
+	qrURL := fmt.Sprintf("%s/room/%s", baseURL, roomCode)
+	qrCode, err := generateQRCode(qrURL)
+	if err != nil {
+		log.Printf("❌ Failed to generate lobby QR code for room %s: %v", roomCode, err)
+	} else if qrCode != "" {
+		qrDataURI := fmt.Sprintf("data:image/png;base64,%s", qrCode)
+		if err := sse.MarshalAndPatchSignals(map[string]string{"qrCode": qrDataURI}); err != nil {
+			log.Printf("❌ Failed to send lobby QR code signal for room %s: %v", roomCode, err)
+		}
+	}
+
 	// Send debug mode signal if debug mode is enabled (for debug panel visibility)
 	if h.config.Server.DebugModeEnabled {
 		sse.MarshalAndPatchSignals(map[string]interface{}{
@@ -879,8 +891,16 @@ func generateQRCode(url string) (string, error) {
 		return "", fmt.Errorf("failed to create QR code: %w", err)
 	}
 
-	// Create a temporary file
-	tmpFile := fmt.Sprintf("/tmp/qr_%d.png", time.Now().UnixNano())
+	tmp, err := os.CreateTemp("", "treacherest-qr-*.png")
+	if err != nil {
+		return "", fmt.Errorf("failed to create QR temp file: %w", err)
+	}
+	tmpFile := tmp.Name()
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpFile)
+		return "", fmt.Errorf("failed to close QR temp file: %w", err)
+	}
+	defer os.Remove(tmpFile)
 
 	// Create a writer with appropriate options
 	w, err := standard.New(tmpFile,
@@ -901,9 +921,6 @@ func generateQRCode(url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read QR code file: %w", err)
 	}
-
-	// Clean up the temporary file
-	os.Remove(tmpFile)
 
 	// Encode the PNG data as base64
 	encoded := base64.StdEncoding.EncodeToString(data)

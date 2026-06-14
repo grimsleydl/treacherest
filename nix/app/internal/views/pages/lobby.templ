@@ -44,221 +44,243 @@ templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.Serv
 		</div>
 	} else {
 		// Non-controlling players don't need role configuration signals
-		<div>
+		<div data-signals="{qrCode: ''}">
 			@LobbyContentInner(room, currentPlayer, cfg, cardService, false)
 		</div>
 	}
 }
 
 templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService, canControl bool) {
-	<div class="text-center mb-8">
-		<h1 class="text-4xl font-bold mb-4">Game Lobby</h1>
-		<div class="text-center mb-6">
-			<div class="text-5xl font-bold tracking-wider text-primary">{ room.Code }</div>
-		</div>
-		<div class="flex justify-center">
-			<div class="badge badge-outline gap-2">
-				<span class="text-base-content/70">Rules Mode</span>
-				<span class="font-semibold">{ rulesModeLabel(room.RulesMode) }</span>
+	if !canControl {
+		@PlayerLobbyContent(room, currentPlayer)
+	} else {
+		<div class="text-center mb-8">
+			<h1 class="text-4xl font-bold mb-4">Game Lobby</h1>
+			<div class="text-center mb-6">
+				<div class="text-5xl font-bold tracking-wider text-primary">{ room.Code }</div>
+			</div>
+			<div class="flex justify-center">
+				<div class="badge badge-outline gap-2">
+					<span class="text-base-content/70">Rules Mode</span>
+					<span class="font-semibold">{ rulesModeLabel(room.RulesMode) }</span>
+				</div>
 			</div>
 		</div>
-	</div>
-	// Error display container - errors will be inserted here by SSE
-	<div id="error-container">
-		// This will be populated by SSE fragments when errors occur
-	</div>
-	<div id="player-list-card" class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
-		<div class="card-body">
-			<h2 class="card-title">Players ({ room.GetActivePlayerCount() })</h2>
-			<div class="divide-y divide-base-300">
-				for _, player := range room.GetActivePlayers() {
-					<div class="py-3 flex items-center justify-between">
-						<span class={ templ.KV("font-bold text-primary", player.ID == currentPlayer.ID) }>
-							{ player.Name }
-						</span>
-						if player.ID == currentPlayer.ID {
-							<span class="badge badge-primary badge-sm">You</span>
-						}
-					</div>
-				}
-			</div>
+		// Error display container - errors will be inserted here by SSE
+		<div id="error-container">
+			// This will be populated by SSE fragments when errors occur
 		</div>
-	</div>
-	if room.RulesMode == game.RulesModeCoup {
-		@CoupRulesReference()
-	}
-	// Show role configuration for the first player if no host is present
-	if canControl && room.RulesMode != game.RulesModeCoup && room.RoleConfig != nil {
-		@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
-	}
-	// Enhanced start button with proper state management
-	<div class="flex flex-col items-center gap-4 mt-8">
-		if canControl && room.RulesMode == game.RulesModeCoup {
-			<div class="card bg-base-200 shadow-xl max-w-md w-full">
-				<div class="card-body gap-3">
-					<div class="form-control w-full">
-						<label class="label">
-							<span class="label-text">Player Count</span>
-						</label>
-						<div class="join w-full">
-							<button
-								type="button"
-								class="btn btn-primary btn-sm join-item"
-								data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/decrement')", room.Code) }
-								disabled?={ !coupCanDecrementPlayerCount(room) }
-							>
-								-
-							</button>
-							<div class="join-item input input-bordered input-sm flex flex-1 items-center justify-center font-semibold">
-								{ fmt.Sprintf("%d players", coupSelectedPlayerCount(room)) }
-							</div>
-							<button
-								type="button"
-								class="btn btn-primary btn-sm join-item"
-								data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/increment')", room.Code) }
-								disabled?={ !coupCanIncrementPlayerCount(room) }
-							>
-								+
-							</button>
-						</div>
-					</div>
-					<form
-						id="coup-preset-form"
-						class="form-control w-full"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-preset', {contentType: 'form'})", room.Code) }
-					>
-						<label class="label" for="coup-preset">
-							<span class="label-text">Coup Preset</span>
-						</label>
-						<select id="coup-preset" name="preset" class="select select-bordered select-sm w-full">
-							for _, preset := range game.CoupPresetOptions() {
-								<option value={ string(preset) } selected?={ game.NormalizeCoupPreset(room.CoupPreset) == preset }>
-									{ game.CoupPresetLabel(preset) }
-								</option>
+		<div id="player-list-card" class="card bg-base-200 shadow-xl mb-6 max-w-md mx-auto">
+			<div class="card-body">
+				<h2 class="card-title">Players ({ room.GetActivePlayerCount() })</h2>
+				<div class="divide-y divide-base-300">
+					for _, player := range room.GetActivePlayers() {
+						<div class="py-3 flex items-center justify-between">
+							<span class={ templ.KV("font-bold text-primary", player.ID == currentPlayer.ID) }>
+								{ player.Name }
+							</span>
+							if player.ID == currentPlayer.ID {
+								<span class="badge badge-primary badge-sm">You</span>
 							}
-						</select>
-					</form>
-					<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
-					<div class="divider my-1"></div>
-					<div id={ coupRoleCountsRenderKey(room) }>
-						<div class="flex items-center justify-between gap-3 mb-2">
-							<h3 class="font-semibold">Role Counts</h3>
-							<span class="badge badge-outline">{ game.CoupRoleCountModeLabel(room) }</span>
 						</div>
-						<form
-							id="coup-role-counts-form"
-							class="grid grid-cols-2 gap-3"
-							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-role-counts', {contentType: 'form'})", room.Code) }
-						>
-							for _, role := range game.CoupRoleCountOptions() {
-								<label class="form-control w-full">
-									<span class="label-text">{ string(role) }</span>
-									<input
-										type="number"
-										min="0"
-										name={ game.CoupRoleCountFormName(role) }
-										value={ fmt.Sprintf("%d", game.CoupRoleCountsForRoom(room)[role]) }
-										class="input input-bordered input-sm w-full"
-									/>
-								</label>
-							}
-							<label class="sm:col-span-2 flex items-start gap-3 rounded border border-warning/40 bg-warning/10 p-3 text-sm">
-								<input
-									type="checkbox"
-									name="unsafeRoleCounts"
-									class="checkbox checkbox-warning checkbox-sm mt-1"
-									checked?={ room.CoupAllowUnsafeRoleCounts }
-								/>
-								<span>
-									<span class="font-semibold">Unsafe Role Count Override</span>
-									<span class="block text-base-content/80">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</span>
-								</span>
-							</label>
-						</form>
-						<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
-					</div>
-					<div class="divider my-1"></div>
-					<form
-						id="coup-info-form"
-						class="grid gap-3 sm:grid-cols-2"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
-					>
-						<label class="form-control w-full">
-							<span class="label-text">King-to-Blue Info</span>
-							<select name="kingToBlue" class="select select-bordered select-sm w-full">
-								for _, option := range coupKingToBlueOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						</label>
-						<label class="form-control w-full">
-							<span class="label-text">Red-to-Black Info</span>
-							<select name="redToBlack" class="select select-bordered select-sm w-full">
-								for _, option := range coupRedToBlackOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						</label>
-						<label class="form-control w-full">
-							<span class="label-text">Black-to-Red Info</span>
-							<select name="blackToRed" class="select select-bordered select-sm w-full">
-								for _, option := range coupBlackToRedOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						</label>
-						<label class="form-control w-full">
-							<span class="label-text">Black Network</span>
-							<select name="blackNetwork" class="select select-bordered select-sm w-full">
-								for _, option := range coupBlackNetworkOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						</label>
-					</form>
-					<div class="divider my-1"></div>
-					<form
-						id="coup-royal-guard-form"
-						class="form-control w-full"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
-					>
-						<label class="label" for="coup-royal-guard-blockers"><span class="label-text">Royal Guard Blockers</span></label>
-						<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-full">
-							<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
-							<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
-							<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
-							<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
-						</select>
-					</form>
-					<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
-					<div class="divider my-1"></div>
-					<form
-						id="coup-inquisition-settings-form"
-						class="form-control w-full"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
-					>
-						<label class="label" for="coup-inquisition-result"><span class="label-text">Inquisition Result</span></label>
-						<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-full">
-							<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
-							<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
-						</select>
-					</form>
-					if coupPresetMatchesActivePlayers(room) {
-						<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
-					} else {
-						<p id="validation-help" class="text-sm text-warning" role="status" aria-live="polite">{ coupPresetValidationText(room) }</p>
 					}
 				</div>
 			</div>
-			if room.GetActivePlayerCount() >= 1 && coupPresetMatchesActivePlayers(room) {
+		</div>
+		if room.RulesMode == game.RulesModeCoup {
+			@CoupRulesReference()
+		}
+		// Show role configuration for the first player if no host is present
+		if canControl && room.RulesMode != game.RulesModeCoup && room.RoleConfig != nil {
+			@components.RoleConfigurationNew(room, cfg, cardService, components.PlayerCountDisplay{})
+		}
+		// Enhanced start button with proper state management
+		<div class="flex flex-col items-center gap-4 mt-8">
+			if canControl && room.RulesMode == game.RulesModeCoup {
+				<div class="card bg-base-200 shadow-xl max-w-md w-full">
+					<div class="card-body gap-3">
+						<div class="form-control w-full">
+							<label class="label">
+								<span class="label-text">Player Count</span>
+							</label>
+							<div class="join w-full">
+								<button
+									type="button"
+									class="btn btn-primary btn-sm join-item"
+									data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/decrement')", room.Code) }
+									disabled?={ !coupCanDecrementPlayerCount(room) }
+								>
+									-
+								</button>
+								<div class="join-item input input-bordered input-sm flex flex-1 items-center justify-center font-semibold">
+									{ fmt.Sprintf("%d players", coupSelectedPlayerCount(room)) }
+								</div>
+								<button
+									type="button"
+									class="btn btn-primary btn-sm join-item"
+									data-on:click={ fmt.Sprintf("@post('/room/%s/config/coup-player-count/increment')", room.Code) }
+									disabled?={ !coupCanIncrementPlayerCount(room) }
+								>
+									+
+								</button>
+							</div>
+						</div>
+						<form
+							id="coup-preset-form"
+							class="form-control w-full"
+							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-preset', {contentType: 'form'})", room.Code) }
+						>
+							<label class="label" for="coup-preset">
+								<span class="label-text">Coup Preset</span>
+							</label>
+							<select id="coup-preset" name="preset" class="select select-bordered select-sm w-full">
+								for _, preset := range game.CoupPresetOptions() {
+									<option value={ string(preset) } selected?={ game.NormalizeCoupPreset(room.CoupPreset) == preset }>
+										{ game.CoupPresetLabel(preset) }
+									</option>
+								}
+							</select>
+						</form>
+						<p class="text-sm text-base-content/80">{ game.CoupPresetSummary(room.CoupPreset) }</p>
+						<div class="divider my-1"></div>
+						<div id={ coupRoleCountsRenderKey(room) }>
+							<div class="flex items-center justify-between gap-3 mb-2">
+								<h3 class="font-semibold">Role Counts</h3>
+								<span class="badge badge-outline">{ game.CoupRoleCountModeLabel(room) }</span>
+							</div>
+							<form
+								id="coup-role-counts-form"
+								class="grid grid-cols-2 gap-3"
+								data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-role-counts', {contentType: 'form'})", room.Code) }
+							>
+								for _, role := range game.CoupRoleCountOptions() {
+									<label class="form-control w-full">
+										<span class="label-text">{ string(role) }</span>
+										<input
+											type="number"
+											min="0"
+											name={ game.CoupRoleCountFormName(role) }
+											value={ fmt.Sprintf("%d", game.CoupRoleCountsForRoom(room)[role]) }
+											class="input input-bordered input-sm w-full"
+										/>
+									</label>
+								}
+								<label class="sm:col-span-2 flex items-start gap-3 rounded border border-warning/40 bg-warning/10 p-3 text-sm">
+									<input
+										type="checkbox"
+										name="unsafeRoleCounts"
+										class="checkbox checkbox-warning checkbox-sm mt-1"
+										checked?={ room.CoupAllowUnsafeRoleCounts }
+									/>
+									<span>
+										<span class="font-semibold">Unsafe Role Count Override</span>
+										<span class="block text-base-content/80">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</span>
+									</span>
+								</label>
+							</form>
+							<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
+						</div>
+						<div class="divider my-1"></div>
+						<form
+							id="coup-info-form"
+							class="grid gap-3 sm:grid-cols-2"
+							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
+						>
+							<label class="form-control w-full">
+								<span class="label-text">King-to-Blue Info</span>
+								<select name="kingToBlue" class="select select-bordered select-sm w-full">
+									for _, option := range coupKingToBlueOptions() {
+										<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
+											{ option.Label }
+										</option>
+									}
+								</select>
+							</label>
+							<label class="form-control w-full">
+								<span class="label-text">Red-to-Black Info</span>
+								<select name="redToBlack" class="select select-bordered select-sm w-full">
+									for _, option := range coupRedToBlackOptions() {
+										<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
+											{ option.Label }
+										</option>
+									}
+								</select>
+							</label>
+							<label class="form-control w-full">
+								<span class="label-text">Black-to-Red Info</span>
+								<select name="blackToRed" class="select select-bordered select-sm w-full">
+									for _, option := range coupBlackToRedOptions() {
+										<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
+											{ option.Label }
+										</option>
+									}
+								</select>
+							</label>
+							<label class="form-control w-full">
+								<span class="label-text">Black Network</span>
+								<select name="blackNetwork" class="select select-bordered select-sm w-full">
+									for _, option := range coupBlackNetworkOptions() {
+										<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
+											{ option.Label }
+										</option>
+									}
+								</select>
+							</label>
+						</form>
+						<div class="divider my-1"></div>
+						<form
+							id="coup-royal-guard-form"
+							class="form-control w-full"
+							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
+						>
+							<label class="label" for="coup-royal-guard-blockers"><span class="label-text">Royal Guard Blockers</span></label>
+							<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-full">
+								<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
+								<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
+								<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
+								<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
+							</select>
+						</form>
+						<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
+						<div class="divider my-1"></div>
+						<form
+							id="coup-inquisition-settings-form"
+							class="form-control w-full"
+							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
+						>
+							<label class="label" for="coup-inquisition-result"><span class="label-text">Inquisition Result</span></label>
+							<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-full">
+								<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
+								<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
+							</select>
+						</form>
+						if coupPresetMatchesActivePlayers(room) {
+							<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
+						} else {
+							<p id="validation-help" class="text-sm text-warning" role="status" aria-live="polite">{ coupPresetValidationText(room) }</p>
+						}
+					</div>
+				</div>
+				if room.GetActivePlayerCount() >= 1 && coupPresetMatchesActivePlayers(room) {
+					<button
+						class="btn btn-primary btn-lg btn-wide"
+						data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
+						data-attr:disabled="$isStarting || !$canStartGame"
+						data-class:loading="$isStarting"
+						data-attr:aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
+						data-attr:aria-busy="$isStarting ? 'true' : 'false'"
+						data-attr:aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
+						data-attr:aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
+					>
+						<span data-show="!$isStarting">Start Game</span>
+						<span data-show="$isStarting" aria-hidden="true">Starting...</span>
+					</button>
+				} else if room.GetActivePlayerCount() >= 1 {
+					<div id="validation-help" class="text-sm text-error">
+						{ coupPresetValidationText(room) }
+					</div>
+				}
+			} else if canControl && room.GetActivePlayerCount() >= 1 {
 				<button
 					class="btn btn-primary btn-lg btn-wide"
 					data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
@@ -272,44 +294,93 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 					<span data-show="!$isStarting">Start Game</span>
 					<span data-show="$isStarting" aria-hidden="true">Starting...</span>
 				</button>
-			} else if room.GetActivePlayerCount() >= 1 {
-				<div id="validation-help" class="text-sm text-error">
-					{ coupPresetValidationText(room) }
+				// Validation help text
+				<div id="validation-help" class="text-sm mt-2" data-show="$validationMessage && !$canStartGame">
+					<span data-text="$validationMessage" class="text-error"></span>
+				</div>
+			} else if !canControl && room.GetActivePlayerCount() >= 1 {
+				// Non-controlling players just see a waiting message
+				<div class="alert alert-info max-w-sm">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+					<span id="waiting-message" role="status" aria-live="polite">Waiting for game to start...</span>
+				</div>
+			} else {
+				<div class="alert alert-warning max-w-sm">
+					<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+					<span id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</span>
 				</div>
 			}
-		} else if canControl && room.GetActivePlayerCount() >= 1 {
-			<button
-				class="btn btn-primary btn-lg btn-wide"
-				data-on:click={ fmt.Sprintf("$isStarting = true; $startError = ''; @post('/room/%s/start')", room.Code) }
-				data-attr:disabled="$isStarting || !$canStartGame"
-				data-class:loading="$isStarting"
-				data-attr:aria-disabled="($isStarting || !$canStartGame) ? 'true' : 'false'"
-				data-attr:aria-busy="$isStarting ? 'true' : 'false'"
-				data-attr:aria-label="$isStarting ? 'Starting game, please wait' : 'Start game'"
-				data-attr:aria-describedby="($startError || $validationMessage) ? 'start-game-error validation-help' : null"
-			>
-				<span data-show="!$isStarting">Start Game</span>
-				<span data-show="$isStarting" aria-hidden="true">Starting...</span>
+			<button class="btn btn-error btn-outline" data-on:click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
+				Leave Room
 			</button>
-			// Validation help text
-			<div id="validation-help" class="text-sm mt-2" data-show="$validationMessage && !$canStartGame">
-				<span data-text="$validationMessage" class="text-error"></span>
+		</div>
+	}
+}
+
+templ PlayerLobbyContent(room *game.Room, currentPlayer *game.Player) {
+	<section id="player-lobby" class="mx-auto max-w-3xl px-4 py-8 space-y-6">
+		<div id="player-lobby-hero" class="rounded-box border border-base-300 bg-base-100 p-5 shadow-sm">
+			<div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+				<div class="min-w-0">
+					<p class="text-xs font-bold uppercase tracking-[0.16em] text-base-content/60">Room Code</p>
+					<h1 class="font-mono text-5xl font-bold tracking-widest text-primary">{ room.Code }</h1>
+					<p id="lobby-status-line" class="mt-2 text-sm text-base-content/70" role="status" aria-live="polite">
+						{ LobbyWaitingStatus(room) }
+					</p>
+				</div>
+				<div class="shrink-0">
+					<div id="lobby-qr-code" class="grid size-32 place-items-center rounded-box border border-base-300 bg-white p-2 text-neutral" aria-label={ "QR code for room " + room.Code }>
+						<img
+							data-attr:src="$qrCode"
+							data-show="$qrCode != ''"
+							alt={ "QR code for room " + room.Code }
+							class="size-28"
+						/>
+						<div id="lobby-qr-placeholder" data-show="$qrCode == ''" class="grid size-28 place-items-center rounded bg-base-200 text-xs font-bold uppercase tracking-[0.16em] text-base-content/60">
+							QR
+						</div>
+					</div>
+				</div>
 			</div>
-		} else if !canControl && room.GetActivePlayerCount() >= 1 {
-			// Non-controlling players just see a waiting message
-			<div class="alert alert-info max-w-sm">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				<span id="waiting-message" role="status" aria-live="polite">Waiting for game to start...</span>
+		</div>
+		<div id="lobby-settings-summary" class="rounded-box border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/80">
+			{ LobbySettingsSummary(room) }
+		</div>
+		@PlayerLobbyRoster(room, currentPlayer)
+		<details id="rules-reference" class="rounded-box border border-base-300 bg-base-100">
+			<summary class="cursor-pointer px-4 py-3 font-semibold">Rules Reference</summary>
+			<div class="border-t border-base-300 px-4 py-4">
+				if room.RulesMode == game.RulesModeCoup {
+					@CoupRulesReference()
+				} else {
+					<p class="text-sm text-base-content/70">Treachery assigns hidden roles and public table state from the room setup chosen by the Room Operator.</p>
+				}
 			</div>
-		} else {
-			<div class="alert alert-warning max-w-sm">
-				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-				<span id="min-player-message" role="status" aria-live="polite">Need at least 1 player to start</span>
-			</div>
-		}
-		<button class="btn btn-error btn-outline" data-on:click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
-			Leave Room
-		</button>
+		</details>
+		<div class="flex justify-center">
+			<button class="btn btn-error btn-outline" data-on:click={ fmt.Sprintf("@post('/room/%s/leave')", room.Code) }>
+				Leave Room
+			</button>
+		</div>
+	</section>
+}
+
+templ PlayerLobbyRoster(room *game.Room, currentPlayer *game.Player) {
+	<div id="player-list-card" class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm">
+		<div class="mb-3 flex items-center justify-between gap-3">
+			<h2 class="font-semibold">Players</h2>
+			<span class="text-sm text-base-content/60">{ fmt.Sprintf("%d of %d seats filled", room.GetActivePlayerCount(), lobbySeatCount(room)) }</span>
+		</div>
+		<div class="space-y-2">
+			for _, player := range room.GetActivePlayers() {
+				@components.PlayerRow(room, player, currentPlayer)
+			}
+			for seat := room.GetActivePlayerCount() + 1; seat <= lobbySeatCount(room); seat++ {
+				<div id={ fmt.Sprintf("open-seat-%d", seat) } class="rounded-box border border-dashed border-base-300 bg-base-200/50 px-3 py-3 text-sm text-base-content/60">
+					<span class="font-semibold">{ fmt.Sprintf("Open Seat %d", seat) }</span>
+				</div>
+			}
+		</div>
 	</div>
 }
 

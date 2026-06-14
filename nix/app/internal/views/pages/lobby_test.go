@@ -112,6 +112,7 @@ func TestLobbyPage(t *testing.T) {
 		}
 		coupRoom.Players[player1.ID] = player1
 		coupRoom.Players[player2.ID] = player2
+		coupRoom.OperatorSessionID = player1.SessionID
 
 		component := LobbyPage(coupRoom, player1, cfg, cardService)
 
@@ -217,8 +218,52 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(coupRoom, player, cfg, cardService)
 		body := renderer.Render(component).GetHTML()
 
-		if !strings.Contains(body, "Game Lobby") || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
+		if !strings.Contains(body, `id="player-lobby"`) || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
 			t.Fatalf("expected player-safe lobby content, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
+	})
+
+	t.Run("non-operator lobby renders redesigned player-safe surface", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:                        "COUP5",
+			State:                       game.StateLobby,
+			RulesMode:                   game.RulesModeCoup,
+			CoupPreset:                  game.CoupPresetFive,
+			CoupInquisitionResultPolicy: game.CoupInquisitionResultPublic,
+			CoupInfoPolicy:              game.CoupInformationPolicy{KingToBlue: game.CoupKingKnowsAllBlue},
+			Players:                     make(map[string]*game.Player),
+			MaxPlayers:                  5,
+		}
+		operator := game.NewPlayer("operator", "Room Operator", "session-operator")
+		player := game.NewPlayer("player", "Regular Player", "session-player")
+		coupRoom.Players[operator.ID] = operator
+		coupRoom.Players[player.ID] = player
+		coupRoom.OperatorSessionID = operator.SessionID
+
+		component := LobbyPage(coupRoom, player, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
+
+		for _, want := range []string{
+			`id="player-lobby"`,
+			`id="player-lobby-hero"`,
+			`id="lobby-qr-code"`,
+			`aria-label="QR code for room COUP5"`,
+			"Waiting for Room Operator",
+			"2 of 5 seats filled",
+			`id="player-row-player"`,
+			"Open Seat 3",
+			"Open Seat 5",
+			"Coup - 5 players - Public inquisition - Full King knowledge",
+			`id="lobby-settings-summary"`,
+			`id="rules-reference"`,
+			"Rules Reference",
+			"Leave Room",
+			`@post(&#39;/room/COUP5/leave&#39;)`,
+		} {
+			if !strings.Contains(body, want) {
+				t.Fatalf("expected redesigned player lobby to contain %q, got %q", want, body)
+			}
 		}
 		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
 	})
@@ -245,7 +290,7 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(treacheryRoom, player, cfg, cardService)
 		body := renderer.Render(component).GetHTML()
 
-		if !strings.Contains(body, "Game Lobby") || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
+		if !strings.Contains(body, `id="player-lobby"`) || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
 			t.Fatalf("expected player-safe lobby content, got %q", body)
 		}
 		assertNoLobbyManagementDOM(t, body, treacheryRoom.Code)
@@ -285,6 +330,7 @@ func TestLobbyPage(t *testing.T) {
 			Players:    make(map[string]*game.Player),
 			MaxPlayers: 4,
 		}
+		emptyRoom.OperatorSessionID = player1.SessionID
 
 		component := LobbyPage(emptyRoom, player1, cfg, cardService)
 
@@ -334,6 +380,35 @@ func assertNoLobbyManagementDOM(t *testing.T, body string, roomCode string) {
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("non-operator lobby rendered forbidden management DOM %q in %q", forbidden, body)
+		}
+	}
+}
+
+func TestLobbySettingsSummary(t *testing.T) {
+	room := &game.Room{
+		Code:                            "SUMRY",
+		State:                           game.StateLobby,
+		RulesMode:                       game.RulesModeCoup,
+		CoupPreset:                      game.CoupPresetFive,
+		CoupInquisitionResultPolicy:     game.CoupInquisitionResultPublic,
+		CoupInfoPolicy:                  game.CoupInformationPolicy{KingToBlue: game.CoupKingKnowsAllBlue},
+		Players:                         make(map[string]*game.Player),
+		MaxPlayers:                      5,
+		CoupRoyalGuardBlockerLimit:      0,
+		CoupAllowUnsafeRoleCounts:       false,
+		CoupGreenEligibleBeforeKingFall: false,
+	}
+
+	summary := LobbySettingsSummary(room)
+
+	for _, want := range []string{
+		"Coup",
+		"5 players",
+		"Public inquisition",
+		"Full King knowledge",
+	} {
+		if !strings.Contains(summary, want) {
+			t.Fatalf("expected settings summary to contain %q, got %q", want, summary)
 		}
 	}
 }

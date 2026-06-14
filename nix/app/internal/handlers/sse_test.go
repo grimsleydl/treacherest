@@ -198,8 +198,13 @@ func TestHandler_StreamLobby(t *testing.T) {
 			t.Errorf("expected SSE content type, got %s", contentType)
 		}
 
-		// Note: No initial SSE data is sent for lobby - only on events
-		// This is intentional as the page already has the correct content
+		body := w.Body.String()
+		if !strings.Contains(body, `"qrCode"`) {
+			t.Fatalf("expected lobby SSE to send QR code signal, got %q", body)
+		}
+		if !strings.Contains(body, "data:image/png;base64,") {
+			t.Fatalf("expected lobby SSE to send QR code data URI, got %q", body)
+		}
 	})
 
 	t.Run("sends game_started event", func(t *testing.T) {
