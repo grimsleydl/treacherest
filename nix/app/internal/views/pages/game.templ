@@ -34,201 +34,247 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 	>
 		// Render pending ability modals for current player
 		@components.PendingAbilitiesContainer(room, currentPlayer)
-		if room.State == game.StateCountdown {
-			@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
-		} else {
-			<div class="flex flex-col items-center gap-8 p-4">
-				if currentPlayer.Role != nil {
-					<div
-						class={ "card bg-base-200 shadow-xl max-w-md w-full mx-auto", getRoleClass(string(currentPlayer.Role.GetRoleType())) }
-					>
-						<figure>
-							<img
-								src={ currentPlayer.Role.GetImageBase64() }
-								alt={ currentPlayer.Role.Name }
-								class="w-full h-auto"
-								onerror="this.style.display='none'"
-							/>
-						</figure>
-						<div class="card-body">
-							<div class="flex items-center gap-2 mb-2">
-								<h2 class="card-title text-2xl">{ currentPlayer.Role.Name }</h2>
-								if currentPlayer.Role.URI != "" {
-									<a
-										href={ templ.SafeURL(currentPlayer.Role.URI) }
-										target="_blank"
-										rel="noopener noreferrer"
-										class="link link-primary"
-										title="View on MTG Treachery Oracle"
-									>
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
-										</svg>
-									</a>
-								}
-							</div>
-							<div class="flex gap-2 mb-4">
-								<div class="badge badge-primary">{ currentPlayer.Role.Type }</div>
-								<div class="badge badge-secondary">{ currentPlayer.Role.Rarity }</div>
-							</div>
-							<div class="text-base-content/80 mb-4">
-								@FormatCardText(currentPlayer.Role.Text)
-							</div>
+		<div class="flex flex-col items-center gap-8 p-4">
+			@GameStatusZone(room)
+			if room.State == game.StateCountdown {
+				<section id="zone-privy" class="w-full max-w-md">
+					@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
+				</section>
+				<section id="zone-notices" aria-live="polite" class="w-full max-w-md"></section>
+				<section id="zone-actions" class="w-full max-w-md"></section>
+				@GameRosterZone(room, currentPlayer)
+			} else {
+				@GamePrivyZone(room, currentPlayer)
+				@GameNoticesZone(room, currentPlayer)
+				@GameActionsZone(room, currentPlayer)
+				@GameRosterZone(room, currentPlayer)
+			}
+		</div>
+	</div>
+}
+
+templ GameStatusZone(room *game.Room) {
+	<section id="zone-status" class="w-full max-w-md">
+		<div class="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200 px-4 py-3">
+			<div class="min-w-0">
+				<p class="text-xs uppercase tracking-wider text-base-content/60">Room</p>
+				<p class="font-mono text-lg font-semibold tracking-wider">{ room.Code }</p>
+			</div>
+			<div class="text-right">
+				<p class="text-xs uppercase tracking-wider text-base-content/60">State</p>
+				<p class="font-semibold capitalize">{ string(room.State) }</p>
+			</div>
+			@components.SyncPill("live")
+		</div>
+	</section>
+}
+
+templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
+	<section id="zone-privy" class="w-full max-w-md">
+		if currentPlayer.Role != nil {
+			<div
+				class={ "card bg-base-200 shadow-xl max-w-md w-full mx-auto", getRoleClass(string(currentPlayer.Role.GetRoleType())) }
+			>
+				<figure>
+					<img
+						src={ currentPlayer.Role.GetImageBase64() }
+						alt={ currentPlayer.Role.Name }
+						class="w-full h-auto"
+						onerror="this.style.display='none'"
+					/>
+				</figure>
+				<div class="card-body">
+					<div class="flex items-center gap-2 mb-2">
+						<h2 class="card-title text-2xl">{ currentPlayer.Role.Name }</h2>
+						if currentPlayer.Role.URI != "" {
+							<a
+								href={ templ.SafeURL(currentPlayer.Role.URI) }
+								target="_blank"
+								rel="noopener noreferrer"
+								class="link link-primary"
+								title="View on MTG Treachery Oracle"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
+								</svg>
+							</a>
+						}
+					</div>
+					<div class="flex gap-2 mb-4">
+						<div class="badge badge-primary">{ currentPlayer.Role.Type }</div>
+						<div class="badge badge-secondary">{ currentPlayer.Role.Rarity }</div>
+					</div>
+					<div class="text-base-content/80 mb-4">
+						@FormatCardText(currentPlayer.Role.Text)
+					</div>
+					<div class="divider"></div>
+					<div class="space-y-2">
+						<p class="text-sm text-base-content/80"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
+						if len(currentPlayer.Role.Rulings) > 0 {
 							<div class="divider"></div>
-							<div class="space-y-2">
-								<p class="text-sm text-base-content/80"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
-								if len(currentPlayer.Role.Rulings) > 0 {
-									<div class="divider"></div>
-									<div>
-										<h3 class="text-xs font-bold mb-2 uppercase tracking-wider text-base-content/80">NOTES AND RULES INFORMATION FOR { strings.ToUpper(currentPlayer.Role.Name) }</h3>
-										<div class="text-xs space-y-1 text-base-content/80">
-											@FormatRulings(currentPlayer.Role.Rulings)
-										</div>
-									</div>
-								}
-								<p class="text-xs text-base-content/60 mt-4"><em>Art by { currentPlayer.Role.Artist }</em></p>
-							</div>
-						</div>
-					</div>
-				}
-				<!-- Transformation status display -->
-				if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
-					@components.TransformationDisplay(room, currentPlayer)
-				}
-				<!-- Metamorph active indicator -->
-				@components.MetamorphActiveIndicator(room, currentPlayer)
-				<!-- Metamorph steal prompts for newly eliminated players -->
-				if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanUseMetamorph() {
-					for _, p := range room.GetPlayers() {
-						if p.IsEliminated && p.Role != nil && p.ID != currentPlayer.ID {
-							@components.MetamorphStealPrompt(room, currentPlayer, p)
-						}
-					}
-				}
-				if leader := room.GetLeader(); leader != nil && currentPlayer.Role != nil && (currentPlayer.Role.GetRoleType() == game.RoleLeader || room.LeaderRevealed) {
-					<div class="alert alert-warning max-w-md w-full">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-						<span class="text-lg font-bold">Leader: { leader.Name }</span>
-					</div>
-				}
-				<!-- Leader confirmation prompts for pending ability reveals -->
-				@components.LeaderConfirmationPrompts(room, currentPlayer)
-				@CoupConfirmedWinPanel(room)
-				@CoupAdvisoryWinPanel(room, currentPlayer)
-				@CoupRoyalGuardPanel(room, currentPlayer)
-				@CoupInquisitionPanel(room, currentPlayer)
-				<!-- Unveil button and face state toggle for current player -->
-				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
-					<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
-						// Leaders start face-up and cannot be turned face down
-						if currentPlayer.Role.GetRoleType() == game.RoleLeader {
-							// No action buttons for Leaders
-						} else if !currentPlayer.FaceUp {
-							// Card is face down - show Unveil button
-							@components.UnveilButton(room, currentPlayer)
-						} else {
-							// Card is face up - show Turn Face Down button (for transformed players)
-							<button
-								class="btn btn-sm btn-outline btn-secondary"
-								data-on:click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
-								title="Turn your card face down (may end transformations)"
-							>
-								🃏 Turn Face Down
-							</button>
-						}
-						if !currentPlayer.RoleRevealed && !currentPlayer.IsHost {
-							<button
-								class="btn btn-sm btn-outline btn-warning"
-								data-on:click={ fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID) }
-								onclick="return confirm('Reveal your role publicly to the table?')"
-								title="Publicly reveal your role to the table"
-							>
-								Publicly Reveal Role
-							</button>
-						}
-					</div>
-				}
-				<!-- Elimination button for self-elimination -->
-				if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated && !currentPlayer.IsHost {
-					<div class="max-w-md w-full flex justify-center mt-4">
-						<button
-							class="btn btn-sm btn-outline btn-error"
-							data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
-							onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
-							title="Mark yourself as eliminated from the game"
-						>
-							💀 I've Been Eliminated
-						</button>
-					</div>
-				}
-				<!-- Eliminated status display -->
-				if currentPlayer.IsEliminated {
-					<div class="alert alert-error max-w-md w-full">
-						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-						<span class="text-lg font-bold">You have been eliminated</span>
-					</div>
-				}
-				<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
-					<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
-					<div class="join join-vertical w-full">
-						for _, p := range room.GetActivePlayers() {
-							<div class="collapse collapse-arrow join-item border border-base-300">
-								<input
-									type="checkbox"
-									id={ fmt.Sprintf("reveal-%s", p.ID) }
-									disabled?={ room.State != game.StatePlaying }
-								/>
-								<div class="collapse-title flex items-center justify-between gap-2">
-									<div class="flex items-center gap-2 flex-wrap">
-										<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID), templ.KV("line-through opacity-50", p.IsEliminated) }>{ p.Name }</span>
-										if p.ID == currentPlayer.ID {
-											<span class="badge badge-primary badge-xs">You</span>
-										}
-										if p.IsEliminated {
-											<span class="badge badge-error badge-xs">Eliminated</span>
-										}
-										if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
-											<span class="badge badge-warning badge-xs">Leader</span>
-										}
-										if p.RoleRevealed && !p.IsEliminated {
-											<span class="badge badge-ghost badge-xs">{ p.Role.Name }</span>
-										}
-										if !p.FaceUp && !p.IsEliminated {
-											<span class="badge badge-neutral badge-xs" title="Card is face down">🃏 Face Down</span>
-										}
-									</div>
-									<!-- Peek button for accessibility -->
-									<label
-										for={ fmt.Sprintf("reveal-%s", p.ID) }
-										class="btn btn-ghost btn-xs"
-										aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
-										title="Click to see role card"
-									>
-										Peek
-									</label>
-								</div>
-								<div id={ fmt.Sprintf("reveal-%s-panel", p.ID) } class="collapse-content">
-									<!-- Show mini card if:
-									     - Player is Leader (always face up)
-									     - Current player viewing their own card
-									     - Card is face up (visible to everyone at the table)
-									     - Current player has Puppet Master vision (can see all face-down cards) -->
-									if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
-									   (p.ID == currentPlayer.ID && p.Role != nil) ||
-									   (p.FaceUp && p.Role != nil) ||
-									   (currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanViewOthersFaceDown && p.Role != nil) {
-										@MiniRoleCard(p.Role)
-									} else {
-										<div class="text-sm opacity-60">Card is face down.</div>
-									}
+							<div>
+								<h3 class="text-xs font-bold mb-2 uppercase tracking-wider text-base-content/80">NOTES AND RULES INFORMATION FOR { strings.ToUpper(currentPlayer.Role.Name) }</h3>
+								<div class="text-xs space-y-1 text-base-content/80">
+									@FormatRulings(currentPlayer.Role.Rulings)
 								</div>
 							</div>
 						}
+						<p class="text-xs text-base-content/60 mt-4"><em>Art by { currentPlayer.Role.Artist }</em></p>
 					</div>
 				</div>
 			</div>
 		}
-	</div>
+		<!-- Transformation status display -->
+		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
+			@components.TransformationDisplay(room, currentPlayer)
+		}
+		<!-- Metamorph active indicator -->
+		@components.MetamorphActiveIndicator(room, currentPlayer)
+		<!-- Metamorph steal prompts for newly eliminated players -->
+		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanUseMetamorph() {
+			for _, p := range room.GetPlayers() {
+				if p.IsEliminated && p.Role != nil && p.ID != currentPlayer.ID {
+					@components.MetamorphStealPrompt(room, currentPlayer, p)
+				}
+			}
+		}
+	</section>
+}
+
+templ GameNoticesZone(room *game.Room, currentPlayer *game.Player) {
+	<section id="zone-notices" aria-live="polite" class="flex w-full max-w-md flex-col items-center gap-4">
+		if leader := room.GetLeader(); leader != nil && currentPlayer.Role != nil && (currentPlayer.Role.GetRoleType() == game.RoleLeader || room.LeaderRevealed) {
+			<div class="alert alert-warning max-w-md w-full">
+				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+				<span class="text-lg font-bold">Leader: { leader.Name }</span>
+			</div>
+		}
+		<!-- Leader confirmation prompts for pending ability reveals -->
+		@components.LeaderConfirmationPrompts(room, currentPlayer)
+		@CoupConfirmedWinPanel(room)
+		@CoupAdvisoryWinPanel(room, currentPlayer)
+		@CoupInquisitionPanel(room, currentPlayer)
+		<!-- Eliminated status display -->
+		if currentPlayer.IsEliminated {
+			<div class="alert alert-error max-w-md w-full">
+				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+				<span class="text-lg font-bold">You have been eliminated</span>
+			</div>
+		}
+	</section>
+}
+
+templ GameActionsZone(room *game.Room, currentPlayer *game.Player) {
+	<section id="zone-actions" class="flex w-full max-w-md flex-col items-center gap-4">
+		@CoupRoyalGuardPanel(room, currentPlayer)
+		<!-- Unveil button and face state toggle for current player -->
+		if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {
+			<div class="max-w-md w-full flex justify-center gap-2 flex-wrap">
+				// Leaders start face-up and cannot be turned face down
+				if currentPlayer.Role.GetRoleType() == game.RoleLeader {
+					// No action buttons for Leaders
+				} else if !currentPlayer.FaceUp {
+					// Card is face down - show Unveil button
+					@components.UnveilButton(room, currentPlayer)
+				} else {
+					// Card is face up - show Turn Face Down button (for transformed players)
+					<button
+						class="btn btn-sm btn-outline btn-secondary"
+						data-on:click={ fmt.Sprintf("@post('/room/%s/facestate/%s')", room.Code, currentPlayer.ID) }
+						title="Turn your card face down (may end transformations)"
+					>
+						🃏 Turn Face Down
+					</button>
+				}
+				if !currentPlayer.RoleRevealed && !currentPlayer.IsHost {
+					<button
+						class="btn btn-sm btn-outline btn-warning"
+						data-on:click={ fmt.Sprintf("@post('/room/%s/reveal/%s')", room.Code, currentPlayer.ID) }
+						onclick="return confirm('Reveal your role publicly to the table?')"
+						title="Publicly reveal your role to the table"
+					>
+						Publicly Reveal Role
+					</button>
+				}
+			</div>
+		}
+		<!-- Elimination button for self-elimination -->
+		if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated && !currentPlayer.IsHost {
+			<div class="max-w-md w-full flex justify-center">
+				<button
+					class="btn btn-sm btn-outline btn-error"
+					data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/eliminate')", room.Code, currentPlayer.ID) }
+					onclick="return confirm('Are you sure you want to mark yourself as eliminated? This cannot be undone.')"
+					title="Mark yourself as eliminated from the game"
+				>
+					💀 I've Been Eliminated
+				</button>
+			</div>
+		}
+	</section>
+}
+
+templ GameRosterZone(room *game.Room, currentPlayer *game.Player) {
+	<section id="zone-roster" class="w-full max-w-md">
+		<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
+			<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
+			<div class="join join-vertical w-full">
+				for _, p := range room.GetActivePlayers() {
+					<div class="collapse collapse-arrow join-item border border-base-300">
+						<input
+							type="checkbox"
+							id={ fmt.Sprintf("reveal-%s", p.ID) }
+							disabled?={ room.State != game.StatePlaying }
+						/>
+						<div class="collapse-title flex items-center justify-between gap-2">
+							<div class="flex items-center gap-2 flex-wrap">
+								<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID), templ.KV("line-through opacity-50", p.IsEliminated) }>{ p.Name }</span>
+								if p.ID == currentPlayer.ID {
+									<span class="badge badge-primary badge-xs">You</span>
+								}
+								if p.IsEliminated {
+									<span class="badge badge-error badge-xs">Eliminated</span>
+								}
+								if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
+									<span class="badge badge-warning badge-xs">Leader</span>
+								}
+								if p.RoleRevealed && !p.IsEliminated {
+									<span class="badge badge-ghost badge-xs">{ p.Role.Name }</span>
+								}
+								if !p.FaceUp && !p.IsEliminated {
+									<span class="badge badge-neutral badge-xs" title="Card is face down">🃏 Face Down</span>
+								}
+							</div>
+							<!-- Peek button for accessibility -->
+							<label
+								for={ fmt.Sprintf("reveal-%s", p.ID) }
+								class="btn btn-ghost btn-xs"
+								aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
+								title="Click to see role card"
+							>
+								Peek
+							</label>
+						</div>
+						<div id={ fmt.Sprintf("reveal-%s-panel", p.ID) } class="collapse-content">
+							<!-- Show mini card if:
+							     - Player is Leader (always face up)
+							     - Current player viewing their own card
+							     - Card is face up (visible to everyone at the table)
+							     - Current player has Puppet Master vision (can see all face-down cards) -->
+							if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
+							   (p.ID == currentPlayer.ID && p.Role != nil) ||
+							   (p.FaceUp && p.Role != nil) ||
+							   (currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanViewOthersFaceDown && p.Role != nil) {
+								@MiniRoleCard(p.Role)
+							} else {
+								<div class="text-sm opacity-60">Card is face down.</div>
+							}
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</section>
 }
 
 func getRoleClass(roleType string) string {

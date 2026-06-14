@@ -19,6 +19,11 @@ import (
 	"treacherest/internal/views/pages"
 )
 
+const (
+	gameSyncReconnectAfter = 20 * time.Second
+	gameSyncStaleAfter     = 45 * time.Second
+)
+
 // StreamLobby streams lobby updates
 func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
@@ -338,6 +343,7 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 
 	// Track heartbeat count for periodic backup (every 4 heartbeats = 60 seconds)
 	heartbeatCount := 0
+	lastSyncPatchAt := time.Now()
 
 	// Stream updates
 	for {
@@ -360,6 +366,13 @@ func (h *Handler) StreamGame(w http.ResponseWriter, r *http.Request) {
 				log.Printf("📡 Keepalive failed for game room %s: %v - closing connection", roomCode, err)
 				return
 			}
+
+			now := time.Now()
+			if err := h.patchSyncPill(sse, gameSyncPillState(now, lastSyncPatchAt)); err != nil {
+				log.Printf("📡 Sync pill heartbeat failed for game room %s: %v - closing connection", roomCode, err)
+				return
+			}
+			lastSyncPatchAt = now
 
 			// Flush to ensure the comment is sent immediately
 			if flusher, ok := w.(http.Flusher); ok {
@@ -441,6 +454,24 @@ func (h *Handler) clearModalContainer(sse *datastar.ServerSentEventGenerator) {
 	sse.PatchElements("",
 		datastar.WithSelector("#modal-container"),
 		datastar.WithModeInner())
+}
+
+func (h *Handler) patchSyncPill(sse *datastar.ServerSentEventGenerator, state string) error {
+	html := renderToString(components.SyncPill(state))
+	return sse.PatchElements(html,
+		datastar.WithSelector("#sync-pill"))
+}
+
+func gameSyncPillState(now, lastSeen time.Time) string {
+	age := now.Sub(lastSeen)
+	switch {
+	case age >= gameSyncStaleAfter:
+		return "stale"
+	case age >= gameSyncReconnectAfter:
+		return "reconnecting"
+	default:
+		return "live"
+	}
 }
 
 // sendPlayerListUpdate sends only the player list card - minimal update for player join/leave

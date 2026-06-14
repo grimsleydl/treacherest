@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"strings"
 	"testing"
 	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
@@ -139,6 +140,56 @@ func TestGamePage(t *testing.T) {
 			AssertContains("Test Player").
 			AssertContains("Revealed Player").
 			AssertContains("Guardian")
+	})
+
+	t.Run("renders stable player view zones in order", func(t *testing.T) {
+		component := GameBody(room, player)
+		html := renderer.Render(component).GetHTML()
+
+		zoneIDs := []string{
+			`id="zone-status"`,
+			`id="zone-privy"`,
+			`id="zone-notices"`,
+			`id="zone-actions"`,
+			`id="zone-roster"`,
+		}
+
+		lastIndex := -1
+		for _, zoneID := range zoneIDs {
+			index := strings.Index(html, zoneID)
+			if index < 0 {
+				t.Fatalf("expected %s in rendered game body", zoneID)
+			}
+			if index < lastIndex {
+				t.Fatalf("expected %s to render after previous stable zone", zoneID)
+			}
+			lastIndex = index
+		}
+
+		if !strings.Contains(html, `id="zone-notices" aria-live="polite"`) &&
+			!strings.Contains(html, `aria-live="polite" id="zone-notices"`) {
+			t.Fatalf("expected zone-notices to be an aria-live polite region")
+		}
+	})
+
+	t.Run("renders sync pill in status zone", func(t *testing.T) {
+		component := GameBody(room, player)
+		html := renderer.Render(component).GetHTML()
+
+		statusIndex := strings.Index(html, `id="zone-status"`)
+		syncIndex := strings.Index(html, `id="sync-pill"`)
+		if statusIndex < 0 || syncIndex < 0 {
+			t.Fatalf("expected status zone and sync pill in rendered game body")
+		}
+		if syncIndex < statusIndex {
+			t.Fatalf("expected sync pill to render inside or after the status zone starts")
+		}
+		if !strings.Contains(html, `role="status"`) {
+			t.Fatalf("expected sync pill to use role=status")
+		}
+		if !strings.Contains(html, "live") {
+			t.Fatalf("expected default live sync state")
+		}
 	})
 }
 

@@ -1,0 +1,48 @@
+package components
+
+import "strings"
+
+templ SyncPill(state string) {
+	<span
+		id="sync-pill"
+		role="status"
+		aria-label={ "Sync status: " + syncPillLabel(state) }
+		class={ "badge badge-sm gap-2 uppercase tracking-wider", syncPillClass(state) }
+	>
+		<span class={ "inline-block h-2 w-2 rounded-full", syncPillDotClass(state) } aria-hidden="true"></span>
+		{ syncPillLabel(state) }
+	</span>
+}
+
+func syncPillLabel(state string) string {
+	switch strings.ToLower(state) {
+	case "reconnecting":
+		return "reconnecting"
+	case "stale":
+		return "stale"
+	default:
+		return "live"
+	}
+}
+
+func syncPillClass(state string) string {
+	switch syncPillLabel(state) {
+	case "reconnecting":
+		return "badge-warning"
+	case "stale":
+		return "badge-error"
+	default:
+		return "badge-success"
+	}
+}
+
+func syncPillDotClass(state string) string {
+	switch syncPillLabel(state) {
+	case "reconnecting":
+		return "bg-warning-content"
+	case "stale":
+		return "bg-error-content"
+	default:
+		return "bg-success-content"
+	}
+}

@@ -46,6 +46,29 @@ func TestHandler_emitStateBackupUsesLocalOnlySignal(t *testing.T) {
 	}
 }
 
+func TestGameSyncPillState(t *testing.T) {
+	now := time.Date(2026, 6, 14, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		lastSeen time.Time
+		want     string
+	}{
+		{name: "recent heartbeat is live", lastSeen: now.Add(-5 * time.Second), want: "live"},
+		{name: "delayed heartbeat is reconnecting", lastSeen: now.Add(-25 * time.Second), want: "reconnecting"},
+		{name: "old heartbeat is stale", lastSeen: now.Add(-50 * time.Second), want: "stale"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := gameSyncPillState(now, tt.lastSeen)
+			if got != tt.want {
+				t.Fatalf("gameSyncPillState() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestHandler_StreamLobby(t *testing.T) {
 	t.Run("returns 404 for non-existent room", func(t *testing.T) {
 		h := newTestHandler()
@@ -436,6 +459,42 @@ func TestSSEHelpers(t *testing.T) {
 		}
 		if !strings.Contains(body, "game-container") {
 			t.Error("expected game-container selector in response")
+		}
+		for _, zoneID := range []string{"zone-status", "zone-privy", "zone-notices", "zone-actions", "zone-roster"} {
+			if !strings.Contains(body, zoneID) {
+				t.Errorf("expected %s in game patch response", zoneID)
+			}
+		}
+		if strings.Contains(body, "data-init") {
+			t.Errorf("game patch must not reinitialize data-init wrapper: %s", body)
+		}
+		if strings.Contains(body, "/sse/game/") {
+			t.Errorf("game patch must not contain game SSE init action: %s", body)
+		}
+	})
+
+	t.Run("patchSyncPill targets sync pill without game sse wrapper", func(t *testing.T) {
+		h := newTestHandler()
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.Header.Set("Accept", "text/event-stream")
+		sse := datastar.NewSSE(w, req)
+
+		h.patchSyncPill(sse, "live")
+
+		body := w.Body.String()
+		if !strings.Contains(body, "#sync-pill") {
+			t.Fatalf("expected sync pill selector in response, got %q", body)
+		}
+		if !strings.Contains(body, `role="status"`) {
+			t.Fatalf("expected sync pill status role in response, got %q", body)
+		}
+		if strings.Contains(body, "data-init") {
+			t.Fatalf("sync pill heartbeat patch must not reinitialize game SSE wrapper, got %q", body)
+		}
+		if strings.Contains(body, "/sse/game/") {
+			t.Fatalf("sync pill heartbeat patch must not include game SSE init action, got %q", body)
 		}
 	})
 }
