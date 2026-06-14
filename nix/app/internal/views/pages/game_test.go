@@ -683,15 +683,32 @@ func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {
 
 func TestGameBody_CoupInquisitionCallUI(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
-	room, blue, _, _ := makeCoupInquisitionViewRoom()
+	room, blue, _, green := makeCoupInquisitionViewRoom()
 
-	renderer.Render(GameBody(room, blue)).
-		AssertContains("Inquisition").
-		AssertContains("coup-inquisition-form").
-		AssertContains(`@post(&#39;/room/COUPINQ/coup/inquisition/blue&#39;, {contentType: &#39;form&#39;})`).
-		AssertContains(`name="targetID"`).
-		AssertContains("Red Player").
-		AssertContains(`name="currentLife"`)
+	html := renderer.Render(GameBody(room, blue)).GetHTML()
+	privyHTML := extractBetween(t, html, `id="zone-privy"`, `id="zone-notices"`)
+	noticesHTML := extractBetween(t, html, `id="zone-notices"`, `id="zone-actions"`)
+	for _, expected := range []string{
+		"Inquisition",
+		"coup-inquisition-form",
+		`@post(&#39;/room/COUPINQ/coup/inquisition/blue&#39;, {contentType: &#39;form&#39;})`,
+		`name="targetID"`,
+		"Red Player",
+		`name="currentLife"`,
+		"Wrong guess penalty at 40 life: 20 life",
+	} {
+		if !strings.Contains(privyHTML, expected) {
+			t.Fatalf("expected Blue-only Inquisition form detail %q inside privy HTML: %s", expected, privyHTML)
+		}
+	}
+	if strings.Contains(noticesHTML, "coup-inquisition-form") || strings.Contains(noticesHTML, "Call Inquisition") {
+		t.Fatalf("Blue-only Inquisition form should not render in public notices: %s", noticesHTML)
+	}
+
+	greenHTML := renderer.Render(GameBody(room, green)).GetHTML()
+	if strings.Contains(greenHTML, "coup-inquisition-form") || strings.Contains(greenHTML, "Call Inquisition") {
+		t.Fatalf("non-Blue player should not receive Inquisition caller form: %s", greenHTML)
+	}
 }
 
 func TestCoupInquisitionPanel_ExcludesKingFromTargets(t *testing.T) {
@@ -706,7 +723,7 @@ func TestCoupInquisitionPanel_ExcludesKingFromTargets(t *testing.T) {
 	}
 	room.Players[king.ID] = king
 
-	renderer.Render(CoupInquisitionPanel(room, blue)).
+	renderer.Render(CoupInquisitionPrivatePanel(room, blue)).
 		AssertContains(`name="targetID"`).
 		AssertContains("Red Player").
 		AssertContains("Green Player").
@@ -736,6 +753,7 @@ func TestGameBody_CoupInquisitionPendingNoticeHidesResultUntilConfirmed(t *testi
 	}
 
 	renderer.Render(GameBody(room, green)).
+		AssertContains("notice-card").
 		AssertContains("Inquisition Notice").
 		AssertContains("Blue Player named Red Player").
 		AssertContains(`@post(&#39;/room/COUPINQ/coup/inquisition/confirm&#39;)`).
@@ -796,13 +814,65 @@ func TestGameBody_CoupPrivateInquisitionResultOnlyInformsInquisitor(t *testing.T
 		Succeeded: true,
 	}
 
-	renderer.Render(GameBody(room, blue)).
-		AssertContains("Inquisition succeeded").
-		AssertContains("Red Player was Red")
+	blueHTML := renderer.Render(GameBody(room, blue)).GetHTML()
+	bluePrivy := extractBetween(t, blueHTML, `id="zone-privy"`, `id="zone-notices"`)
+	blueNotices := extractBetween(t, blueHTML, `id="zone-notices"`, `id="zone-actions"`)
+	for _, expected := range []string{
+		"Private Inquisition result",
+		"Inquisition succeeded",
+		"Red Player was Red",
+	} {
+		if !strings.Contains(bluePrivy, expected) {
+			t.Fatalf("expected private result detail %q inside inquisitor privy HTML: %s", expected, bluePrivy)
+		}
+	}
+	if strings.Contains(blueNotices, "Red Player was Red") {
+		t.Fatalf("private result detail should not render in public notices: %s", blueNotices)
+	}
+	if !strings.Contains(blueNotices, "Result delivered privately") {
+		t.Fatalf("expected neutral private-result public notice for inquisitor too: %s", blueNotices)
+	}
+
+	greenHTML := renderer.Render(GameBody(room, green)).GetHTML()
+	greenNotices := extractBetween(t, greenHTML, `id="zone-notices"`, `id="zone-actions"`)
+	if !strings.Contains(greenNotices, "Result delivered privately") {
+		t.Fatalf("expected neutral private-result notice for other players: %s", greenNotices)
+	}
+	if strings.Contains(greenHTML, "Red Player was Red") {
+		t.Fatalf("non-inquisitor should not receive private result detail: %s", greenHTML)
+	}
+}
+
+func TestGameBody_CoupPublicInquisitionResultUsesNoticeCard(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room, blue, red, green := makeCoupInquisitionViewRoom()
+	room.CoupInquisitionResultPolicy = game.CoupInquisitionResultPublic
+	room.CoupInquisition = &game.CoupInquisitionState{
+		Attempts: map[string]game.CoupInquisitionAttempt{
+			blue.ID: {
+				InquisitorID: blue.ID,
+				TargetID:     red.ID,
+				CurrentLife:  39,
+				PenaltyLife:  20,
+				Resolved:     true,
+				Success:      true,
+			},
+		},
+		Last: &game.CoupInquisitionAttempt{
+			InquisitorID: blue.ID,
+			TargetID:     red.ID,
+			CurrentLife:  39,
+			PenaltyLife:  20,
+			Resolved:     true,
+			Success:      true,
+		},
+		Succeeded: true,
+	}
 
 	renderer.Render(GameBody(room, green)).
+		AssertContains("notice-card").
 		AssertContains("Inquisition succeeded").
-		AssertNotContains("Red Player was Red").
+		AssertContains("Red Player was Red").
 		AssertNotContains("Red Knight")
 }
 

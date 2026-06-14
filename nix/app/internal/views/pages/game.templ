@@ -83,6 +83,7 @@ templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
 		if currentPlayer.Role != nil {
 			@components.RoleCard(currentPlayer.Role, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
 		}
+		@CoupInquisitionPrivatePanel(room, currentPlayer)
 		<!-- Transformation status display -->
 		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
 			@components.TransformationDisplay(room, currentPlayer)
@@ -247,8 +248,7 @@ templ CoupRoyalGuardPanel(room *game.Room, currentPlayer *game.Player) {
 templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 	if room.RulesMode == game.RulesModeCoup && room.State == game.StatePlaying {
 		if room.CoupInquisition != nil && room.CoupInquisition.Pending != nil {
-			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
-				<h3 class="font-bold text-primary">Inquisition Notice</h3>
+			@components.NoticeCard("info", "Inquisition Notice") {
 				<p class="text-sm text-base-content/80">
 					{ coupPlayerName(room, room.CoupInquisition.Pending.InquisitorID) } named { coupPlayerName(room, room.CoupInquisition.Pending.TargetID) }.
 				</p>
@@ -263,29 +263,41 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 						</button>
 					</div>
 				}
-			</div>
+			}
 		}
 		if room.CoupInquisition != nil && room.CoupInquisition.Last != nil {
-			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
-				<h3 class="font-bold text-primary">Inquisition Result</h3>
-				if room.CoupInquisition.Last.Success {
-					if game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic {
+			if room.CoupInquisition.Last.Success {
+				if game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic {
+					@components.NoticeCard("success", "Inquisition Result") {
 						<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
-					} else if currentPlayer.ID == room.CoupInquisition.Last.InquisitorID {
-						<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red.</p>
-					} else {
-						<p class="text-sm text-success">Inquisition succeeded. The result was shown privately to the inquisitor.</p>
 					}
 				} else {
+					@components.NoticeCard("success", "Inquisition Result") {
+						<p class="text-sm text-success">Result delivered privately to the inquisitor.</p>
+					}
+				}
+			} else {
+				@components.NoticeCard("error", "Inquisition Result") {
 					<p class="text-sm text-error">Inquisition failed. { coupPlayerName(room, room.CoupInquisition.Last.InquisitorID) } should lose { fmt.Sprintf("%d", room.CoupInquisition.Last.PenaltyLife) } life.</p>
 				}
-			</div>
+			}
 		}
-		if currentPlayer.Role != nil &&
-			currentPlayer.Role.GetRoleType() == game.RoleBlueKnight &&
-			!currentPlayer.IsEliminated &&
-			!coupHasCalledInquisition(room, currentPlayer.ID) &&
-			(room.CoupInquisition == nil || room.CoupInquisition.Pending == nil) {
+	}
+}
+
+templ CoupInquisitionPrivatePanel(room *game.Room, currentPlayer *game.Player) {
+	if room.RulesMode == game.RulesModeCoup && room.State == game.StatePlaying {
+		if room.CoupInquisition != nil &&
+			room.CoupInquisition.Last != nil &&
+			room.CoupInquisition.Last.Success &&
+			currentPlayer != nil &&
+			game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate &&
+			currentPlayer.ID == room.CoupInquisition.Last.InquisitorID {
+			@components.NoticeCard("success", "Private Inquisition result") {
+				<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red.</p>
+			}
+		}
+		if coupCanCallInquisition(room, currentPlayer) {
 			<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
 				<h3 class="font-bold text-primary">Inquisition</h3>
 				<form
@@ -305,6 +317,10 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 						<span class="label-text">Current life total</span>
 						<input name="currentLife" type="number" min="0" value="40" class="input input-bordered input-sm w-full"/>
 					</label>
+					<p class="text-xs text-base-content/70">
+						Wrong guess penalty at 40 life: { fmt.Sprintf("%d", game.CoupInquisitionPenalty(40)) } life.
+						The server recalculates this from the submitted current life.
+					</p>
 					<button class="btn btn-sm btn-outline btn-primary" type="submit">
 						Call Inquisition
 					</button>
@@ -438,6 +454,16 @@ func coupHasCalledInquisition(room *game.Room, playerID string) bool {
 	}
 	_, ok := room.CoupInquisition.Attempts[playerID]
 	return ok
+}
+
+func coupCanCallInquisition(room *game.Room, currentPlayer *game.Player) bool {
+	return room != nil &&
+		currentPlayer != nil &&
+		currentPlayer.Role != nil &&
+		currentPlayer.Role.GetRoleType() == game.RoleBlueKnight &&
+		!currentPlayer.IsEliminated &&
+		!coupHasCalledInquisition(room, currentPlayer.ID) &&
+		(room.CoupInquisition == nil || room.CoupInquisition.Pending == nil)
 }
 
 func coupCanConfirmInquisition(room *game.Room, currentPlayer *game.Player) bool {
