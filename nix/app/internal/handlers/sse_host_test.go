@@ -82,6 +82,7 @@ func TestStreamHost(t *testing.T) {
 	messageCount := 0
 	hasQRCode := false
 	hasFragment := false
+	hasDataInitWrapper := false
 
 	for msg := range sseMessages {
 		messageCount++
@@ -91,6 +92,9 @@ func TestStreamHost(t *testing.T) {
 		if strings.Contains(msg, "host-dashboard-container") {
 			hasFragment = true
 		}
+		if strings.Contains(msg, "data-init") {
+			hasDataInitWrapper = true
+		}
 		if messageCount >= 10 { // Prevent infinite loop
 			break
 		}
@@ -99,6 +103,7 @@ func TestStreamHost(t *testing.T) {
 	// Verify we got both QR code signal and dashboard fragment
 	assert.True(t, hasQRCode, "Should have received QR code signal")
 	assert.True(t, hasFragment, "Should have received dashboard fragment")
+	assert.False(t, hasDataInitWrapper, "Host dashboard SSE fragments must not reinitialize the data-init wrapper")
 }
 
 // TestStreamHostUnauthorized tests unauthorized access to host SSE

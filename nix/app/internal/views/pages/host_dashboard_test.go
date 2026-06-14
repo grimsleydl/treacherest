@@ -1,13 +1,14 @@
 package pages
 
 import (
+	"strings"
 	"testing"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
 )
 
-func TestHostDashboardPlaying_CoupModeratorControls(t *testing.T) {
+func TestHostDashboardPlaying_PublicStateBoard(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 
 	room := &game.Room{
@@ -28,16 +29,85 @@ func TestHostDashboardPlaying_CoupModeratorControls(t *testing.T) {
 		RoleRevealed: false,
 		FaceUp:       false,
 	}
+	hidden.Role.Rulings = []string{"Private information: Red is Red Player"}
+	revealed := &game.Player{
+		ID:           "p2",
+		Name:         "Red Player",
+		Role:         mockCoupCard(1004, "Red Knight"),
+		RoleRevealed: true,
+		FaceUp:       true,
+	}
 	room.Players[host.ID] = host
 	room.Players[hidden.ID] = hidden
+	room.Players[revealed.ID] = revealed
+
+	html := renderer.Render(HostDashboardPlaying(room, host)).GetHTML()
+	for _, expected := range []string{
+		`id="operator-live-dashboard"`,
+		`id="operator-live-board"`,
+		`id="operator-tile-p1"`,
+		`id="operator-tile-p2"`,
+		"Roles stay hidden from the Room Operator until they are public.",
+		"Blue Player",
+		"Red Player",
+		"Presence: seat active",
+		"Face Down",
+		"Revealed: Red Knight",
+		"Record Reveal",
+		`@post(&#39;/room/HOST1/reveal/p1&#39;)`,
+		"Record Elimination",
+		`@post(&#39;/room/HOST1/player/p1/eliminate&#39;)`,
+		"overflow-x-auto",
+		"min-w-64",
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected live operator dashboard to contain %q in %s", expected, html)
+		}
+	}
+	for _, forbidden := range []string{
+		"Blue Knight",
+		"Private information:",
+		"onclick=",
+		"confirm(",
+	} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("live operator dashboard rendered forbidden private/browser-confirm content %q in %s", forbidden, html)
+		}
+	}
+}
+
+func TestHostDashboardPlaying_PublicCoupFacts(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:                            "FACTS",
+		State:                           game.StatePlaying,
+		RulesMode:                       game.RulesModeCoup,
+		CoupKingFallen:                  true,
+		CoupGreenEligibleBeforeKingFall: true,
+		CoupInquisition: &game.CoupInquisitionState{
+			Succeeded: true,
+			Last: &game.CoupInquisitionAttempt{
+				InquisitorID: "blue",
+				TargetID:     "red",
+				Success:      true,
+			},
+		},
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	blue := &game.Player{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")}
+	red := &game.Player{ID: "red", Name: "Red Player", Role: mockCoupCard(1004, "Red Knight")}
+	room.Players[host.ID] = host
+	room.Players[blue.ID] = blue
+	room.Players[red.ID] = red
 
 	renderer.Render(HostDashboardPlaying(room, host)).
-		AssertContains("Blue Player").
-		AssertContains("Record Reveal").
-		AssertContains(`@post(&#39;/room/HOST1/reveal/p1&#39;)`).
-		AssertContains("Record Elimination").
-		AssertContains(`@post(&#39;/room/HOST1/player/p1/eliminate&#39;)`).
-		AssertNotContains("Blue Knight")
+		AssertContains("Public Coup facts").
+		AssertContains("King fallen: yes").
+		AssertContains("Green lock: eligible before King fall").
+		AssertContains("Inquisition: succeeded").
+		AssertNotContains("Blue Knight").
+		AssertNotContains("Red Knight")
 }
 
 func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
