@@ -3,6 +3,7 @@ package pages
 import (
 	"strings"
 	"testing"
+	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
 )
@@ -375,6 +376,15 @@ func extractBetween(t *testing.T, html, startMarker, endMarker string) string {
 	return html[start : start+end]
 }
 
+func extractAfter(t *testing.T, html, startMarker string) string {
+	t.Helper()
+	start := strings.Index(html, startMarker)
+	if start < 0 {
+		t.Fatalf("expected start marker %q in HTML", startMarker)
+	}
+	return html[start:]
+}
+
 func TestGameBody_CoupPrivacy(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 
@@ -432,10 +442,104 @@ func TestGameBody_CoupPrivacy(t *testing.T) {
 		AssertContains("Publicly Reveal Role").
 		AssertContains(`@post(&#39;/room/COUP1/reveal/p2&#39;)`).
 		AssertContains("King Player").
-		AssertContains(`alt="King"`).
+		AssertContains("Revealed: King").
 		AssertNotContains("Black Knight").
 		AssertNotContains("Red Knight").
 		AssertNotContains("Green Knight")
+}
+
+func TestGameRosterZone_UsesStablePublicPlayerRows(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "ROWS2",
+		State:      game.StatePlaying,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 4,
+	}
+	viewer := &game.Player{
+		ID:       "viewer",
+		Name:     "Viewer",
+		Role:     mockGuardianCard(),
+		JoinedAt: time.Unix(1, 0),
+	}
+	hidden := &game.Player{
+		ID:       "hidden",
+		Name:     "Hidden Player",
+		Role:     playerRosterHiddenCard(),
+		FaceUp:   false,
+		JoinedAt: time.Unix(2, 0),
+	}
+	revealed := &game.Player{
+		ID:           "revealed",
+		Name:         "Revealed Player",
+		Role:         mockGuardianCard(),
+		RoleRevealed: true,
+		JoinedAt:     time.Unix(3, 0),
+	}
+	eliminated := &game.Player{
+		ID:           "eliminated",
+		Name:         "Eliminated Player",
+		Role:         mockAssassinCard(),
+		RoleRevealed: true,
+		IsEliminated: true,
+		JoinedAt:     time.Unix(4, 0),
+	}
+	for _, player := range []*game.Player{revealed, eliminated, hidden, viewer} {
+		room.Players[player.ID] = player
+	}
+
+	html := renderer.Render(GameBody(room, viewer)).GetHTML()
+	rosterHTML := extractAfter(t, html, `id="zone-roster"`)
+
+	rowIDs := []string{
+		`id="player-row-viewer"`,
+		`id="player-row-hidden"`,
+		`id="player-row-revealed"`,
+		`id="player-row-eliminated"`,
+	}
+	lastIndex := -1
+	for _, rowID := range rowIDs {
+		index := strings.Index(rosterHTML, rowID)
+		if index < 0 {
+			t.Fatalf("expected stable row id %s in %s", rowID, rosterHTML)
+		}
+		if index < lastIndex {
+			t.Fatalf("expected roster rows to follow join order in %s", rosterHTML)
+		}
+		lastIndex = index
+	}
+
+	for _, expected := range []string{
+		"You",
+		"Face Down",
+		"Card is face down.",
+		"Revealed: Test Guardian",
+		"Eliminated",
+		"opacity-60",
+	} {
+		if !strings.Contains(rosterHTML, expected) {
+			t.Fatalf("expected %q in roster HTML: %s", expected, rosterHTML)
+		}
+	}
+
+	for _, forbidden := range []string{
+		"collapse collapse-arrow",
+		`type="checkbox"`,
+		"line-through",
+		"Hidden Assassin",
+		"Hidden Assassin Secret Text",
+	} {
+		if strings.Contains(rosterHTML, forbidden) {
+			t.Fatalf("did not expect %q in roster HTML: %s", forbidden, rosterHTML)
+		}
+	}
+}
+
+func playerRosterHiddenCard() *game.Card {
+	card := mockAssassinCard()
+	card.Name = "Hidden Assassin"
+	card.Text = "Hidden Assassin Secret Text"
+	return card
 }
 
 func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {

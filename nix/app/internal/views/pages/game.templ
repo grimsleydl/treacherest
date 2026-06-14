@@ -166,61 +166,14 @@ templ GameActionsZone(room *game.Room, currentPlayer *game.Player) {
 
 templ GameRosterZone(room *game.Room, currentPlayer *game.Player) {
 	<section id="zone-roster" class="w-full max-w-md">
-		<div class="card bg-base-200 shadow-lg p-6 max-w-md w-full">
-			<h2 class="text-xl font-bold mb-4 text-primary">Players</h2>
-			<div class="join join-vertical w-full">
+		<div class="card bg-base-200 shadow-lg p-4 max-w-md w-full">
+			<div class="mb-4 flex items-center justify-between gap-3">
+				<h2 class="text-xl font-bold text-primary">Players</h2>
+				<p class="text-xs text-base-content/60">{ fmt.Sprintf("%d alive · %d fallen", len(room.GetLivingPlayers()), len(room.GetActivePlayers())-len(room.GetLivingPlayers())) }</p>
+			</div>
+			<div class="space-y-2">
 				for _, p := range room.GetActivePlayers() {
-					<div class="collapse collapse-arrow join-item border border-base-300">
-						<input
-							type="checkbox"
-							id={ fmt.Sprintf("reveal-%s", p.ID) }
-							disabled?={ room.State != game.StatePlaying }
-						/>
-						<div class="collapse-title flex items-center justify-between gap-2">
-							<div class="flex items-center gap-2 flex-wrap">
-								<span class={ templ.KV("font-bold", p.ID == currentPlayer.ID), templ.KV("line-through opacity-50", p.IsEliminated) }>{ p.Name }</span>
-								if p.ID == currentPlayer.ID {
-									<span class="badge badge-primary badge-xs">You</span>
-								}
-								if p.IsEliminated {
-									<span class="badge badge-error badge-xs">Eliminated</span>
-								}
-								if p.Role != nil && p.Role.GetRoleType() == game.RoleLeader {
-									<span class="badge badge-warning badge-xs">Leader</span>
-								}
-								if p.RoleRevealed && !p.IsEliminated {
-									<span class="badge badge-ghost badge-xs">{ p.Role.Name }</span>
-								}
-								if !p.FaceUp && !p.IsEliminated {
-									<span class="badge badge-neutral badge-xs" title="Card is face down">🃏 Face Down</span>
-								}
-							</div>
-							<!-- Peek button for accessibility -->
-							<label
-								for={ fmt.Sprintf("reveal-%s", p.ID) }
-								class="btn btn-ghost btn-xs"
-								aria-controls={ fmt.Sprintf("reveal-%s-panel", p.ID) }
-								title="Click to see role card"
-							>
-								Peek
-							</label>
-						</div>
-						<div id={ fmt.Sprintf("reveal-%s-panel", p.ID) } class="collapse-content">
-							<!-- Show mini card if:
-							     - Player is Leader (always face up)
-							     - Current player viewing their own card
-							     - Card is face up (visible to everyone at the table)
-							     - Current player has Puppet Master vision (can see all face-down cards) -->
-							if (p.Role != nil && p.Role.GetRoleType() == game.RoleLeader) ||
-							   (p.ID == currentPlayer.ID && p.Role != nil) ||
-							   (p.FaceUp && p.Role != nil) ||
-							   (currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanViewOthersFaceDown && p.Role != nil) {
-								@MiniRoleCard(p.Role)
-							} else {
-								<div class="text-sm opacity-60">Card is face down.</div>
-							}
-						</div>
-					</div>
+					@components.PlayerRow(room, p, currentPlayer)
 				}
 			</div>
 		</div>

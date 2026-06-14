@@ -1,0 +1,26 @@
+package components
+
+templ StateChip(kind string, label string) {
+	<span class={ "state-chip badge badge-xs font-bold uppercase tracking-[0.12em]", stateChipClass(kind) }>
+		{ label }
+	</span>
+}
+
+func stateChipClass(kind string) string {
+	switch kind {
+	case "you":
+		return "badge-primary"
+	case "operator":
+		return "badge-primary badge-outline"
+	case "leader":
+		return "badge-warning"
+	case "revealed":
+		return "badge-neutral badge-outline"
+	case "facedown":
+		return "badge-ghost"
+	case "eliminated":
+		return "badge-error badge-outline"
+	default:
+		return "badge-ghost"
+	}
+}

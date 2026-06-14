@@ -1,0 +1,64 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
+	<div id={ fmt.Sprintf("player-row-%s", player.ID) } class={ "player-row rounded-box border border-base-300 bg-base-100", templ.KV("opacity-60", player.IsEliminated) }>
+		<details class="group" data-preserve-attr="open">
+			<summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2">
+				<div class="min-w-0">
+					<p class="truncate font-semibold">{ player.Name }</p>
+					<div class="mt-1 flex flex-wrap gap-1">
+						if viewer != nil && player.ID == viewer.ID {
+							@StateChip("you", "You")
+						}
+						if player.IsHost {
+							@StateChip("operator", "Operator")
+						}
+						if player.Role != nil && player.Role.GetRoleType() == game.RoleLeader {
+							@StateChip("leader", "Leader")
+						}
+						if playerRowPublicRoleVisible(player) {
+							@StateChip("revealed", "Revealed: "+player.Role.Name)
+						} else if !player.FaceUp && !player.IsEliminated {
+							@StateChip("facedown", "Face Down")
+						}
+						if player.IsEliminated {
+							@StateChip("eliminated", "Eliminated")
+						}
+					</div>
+				</div>
+				<span class="btn btn-ghost btn-xs">Details</span>
+			</summary>
+			<div class="border-t border-base-300 px-3 py-3 text-sm">
+				if playerRowPublicRoleVisible(player) {
+					@playerRowPublicRole(player.Role)
+				} else {
+					<p class="text-base-content/60">Card is face down.</p>
+				}
+			</div>
+		</details>
+	</div>
+}
+
+templ playerRowPublicRole(card *game.Card) {
+	<div class="space-y-2 rounded-box bg-base-200 p-3">
+		<p class="font-semibold">{ card.Name }</p>
+		<p class="text-xs"><strong>Win Condition:</strong> { card.GetWinCondition() }</p>
+		if card.Text != "" {
+			<div class="text-xs text-base-content/80">
+				@RoleCardText(card.Text)
+			</div>
+		}
+	</div>
+}
+
+func playerRowPublicRoleVisible(player *game.Player) bool {
+	if player == nil || player.Role == nil {
+		return false
+	}
+	return player.Role.GetRoleType() == game.RoleLeader || player.RoleRevealed || player.FaceUp
+}
