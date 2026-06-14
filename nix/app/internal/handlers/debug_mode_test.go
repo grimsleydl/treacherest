@@ -925,10 +925,10 @@ func TestDebugModeRoutes_ViewAsPlayerPersistsAcrossLobbyReload(t *testing.T) {
 		t.Fatalf("expected lobby reload status 200, got %d body %q", w.Code, w.Body.String())
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "Game Lobby") || !strings.Contains(body, "Player One") {
+	if !strings.Contains(body, `id="player-lobby"`) || !strings.Contains(body, "Player One") {
 		t.Fatalf("expected viewed player's lobby perspective, got %q", body)
 	}
-	if !strings.Contains(body, `<span class="badge badge-primary badge-sm">You</span>`) {
+	if !strings.Contains(body, `state-chip`) || !strings.Contains(body, `>You</span>`) {
 		t.Fatalf("expected viewed player to be marked as current player, got %q", body)
 	}
 	if strings.Contains(body, `id="coup-preset-form"`) || strings.Contains(body, `@post(&#39;/room/`+room.Code+`/start&#39;)`) {
@@ -1021,7 +1021,7 @@ func TestDebugModeRoutes_EliminatedViewedPlayerRemainsValid(t *testing.T) {
 		t.Fatalf("expected game reload status 200, got %d body %q", w.Code, w.Body.String())
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "Green Knight") || !strings.Contains(body, "You have been eliminated") {
+	if !strings.Contains(body, "Green Knight") || !strings.Contains(body, "You are out of the game") {
 		t.Fatalf("expected eliminated player's normal perspective, got %q", body)
 	}
 

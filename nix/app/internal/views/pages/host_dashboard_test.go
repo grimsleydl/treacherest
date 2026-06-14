@@ -185,20 +185,47 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
-	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
-		AssertContains(`id="debug-control-surface"`).
-		AssertContains("Debug Control Surface").
-		AssertContains(`id="debug-persistence-controls"`).
-		AssertContains(`id="debug-start-override-controls"`).
-		AssertContains(`id="debug-start-with-debug-players"`).
-		AssertContains(`@post(&#39;/room/DEBUG/debug/start-with-debug-players&#39;)`).
-		AssertContains(`id="debug-start-as-is"`).
-		AssertContains(`@post(&#39;/room/DEBUG/debug/start-as-is&#39;)`).
-		AssertContains(`id="debug-insights-container"`).
-		AssertContains(`id="debug-view-as-player-container"`).
-		AssertContains(`id="debug-dump"`).
-		AssertContains(`id="debug-clear"`).
-		AssertContains(`id="debug-restore"`)
+	html := renderer.Render(HostDashboardLobby(room, host, cfg, nil)).GetHTML()
+	for _, expected := range []string{
+		`id="debug-control-surface"`,
+		"DEBUG BUILD",
+		"Debug Control Surface",
+		"right-4",
+		"inset-y-4",
+		"border-dashed",
+		`data-signals="{_showDebugSpoilers: false}"`,
+		`id="debug-show-hidden-roles"`,
+		"Show hidden roles",
+		`id="debug-view-as-player-container"`,
+		`id="debug-start-override-controls"`,
+		`id="debug-start-with-debug-players"`,
+		`@post(&#39;/room/DEBUG/debug/start-with-debug-players&#39;)`,
+		`id="debug-start-as-is"`,
+		`@post(&#39;/room/DEBUG/debug/start-as-is&#39;)`,
+		`id="debug-insights-container"`,
+		`id="debug-persistence-controls"`,
+		`id="debug-dump"`,
+		`id="debug-clear"`,
+		"_debugClearRoom",
+		`@post(&#39;/room/DEBUG/debug/clear&#39;)`,
+		`id="debug-restore"`,
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected debug surface shell detail %q in HTML: %s", expected, html)
+		}
+	}
+	if strings.Contains(html, "confirm(\"Clear room") {
+		t.Fatalf("debug clear should not use browser confirm: %s", html)
+	}
+	viewAsIndex := strings.Index(html, `id="debug-view-as-player-container"`)
+	insightsIndex := strings.Index(html, `id="debug-insights-container"`)
+	persistenceIndex := strings.Index(html, `id="debug-persistence-controls"`)
+	if viewAsIndex < 0 || insightsIndex < 0 || persistenceIndex < 0 {
+		t.Fatalf("expected debug sections in HTML: %s", html)
+	}
+	if !(viewAsIndex < insightsIndex && insightsIndex < persistenceIndex) {
+		t.Fatalf("expected View As before insights and persistence last; indexes viewAs=%d insights=%d persistence=%d", viewAsIndex, insightsIndex, persistenceIndex)
+	}
 }
 
 func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
@@ -496,20 +523,21 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Coup Preset: coup-5").
 		AssertContains("Debug Start: as-is").
 		AssertContains("King Player").
-		AssertContains("Role: King").
+		AssertContains("Role:").
+		AssertContains("Hidden role").
 		AssertContains("Revealed: yes").
 		AssertContains("Black Player").
 		AssertContains("Eliminated: yes").
 		AssertContains("Debug Player 1").
 		AssertContains("Debug Player: yes").
-		AssertContains("Private information: Blue Knights: Blue Player").
+		AssertContains("Private information hidden").
 		AssertContains("King Fallen: yes").
 		AssertContains("Green Red-Share Lock: eligible").
 		AssertContains("Inquisition: succeeded").
 		AssertContains("Advisory Win: black")
 }
 
-func TestHostDashboardLobby_DebugInsightsAreRoleColoredAndClickable(t *testing.T) {
+func TestHostDashboardLobby_DebugInsightsAreRedactedRoleColoredAndClickable(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
 		Code:                "DBG10",
@@ -537,19 +565,36 @@ func TestHostDashboardLobby_DebugInsightsAreRoleColoredAndClickable(t *testing.T
 	cfg := config.DefaultConfig()
 	cfg.Server.DebugModeEnabled = true
 
-	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
-		AssertContains(`data-debug-role-accent="gold"`).
-		AssertContains(`data-debug-role-accent="blue"`).
-		AssertContains(`data-debug-role-accent="black"`).
-		AssertContains(`data-debug-role-accent="red"`).
-		AssertContains(`data-debug-role-accent="green"`).
-		AssertContains(`data-debug-role-accent="gray"`).
-		AssertContains(`id="debug-insight-player-debug-1"`).
-		AssertContains(`data-debug-viewed-player="true"`).
-		AssertContains("Debug Player 1").
-		AssertContains("Debug Player: yes").
-		AssertContains(`fetch(&#39;/room/DBG10/debug/view-as/blue&#39;`).
-		AssertContains(`fetch(&#39;/room/DBG10/debug/view-as/debug-1&#39;`)
+	html := renderer.Render(HostDashboardLobby(room, host, cfg, nil)).GetHTML()
+	for _, expected := range []string{
+		`data-debug-spoiler="role"`,
+		`data-debug-role-accent="gold"`,
+		`data-debug-role-accent="blue"`,
+		`data-debug-role-accent="black"`,
+		`data-debug-role-accent="red"`,
+		`data-debug-role-accent="green"`,
+		`data-debug-role-accent="gray"`,
+		`data-class:hidden="!$_showDebugSpoilers"`,
+		`id="debug-insight-player-debug-1"`,
+		`data-debug-viewed-player="true"`,
+		"Debug Player 1",
+		"Debug Player: yes",
+		`fetch(&#39;/room/DBG10/debug/view-as/blue&#39;`,
+		`fetch(&#39;/room/DBG10/debug/view-as/debug-1&#39;`,
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected debug insight detail %q in HTML: %s", expected, html)
+		}
+	}
+	for _, forbidden := range []string{
+		"Role: King",
+		"Role: Blue Knight",
+		"border-color:#",
+	} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("expected hidden role/color detail %q to be suppressed by default: %s", forbidden, html)
+		}
+	}
 }
 
 func TestHostDashboardLobby_DebugInsightsDoNotLeakToNonOperator(t *testing.T) {

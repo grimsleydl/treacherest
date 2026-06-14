@@ -205,12 +205,16 @@ templ baseLayout(title string, debugMode bool, debugRoomCode string, debugRoom *
 templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 	<div
 		id="debug-control-surface"
-		class="fixed bottom-4 right-4 w-80 max-w-[calc(100vw-2rem)] p-4 bg-base-300 rounded-lg shadow-lg border border-warning"
+		class="fixed inset-y-4 right-4 w-96 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border-2 border-dashed border-error bg-base-100/95 p-4 shadow-2xl"
 		style="z-index: 99999;"
 		data-debug-panel-minimized="false"
+		data-signals="{_showDebugSpoilers: false}"
 	>
 		<div class="flex items-center justify-between gap-2 mb-3">
-			<h2 class="text-sm font-bold">Debug Control Surface</h2>
+			<div>
+				<div class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-error">DEBUG BUILD</div>
+				<h2 class="text-sm font-bold">Debug Control Surface</h2>
+			</div>
 			<div class="flex items-center gap-2">
 				<button
 					id="debug-panel-toggle"
@@ -229,17 +233,21 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 		</div>
 		<div id="debug-panel" class="space-y-3">
 			if debugPanelShowsOperatorControls(room, viewer) {
-				<section id="debug-persistence-controls" class="space-y-2">
-					<div class="flex items-center justify-between gap-2">
-						<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
-						<div id="debug-info" class="text-xs text-base-content/70">Loading...</div>
-					</div>
-					<div class="flex flex-col gap-2">
-						<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
-						<button id="debug-clear" class="btn btn-xs btn-error">Clear Room</button>
-						<button id="debug-restore" class="btn btn-xs btn-success">Restore from Backup</button>
-					</div>
+				<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
+					if room != nil {
+						@components.DebugViewAsPlayerSelector(room, roomCode)
+					}
 				</section>
+				<label class="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200 p-2 text-xs">
+					<span class="font-semibold uppercase text-base-content/70">Show hidden roles</span>
+					<input
+						id="debug-show-hidden-roles"
+						type="checkbox"
+						class="toggle toggle-warning toggle-sm"
+						data-on:change="$_showDebugSpoilers = evt.target.checked"
+						data-attr:checked="$_showDebugSpoilers"
+					/>
+				</label>
 				<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls">
 					if roomCode != "" {
 						<button
@@ -263,10 +271,16 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 						@DebugInsights(room, roomCode)
 					}
 				</section>
-				<section id="debug-view-as-player-container" class="space-y-2" aria-label="Debug view as player">
-					if room != nil {
-						@components.DebugViewAsPlayerSelector(room, roomCode)
-					}
+				<section id="debug-persistence-controls" class="space-y-2 border-t border-base-300 pt-3 opacity-80">
+					<div class="flex items-center justify-between gap-2">
+						<h3 class="text-xs font-semibold uppercase text-base-content/70">Persistence</h3>
+						<div id="debug-info" class="text-xs text-base-content/70">Loading...</div>
+					</div>
+					<div class="flex flex-col gap-2">
+						<button id="debug-dump" class="btn btn-xs btn-outline">Dump Backup</button>
+						@DebugClearButton(roomCode)
+						<button id="debug-restore" class="btn btn-xs btn-outline">Restore from Backup</button>
+					</div>
 				</section>
 			} else {
 				<section id="debug-player-context" class="space-y-2 text-xs">
@@ -308,7 +322,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 				const minimizedPanel = document.getElementById("debug-panel-minimized");
 				const panelToggleBtn = document.getElementById("debug-panel-toggle");
 				const dumpBtn = document.getElementById("debug-dump");
-				const clearBtn = document.getElementById("debug-clear");
 				const restoreBtn = document.getElementById("debug-restore");
 
 				function setDebugPanelMinimized(minimized) {
@@ -351,19 +364,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 						try {
 							console.log("Parsed:", JSON.parse(currentBackup));
 						} catch (e) {}
-					};
-				}
-
-				if (clearBtn) {
-					clearBtn.onclick = async () => {
-						if (!confirm("Clear room from server? (You can restore after)"))
-							return;
-						const resp = await fetch("/room/" + roomCode + "/debug/clear", {
-							method: "POST",
-						});
-						if (resp.ok)
-							alert("Room cleared! Click Restore to restore from backup.");
-						else alert("Failed: " + (await resp.text()));
 					};
 				}
 
@@ -427,6 +427,24 @@ func debugViewerName(viewer *game.Player) string {
 	return viewer.Name
 }
 
+templ DebugClearButton(roomCode string) {
+	<button
+		id="debug-clear"
+		type="button"
+		class="btn btn-xs min-h-8 btn-outline btn-error"
+		data-signals="{_debugClearRoom: false}"
+		data-class:btn-error="$_debugClearRoom"
+		data-on:click={ "$_debugClearRoom ? @post('/room/" + roomCode + "/debug/clear') : ($_debugClearRoom = true)" }
+		data-on:click__outside="$_debugClearRoom = false"
+		data-on:interval__duration.3s="$_debugClearRoom = false"
+		data-text="$_debugClearRoom ? 'Confirm Clear Room' : 'Clear Room'"
+		data-attr:aria-label="$_debugClearRoom ? 'Confirm Clear Room' : 'Clear Room'"
+		aria-label="Clear Room"
+	>
+		Clear Room
+	</button>
+}
+
 templ DebugInsights(room *game.Room, roomCode string) {
 	<div class="space-y-2 text-xs">
 		<h3 class="font-semibold uppercase text-base-content/70">Debug Insights</h3>
@@ -441,19 +459,20 @@ templ DebugInsights(room *game.Room, roomCode string) {
 					id={ debugInsightPlayerElementID(player) }
 					type="button"
 					class={ debugInsightPlayerClass(room, player) }
-					style={ debugRoleAccentStyle(player) }
-					data-debug-role-accent={ debugRoleAccent(player) }
 					data-debug-viewed-player={ debugTrueFalse(player.ID == room.DebugViewedPlayerID) }
 					data-on:click={ debugViewAsPlayerButtonAction(roomCode, player.ID) }
 				>
 					<div class="font-semibold">{ player.Name }</div>
-					<div>Role: { debugRoleName(player) }</div>
+					<div class="flex items-center gap-2">
+						<span>Role:</span>
+						@DebugRoleSpoiler(player)
+					</div>
 					<div>Revealed: { debugBool(player.RoleRevealed) }</div>
 					<div>Eliminated: { debugBool(player.IsEliminated) }</div>
 					<div>Debug Player: { debugBool(player.IsDebug) }</div>
 					if player.Role != nil {
 						for _, ruling := range debugPrivateRulings(player.Role) {
-							<div>{ ruling }</div>
+							@DebugPrivateSpoiler(ruling)
 						}
 					}
 				</button>
@@ -465,6 +484,33 @@ templ DebugInsights(room *game.Room, roomCode string) {
 			<div>Inquisition: { debugCoupInquisitionStatus(room) }</div>
 			<div>Advisory Win: { debugCoupAdvisoryWin(room) }</div>
 		}
+	</div>
+}
+
+templ DebugRoleSpoiler(player *game.Player) {
+	<span data-debug-spoiler="role" data-debug-spoiler-text={ debugRoleName(player) }>
+		<span data-class:hidden="$_showDebugSpoilers" class="inline-flex rounded bg-base-content/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]">
+			Hidden role
+		</span>
+		<span data-class:hidden="!$_showDebugSpoilers" class="hidden">
+			{ debugRoleName(player) }
+		</span>
+	</span>
+	if debugRoleAccent(player) != "none" {
+		<span
+			data-debug-role-accent={ debugRoleAccent(player) }
+			data-class:hidden="!$_showDebugSpoilers"
+			class={ "hidden badge badge-xs", debugRoleAccentClass(player) }
+		>
+			{ debugRoleAccent(player) }
+		</span>
+	}
+}
+
+templ DebugPrivateSpoiler(ruling string) {
+	<div data-debug-spoiler="private-ruling" data-debug-spoiler-text={ ruling }>
+		<span data-class:hidden="$_showDebugSpoilers" class="italic text-base-content/60">Private information hidden</span>
+		<span data-class:hidden="!$_showDebugSpoilers" class="hidden">{ ruling }</span>
 	</div>
 }
 
@@ -520,20 +566,20 @@ func debugRoleAccent(player *game.Player) string {
 	}
 }
 
-func debugRoleAccentStyle(player *game.Player) string {
+func debugRoleAccentClass(player *game.Player) string {
 	switch debugRoleAccent(player) {
 	case "gold":
-		return "border-color:#d4af37;background:rgba(212,175,55,0.16);"
+		return "badge-warning"
 	case "blue":
-		return "border-color:#3b82f6;background:rgba(59,130,246,0.14);"
+		return "badge-info"
 	case "black":
-		return "border-color:#111827;background:rgba(17,24,39,0.18);"
+		return "badge-neutral"
 	case "red":
-		return "border-color:#ef4444;background:rgba(239,68,68,0.14);"
+		return "badge-error"
 	case "green":
-		return "border-color:#22c55e;background:rgba(34,197,94,0.14);"
+		return "badge-success"
 	case "gray":
-		return "border-color:#6b7280;background:rgba(107,114,128,0.14);"
+		return "badge-ghost"
 	default:
 		return ""
 	}
