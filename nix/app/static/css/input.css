@@ -131,6 +131,36 @@
     border-radius: var(--radius-box);
   }
 
+  .privy-content {
+    opacity: 0;
+    filter: blur(10px);
+    pointer-events: none;
+    transition: opacity 180ms ease, filter 180ms ease;
+  }
+
+  .privy.is-showing .privy-content {
+    opacity: 1;
+    filter: none;
+    pointer-events: auto;
+  }
+
+  .privy-veil {
+    transition: opacity 180ms ease;
+  }
+
+  .privy.is-showing .privy-veil {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .privy-content,
+    .privy-veil {
+      transition: opacity 150ms ease;
+      filter: none;
+    }
+  }
+
   /* Temporary compatibility classes during migration */
   .player-card-compat {
     @apply p-3 bg-base-200 rounded;

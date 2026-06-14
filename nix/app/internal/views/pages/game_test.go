@@ -301,6 +301,78 @@ func TestGameBody(t *testing.T) {
 			AssertContains("card").
 			AssertContains("border-error") // Assassin border
 	})
+
+	t.Run("renders private role in concealed privy panel with local controls", func(t *testing.T) {
+		component := GameBody(room, player)
+		html := renderer.Render(component).GetHTML()
+		privyHTML := extractBetween(t, html, `id="zone-privy"`, `id="zone-notices"`)
+
+		for _, expected := range []string{
+			`class="privy`,
+			"PRIVATE",
+			"ONLY YOU",
+			"CONCEALED",
+			"Hold to peek",
+			"Open until concealed",
+			"Conceal now",
+			`data-on:pointerdown`,
+			`data-on:pointerup`,
+			`data-on:pointerleave`,
+			`data-on:interval__duration.30s`,
+			`data-on:visibilitychange__window`,
+			`_peek`,
+			`_privyOpen`,
+		} {
+			if !strings.Contains(privyHTML, expected) {
+				t.Fatalf("expected privy panel HTML to contain %q in %s", expected, privyHTML)
+			}
+		}
+
+		for _, forbidden := range []string{
+			`@get(`,
+			`@post(`,
+			`mousemove`,
+			`requestAnimationFrame`,
+		} {
+			if strings.Contains(privyHTML, forbidden) {
+				t.Fatalf("privy peek/open/conceal controls must not contain %q in %s", forbidden, privyHTML)
+			}
+		}
+	})
+
+	t.Run("selects hero role card until own role is public", func(t *testing.T) {
+		player.FaceUp = false
+		player.RoleRevealed = false
+
+		hiddenHTML := renderer.Render(GameBody(room, player)).GetHTML()
+		hiddenPrivy := extractBetween(t, hiddenHTML, `id="zone-privy"`, `id="zone-notices"`)
+		if !strings.Contains(hiddenPrivy, "role-card-hero") {
+			t.Fatalf("expected hero role card for hidden own role: %s", hiddenPrivy)
+		}
+		if strings.Contains(hiddenPrivy, "role-card-compact") {
+			t.Fatalf("did not expect compact role card for hidden own role: %s", hiddenPrivy)
+		}
+
+		player.FaceUp = true
+		publicHTML := renderer.Render(GameBody(room, player)).GetHTML()
+		publicPrivy := extractBetween(t, publicHTML, `id="zone-privy"`, `id="zone-notices"`)
+		if !strings.Contains(publicPrivy, "role-card-compact") {
+			t.Fatalf("expected compact role card after own role is public/face-up: %s", publicPrivy)
+		}
+	})
+}
+
+func extractBetween(t *testing.T, html, startMarker, endMarker string) string {
+	t.Helper()
+	start := strings.Index(html, startMarker)
+	if start < 0 {
+		t.Fatalf("expected start marker %q in HTML", startMarker)
+	}
+	end := strings.Index(html[start:], endMarker)
+	if end < 0 {
+		t.Fatalf("expected end marker %q after %q in HTML", endMarker, startMarker)
+	}
+	return html[start : start+end]
 }
 
 func TestGameBody_CoupPrivacy(t *testing.T) {

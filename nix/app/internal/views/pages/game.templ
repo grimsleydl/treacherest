@@ -70,59 +70,9 @@ templ GameStatusZone(room *game.Room) {
 }
 
 templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
-	<section id="zone-privy" class="w-full max-w-md">
+	@components.PrivyPanel() {
 		if currentPlayer.Role != nil {
-			<div
-				class={ "card bg-base-200 shadow-xl max-w-md w-full mx-auto", getRoleClass(string(currentPlayer.Role.GetRoleType())) }
-			>
-				<figure>
-					<img
-						src={ currentPlayer.Role.GetImageBase64() }
-						alt={ currentPlayer.Role.Name }
-						class="w-full h-auto"
-						onerror="this.style.display='none'"
-					/>
-				</figure>
-				<div class="card-body">
-					<div class="flex items-center gap-2 mb-2">
-						<h2 class="card-title text-2xl">{ currentPlayer.Role.Name }</h2>
-						if currentPlayer.Role.URI != "" {
-							<a
-								href={ templ.SafeURL(currentPlayer.Role.URI) }
-								target="_blank"
-								rel="noopener noreferrer"
-								class="link link-primary"
-								title="View on MTG Treachery Oracle"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
-								</svg>
-							</a>
-						}
-					</div>
-					<div class="flex gap-2 mb-4">
-						<div class="badge badge-primary">{ currentPlayer.Role.Type }</div>
-						<div class="badge badge-secondary">{ currentPlayer.Role.Rarity }</div>
-					</div>
-					<div class="text-base-content/80 mb-4">
-						@FormatCardText(currentPlayer.Role.Text)
-					</div>
-					<div class="divider"></div>
-					<div class="space-y-2">
-						<p class="text-sm text-base-content/80"><strong>Win Condition:</strong> { currentPlayer.Role.GetWinCondition() }</p>
-						if len(currentPlayer.Role.Rulings) > 0 {
-							<div class="divider"></div>
-							<div>
-								<h3 class="text-xs font-bold mb-2 uppercase tracking-wider text-base-content/80">NOTES AND RULES INFORMATION FOR { strings.ToUpper(currentPlayer.Role.Name) }</h3>
-								<div class="text-xs space-y-1 text-base-content/80">
-									@FormatRulings(currentPlayer.Role.Rulings)
-								</div>
-							</div>
-						}
-						<p class="text-xs text-base-content/60 mt-4"><em>Art by { currentPlayer.Role.Artist }</em></p>
-					</div>
-				</div>
-			</div>
+			@components.RoleCard(currentPlayer.Role, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
 		}
 		<!-- Transformation status display -->
 		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
@@ -138,7 +88,7 @@ templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
 				}
 			}
 		}
-	</section>
+	}
 }
 
 templ GameNoticesZone(room *game.Room, currentPlayer *game.Player) {

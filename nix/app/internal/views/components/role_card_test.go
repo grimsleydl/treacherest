@@ -1,0 +1,93 @@
+package components
+
+import (
+	"strings"
+	"testing"
+	"treacherest/internal/game"
+	"treacherest/internal/testhelpers"
+)
+
+func TestRoleCard(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	card := &game.Card{
+		ID:          7,
+		Name:        "Test Guardian",
+		Type:        "Creature - Guardian",
+		Rarity:      "Rare",
+		Text:        "Long role rules text appears after the goal.|Second rules line.",
+		Artist:      "Test Artist",
+		Base64Image: "data:image/jpeg;base64,test",
+		Rulings: []string{
+			"Role Goal: Protect the Leader.",
+			"Long ruling detail.",
+		},
+		Types: game.CardTypes{
+			Supertype: "Creature",
+			Subtype:   "Guardian",
+		},
+	}
+
+	t.Run("uses hero while own role is not publicly revealed", func(t *testing.T) {
+		html := renderer.Render(RoleCard(card, false, false)).GetHTML()
+
+		if !strings.Contains(html, "role-card-hero") {
+			t.Fatalf("expected hero role card while face down and unrevealed: %s", html)
+		}
+		if strings.Contains(html, "role-card-compact") {
+			t.Fatalf("did not expect compact role card while face down and unrevealed: %s", html)
+		}
+	})
+
+	t.Run("uses compact once own role is public or face up", func(t *testing.T) {
+		for _, tc := range []struct {
+			name         string
+			faceUp       bool
+			roleRevealed bool
+		}{
+			{name: "face up", faceUp: true, roleRevealed: false},
+			{name: "role revealed", faceUp: false, roleRevealed: true},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				html := renderer.Render(RoleCard(card, tc.faceUp, tc.roleRevealed)).GetHTML()
+				if !strings.Contains(html, "role-card-compact") {
+					t.Fatalf("expected compact role card: %s", html)
+				}
+			})
+		}
+	})
+
+	t.Run("prioritizes goal before long rules and discloses image and rulings", func(t *testing.T) {
+		html := renderer.Render(RoleCard(card, false, false)).GetHTML()
+
+		nameIndex := strings.Index(html, "Test Guardian")
+		winIndex := strings.Index(html, "Win Condition")
+		textIndex := strings.Index(html, "Long role rules text")
+		imageDisclosureIndex := strings.Index(html, "Full card image")
+		imageIndex := strings.Index(html, "<img")
+		rulingsDisclosureIndex := strings.Index(html, "Rulings")
+		rulingIndex := strings.Index(html, "Long ruling detail")
+
+		for label, index := range map[string]int{
+			"role name":          nameIndex,
+			"win condition":      winIndex,
+			"rules text":         textIndex,
+			"image disclosure":   imageDisclosureIndex,
+			"image":              imageIndex,
+			"rulings disclosure": rulingsDisclosureIndex,
+			"ruling detail":      rulingIndex,
+		} {
+			if index < 0 {
+				t.Fatalf("expected %s in role card HTML: %s", label, html)
+			}
+		}
+		if !(nameIndex < winIndex && winIndex < textIndex) {
+			t.Fatalf("expected role name, then win condition, then rules text: %s", html)
+		}
+		if !(imageDisclosureIndex < imageIndex) {
+			t.Fatalf("expected full image to be behind its disclosure: %s", html)
+		}
+		if !(rulingsDisclosureIndex < rulingIndex) {
+			t.Fatalf("expected rulings to be behind their disclosure: %s", html)
+		}
+	})
+}

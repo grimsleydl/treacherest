@@ -1,0 +1,57 @@
+package components
+
+templ PrivyPanel() {
+	<section
+		id="zone-privy"
+		class="privy w-full max-w-md overflow-hidden shadow-xl"
+		data-signals="{_peek: false, _privyOpen: false}"
+		data-class:is-showing="$_peek || $_privyOpen"
+		data-on:interval__duration.30s="$_privyOpen = false"
+		data-on:visibilitychange__window="document.hidden && ($_privyOpen = false, $_peek = false)"
+	>
+		<header class="flex items-center justify-between gap-3 border-b px-4 py-2" style="border-color: var(--privy-border)">
+			<span class="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">PRIVATE - ONLY YOU</span>
+			<span
+				class="font-mono text-[10px] uppercase tracking-[0.12em]"
+				data-text="($_peek || $_privyOpen) ? ($_privyOpen ? 'OPEN' : 'PEEKING') : 'CONCEALED'"
+			>
+				CONCEALED
+			</span>
+		</header>
+		<div class="grid">
+			<div class="privy-veil [grid-area:1/1] p-6 text-center">
+				<button
+					type="button"
+					class="btn min-h-11 w-full"
+					style="background: var(--privy-content); color: var(--privy-bg)"
+					data-on:pointerdown="$_peek = true"
+					data-on:pointerup="$_peek = false"
+					data-on:pointercancel="$_peek = false"
+					data-on:pointerleave="$_peek = false"
+				>
+					Hold to peek
+				</button>
+				<button
+					type="button"
+					class="btn btn-ghost mt-2 min-h-11 w-full"
+					aria-pressed="false"
+					data-attr:aria-pressed="$_privyOpen ? 'true' : 'false'"
+					data-on:click="$_privyOpen = true"
+				>
+					Open until concealed
+				</button>
+			</div>
+			<div class="privy-content [grid-area:1/1] p-4">
+				{ children... }
+				<button
+					type="button"
+					class="btn btn-outline mt-3 min-h-11 w-full"
+					data-on:click="$_privyOpen = false; $_peek = false"
+				>
+					Conceal now
+				</button>
+				<p class="mt-2 text-center text-xs opacity-60">Conceals on its own in 30 seconds</p>
+			</div>
+		</div>
+	</section>
+}
