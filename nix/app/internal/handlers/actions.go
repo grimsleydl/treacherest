@@ -615,6 +615,9 @@ func (h *Handler) SetRoleOption(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only host can modify role options", http.StatusForbidden)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Parse request body
 	var req struct {

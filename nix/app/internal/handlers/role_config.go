@@ -27,6 +27,9 @@ func (h *Handler) UpdateRolePreset(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Get preset value from form (works with both urlencoded and multipart)
 	presetName := r.FormValue("preset")
@@ -126,6 +129,9 @@ func (h *Handler) UpdateLeaderlessGame(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Parse JSON body
 	var body struct {
@@ -219,6 +225,9 @@ func (h *Handler) updateRoleTypeCount(w http.ResponseWriter, r *http.Request, ac
 			datastar.WithSelector("#role-validation"))
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Get the type config
 	typeConfig, exists := room.RoleConfig.RoleTypes[roleType]
@@ -286,6 +295,9 @@ func (h *Handler) ToggleRoleCard(w http.ResponseWriter, r *http.Request) {
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
 		return
 	}
 
@@ -398,6 +410,9 @@ func (h *Handler) ToggleRoleCardFast(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Get data from headers
 	roleType := r.Header.Get("X-Role-Type")
@@ -457,6 +472,9 @@ func (h *Handler) ToggleRoleCardOptimistic(w http.ResponseWriter, r *http.Reques
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
 		return
 	}
 
@@ -818,6 +836,9 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 			datastar.WithSelector("#role-validation"))
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Validate action
 	currentPlayerCount := room.RoleConfig.MaxPlayers
@@ -986,6 +1007,9 @@ func (h *Handler) UpdateHideDistribution(w http.ResponseWriter, r *http.Request)
 		})
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	// Parse JSON body into a generic map
 	var body map[string]interface{}
@@ -1064,6 +1088,9 @@ func (h *Handler) UpdateFullyRandom(w http.ResponseWriter, r *http.Request) {
 		sse.MarshalAndPatchSignals(map[string]interface{}{
 			"updatingFullyRandom": false,
 		})
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
 		return
 	}
 

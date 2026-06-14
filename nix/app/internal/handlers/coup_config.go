@@ -29,6 +29,9 @@ func (h *Handler) UpdateCoupPreset(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	preset := game.CoupPreset(r.FormValue("preset"))
 	if preset == "" {
@@ -88,6 +91,9 @@ func (h *Handler) updateCoupPlayerCount(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	currentCount, ok := game.CoupPresetPlayerCount(room.CoupPreset)
 	if !ok {
@@ -138,6 +144,9 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 
 	if !h.isRoomCreator(r, room) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
 		return
 	}
 
@@ -205,6 +214,9 @@ func (h *Handler) UpdateCoupInfoPolicy(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	policy := game.CoupInformationPolicy{
 		KingToBlue:   game.CoupKingToBluePolicy(r.FormValue("kingToBlue")),
@@ -249,6 +261,9 @@ func (h *Handler) UpdateCoupRoyalGuardSettings(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
 
 	blockerLimit, err := strconv.Atoi(r.FormValue("blockerLimit"))
 	if err != nil {
@@ -285,6 +300,9 @@ func (h *Handler) UpdateCoupInquisitionSettings(w http.ResponseWriter, r *http.R
 
 	if !h.isRoomCreator(r, room) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
 		return
 	}
 

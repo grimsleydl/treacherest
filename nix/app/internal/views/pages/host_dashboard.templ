@@ -28,10 +28,22 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 	>
 		<div id="host-dashboard-container" class="min-h-screen p-4">
 			<div id="host-dashboard-content">
-				@HostDashboardContent(room, player, cfg, cardService)
+				@HostDashboardCurrentContent(room, player, cfg, cardService)
 			</div>
 		</div>
 	</div>
+}
+
+templ HostDashboardCurrentContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
+	if room.State == game.StateCountdown {
+		@HostDashboardCountdown(room, player)
+	} else if room.State == game.StatePlaying {
+		@HostDashboardPlaying(room, player)
+	} else if room.State == game.StateEnded {
+		@HostDashboardEnded(room, player)
+	} else {
+		@HostDashboardContent(room, player, cfg, cardService)
+	}
 }
 
 templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {

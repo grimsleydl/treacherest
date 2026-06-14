@@ -25,7 +25,7 @@ The act of giving each player a hidden role and any private information that fol
 _Avoid_: Role engine, game enforcement
 
 **Role Count Configuration**:
-The pre-start selection of how many copies of each role are included in a rules mode's assignment pool, usually starting from a recommended Role Preset.
+The Pre-Start Game Settings selection of how many copies of each role are included in a rules mode's assignment pool, usually starting from a recommended Role Preset.
 _Avoid_: Hard-coded role list, post-assignment role editing
 
 **Unsafe Role Count Override**:
@@ -35,6 +35,10 @@ _Avoid_: Default setup, supported preset, silent invalid configuration
 **Rules Reference**:
 The table-facing explanation of a rules mode's roles, goals, and optional variants.
 _Avoid_: Rules engine, automated adjudication
+
+**Pre-Start Game Settings**:
+Room setup choices made before a game starts that define role assignment, rules-mode structure, information policies, variants, and unsafe setup overrides. These settings are mutable only while the room is in lobby state.
+_Avoid_: Live table state, player action, debug mutation
 
 **Role Image Prompt Pack**:
 A named set of visual prompt guidance for generating role-card art across a rules mode's roles. A prompt pack does not imply separate imported image sets unless a future feature explicitly adds that.

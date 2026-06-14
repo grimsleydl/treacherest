@@ -1,0 +1,5 @@
+# Freeze Pre-Start Settings After Game Start
+
+Treacherest treats rules mode selection, role counts, role presets, rules-mode variants, information policies, and unsafe setup overrides as pre-start game settings. Lobby is the only mutable setup state; once a room leaves lobby state, including countdown, those settings must not be editable from the Operator Dashboard or accepted by backend configuration endpoints, because roles and private information may already have been assigned from the original setup.
+
+This favors game integrity and hidden-information consistency over post-start flexibility for correcting setup mistakes. Playing Room Operators and non-playing Hosts may still use the live Operator Dashboard for public table management where supported, but not to mutate pre-start configuration. Debug Mode does not bypass this boundary; if a future debug-only mutation tool is ever considered, it must be designed as an explicit new capability rather than reusing normal configuration controls after start.
