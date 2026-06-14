@@ -441,6 +441,79 @@ func TestHandler_JoinRoom(t *testing.T) {
 		}
 	})
 
+	t.Run("playing room operator is routed to player view after game start", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		room.CoupPreset = game.CoupPresetFive
+		room.State = game.StatePlaying
+		operator := game.NewPlayer("operator", "Playing Operator", "session-operator")
+		operator.IsHost = false
+		room.AddPlayer(operator)
+		room.OperatorSessionID = operator.SessionID
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		req := httptest.NewRequest("GET", "/room/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: operator.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: operator.SessionID})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("expected redirect to player view, got %d with body %q", w.Code, w.Body.String())
+		}
+		if got := w.Header().Get("Location"); got != "/game/"+room.Code {
+			t.Fatalf("expected redirect to /game/%s, got %q", room.Code, got)
+		}
+	})
+
+	t.Run("operator dashboard route is gated by operator session", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		room.CoupPreset = game.CoupPresetFive
+		room.State = game.StatePlaying
+		operator := game.NewPlayer("operator", "Operator", "session-operator")
+		viewer := game.NewPlayer("viewer", "Viewer", "session-viewer")
+		room.AddPlayer(operator)
+		room.AddPlayer(viewer)
+		room.OperatorSessionID = operator.SessionID
+		h.store.UpdateRoom(room)
+
+		router := SetupRouter(h, h.config, &RouterOptions{
+			DisableRateLimiting:  true,
+			DisableRequestLogger: true,
+			StaticDir:            ".",
+		})
+
+		authorized := httptest.NewRequest("GET", "/room/"+room.Code+"/operator", nil)
+		authorized.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: operator.ID})
+		authorized.AddCookie(&http.Cookie{Name: "session", Value: operator.SessionID})
+		authorizedRecorder := httptest.NewRecorder()
+		router.ServeHTTP(authorizedRecorder, authorized)
+		if authorizedRecorder.Code != http.StatusOK {
+			t.Fatalf("expected operator dashboard status 200, got %d", authorizedRecorder.Code)
+		}
+		if !strings.Contains(authorizedRecorder.Body.String(), `id="host-dashboard-container"`) {
+			t.Fatalf("expected operator dashboard content, got %q", authorizedRecorder.Body.String())
+		}
+
+		unauthorized := httptest.NewRequest("GET", "/room/"+room.Code+"/operator", nil)
+		unauthorized.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: viewer.ID})
+		unauthorized.AddCookie(&http.Cookie{Name: "session", Value: viewer.SessionID})
+		unauthorizedRecorder := httptest.NewRecorder()
+		router.ServeHTTP(unauthorizedRecorder, unauthorized)
+		if unauthorizedRecorder.Code != http.StatusUnauthorized {
+			t.Fatalf("expected non-operator status 401, got %d", unauthorizedRecorder.Code)
+		}
+	})
+
 	t.Run("legacy host flag does not grant non-operator lobby management controls", func(t *testing.T) {
 		h := newTestHandler()
 
@@ -751,6 +824,42 @@ func TestHandler_GamePage(t *testing.T) {
 		// Verify it's HTML content
 		if len(body) == 0 {
 			t.Error("expected non-empty game page body")
+		}
+	})
+
+	t.Run("non-playing host remains on operator dashboard during play", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		host := game.NewPlayer("host", "Non-playing Host", "session-host")
+		host.IsHost = true
+		player := game.NewPlayer("p1", "Player", "session-player")
+		player.Role = mockGuardianCard()
+		room.OperatorSessionID = host.SessionID
+		room.AddPlayer(host)
+		room.AddPlayer(player)
+		room.State = game.StatePlaying
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+
+		req := httptest.NewRequest("GET", "/game/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: host.SessionID})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", w.Result().StatusCode)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, `id="host-dashboard-container"`) {
+			t.Fatalf("expected operator dashboard for non-playing host, got %q", body)
+		}
+		if strings.Contains(body, `id="game-container"`) {
+			t.Fatalf("non-playing host should remain on operator dashboard, got player view %q", body)
 		}
 	})
 

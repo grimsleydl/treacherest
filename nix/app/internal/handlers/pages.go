@@ -111,21 +111,14 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 			// Show appropriate page based on player type and game state
 			if h.isRoomOperator(r, room) {
-				// The Room Operator sees the dashboard view before game start.
-				var component templ.Component
-				switch room.State {
-				case game.StateLobby:
-					component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
-				case game.StateCountdown:
-					component = pages.HostDashboardCountdown(room, player)
-				case game.StatePlaying:
-					component = pages.HostDashboardPlaying(room, player)
-				case game.StateEnded:
-					component = pages.HostDashboardEnded(room, player)
-				default:
-					component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
+				if room.State == game.StateLobby {
+					component := pages.HostDashboardLobby(room, player, h.config, h.cardService)
+					component.Render(r.Context(), w)
+				} else if player.IsHost {
+					h.renderOperatorDashboardPage(w, r, room, player)
+				} else {
+					http.Redirect(w, r, "/game/"+roomCode, http.StatusSeeOther)
 				}
-				component.Render(r.Context(), w)
 			} else if room.State == game.StateLobby {
 				// Regular player sees lobby
 				component := pages.LobbyPage(room, player, h.config, h.cardService)
@@ -154,6 +147,55 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	// Show join form - no longer process name parameter for security
 	component := pages.Join(roomCode, "")
+	component.Render(r.Context(), w)
+}
+
+// OperatorDashboard renders the explicit Room Operator surface.
+func (h *Handler) OperatorDashboard(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		component := pages.RoomNotFound(roomCode)
+		w.WriteHeader(http.StatusNotFound)
+		component.Render(r.Context(), w)
+		return
+	}
+
+	if !h.isRoomOperator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	playerCookie, err := r.Cookie("player_" + roomCode)
+	if err != nil {
+		http.Error(w, "Not in game", http.StatusUnauthorized)
+		return
+	}
+
+	player := room.GetPlayer(playerCookie.Value)
+	if player == nil {
+		http.Error(w, "Player not found", http.StatusUnauthorized)
+		return
+	}
+
+	h.renderOperatorDashboardPage(w, r, room, player)
+}
+
+func (h *Handler) renderOperatorDashboardPage(w http.ResponseWriter, r *http.Request, room *game.Room, player *game.Player) {
+	var component templ.Component
+	switch room.State {
+	case game.StateLobby:
+		component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
+	case game.StateCountdown:
+		component = pages.HostDashboardCountdownPage(room, player, h.config, h.cardService)
+	case game.StatePlaying:
+		component = pages.HostDashboardPlayingPage(room, player, h.config, h.cardService)
+	case game.StateEnded:
+		component = pages.HostDashboardEndedPage(room, player, h.config, h.cardService)
+	default:
+		component = pages.HostDashboardLobby(room, player, h.config, h.cardService)
+	}
 	component.Render(r.Context(), w)
 }
 

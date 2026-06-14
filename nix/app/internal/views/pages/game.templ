@@ -35,7 +35,7 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 		// Render pending ability modals for current player
 		@components.PendingAbilitiesContainer(room, currentPlayer)
 		<div class="flex flex-col items-center gap-8 p-4">
-			@GameStatusZone(room)
+			@GameStatusZone(room, currentPlayer)
 			if room.State == game.StateCountdown {
 				<section id="zone-privy" class="w-full max-w-md">
 					@components.CountdownDisplayWithMessage(room.CountdownRemaining, "Revealing roles in...")
@@ -53,9 +53,9 @@ templ GameContent(room *game.Room, currentPlayer *game.Player) {
 	</div>
 }
 
-templ GameStatusZone(room *game.Room) {
+templ GameStatusZone(room *game.Room, currentPlayer *game.Player) {
 	<section id="zone-status" class="w-full max-w-md">
-		<div class="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200 px-4 py-3">
+		<div class="flex flex-wrap items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200 px-4 py-3">
 			<div class="min-w-0">
 				<p class="text-xs uppercase tracking-wider text-base-content/60">Room</p>
 				<p class="font-mono text-lg font-semibold tracking-wider">{ room.Code }</p>
@@ -65,6 +65,15 @@ templ GameStatusZone(room *game.Room) {
 				<p class="font-semibold capitalize">{ string(room.State) }</p>
 			</div>
 			@components.SyncPill("live")
+			if showOperatorDashboardLink(room, currentPlayer) {
+				<a
+					id="operator-dashboard-link"
+					class="btn btn-ghost btn-xs"
+					href={ templ.SafeURL("/room/" + room.Code + "/operator") }
+				>
+					Operator Dashboard
+				</a>
+			}
 		</div>
 	</section>
 }
@@ -178,6 +187,13 @@ func getRoleClass(roleType string) string {
 	default:
 		return ""
 	}
+}
+
+func showOperatorDashboardLink(room *game.Room, player *game.Player) bool {
+	if room == nil || player == nil || player.IsHost {
+		return false
+	}
+	return room.IsOperatorSession(player.SessionID) && room.State != game.StateLobby
 }
 
 // FormatCardText formats card text similar to Scryfall's oracle text:

@@ -192,6 +192,53 @@ func TestGamePage(t *testing.T) {
 			t.Fatalf("expected default live sync state")
 		}
 	})
+
+	t.Run("playing room operator gets low emphasis dashboard navigation only", func(t *testing.T) {
+		operatorRoom := &game.Room{
+			Code:              "OPNAV",
+			State:             game.StatePlaying,
+			Players:           make(map[string]*game.Player),
+			MaxPlayers:        5,
+			OperatorSessionID: "session-operator",
+		}
+		operator := &game.Player{
+			ID:        "operator",
+			Name:      "Playing Operator",
+			Role:      mockCoupCard(1001, "King"),
+			SessionID: "session-operator",
+			IsHost:    false,
+		}
+		nonOperator := &game.Player{
+			ID:        "player",
+			Name:      "Ordinary Player",
+			Role:      mockCoupCard(1002, "Blue Knight"),
+			SessionID: "session-player",
+		}
+		operatorRoom.Players[operator.ID] = operator
+		operatorRoom.Players[nonOperator.ID] = nonOperator
+
+		operatorHTML := renderer.Render(GameBody(operatorRoom, operator)).GetHTML()
+		if !strings.Contains(operatorHTML, `id="operator-dashboard-link"`) {
+			t.Fatalf("expected playing room operator to receive dashboard navigation, got %q", operatorHTML)
+		}
+		if !strings.Contains(operatorHTML, `href="/room/OPNAV/operator"`) {
+			t.Fatalf("expected dashboard navigation to use explicit operator route, got %q", operatorHTML)
+		}
+		for _, forbidden := range []string{
+			`id="host-dashboard-container"`,
+			`id="operator-start-controls"`,
+			`id="coup-role-counts-form"`,
+		} {
+			if strings.Contains(operatorHTML, forbidden) {
+				t.Fatalf("ordinary player view should not inline management control %q", forbidden)
+			}
+		}
+
+		nonOperatorHTML := renderer.Render(GameBody(operatorRoom, nonOperator)).GetHTML()
+		if strings.Contains(nonOperatorHTML, `id="operator-dashboard-link"`) {
+			t.Fatalf("non-operator player should not receive dashboard navigation, got %q", nonOperatorHTML)
+		}
+	})
 }
 
 func TestGamePageWithDebug_OperatorDebugSurface(t *testing.T) {
