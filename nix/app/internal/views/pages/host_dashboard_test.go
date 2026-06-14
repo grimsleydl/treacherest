@@ -367,21 +367,60 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains("Unsafe Role Count Override").
 		AssertContains(`data-config-row="king-to-blue"`).
 		AssertContains(`data-config-row="red-to-black"`).
+		AssertContains("Rules Variants").
+		AssertContains(`id="coup-rules-variants"`).
 		AssertContains(`data-config-row="royal-guard"`).
 		AssertContains(`data-config-row="inquisition-result"`).
 		AssertContains(`<details`)
 }
 
-func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing.T) {
+func TestHostDashboardLobby_CoupUnsafeOverrideMakesRequiredRolesEditable(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:                      "UNSAF",
+		State:                     game.StateLobby,
+		RulesMode:                 game.RulesModeCoup,
+		CoupPreset:                game.CoupPresetFive,
+		CoupRoleCountsCustom:      true,
+		CoupAllowUnsafeRoleCounts: true,
+		CoupRoleCounts: game.CoupRoleCounts{
+			game.RoleKing:        0,
+			game.RoleBlueKnight:  1,
+			game.RoleBlackKnight: 1,
+			game.RoleRedKnight:   2,
+			game.RoleGreenKnight: 1,
+			game.RoleWasteland:   0,
+		},
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
+	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains("Unsafe Role Count Override").
+		AssertContains("Unsafe custom counts").
+		AssertContains(`data-stepper="king"`).
+		AssertContains(`name="king" value="0"`).
+		AssertContains(`data-stepper="redKnight"`).
+		AssertContains(`name="redKnight" value="2"`).
+		AssertNotContains(`data-stepper-locked="king"`).
+		AssertNotContains(`data-stepper-locked="redKnight"`)
+}
+
+func TestHostDashboardLobby_TreacheryModeUsesUnifiedRoleCountConfiguration(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	cfg := config.DefaultConfig()
+	roleConfig, err := game.NewRoleConfigService(cfg).CreateFromPreset("standard", 5)
+	if err != nil {
+		t.Fatalf("create role config: %v", err)
+	}
 	room := &game.Room{
 		Code:      "TRCHY",
 		State:     game.StateLobby,
 		RulesMode: game.RulesModeTreachery,
-		RoleConfig: &game.RoleConfiguration{
-			MaxPlayers: 5,
-			RoleTypes:  map[string]*game.RoleTypeConfig{},
-		},
+		RoleConfig: roleConfig,
 		Players: make(map[string]*game.Player),
 	}
 	host := &game.Player{
@@ -390,18 +429,27 @@ func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing
 		IsHost: true,
 	}
 	room.Players[host.ID] = host
-	cfg := config.DefaultConfig()
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
-		AssertContains("Game Configuration").
-		AssertContains("Role Preset:").
+		AssertContains("Role Count Configuration").
+		AssertContains(`data-config-row="player-count"`).
+		AssertContains(`data-config-row="role-preset"`).
+		AssertContains("Role Counts").
+		AssertContains("Rules Variants").
+		AssertContains(`id="treachery-rules-variants"`).
+		AssertContains(`data-config-row="allow-leaderless"`).
+		AssertContains(`data-config-row="hide-role-distribution"`).
+		AssertContains(`data-config-row="fully-random-roles"`).
 		AssertContains("Allow Leaderless Games").
+		AssertContains("Hide Role Distribution").
+		AssertContains("Fully Random Roles").
 		AssertContains("Leaders").
 		AssertContains("Guardians").
 		AssertContains("Assassins").
 		AssertContains("Traitors").
 		AssertNotContains("Coup Preset").
-		AssertNotContains("King-to-Blue Info")
+		AssertNotContains("King-to-Blue Info").
+		AssertNotContains("Advanced Options")
 }
 
 func TestHostDashboardLobby_DebugControlSurfaceRequiresRoomOperator(t *testing.T) {

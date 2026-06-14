@@ -60,6 +60,63 @@ func TestUpdateCoupPreset(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupPresetReseedsCustomRoleCounts(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	room.CoupRoleCountsCustom = true
+	room.CoupAllowUnsafeRoleCounts = true
+	room.CoupRoleCounts = game.CoupRoleCounts{
+		game.RoleKing:        0,
+		game.RoleBlueKnight:  3,
+		game.RoleBlackKnight: 0,
+		game.RoleRedKnight:   2,
+		game.RoleGreenKnight: 0,
+		game.RoleWasteland:   0,
+	}
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("preset", string(game.CoupPresetSix))
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-preset", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupPreset(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupPreset != game.CoupPresetSix {
+		t.Fatalf("expected preset selection to select %q, got %q", game.CoupPresetSix, updatedRoom.CoupPreset)
+	}
+	if updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected preset selection to return Coup setup to preset role-count mode")
+	}
+	if updatedRoom.CoupAllowUnsafeRoleCounts {
+		t.Fatal("expected preset selection to clear unsafe role-count override")
+	}
+	counts := game.CoupRoleCountsForRoom(updatedRoom)
+	if counts[game.RoleBlueKnight] != 1 || counts[game.RoleBlackKnight] != 2 {
+		t.Fatalf("expected preset selection to reseed 6-player counts, got %v", counts)
+	}
+	if !strings.Contains(w.Body.String(), "Preset role counts") {
+		t.Fatalf("expected response to render preset mode, got: %s", w.Body.String())
+	}
+}
+
 func TestUpdateCoupPresetFromHostDashboardPatchesHostSurface(t *testing.T) {
 	h := newTestHandler()
 
@@ -241,6 +298,60 @@ func TestUpdateCoupPlayerCountAtMaximumRerendersCurrentState(t *testing.T) {
 	}
 	if !strings.Contains(body, "#host-dashboard-coup-setup") || !strings.Contains(body, "#operator-start-controls") {
 		t.Fatalf("expected host dashboard fragments at max count, got: %s", body)
+	}
+}
+
+func TestUpdateCoupPlayerCountPreservesCustomRoleCounts(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	room.CoupRoleCountsCustom = true
+	room.CoupRoleCounts = game.CoupRoleCounts{
+		game.RoleKing:        1,
+		game.RoleBlueKnight:  2,
+		game.RoleBlackKnight: 0,
+		game.RoleRedKnight:   1,
+		game.RoleGreenKnight: 1,
+		game.RoleWasteland:   0,
+	}
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupPreset != game.CoupPresetSix {
+		t.Fatalf("expected custom player-count increment to select %q, got %q", game.CoupPresetSix, updatedRoom.CoupPreset)
+	}
+	if !updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected custom player-count increment to stay in custom role-count mode")
+	}
+	counts := game.CoupRoleCountsForRoom(updatedRoom)
+	if counts[game.RoleBlueKnight] != 2 || counts[game.RoleBlackKnight] != 0 {
+		t.Fatalf("expected explicit custom counts to be preserved, got %v", counts)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "6 players") {
+		t.Fatalf("expected response to render updated player count, got: %s", body)
+	}
+	if !strings.Contains(body, "Custom role counts") {
+		t.Fatalf("expected response to keep custom mode label, got: %s", body)
 	}
 }
 

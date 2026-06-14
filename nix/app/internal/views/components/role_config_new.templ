@@ -27,129 +27,148 @@ type PlayerCountDisplay struct {
 templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService, playerCountDisplay PlayerCountDisplay) {
 	<div
 		id="role-config"
-		class="role-configuration"
+		class="role-configuration card bg-base-200 shadow-xl"
 		data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
 		data-signals__ifmissing={ fmt.Sprintf(`{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false, allowLeaderless: %t, hideRoleDistribution: %t, fullyRandomRoles: %t, updatingLeaderless: false, updatingHideDistribution: false, updatingFullyRandom: false}`, room.RoleConfig.AllowLeaderlessGame, room.RoleConfig.HideRoleDistribution, room.RoleConfig.FullyRandomRoles) }
 	>
-		<h3>Game Configuration</h3>
-		// Player count settings
-		<div class="player-count-config">
-			<label>Player Count:</label>
-			<div class="player-range flex items-center gap-2">
-				<button
-					class="btn btn-primary btn-sm"
-					data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
-					disabled?={ shouldDisableDecrement(playerCountDisplay, room, cfg) }
-					title={ getDecrementTitle(playerCountDisplay) }
-				>
-					-
-				</button>
-				<span class="px-2 font-semibold">{ fmt.Sprintf("%d players", room.RoleConfig.MaxPlayers) }</span>
-				<button
-					class="btn btn-primary btn-sm"
-					data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
-					disabled?={ shouldDisableIncrement(playerCountDisplay, room, cfg) }
-					title={ getIncrementTitle(playerCountDisplay) }
-				>
-					+
-				</button>
-			</div>
-			if room.RoleConfig.PresetName == "custom" {
-				<div class="text-xs text-gray-500 mt-1">
-					Custom mode: Roles will be rebalanced automatically
+		<div class="card-body gap-3">
+			<h2 class="card-title">Role Count Configuration</h2>
+			<div data-config-row="player-count" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div class="min-w-0">
+						<p class="font-semibold">Player Count</p>
+						<p class="mt-1 text-xs text-base-content/70">Changes the Treachery role count target for this room.</p>
+					</div>
+					<div class="sm:min-w-48">
+						<div class="join w-full">
+							<button
+								type="button"
+								class="btn btn-primary btn-sm join-item"
+								data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
+								disabled?={ shouldDisableDecrement(playerCountDisplay, room, cfg) }
+								title={ getDecrementTitle(playerCountDisplay) }
+							>
+								-
+							</button>
+							<div class="join-item input input-bordered input-sm flex flex-1 items-center justify-center font-semibold">
+								{ fmt.Sprintf("%d players", room.RoleConfig.MaxPlayers) }
+							</div>
+							<button
+								type="button"
+								class="btn btn-primary btn-sm join-item"
+								data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
+								disabled?={ shouldDisableIncrement(playerCountDisplay, room, cfg) }
+								title={ getIncrementTitle(playerCountDisplay) }
+							>
+								+
+							</button>
+						</div>
+						if room.RoleConfig.PresetName == "custom" {
+							<p class="mt-1 text-xs text-base-content/70">Custom mode preserves explicit role counts.</p>
+						}
+					</div>
 				</div>
-			}
-		</div>
-		// Preset selector
-		<div class="preset-selector" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
-			<form id="preset-form" data-on:change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
-				<label for="role-preset">Role Preset:</label>
-				<select
-					id="role-preset"
-					name="preset"
-				>
-					<option value="custom" selected?={ room.RoleConfig.PresetName == "custom" }>Custom</option>
-					for presetName := range cfg.Roles.Presets {
-						<option value={ presetName } selected?={ room.RoleConfig.PresetName == presetName }>
-							{ presetName }
-						</option>
-					}
-				</select>
-			</form>
-			// Show auto-scale info for preset configurations
-			if room.RoleConfig.PresetName != "custom" {
-				<div class="text-xs text-gray-500 mt-1">
-					Preset auto-scales roles based on player count
+			</div>
+			<div data-config-row="role-preset" class="config-row rounded-box border border-base-300 bg-base-100 p-3" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div class="min-w-0">
+						<p class="font-semibold">Role Preset</p>
+						<p class="mt-1 text-xs text-base-content/70">Preset mode reseeds Treachery role counts for the selected player count.</p>
+					</div>
+					<form id="preset-form" class="sm:min-w-48" data-on:change={ "@post('/room/" + room.Code + "/config/preset', {contentType: 'form'})" }>
+						<select
+							id="role-preset"
+							name="preset"
+							class="select select-bordered select-sm w-full"
+							aria-label="Treachery Role Preset"
+						>
+							<option value="custom" selected?={ room.RoleConfig.PresetName == "custom" }>Custom</option>
+							for presetName := range cfg.Roles.Presets {
+								<option value={ presetName } selected?={ room.RoleConfig.PresetName == presetName }>
+									{ presetName }
+								</option>
+							}
+						</select>
+					</form>
 				</div>
-			}
-		</div>
-		// Advanced options
-		<div class="advanced-options">
-			<h4>Advanced Options</h4>
-			<div class="option-item">
-				<input
-					type="checkbox"
-					id="allow-leaderless"
-					checked?={ room.RoleConfig.AllowLeaderlessGame }
-					data-bind="allowLeaderless"
-					data-attr:disabled="$updatingLeaderless"
-					data-on:change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowLeaderless: evt.target.checked})})`, room.Code) }
-				/>
-				<label for="allow-leaderless">
-					Allow Leaderless Games
-					<span class="option-description">(Enables games without a Leader role)</span>
-					<span data-show="$updatingLeaderless" class="loading loading-spinner loading-xs ml-2"></span>
-				</label>
+				if room.RoleConfig.PresetName != "custom" {
+					<p class="mt-2 text-sm text-base-content/80">Preset auto-scales roles based on player count.</p>
+				}
 			</div>
-			<div class="option-item">
-				<input
-					type="checkbox"
-					id="hide-role-distribution"
-					checked?={ room.RoleConfig.HideRoleDistribution }
-					data-bind="hideRoleDistribution"
-					data-attr:disabled="$updatingHideDistribution || $fullyRandomRoles"
-					data-on:change={ fmt.Sprintf(`$updatingHideDistribution = true; @post('/room/%s/config/hide-distribution', {body: JSON.stringify({hide: evt.target.checked})})`, room.Code) }
-				/>
-				<label for="hide-role-distribution">
-					Hide Role Distribution
-					<span class="option-description">(Hide role counts and randomly select preset)</span>
-					<span data-show="$updatingHideDistribution" class="loading loading-spinner loading-xs ml-2"></span>
-				</label>
-			</div>
-			<div class="option-item">
-				<input
-					type="checkbox"
-					id="fully-random-roles"
-					checked?={ room.RoleConfig.FullyRandomRoles }
-					data-bind="fullyRandomRoles"
-					data-attr:disabled="$updatingFullyRandom || $hideRoleDistribution"
-					data-on:change={ fmt.Sprintf(`$updatingFullyRandom = true; @post('/room/%s/config/fully-random', {body: JSON.stringify({random: evt.target.checked})})`, room.Code) }
-				/>
-				<label for="fully-random-roles">
-					Fully Random Roles
-					<span class="option-description">(Completely randomize role distribution)</span>
-					<span data-show="$updatingFullyRandom" class="loading loading-spinner loading-xs ml-2"></span>
-				</label>
-			</div>
-		</div>
-		// Role types with collapsible sections
-		<div class="role-settings">
-			<h4>Roles</h4>
-			<div class="join join-vertical w-full" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
-				@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
-				@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
-				@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
-				@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
-			</div>
-			<div class="alert alert-info" data-show="$hideRoleDistribution || $fullyRandomRoles">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				<span data-show="$hideRoleDistribution">Role distribution is hidden. A preset will be randomly selected when the game starts.</span>
-				<span data-show="$fullyRandomRoles">Roles will be completely randomized when the game starts.</span>
-			</div>
-		</div>
-		// Validation messages
-		<div id="role-validation" class="validation-messages">
-			// Validation messages will be inserted here via SSE
+			<div class="divider my-1"></div>
+			<section id="treachery-role-counts" class="space-y-2">
+				<h3 class="font-semibold">Role Counts</h3>
+				<div class="join join-vertical w-full" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
+					@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
+					@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
+					@RoleTypeSection(room, "Assassin", room.RoleConfig.RoleTypes["Assassin"], cardService.Assassins)
+					@RoleTypeSection(room, "Traitor", room.RoleConfig.RoleTypes["Traitor"], cardService.Traitors)
+				</div>
+				<div class="alert alert-info" data-show="$hideRoleDistribution || $fullyRandomRoles">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+					<span data-show="$hideRoleDistribution">Role distribution is hidden. A preset will be randomly selected when the game starts.</span>
+					<span data-show="$fullyRandomRoles">Roles will be completely randomized when the game starts.</span>
+				</div>
+			</section>
+			<div class="divider my-1"></div>
+			<section id="treachery-rules-variants" class="space-y-2">
+				<h3 class="font-semibold">Rules Variants</h3>
+				<div data-config-row="allow-leaderless" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+					<label class="flex items-start gap-3 text-sm">
+						<input
+							type="checkbox"
+							id="allow-leaderless"
+							class="checkbox checkbox-sm mt-1"
+							checked?={ room.RoleConfig.AllowLeaderlessGame }
+							data-bind="allowLeaderless"
+							data-attr:disabled="$updatingLeaderless"
+							data-on:change={ fmt.Sprintf(`$updatingLeaderless = true; @post('/room/%s/config/leaderless', {body: JSON.stringify({allowLeaderless: evt.target.checked})})`, room.Code) }
+						/>
+						<span>
+							<span class="font-semibold">Allow Leaderless Games</span>
+							<span class="block text-base-content/80">Enables games without a Leader role.</span>
+							<span data-show="$updatingLeaderless" class="loading loading-spinner loading-xs mt-2"></span>
+						</span>
+					</label>
+				</div>
+				<div data-config-row="hide-role-distribution" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+					<label class="flex items-start gap-3 text-sm">
+						<input
+							type="checkbox"
+							id="hide-role-distribution"
+							class="checkbox checkbox-sm mt-1"
+							checked?={ room.RoleConfig.HideRoleDistribution }
+							data-bind="hideRoleDistribution"
+							data-attr:disabled="$updatingHideDistribution || $fullyRandomRoles"
+							data-on:change={ fmt.Sprintf(`$updatingHideDistribution = true; @post('/room/%s/config/hide-distribution', {body: JSON.stringify({hide: evt.target.checked})})`, room.Code) }
+						/>
+						<span>
+							<span class="font-semibold">Hide Role Distribution</span>
+							<span class="block text-base-content/80">Hide role counts and randomly select a preset.</span>
+							<span data-show="$updatingHideDistribution" class="loading loading-spinner loading-xs mt-2"></span>
+						</span>
+					</label>
+				</div>
+				<div data-config-row="fully-random-roles" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+					<label class="flex items-start gap-3 text-sm">
+						<input
+							type="checkbox"
+							id="fully-random-roles"
+							class="checkbox checkbox-sm mt-1"
+							checked?={ room.RoleConfig.FullyRandomRoles }
+							data-bind="fullyRandomRoles"
+							data-attr:disabled="$updatingFullyRandom || $hideRoleDistribution"
+							data-on:change={ fmt.Sprintf(`$updatingFullyRandom = true; @post('/room/%s/config/fully-random', {body: JSON.stringify({random: evt.target.checked})})`, room.Code) }
+						/>
+						<span>
+							<span class="font-semibold">Fully Random Roles</span>
+							<span class="block text-base-content/80">Completely randomize role distribution.</span>
+							<span data-show="$updatingFullyRandom" class="loading loading-spinner loading-xs mt-2"></span>
+						</span>
+					</label>
+				</div>
+			</section>
+			<div id="role-validation" class="validation-messages"></div>
 		</div>
 	</div>
 }

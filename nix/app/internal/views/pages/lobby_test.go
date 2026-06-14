@@ -55,7 +55,8 @@ func TestLobbyPage(t *testing.T) {
 			AssertValid().
 			AssertContains("TEST1").
 			AssertHasElementWithID("lobby-container").
-			AssertContains("Game Lobby")
+			AssertHasElementWithID("player-lobby").
+			AssertContains("Room Code")
 	})
 
 	t.Run("shows SSE connection", func(t *testing.T) {
@@ -69,7 +70,8 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(room, player1, cfg, cardService)
 
 		renderer.Render(component).
-			AssertContains("Players (2)").
+			AssertContains("Players").
+			AssertContains("2 of 4 seats filled").
 			AssertContains("Player One").
 			AssertContains("Player Two")
 	})
@@ -117,11 +119,10 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(coupRoom, player1, cfg, cardService)
 
 		renderer.Render(component).
-			AssertContains("Rules Mode").
 			AssertContains("Coup")
 	})
 
-	t.Run("shows coup preset summary before start", func(t *testing.T) {
+	t.Run("room operator coup lobby is read-only player surface", func(t *testing.T) {
 		coupRoom := &game.Room{
 			Code:       "COUP2",
 			State:      game.StateLobby,
@@ -139,40 +140,27 @@ func TestLobbyPage(t *testing.T) {
 		coupRoom.OperatorSessionID = currentPlayer.SessionID
 
 		component := LobbyPage(coupRoom, currentPlayer, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
 
-		renderer.Render(component).
-			AssertContains("Player Count").
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-player-count/decrement&#39;)`).
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-player-count/increment&#39;)`).
-			AssertContains("Coup Preset").
-			AssertContains("coup-preset-form").
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-preset&#39;, {contentType: &#39;form&#39;})`).
-			AssertContains("coup-info-form").
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-info&#39;, {contentType: &#39;form&#39;})`).
-			AssertContains("coup-royal-guard-form").
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-royal-guard&#39;, {contentType: &#39;form&#39;})`).
-			AssertContains("coup-inquisition-settings-form").
-			AssertContains(`@post(&#39;/room/COUP2/config/coup-inquisition&#39;, {contentType: &#39;form&#39;})`).
-			AssertContains("King-to-Blue Info").
-			AssertContains("Red-to-Black Info").
-			AssertContains("Black-to-Red Info").
-			AssertContains("Black Network").
-			AssertContains("Royal Guard Blockers").
-			AssertContains("Any number").
-			AssertContains("Inquisition Result").
-			AssertContains("Public result").
-			AssertContains("Private result").
-			AssertContains("Coup Rules Reference").
-			AssertContains("Every other player remains an opponent").
-			AssertContains("Do not prove a hidden role").
-			AssertContains("Royal Guard").
-			AssertContains("Inquisition").
-			AssertContains("Green Eligibility").
-			AssertContains("Wasteland").
-			AssertContains("Advisory Win Prompts").
-			AssertContains("6 players").
-			AssertContains("King, Blue Knight, 2 Black Knights, Red Knight, Green Knight").
-			AssertContains(`@post(&#39;/room/COUP2/start&#39;)`)
+		for _, want := range []string{
+			`id="player-lobby"`,
+			"Waiting for Room Operator - 6 of 6 seats filled",
+			"Coup - 6 players",
+			"Coup Rules Reference",
+			"Every other player remains an opponent",
+			"Do not prove a hidden role",
+			"Royal Guard",
+			"Inquisition",
+			"Green Eligibility",
+			"Wasteland",
+			"Advisory Win Prompts",
+			"Leave Room",
+		} {
+			if !strings.Contains(body, want) {
+				t.Fatalf("expected room operator player lobby to contain %q, got %q", want, body)
+			}
+		}
+		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
 	})
 
 	t.Run("hides room management controls from first active non-operator", func(t *testing.T) {
@@ -296,7 +284,7 @@ func TestLobbyPage(t *testing.T) {
 		assertNoLobbyManagementDOM(t, body, treacheryRoom.Code)
 	})
 
-	t.Run("room operator treachery lobby keeps existing setup controls", func(t *testing.T) {
+	t.Run("room operator treachery lobby omits setup controls", func(t *testing.T) {
 		treacheryRoom := &game.Room{
 			Code:      "TRCH2",
 			State:     game.StateLobby,
@@ -314,15 +302,15 @@ func TestLobbyPage(t *testing.T) {
 		treacheryRoom.OperatorSessionID = operator.SessionID
 
 		component := LobbyPage(treacheryRoom, operator, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
 
-		renderer.Render(component).
-			AssertContains(`id="role-config"`).
-			AssertContains(`id="preset-form"`).
-			AssertContains(`@post(&#39;/room/TRCH2/config/player-count/increment&#39;)`).
-			AssertContains(`@post(&#39;/room/TRCH2/start&#39;)`)
+		if !strings.Contains(body, `id="player-lobby"`) || !strings.Contains(body, "Treachery - 5 players") || !strings.Contains(body, "Leave Room") {
+			t.Fatalf("expected room operator lobby to render player-safe Treachery lobby content, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, treacheryRoom.Code)
 	})
 
-	t.Run("shows need more players message", func(t *testing.T) {
+	t.Run("shows empty lobby waiting status", func(t *testing.T) {
 		// Create empty room to test minimum message
 		emptyRoom := &game.Room{
 			Code:       "EMPTY",
@@ -335,16 +323,19 @@ func TestLobbyPage(t *testing.T) {
 		component := LobbyPage(emptyRoom, player1, cfg, cardService)
 
 		renderer.Render(component).
-			AssertContains("Need at least 1 player to start")
+			AssertContains("Waiting for Room Operator - 0 of 4 seats filled").
+			AssertNotContains("Start Game")
 	})
 
-	t.Run("shows start button when enough players", func(t *testing.T) {
+	t.Run("shows player lobby instead of start controls when enough players", func(t *testing.T) {
 		// Room already has 2 players (player1 and player2), which is >= 1
 		component := LobbyPage(room, player1, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
 
-		renderer.Render(component).
-			AssertContains("Start Game").
-			AssertContains(`@post(&#39;/room/TEST1/start&#39;)`)
+		if !strings.Contains(body, `id="player-lobby"`) || !strings.Contains(body, "Waiting for Room Operator - 2 of 4 seats filled") {
+			t.Fatalf("expected read-only player lobby, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, room.Code)
 	})
 
 	t.Run("shows leave button", func(t *testing.T) {
@@ -445,25 +436,31 @@ func TestLobbyBody(t *testing.T) {
 		renderer.Render(component).
 			AssertNotEmpty().
 			AssertHasElementWithID("lobby-container").
-			AssertContains("Players (1)")
+			AssertHasElementWithID("player-lobby").
+			AssertContains("Players").
+			AssertContains("1 of 4 seats filled")
 	})
 
-	t.Run("shows minimum players message", func(t *testing.T) {
+	t.Run("renders read-only player surface", func(t *testing.T) {
 		component := LobbyBody(room, player, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
 
-		renderer.Render(component).
-			AssertContains("Start Game")
+		if !strings.Contains(body, "Waiting for Room Operator - 1 of 4 seats filled") || !strings.Contains(body, "Leave Room") {
+			t.Fatalf("expected read-only lobby body, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, room.Code)
 	})
 
-	t.Run("enables start button when enough players", func(t *testing.T) {
+	t.Run("does not render start controls when enough players", func(t *testing.T) {
 		// Room already has 1 player which is enough to start
 
 		component := LobbyBody(room, player, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
 
-		renderer.Render(component).
-			AssertNotContains("Need at least").
-			AssertContains("Start Game").
-			AssertContains(`data-attr:disabled="$isStarting || !$canStartGame"`)
+		if strings.Contains(body, "Start Game") || strings.Contains(body, `data-attr:disabled="$isStarting || !$canStartGame"`) {
+			t.Fatalf("expected lobby body to omit start controls, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, room.Code)
 	})
 
 }

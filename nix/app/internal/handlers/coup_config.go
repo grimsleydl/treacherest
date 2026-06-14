@@ -113,9 +113,10 @@ func (h *Handler) updateCoupPlayerCount(w http.ResponseWriter, r *http.Request, 
 	}
 
 	room.CoupPreset = preset
-	room.CoupRoleCounts = counts
-	room.CoupRoleCountsCustom = false
-	room.CoupAllowUnsafeRoleCounts = false
+	if !room.CoupRoleCountsCustom {
+		room.CoupRoleCounts = counts
+		room.CoupAllowUnsafeRoleCounts = false
+	}
 	h.store.UpdateRoom(room)
 
 	h.eventBus.Publish(Event{

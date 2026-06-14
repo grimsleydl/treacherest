@@ -30,24 +30,9 @@ templ LobbyBody(room *game.Room, currentPlayer *game.Player, cfg *config.ServerC
 }
 
 templ LobbyContent(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService) {
-	// Only add signals for players who can control the game
-	if canManageRoom(room, currentPlayer) {
-		<div
-			data-signals:is-starting="false"
-			data-signals:start-error=""
-			data-signals:can-start-game="true"
-			data-signals:validation-message=""
-			data-signals:can-auto-scale="false"
-			data-signals:auto-scale-details=""
-		>
-			@LobbyContentInner(room, currentPlayer, cfg, cardService, true)
-		</div>
-	} else {
-		// Non-controlling players don't need role configuration signals
-		<div data-signals="{qrCode: ''}">
-			@LobbyContentInner(room, currentPlayer, cfg, cardService, false)
-		</div>
-	}
+	<div data-signals="{qrCode: ''}">
+		@PlayerLobbyContent(room, currentPlayer)
+	</div>
 }
 
 templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config.ServerConfig, cardService *game.CardService, canControl bool) {
@@ -461,6 +446,25 @@ func coupRoleCountsRenderKey(room *game.Room) string {
 		counts[game.RoleGreenKnight],
 		counts[game.RoleWasteland],
 	)
+}
+
+func coupRoleSetupDetail(role game.RoleType) string {
+	switch role {
+	case game.RoleKing:
+		return "Starts revealed. Wins if alive when anti-King factions are eliminated."
+	case game.RoleBlueKnight:
+		return "Protects the King, wins with the King, and may use Royal Guard and Inquisition."
+	case game.RoleBlackKnight:
+		return "Assassin faction. Wins when the King is dead, Black survives, and Red is gone."
+	case game.RoleRedKnight:
+		return "Usurper. Wins when the King is dead, Red survives, and all Black Knights are gone."
+	case game.RoleGreenKnight:
+		return "Opportunist. Can share some victories based on the selected Green eligibility rules."
+	case game.RoleWasteland:
+		return "Chaos role for larger tables. Wins alone and never shares victory."
+	default:
+		return "Coup role used for setup and rules reference only."
+	}
 }
 
 func coupPresetMatchesActivePlayers(room *game.Room) bool {
