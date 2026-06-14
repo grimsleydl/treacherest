@@ -806,7 +806,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
 		sse := datastar.NewSSE(w, r)
-		sse.PatchElements(`<div class="alert alert-error">Room not found</div>`,
+		sse.PatchElements(roleValidationErrorFragment("Room not found"),
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -814,7 +814,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	// Verify player is room creator
 	if !h.isRoomCreator(r, room) {
 		sse := datastar.NewSSE(w, r)
-		sse.PatchElements(`<div class="alert alert-error">Unauthorized</div>`,
+		sse.PatchElements(roleValidationErrorFragment("Unauthorized"),
 			datastar.WithSelector("#role-validation"))
 		return
 	}
@@ -826,7 +826,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	case "increment":
 		if currentPlayerCount >= h.config.Server.MaxPlayersPerRoom {
 			sse := datastar.NewSSE(w, r)
-			sse.PatchElements(`<div class="alert alert-error">Maximum player count reached</div>`,
+			sse.PatchElements(roleValidationErrorFragment("Maximum player count reached"),
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -835,7 +835,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	case "decrement":
 		if currentPlayerCount <= h.config.Server.MinPlayersPerRoom {
 			sse := datastar.NewSSE(w, r)
-			sse.PatchElements(`<div class="alert alert-error">Minimum player count reached</div>`,
+			sse.PatchElements(roleValidationErrorFragment("Minimum player count reached"),
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -843,7 +843,7 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 		// Check connected players constraint
 		if currentPlayerCount <= len(room.Players) {
 			sse := datastar.NewSSE(w, r)
-			sse.PatchElements(fmt.Sprintf(`<div class="alert alert-error">Cannot reduce below %d connected players</div>`, len(room.Players)),
+			sse.PatchElements(roleValidationErrorFragment(fmt.Sprintf("Cannot reduce below %d connected players", len(room.Players))),
 				datastar.WithSelector("#role-validation"))
 			return
 		}
@@ -873,6 +873,8 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	// Update room
 	h.store.UpdateRoom(room)
 
+	h.sendUpdatedRoleConfigUI(w, r, room)
+
 	log.Printf("🔍 DEBUG: About to publish role_config_updated event for room %s after %s player count", roomCode, action)
 
 	// Publish event - SSE handlers will take care of sending UI updates to all connected clients
@@ -883,6 +885,10 @@ func (h *Handler) updatePlayerCount(w http.ResponseWriter, r *http.Request, acti
 	})
 
 	log.Printf("🔍 DEBUG: Finished publishing role_config_updated event for room %s", roomCode)
+}
+
+func roleValidationErrorFragment(message string) string {
+	return fmt.Sprintf(`<div id="role-validation" class="validation-messages"><div class="alert alert-error">%s</div></div>`, message)
 }
 
 func (h *Handler) applyPresetForPlayerCount(room *game.Room) {

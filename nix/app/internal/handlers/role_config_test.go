@@ -142,6 +142,102 @@ func TestUpdateRolePreset(t *testing.T) {
 	}
 }
 
+func TestUpdateTreacheryPlayerCountPatchesVisibleCountImmediately(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeTreachery
+	roleConfig, err := h.roleConfigService.CreateFromPreset("standard", 5)
+	if err != nil {
+		t.Fatalf("failed to create role config: %v", err)
+	}
+	room.RoleConfig = roleConfig
+	operator := game.NewPlayer("operator", "Playing Operator", "session-operator")
+	room.AddPlayer(operator)
+	markRoomOperatorForTest(room, operator)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.RoleConfig.MaxPlayers != 6 {
+		t.Fatalf("expected player count to increment to 6, got %d", updatedRoom.RoleConfig.MaxPlayers)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "6 players") {
+		t.Fatalf("expected immediate response to render updated 6-player count, got: %s", body)
+	}
+	if !strings.Contains(body, "#role-config") {
+		t.Fatalf("expected response to patch role config, got: %s", body)
+	}
+	if !strings.Contains(body, `id="role-validation"`) {
+		t.Fatalf("expected response to include validation wrapper, got: %s", body)
+	}
+	if strings.Contains(body, "#role-validation") {
+		t.Fatalf("player-count success path should not target the legacy validation-only selector, got: %s", body)
+	}
+	if strings.Contains(body, "data-init") || strings.Contains(body, "/sse/host/") || strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("player-count patch must not reinitialize host SSE wrappers or broad dashboard containers, got: %s", body)
+	}
+}
+
+func TestUpdateTreacheryPlayerCountErrorIncludesValidationWrapper(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeTreachery
+	roleConfig, err := h.roleConfigService.CreateFromPreset("standard", h.config.Server.MaxPlayersPerRoom)
+	if err != nil {
+		t.Fatalf("failed to create role config: %v", err)
+	}
+	room.RoleConfig = roleConfig
+	operator := game.NewPlayer("operator", "Playing Operator", "session-operator")
+	room.AddPlayer(operator)
+	markRoomOperatorForTest(room, operator)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/player-count/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Maximum player count reached") {
+		t.Fatalf("expected max-count validation message, got: %s", body)
+	}
+	if !strings.Contains(body, "#role-validation") {
+		t.Fatalf("expected validation target selector, got: %s", body)
+	}
+	if !strings.Contains(body, `id="role-validation"`) {
+		t.Fatalf("expected validation patch to include its target wrapper, got: %s", body)
+	}
+	if strings.Contains(body, "data-init") || strings.Contains(body, "/sse/host/") || strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("validation patch must not reinitialize host SSE wrappers or broad dashboard containers, got: %s", body)
+	}
+}
+
 // Commented out - tests for deprecated ToggleRole handler
 /* func TestToggleRole(t *testing.T) {
 	// Create test config
