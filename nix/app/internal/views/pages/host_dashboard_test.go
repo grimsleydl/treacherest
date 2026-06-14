@@ -236,6 +236,45 @@ func TestHostDashboardLobby_InvalidCoupSetupDisablesStartWithValidationLine(t *t
 		AssertContains("Requires exactly 5 active players")
 }
 
+func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "ROLEC",
+		State:      game.StateLobby,
+		RulesMode:  game.RulesModeCoup,
+		CoupPreset: game.CoupPresetFive,
+		Players:    make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
+	room.Players[host.ID] = host
+	room.OperatorSessionID = host.SessionID
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains("Role Count Configuration").
+		AssertContains(`id="role-count-required"`).
+		AssertContains(`id="role-count-flexible"`).
+		AssertContains(`data-config-row="role-preset"`).
+		AssertContains(`data-stepper-locked="king"`).
+		AssertContains(`data-stepper-locked="redKnight"`).
+		AssertContains("Required for Coup baseline").
+		AssertContains(`type="hidden" name="king" value="1"`).
+		AssertContains(`type="hidden" name="redKnight" value="1"`).
+		AssertContains(`data-stepper="blueKnight"`).
+		AssertContains(`data-stepper="blackKnight"`).
+		AssertContains(`data-stepper="greenKnight"`).
+		AssertContains(`data-stepper="wastelandKnight"`).
+		AssertContains(`id="role-count-mode-label"`).
+		AssertContains("Preset role counts").
+		AssertContains(`id="role-count-advanced"`).
+		AssertContains("Unsafe Role Count Override").
+		AssertContains(`data-config-row="king-to-blue"`).
+		AssertContains(`data-config-row="red-to-black"`).
+		AssertContains(`data-config-row="royal-guard"`).
+		AssertContains(`data-config-row="inquisition-result"`).
+		AssertContains(`<details`)
+}
+
 func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{

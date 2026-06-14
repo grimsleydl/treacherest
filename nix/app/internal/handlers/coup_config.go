@@ -155,9 +155,11 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 		counts[role] = count
 	}
 
-	room.CoupRoleCounts = game.NormalizeCoupRoleCounts(counts)
-	room.CoupRoleCountsCustom = true
-	room.CoupAllowUnsafeRoleCounts = r.FormValue("unsafeRoleCounts") == "on"
+	counts = game.NormalizeCoupRoleCounts(counts)
+	unsafeRoleCounts := r.FormValue("unsafeRoleCounts") == "on"
+	room.CoupRoleCounts = counts
+	room.CoupAllowUnsafeRoleCounts = unsafeRoleCounts
+	room.CoupRoleCountsCustom = unsafeRoleCounts || !coupRoleCountsMatchPreset(counts, room.CoupPreset)
 	h.store.UpdateRoom(room)
 
 	h.eventBus.Publish(Event{
@@ -167,6 +169,21 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 	})
 
 	h.renderCoupConfigResponse(w, r, room)
+}
+
+func coupRoleCountsMatchPreset(counts game.CoupRoleCounts, preset game.CoupPreset) bool {
+	presetCounts, ok := game.CoupRoleCountsForPreset(preset)
+	if !ok {
+		return false
+	}
+	counts = game.NormalizeCoupRoleCounts(counts)
+	presetCounts = game.NormalizeCoupRoleCounts(presetCounts)
+	for _, role := range game.CoupRoleCountOptions() {
+		if counts[role] != presetCounts[role] {
+			return false
+		}
+	}
+	return true
 }
 
 // UpdateCoupInfoPolicy updates the selected Coup private information policy for a room.

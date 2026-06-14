@@ -301,6 +301,48 @@ func TestUpdateCoupRoleCountsSetsCustomCounts(t *testing.T) {
 	}
 }
 
+func TestUpdateCoupRoleCountsMatchingPresetKeepsPresetMode(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("king", "1")
+	form.Add("blueKnight", "1")
+	form.Add("blackKnight", "1")
+	form.Add("redKnight", "1")
+	form.Add("greenKnight", "1")
+	form.Add("wastelandKnight", "0")
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-counts", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupRoleCounts(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected counts matching selected preset to keep preset role-count mode")
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Preset role counts") {
+		t.Fatalf("expected preset role-count state in response, got: %s", body)
+	}
+}
+
 func TestUpdateCoupRoleCountsSetsUnsafeOverride(t *testing.T) {
 	h := newTestHandler()
 
@@ -375,8 +417,8 @@ func TestSetupRouter_RoutesCoupRoleCountUpdates(t *testing.T) {
 		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
 	}
 	updatedRoom, _ := h.store.GetRoom(room.Code)
-	if !updatedRoom.CoupRoleCountsCustom {
-		t.Fatal("expected route to set custom Coup role counts")
+	if updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected route to keep preset role-count mode when submitted counts match the selected preset")
 	}
 }
 
