@@ -32,6 +32,7 @@ func TestStreamHost(t *testing.T) {
 
 	host := game.NewPlayer("host-123", "Host", "session-123")
 	host.IsHost = true
+	room.OperatorSessionID = host.SessionID
 	room.AddPlayer(host)
 	gameStore.UpdateRoom(room)
 
@@ -41,6 +42,7 @@ func TestStreamHost(t *testing.T) {
 	// Add cookies
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	req.AddCookie(&http.Cookie{Name: "session", Value: host.SessionID})
 
 	// Add chi context with URL params
 	rctx := chi.NewRouteContext()
@@ -118,6 +120,7 @@ func TestStreamHostUnauthorized(t *testing.T) {
 	require.NoError(t, err)
 
 	player := game.NewPlayer("player-123", "Player", "session-123")
+	room.OperatorSessionID = "session-operator"
 	room.AddPlayer(player)
 	gameStore.UpdateRoom(room)
 
@@ -172,6 +175,83 @@ func TestStreamHostUnauthorized(t *testing.T) {
 	}
 }
 
+func TestStreamHostAuthorizesPlayingRoomOperator(t *testing.T) {
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+
+	room, err := gameStore.CreateRoom()
+	require.NoError(t, err)
+	room.RulesMode = game.RulesModeCoup
+	operator := game.NewPlayer("operator-123", "Playing Operator", "session-operator")
+	operator.IsHost = false
+	room.OperatorSessionID = operator.SessionID
+	room.AddPlayer(operator)
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: operator.ID})
+	req.AddCookie(&http.Cookie{Name: "session", Value: operator.SessionID})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	defer cancel()
+
+	w := httptest.NewRecorder()
+	started := make(chan struct{})
+	go func() {
+		close(started)
+		h.StreamHost(w, req)
+	}()
+
+	<-started
+	require.Eventually(t, func() bool {
+		return strings.Contains(w.Body.String(), "host-dashboard-container")
+	}, time.Second, 10*time.Millisecond, "playing Room Operator should receive Operator Dashboard SSE")
+	cancel()
+}
+
+func TestStreamHostRejectsStaleHostCookieWithoutOperatorSession(t *testing.T) {
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+
+	room, err := gameStore.CreateRoom()
+	require.NoError(t, err)
+	room.OperatorSessionID = "session-operator"
+	player := game.NewPlayer("player-123", "Normal Player", "session-player")
+	room.AddPlayer(player)
+	gameStore.UpdateRoom(room)
+
+	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: player.ID})
+	req.AddCookie(&http.Cookie{Name: "session", Value: player.SessionID})
+	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.StreamHost(w, req)
+	}()
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+	<-done
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotContains(t, w.Body.String(), "host-dashboard-container")
+}
+
 // TestStreamHostPlayerUpdates tests that host SSE receives player join/leave events
 func TestStreamHostPlayerUpdates(t *testing.T) {
 	// Create test handler
@@ -185,6 +265,7 @@ func TestStreamHostPlayerUpdates(t *testing.T) {
 
 	host := game.NewPlayer("host-123", "Host", "session-123")
 	host.IsHost = true
+	room.OperatorSessionID = host.SessionID
 	room.AddPlayer(host)
 	gameStore.UpdateRoom(room)
 
@@ -192,6 +273,7 @@ func TestStreamHostPlayerUpdates(t *testing.T) {
 	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	req.AddCookie(&http.Cookie{Name: "session", Value: host.SessionID})
 
 	// Add chi context
 	rctx := chi.NewRouteContext()
@@ -258,6 +340,7 @@ func TestStreamHostCoupRevealUpdatesDashboard(t *testing.T) {
 	target.Role = mockHandlerCoupCard(1002, "Blue Knight")
 	target.RoleRevealed = false
 	target.FaceUp = false
+	room.OperatorSessionID = host.SessionID
 	room.AddPlayer(host)
 	room.AddPlayer(target)
 	gameStore.UpdateRoom(room)
@@ -265,6 +348,7 @@ func TestStreamHostCoupRevealUpdatesDashboard(t *testing.T) {
 	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	req.AddCookie(&http.Cookie{Name: "session", Value: host.SessionID})
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)
@@ -312,12 +396,14 @@ func TestStreamHostCoupConfigUpdatesDashboard(t *testing.T) {
 
 	host := game.NewPlayer("host-123", "Host", "session-123")
 	host.IsHost = true
+	room.OperatorSessionID = host.SessionID
 	room.AddPlayer(host)
 	gameStore.UpdateRoom(room)
 
 	req := httptest.NewRequest("GET", "/sse/host/"+room.Code, nil)
 	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: host.ID})
 	req.AddCookie(&http.Cookie{Name: "host_" + room.Code, Value: "true"})
+	req.AddCookie(&http.Cookie{Name: "session", Value: host.SessionID})
 
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("code", room.Code)

@@ -639,24 +639,26 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the user is the host
-	hostCookie, err := r.Cookie("host_" + roomCode)
-	if err != nil || hostCookie.Value != "true" {
-		log.Printf("📡 Unauthorized host SSE attempt for room: %s", roomCode)
-		http.Error(w, "Unauthorized - Host access only", http.StatusUnauthorized)
+	sessionCookie, err := r.Cookie("session")
+	if err != nil || !room.IsOperatorSession(sessionCookie.Value) {
+		log.Printf("📡 Unauthorized Operator Dashboard SSE attempt for room: %s", roomCode)
+		http.Error(w, "Unauthorized - Room Operator access only", http.StatusUnauthorized)
 		return
 	}
 
-	// Get host player from cookie
 	playerCookie, err := r.Cookie("player_" + roomCode)
 	if err != nil {
-		http.Error(w, "Host player not found", http.StatusUnauthorized)
+		http.Error(w, "Operator player not found", http.StatusUnauthorized)
 		return
 	}
 
 	player := room.GetPlayer(playerCookie.Value)
 	if player == nil {
-		http.Error(w, "Host player not found in room", http.StatusUnauthorized)
+		http.Error(w, "Operator player not found in room", http.StatusUnauthorized)
+		return
+	}
+	if player.SessionID != sessionCookie.Value {
+		http.Error(w, "Operator player session mismatch", http.StatusUnauthorized)
 		return
 	}
 
