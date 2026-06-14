@@ -91,11 +91,23 @@ func TestUpdateCoupPresetFromHostDashboardPatchesHostSurface(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, "host-dashboard-container") {
-		t.Fatalf("expected host dashboard patch in response, got: %s", body)
+	if !strings.Contains(body, "#host-dashboard-coup-setup") {
+		t.Fatalf("expected Coup setup fragment patch in response, got: %s", body)
+	}
+	if !strings.Contains(body, "#operator-start-controls") {
+		t.Fatalf("expected operator start controls fragment patch in response, got: %s", body)
+	}
+	if !strings.Contains(body, `id="role-count-validation"`) {
+		t.Fatalf("expected role-count validation line in response, got: %s", body)
+	}
+	if strings.Contains(body, "host-dashboard-container") {
+		t.Fatalf("host dashboard preset update should not patch the broad dashboard container, got: %s", body)
 	}
 	if strings.Contains(body, "lobby-content") {
 		t.Fatalf("host dashboard preset update should not target lobby content, got: %s", body)
+	}
+	if strings.Contains(body, "data-init") || strings.Contains(body, "/sse/host/") {
+		t.Fatalf("host dashboard config patch must not reinitialize SSE wrappers, got: %s", body)
 	}
 	if !strings.Contains(body, "2 Black Knights") {
 		t.Fatalf("expected host response to include updated 6-player role counts, got: %s", body)
@@ -148,8 +160,11 @@ func TestUpdateCoupPlayerCountIncrementsPresetAndRoleCounts(t *testing.T) {
 	if !strings.Contains(body, `name="blackKnight" value="2"`) {
 		t.Fatalf("expected response to render updated Black Knight count, got: %s", body)
 	}
-	if !strings.Contains(body, `data: elements <div id="lobby-content"`) {
-		t.Fatalf("expected lobby patch to preserve #lobby-content wrapper, got: %s", body)
+	if !strings.Contains(body, "#host-dashboard-coup-setup") || !strings.Contains(body, "#operator-start-controls") {
+		t.Fatalf("expected operator dashboard fragments for room operator update, got: %s", body)
+	}
+	if strings.Contains(body, "lobby-content") || strings.Contains(body, "data-init") {
+		t.Fatalf("operator dashboard config update should not patch lobby content or SSE wrappers, got: %s", body)
 	}
 }
 
@@ -181,8 +196,8 @@ func TestUpdateCoupPlayerCountFromHostCookiePatchesHostSurface(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, "host-dashboard-container") {
-		t.Fatalf("expected host dashboard patch from host-cookie surface, got: %s", body)
+	if !strings.Contains(body, "#host-dashboard-coup-setup") || !strings.Contains(body, "#operator-start-controls") {
+		t.Fatalf("expected host dashboard fragments from host-cookie surface, got: %s", body)
 	}
 	if strings.Contains(body, "lobby-content") {
 		t.Fatalf("host-cookie Coup player-count update should not target lobby content, got: %s", body)
@@ -224,8 +239,8 @@ func TestUpdateCoupPlayerCountAtMaximumRerendersCurrentState(t *testing.T) {
 	if !strings.Contains(body, "9 players") {
 		t.Fatalf("expected response to render current 9-player setup, got: %s", body)
 	}
-	if !strings.Contains(body, "host-dashboard-container") {
-		t.Fatalf("expected host dashboard patch at max count, got: %s", body)
+	if !strings.Contains(body, "#host-dashboard-coup-setup") || !strings.Contains(body, "#operator-start-controls") {
+		t.Fatalf("expected host dashboard fragments at max count, got: %s", body)
 	}
 }
 

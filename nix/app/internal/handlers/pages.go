@@ -110,8 +110,8 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Show appropriate page based on player type and game state
-			if player.IsHost && h.isRoomOperator(r, room) {
-				// Host sees dashboard view
+			if h.isRoomOperator(r, room) {
+				// The Room Operator sees the dashboard view before game start.
 				var component templ.Component
 				switch room.State {
 				case game.StateLobby:

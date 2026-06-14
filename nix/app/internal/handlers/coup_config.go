@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"treacherest/internal/game"
+	"treacherest/internal/views/pages"
 
 	"github.com/go-chi/chi/v5"
 	datastar "github.com/starfederation/datastar-go/datastar"
@@ -296,11 +297,19 @@ func (h *Handler) renderCoupConfigResponse(w http.ResponseWriter, r *http.Reques
 	}
 
 	sse := datastar.NewSSE(w, r)
-	if player.IsHost || requestHasHostDashboardCookie(r, room.Code) {
-		h.renderHostDashboard(sse, room, player)
+	if room.IsOperatorSession(player.SessionID) || requestHasHostDashboardCookie(r, room.Code) {
+		h.renderHostDashboardCoupConfigUpdate(sse, room)
 		return
 	}
 	h.renderLobby(sse, room, player)
+}
+
+func (h *Handler) renderHostDashboardCoupConfigUpdate(sse *datastar.ServerSentEventGenerator, room *game.Room) {
+	setupHTML := renderToString(pages.HostDashboardCoupSetup(room))
+	sse.PatchElements(setupHTML, datastar.WithSelector("#host-dashboard-coup-setup"))
+
+	startHTML := renderToString(pages.HostDashboardStartControls(room, h.config))
+	sse.PatchElements(startHTML, datastar.WithSelector("#operator-start-controls"))
 }
 
 func requestHasHostDashboardCookie(r *http.Request, roomCode string) bool {

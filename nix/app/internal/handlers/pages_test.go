@@ -390,9 +390,6 @@ func TestHandler_JoinRoom(t *testing.T) {
 		}
 
 		body := w.Body.String()
-		if !strings.Contains(body, "Rules Mode") {
-			t.Error("expected rules mode label")
-		}
 		if !strings.Contains(body, "Coup") {
 			t.Error("expected Coup rules mode")
 		}
@@ -407,6 +404,40 @@ func TestHandler_JoinRoom(t *testing.T) {
 			if strings.Contains(body, forbidden) {
 				t.Errorf("non-operator lobby rendered forbidden management DOM %q", forbidden)
 			}
+		}
+	})
+
+	t.Run("playing room operator sees operator dashboard before game start", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		room.CoupPreset = game.CoupPresetFive
+		operator := game.NewPlayer("operator", "Playing Operator", "session-operator")
+		operator.IsHost = false
+		room.AddPlayer(operator)
+		room.OperatorSessionID = operator.SessionID
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		req := httptest.NewRequest("GET", "/room/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: operator.ID})
+		req.AddCookie(&http.Cookie{Name: "session", Value: operator.SessionID})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", w.Code)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, `id="host-dashboard-container"`) {
+			t.Fatalf("expected operator dashboard for playing room operator, got %q", body)
+		}
+		if strings.Contains(body, `id="player-lobby"`) {
+			t.Fatalf("playing room operator should not receive player lobby setup surface: %q", body)
 		}
 	})
 
@@ -441,7 +472,7 @@ func TestHandler_JoinRoom(t *testing.T) {
 		}
 
 		body := w.Body.String()
-		if !strings.Contains(body, "Game Lobby") {
+		if !strings.Contains(body, `id="player-lobby"`) {
 			t.Fatalf("expected player-safe lobby, got %q", body)
 		}
 		for _, forbidden := range []string{

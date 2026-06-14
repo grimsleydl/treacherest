@@ -210,6 +210,32 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 		AssertNotContains("Traitors")
 }
 
+func TestHostDashboardLobby_InvalidCoupSetupDisablesStartWithValidationLine(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:       "BADST",
+		State:      game.StateLobby,
+		RulesMode:  game.RulesModeCoup,
+		CoupPreset: game.CoupPresetFive,
+		Players:    make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
+	player := &game.Player{ID: "p1", Name: "Player One", SessionID: "session-one"}
+	room.Players[host.ID] = host
+	room.Players[player.ID] = player
+	room.OperatorSessionID = host.SessionID
+	cfg := config.DefaultConfig()
+
+	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains(`id="operator-dashboard"`).
+		AssertContains(`id="operator-start-controls"`).
+		AssertContains(`id="operator-start-game"`).
+		AssertContains(`disabled`).
+		AssertContains(`aria-describedby="role-count-validation"`).
+		AssertContains(`id="role-count-validation"`).
+		AssertContains("Requires exactly 5 active players")
+}
+
 func TestHostDashboardLobby_TreacheryModeKeepsLegacyRoleConfiguration(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
