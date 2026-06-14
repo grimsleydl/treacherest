@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"strings"
 	"testing"
 	"time"
 	"treacherest"
@@ -198,6 +199,84 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Leave Room")
 	})
 
+	t.Run("non-operator coup lobby omits all room management dom", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:       "COUP4",
+			State:      game.StateLobby,
+			RulesMode:  game.RulesModeCoup,
+			CoupPreset: game.CoupPresetFive,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 5,
+		}
+		operator := game.NewPlayer("operator", "Room Operator", "session-operator")
+		player := game.NewPlayer("player", "Regular Player", "session-player")
+		coupRoom.Players[operator.ID] = operator
+		coupRoom.Players[player.ID] = player
+		coupRoom.OperatorSessionID = operator.SessionID
+
+		component := LobbyPage(coupRoom, player, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
+
+		if !strings.Contains(body, "Game Lobby") || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
+			t.Fatalf("expected player-safe lobby content, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
+	})
+
+	t.Run("non-operator treachery lobby omits role configuration dom", func(t *testing.T) {
+		treacheryRoom := &game.Room{
+			Code:      "TRCH1",
+			State:     game.StateLobby,
+			RulesMode: game.RulesModeTreachery,
+			Players:   make(map[string]*game.Player),
+		}
+		roleService := game.NewRoleConfigService(cfg)
+		roleConfig, err := roleService.CreateFromPreset("standard", 5)
+		if err != nil {
+			t.Fatalf("create role config: %v", err)
+		}
+		treacheryRoom.RoleConfig = roleConfig
+		operator := game.NewPlayer("operator", "Room Operator", "session-operator")
+		player := game.NewPlayer("player", "Regular Player", "session-player")
+		treacheryRoom.Players[operator.ID] = operator
+		treacheryRoom.Players[player.ID] = player
+		treacheryRoom.OperatorSessionID = operator.SessionID
+
+		component := LobbyPage(treacheryRoom, player, cfg, cardService)
+		body := renderer.Render(component).GetHTML()
+
+		if !strings.Contains(body, "Game Lobby") || !strings.Contains(body, "Regular Player") || !strings.Contains(body, "Leave Room") {
+			t.Fatalf("expected player-safe lobby content, got %q", body)
+		}
+		assertNoLobbyManagementDOM(t, body, treacheryRoom.Code)
+	})
+
+	t.Run("room operator treachery lobby keeps existing setup controls", func(t *testing.T) {
+		treacheryRoom := &game.Room{
+			Code:      "TRCH2",
+			State:     game.StateLobby,
+			RulesMode: game.RulesModeTreachery,
+			Players:   make(map[string]*game.Player),
+		}
+		roleService := game.NewRoleConfigService(cfg)
+		roleConfig, err := roleService.CreateFromPreset("standard", 5)
+		if err != nil {
+			t.Fatalf("create role config: %v", err)
+		}
+		treacheryRoom.RoleConfig = roleConfig
+		operator := game.NewPlayer("operator", "Room Operator", "session-operator")
+		treacheryRoom.Players[operator.ID] = operator
+		treacheryRoom.OperatorSessionID = operator.SessionID
+
+		component := LobbyPage(treacheryRoom, operator, cfg, cardService)
+
+		renderer.Render(component).
+			AssertContains(`id="role-config"`).
+			AssertContains(`id="preset-form"`).
+			AssertContains(`@post(&#39;/room/TRCH2/config/player-count/increment&#39;)`).
+			AssertContains(`@post(&#39;/room/TRCH2/start&#39;)`)
+	})
+
 	t.Run("shows need more players message", func(t *testing.T) {
 		// Create empty room to test minimum message
 		emptyRoom := &game.Room{
@@ -229,6 +308,34 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Leave Room").
 			AssertContains(`@post(&#39;/room/TEST1/leave&#39;)`)
 	})
+}
+
+func assertNoLobbyManagementDOM(t *testing.T, body string, roomCode string) {
+	t.Helper()
+
+	for _, forbidden := range []string{
+		`id="role-config"`,
+		`id="preset-form"`,
+		`id="coup-preset-form"`,
+		`id="coup-role-counts-form"`,
+		`id="coup-info-form"`,
+		`id="coup-royal-guard-form"`,
+		`id="coup-inquisition-settings-form"`,
+		`data-signals:is-starting`,
+		`data-signals:start-error`,
+		`data-signals:can-start-game`,
+		`/room/` + roomCode + `/config/`,
+		`/room/` + roomCode + `/start`,
+		`Unsafe Role Count Override`,
+		`Allow Leaderless Games`,
+		`Hide Role Distribution`,
+		`Fully Random Roles`,
+		`Start Game`,
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("non-operator lobby rendered forbidden management DOM %q in %q", forbidden, body)
+		}
+	}
 }
 
 func TestLobbyBody(t *testing.T) {

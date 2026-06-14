@@ -396,14 +396,69 @@ func TestHandler_JoinRoom(t *testing.T) {
 		if !strings.Contains(body, "Coup") {
 			t.Error("expected Coup rules mode")
 		}
-		if !strings.Contains(body, "Coup Preset") {
-			t.Error("expected Coup preset summary")
+		for _, forbidden := range []string{
+			`id="coup-preset-form"`,
+			`id="coup-role-counts-form"`,
+			`/config/coup-`,
+			`Unsafe Role Count Override`,
+			`Start Game`,
+			`/start`,
+		} {
+			if strings.Contains(body, forbidden) {
+				t.Errorf("non-operator lobby rendered forbidden management DOM %q", forbidden)
+			}
 		}
-		if !strings.Contains(body, "5 players") {
-			t.Error("expected default Coup preset player count")
+	})
+
+	t.Run("legacy host flag does not grant non-operator lobby management controls", func(t *testing.T) {
+		h := newTestHandler()
+
+		room, _ := h.store.CreateRoom()
+		room.RulesMode = game.RulesModeCoup
+		room.CoupPreset = game.CoupPresetFive
+		staleHost := game.NewPlayer("host-flag", "Stale Host", "session-stale-host")
+		staleHost.IsHost = true
+		operator := game.NewPlayer("operator", "Room Operator", "session-operator")
+		room.AddPlayer(staleHost)
+		room.AddPlayer(operator)
+		room.OperatorSessionID = operator.SessionID
+		h.store.UpdateRoom(room)
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		req := httptest.NewRequest("GET", "/room/"+room.Code, nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "player_" + room.Code,
+			Value: staleHost.ID,
+		})
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", w.Code)
 		}
-		if !strings.Contains(body, "Requires exactly 5 active players") {
-			t.Error("expected Coup preset validation message")
+
+		body := w.Body.String()
+		if !strings.Contains(body, "Game Lobby") {
+			t.Fatalf("expected player-safe lobby, got %q", body)
+		}
+		for _, forbidden := range []string{
+			`id="coup-preset-form"`,
+			`id="coup-role-counts-form"`,
+			`id="coup-info-form"`,
+			`id="coup-royal-guard-form"`,
+			`id="coup-inquisition-settings-form"`,
+			`/config/coup-`,
+			`Unsafe Role Count Override`,
+			`Start Game`,
+			`/start`,
+			`id="app-operator-chip"`,
+		} {
+			if strings.Contains(body, forbidden) {
+				t.Fatalf("non-operator lobby rendered forbidden management DOM %q in %q", forbidden, body)
+			}
 		}
 	})
 }
