@@ -681,6 +681,49 @@ func TestGameBody_CoupRoyalGuardBlockerLimit(t *testing.T) {
 		AssertNotContains("any number of untapped creatures")
 }
 
+func TestGameBody_CoupRoyalGuardIsPublicConfirmTwiceNotice(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room := &game.Room{
+		Code:       "RGNOTICE",
+		State:      game.StatePlaying,
+		RulesMode:  game.RulesModeCoup,
+		Players:    make(map[string]*game.Player),
+		MaxPlayers: 5,
+	}
+	blue := &game.Player{
+		ID:           "blue",
+		Name:         "Blue Player",
+		Role:         mockCoupCard(1002, "Blue Knight"),
+		RoleRevealed: false,
+		FaceUp:       false,
+	}
+	room.Players[blue.ID] = blue
+
+	html := renderer.Render(GameBody(room, blue)).GetHTML()
+	privyHTML := extractBetween(t, html, `id="zone-privy"`, `id="zone-notices"`)
+	actionsHTML := extractBetween(t, html, `id="zone-actions"`, `id="zone-roster"`)
+	for _, expected := range []string{
+		"notice-card",
+		"Royal Guard",
+		"Use Royal Guard",
+		"Confirm Royal Guard",
+		`@post(&#39;/room/RGNOTICE/coup/royal-guard/blue&#39;)`,
+	} {
+		if !strings.Contains(actionsHTML, expected) {
+			t.Fatalf("expected public Royal Guard action detail %q in actions HTML: %s", expected, actionsHTML)
+		}
+	}
+	if strings.Contains(privyHTML, "Use Royal Guard") {
+		t.Fatalf("Royal Guard should stay outside the Privy Panel: %s", privyHTML)
+	}
+	for _, forbidden := range []string{"onclick=", "confirm("} {
+		if strings.Contains(actionsHTML, forbidden) {
+			t.Fatalf("Royal Guard should not use browser confirm %q: %s", forbidden, actionsHTML)
+		}
+	}
+}
+
 func TestGameBody_CoupInquisitionCallUI(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room, blue, _, green := makeCoupInquisitionViewRoom()
@@ -880,13 +923,29 @@ func TestGameBody_CoupAdvisoryWinPromptRequiresConfirmation(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room, actor := makeCoupWinViewRoom()
 
-	renderer.Render(GameBody(room, actor)).
-		AssertContains("Looks like Black might have just won???").
-		AssertContains("King has fallen").
-		AssertContains("Confirm Win").
-		AssertContains("Reject Prompt").
-		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/confirm&#39;)`).
-		AssertContains(`@post(&#39;/room/COUPWIN/coup/win/reject&#39;)`)
+	html := renderer.Render(GameBody(room, actor)).GetHTML()
+	for _, expected := range []string{
+		"notice-card",
+		"alert-warning",
+		"ADVISORY - NOT A RULING",
+		"Looks like Black might have just won???",
+		"King has fallen",
+		"Confirm Win",
+		"Confirm Coup Win",
+		"Reject Prompt",
+		"Confirm Reject Prompt",
+		`@post(&#39;/room/COUPWIN/coup/win/confirm&#39;)`,
+		`@post(&#39;/room/COUPWIN/coup/win/reject&#39;)`,
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected advisory prompt detail %q in HTML: %s", expected, html)
+		}
+	}
+	for _, forbidden := range []string{"onclick=", "confirm("} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("advisory prompt should not use browser confirm %q: %s", forbidden, html)
+		}
+	}
 }
 
 func TestGameBody_CoupConfirmedWinShowsOutcome(t *testing.T) {
@@ -897,9 +956,13 @@ func TestGameBody_CoupConfirmedWinShowsOutcome(t *testing.T) {
 	room.State = game.StateEnded
 
 	renderer.Render(GameBody(room, actor)).
+		AssertContains("notice-card").
+		AssertContains("alert-success").
 		AssertContains("Confirmed Coup Win").
 		AssertContains("Black win confirmed").
-		AssertContains("King has fallen")
+		AssertContains("King has fallen").
+		AssertNotContains("Confirm Win").
+		AssertNotContains("Reject Prompt")
 }
 
 func makeCoupInquisitionViewRoom() (*game.Room, *game.Player, *game.Player, *game.Player) {
