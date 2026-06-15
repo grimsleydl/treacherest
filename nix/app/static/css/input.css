@@ -159,9 +159,14 @@
   }
 
   #debug-control-surface.debug-panel-minimized {
+    inset-block-start: auto;
+    inset-block-end: 1rem;
+    inset-inline-start: auto;
+    inset-inline-end: 1rem;
     top: auto;
     bottom: 1rem;
     width: min(18rem, calc(100vw - 2rem));
+    height: auto;
     max-height: none;
     padding: 0.5rem;
     overflow: visible;

@@ -250,11 +250,17 @@ func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
 		AssertContains(`id="debug-panel-toggle"`).
 		AssertContains(`aria-controls="debug-panel"`).
 		AssertContains(`aria-expanded="true"`).
-		AssertContains("Minimize").
+		AssertContains("Collapse").
 		AssertContains(`id="debug-panel-minimized"`).
 		AssertContains("Debug Mode minimized").
 		AssertContains("debug-panel-minimized").
 		AssertContains(`surface.classList.toggle("debug-panel-minimized", minimized)`).
+		AssertContains("applyDebugPanelMinimizedLayout(minimized)").
+		AssertContains(`surface.style.insetBlockStart = "auto"`).
+		AssertContains(`surface.style.insetBlockEnd = "1rem"`).
+		AssertContains(`surface.style.width = "min(18rem, calc(100vw - 2rem))"`).
+		AssertContains(`surface.style.height = "auto"`).
+		AssertContains(`surface.style.removeProperty("inset-block-start")`).
 		AssertContains("treacherest_debug_panel_minimized_").
 		AssertContains("setDebugPanelMinimized")
 }

@@ -223,7 +223,7 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 					aria-controls="debug-panel"
 					aria-expanded="true"
 				>
-					Minimize
+					Collapse
 				</button>
 				<span class="badge badge-warning">Debug Mode</span>
 			</div>
@@ -324,6 +324,36 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 				const dumpBtn = document.getElementById("debug-dump");
 				const restoreBtn = document.getElementById("debug-restore");
 
+				function applyDebugPanelMinimizedLayout(minimized) {
+					if (!surface) return;
+
+					if (minimized) {
+						surface.style.insetBlockStart = "auto";
+						surface.style.insetBlockEnd = "1rem";
+						surface.style.insetInlineStart = "auto";
+						surface.style.insetInlineEnd = "1rem";
+						surface.style.top = "auto";
+						surface.style.bottom = "1rem";
+						surface.style.width = "min(18rem, calc(100vw - 2rem))";
+						surface.style.height = "auto";
+						surface.style.maxHeight = "none";
+						surface.style.padding = "0.5rem";
+						surface.style.overflow = "visible";
+					} else {
+						surface.style.removeProperty("inset-block-start");
+						surface.style.removeProperty("inset-block-end");
+						surface.style.removeProperty("inset-inline-start");
+						surface.style.removeProperty("inset-inline-end");
+						surface.style.removeProperty("top");
+						surface.style.removeProperty("bottom");
+						surface.style.removeProperty("width");
+						surface.style.removeProperty("height");
+						surface.style.removeProperty("max-height");
+						surface.style.removeProperty("padding");
+						surface.style.removeProperty("overflow");
+					}
+				}
+
 				function setDebugPanelMinimized(minimized) {
 					if (!surface || !panel || !minimizedPanel || !panelToggleBtn) return;
 
@@ -332,12 +362,13 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 					minimizedPanel.hidden = !minimized;
 					minimizedPanel.classList.toggle("hidden", !minimized);
 					surface.classList.toggle("debug-panel-minimized", minimized);
+					applyDebugPanelMinimizedLayout(minimized);
 					surface.dataset.debugPanelMinimized = minimized ? "true" : "false";
 					panelToggleBtn.setAttribute(
 						"aria-expanded",
 						minimized ? "false" : "true",
 					);
-					panelToggleBtn.textContent = minimized ? "Expand" : "Minimize";
+					panelToggleBtn.textContent = minimized ? "Expand" : "Collapse";
 					localStorage.setItem(
 						DEBUG_PANEL_STATE_KEY_PREFIX + roomCode,
 						minimized ? "true" : "false",

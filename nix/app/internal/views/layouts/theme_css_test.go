@@ -66,8 +66,11 @@ func TestInteractionCSSIncludesPrivyPeekAndDebugMinimizeRules(t *testing.T) {
 		`.privy:has([data-privy-peek-button]:active) .privy-content`,
 		`.privy:has([data-privy-peek-button]:active) .privy-veil`,
 		`#debug-control-surface.debug-panel-minimized`,
+		`inset-block-start: auto;`,
+		`inset-block-end: 1rem;`,
 		`width: min(18rem, calc(100vw - 2rem));`,
 		`top: auto;`,
+		`height: auto;`,
 	} {
 		if !strings.Contains(css, expected) {
 			t.Fatalf("expected generated CSS to contain %q", expected)
