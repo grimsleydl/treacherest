@@ -17,6 +17,8 @@ Coup needs a browser-assisted setup and game aid that assigns secret roles, dist
 
 Treacherest is the umbrella app. Coup is one rules mode in Treacherest. Treachery remains historical inspiration and may remain a separate or legacy rules mode, but Treachery rules are not the authority for Coup.
 
+For role-by-role design rationale, see `docs/coup-role-design.md`.
+
 ## Goals
 
 - Preserve normal Commander free-for-all semantics by default.
