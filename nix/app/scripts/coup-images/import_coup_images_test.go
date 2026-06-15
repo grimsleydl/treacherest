@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestImportCoupRoleImagesCopiesSupportedFilesToCanonicalIDs(t *testing.T) {
+func TestImportCoupRoleImagesCopiesSupportedFilesToCanonicalSlugs(t *testing.T) {
 	sourceDir := t.TempDir()
 	outputDir := t.TempDir()
 
@@ -32,12 +32,12 @@ func TestImportCoupRoleImagesCopiesSupportedFilesToCanonicalIDs(t *testing.T) {
 	if result.Imported != 6 {
 		t.Fatalf("expected 6 imports, got %d", result.Imported)
 	}
-	assertFileBytes(t, filepath.Join(outputDir, "1001.jpg"), sourceFiles["king.jpg"])
-	assertFileBytes(t, filepath.Join(outputDir, "1002.png"), sourceFiles["blue-knight.png"])
-	assertFileBytes(t, filepath.Join(outputDir, "1003.webp"), sourceFiles["black-knight.webp"])
-	assertFileBytes(t, filepath.Join(outputDir, "1004.jpeg"), sourceFiles["red-knight.jpeg"])
-	assertFileBytes(t, filepath.Join(outputDir, "1005.jpg"), sourceFiles["green-knight.jpg"])
-	assertFileBytes(t, filepath.Join(outputDir, "1006.jpg"), sourceFiles["wasteland-knight.jpg"])
+	assertFileBytes(t, filepath.Join(outputDir, "king.jpg"), sourceFiles["king.jpg"])
+	assertFileBytes(t, filepath.Join(outputDir, "blue-knight.png"), sourceFiles["blue-knight.png"])
+	assertFileBytes(t, filepath.Join(outputDir, "black-knight.webp"), sourceFiles["black-knight.webp"])
+	assertFileBytes(t, filepath.Join(outputDir, "red-knight.jpeg"), sourceFiles["red-knight.jpeg"])
+	assertFileBytes(t, filepath.Join(outputDir, "green-knight.jpg"), sourceFiles["green-knight.jpg"])
+	assertFileBytes(t, filepath.Join(outputDir, "wasteland-knight.jpg"), sourceFiles["wasteland-knight.jpg"])
 }
 
 func TestImportCoupRoleImagesRemovesStaleCanonicalFilesForRole(t *testing.T) {
@@ -49,18 +49,22 @@ func TestImportCoupRoleImagesRemovesStaleCanonicalFilesForRole(t *testing.T) {
 			t.Fatalf("write source %s: %v", name, err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outputDir, "1001.jpg"), []byte("stale"), 0644); err != nil {
-		t.Fatalf("write stale output: %v", err)
+	for _, name := range []string{"king.jpg", "1001.jpg"} {
+		if err := os.WriteFile(filepath.Join(outputDir, name), []byte("stale"), 0644); err != nil {
+			t.Fatalf("write stale output %s: %v", name, err)
+		}
 	}
 
 	if _, err := ImportCoupRoleImages(sourceDir, outputDir); err != nil {
 		t.Fatalf("import Coup role images: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(outputDir, "1001.jpg")); !os.IsNotExist(err) {
-		t.Fatalf("expected stale 1001.jpg to be removed, got err %v", err)
+	for _, name := range []string{"king.jpg", "1001.jpg"} {
+		if _, err := os.Stat(filepath.Join(outputDir, name)); !os.IsNotExist(err) {
+			t.Fatalf("expected stale %s to be removed, got err %v", name, err)
+		}
 	}
-	assertFileBytes(t, filepath.Join(outputDir, "1001.png"), []byte("king.png"))
+	assertFileBytes(t, filepath.Join(outputDir, "king.png"), []byte("king.png"))
 }
 
 func assertFileBytes(t *testing.T, path string, want []byte) {

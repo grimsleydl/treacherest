@@ -22,14 +22,14 @@ just import-coup-role-images
 
 The importer also accepts source filenames by role ID, such as `1001.png`, but slug filenames are preferred while reviewing generated art.
 
-Canonical embedded filenames use Coup role IDs and should be committed when the final image set is accepted:
+Canonical embedded filenames use Coup role slugs and should be committed when the final image set is accepted:
 
-- `1001.*` King
-- `1002.*` Blue Knight
-- `1003.*` Black Knight
-- `1004.*` Red Knight
-- `1005.*` Green Knight
-- `1006.*` Wasteland Knight
+- `king.*`
+- `blue-knight.*`
+- `black-knight.*`
+- `red-knight.*`
+- `green-knight.*`
+- `wasteland-knight.*`
 
 Supported extensions are `.jpg`, `.jpeg`, `.png`, and `.webp`.
 

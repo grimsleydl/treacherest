@@ -37,7 +37,7 @@ func TestLoadCoupRoleImages_AttachesEmbeddedImagesToRoleCards(t *testing.T) {
 
 func TestLoadCoupRoleImages_UsesDetectedImportedExtension(t *testing.T) {
 	images := fstest.MapFS{
-		"static/images/coup/1001.png": &fstest.MapFile{Data: []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}},
+		"static/images/coup/king.png": &fstest.MapFile{Data: []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}},
 	}
 
 	if err := LoadCoupRoleImages(images); err != nil {
@@ -49,7 +49,7 @@ func TestLoadCoupRoleImages_UsesDetectedImportedExtension(t *testing.T) {
 	if !strings.HasPrefix(card.Base64Image, "data:image/png;base64,") {
 		t.Fatalf("expected png data URI, got %q", card.Base64Image)
 	}
-	if card.ImagePath != "/static/images/coup/1001.png" {
+	if card.ImagePath != "/static/images/coup/king.png" {
 		t.Fatalf("expected imported png path, got %q", card.ImagePath)
 	}
 }

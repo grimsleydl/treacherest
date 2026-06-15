@@ -34,12 +34,12 @@ Use this workflow when adding or replacing the production Coup role images.
    ```
 
 5. Confirm the importer wrote canonical embedded assets under `nix/app/static/images/coup/`:
-   - `1001.*` King
-   - `1002.*` Blue Knight
-   - `1003.*` Black Knight
-   - `1004.*` Red Knight
-   - `1005.*` Green Knight
-   - `1006.*` Wasteland Knight
+   - `king.*`
+   - `blue-knight.*`
+   - `black-knight.*`
+   - `red-knight.*`
+   - `green-knight.*`
+   - `wasteland-knight.*`
 6. Run the focused image tests:
 
    ```sh
@@ -52,13 +52,13 @@ The temporary source files in `.scratch/` are working material and should stay u
 
 The importer requires a complete six-role image set. This is deliberate: importing a partial set can leave the role-card art style inconsistent. The runtime still allows missing Coup images before assets exist, so core gameplay is not blocked.
 
-When replacing an image, re-run the importer with all six source images. It removes stale canonical files for the same role across supported extensions, so switching King from `1001.jpg` to `1001.webp` does not leave both versions behind.
+When replacing an image, re-run the importer with all six source images. It removes stale canonical files for the same role across supported extensions, so switching King from `king.jpg` to `king.webp` does not leave both versions behind.
 
 ## Import Targets
 
-The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are ID-based.
+The importer accepts `.jpg`, `.jpeg`, `.png`, or `.webp` files named by slug, role name, or role ID. Canonical output files are slug-based so the asset directory stays readable.
 
-| Role | Preferred source slug | Canonical ID |
+| Role | Preferred source slug | Accepted source ID |
 | --- | --- | --- |
 | King | `king` | `1001` |
 | Blue Knight | `blue-knight` | `1002` |

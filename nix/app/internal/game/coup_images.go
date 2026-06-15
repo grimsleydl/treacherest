@@ -18,12 +18,12 @@ type CoupRoleImage struct {
 }
 
 var coupRoleImageManifest = []CoupRoleImage{
-	{Role: RoleKing, ID: 1001, Slug: "king", StaticPath: "static/images/coup/1001.jpg", PublicPath: "/static/images/coup/1001.jpg"},
-	{Role: RoleBlueKnight, ID: 1002, Slug: "blue-knight", StaticPath: "static/images/coup/1002.jpg", PublicPath: "/static/images/coup/1002.jpg"},
-	{Role: RoleBlackKnight, ID: 1003, Slug: "black-knight", StaticPath: "static/images/coup/1003.jpg", PublicPath: "/static/images/coup/1003.jpg"},
-	{Role: RoleRedKnight, ID: 1004, Slug: "red-knight", StaticPath: "static/images/coup/1004.jpg", PublicPath: "/static/images/coup/1004.jpg"},
-	{Role: RoleGreenKnight, ID: 1005, Slug: "green-knight", StaticPath: "static/images/coup/1005.jpg", PublicPath: "/static/images/coup/1005.jpg"},
-	{Role: RoleWasteland, ID: 1006, Slug: "wasteland-knight", StaticPath: "static/images/coup/1006.jpg", PublicPath: "/static/images/coup/1006.jpg"},
+	{Role: RoleKing, ID: 1001, Slug: "king", StaticPath: "static/images/coup/king.jpg", PublicPath: "/static/images/coup/king.jpg"},
+	{Role: RoleBlueKnight, ID: 1002, Slug: "blue-knight", StaticPath: "static/images/coup/blue-knight.jpg", PublicPath: "/static/images/coup/blue-knight.jpg"},
+	{Role: RoleBlackKnight, ID: 1003, Slug: "black-knight", StaticPath: "static/images/coup/black-knight.jpg", PublicPath: "/static/images/coup/black-knight.jpg"},
+	{Role: RoleRedKnight, ID: 1004, Slug: "red-knight", StaticPath: "static/images/coup/red-knight.jpg", PublicPath: "/static/images/coup/red-knight.jpg"},
+	{Role: RoleGreenKnight, ID: 1005, Slug: "green-knight", StaticPath: "static/images/coup/green-knight.jpg", PublicPath: "/static/images/coup/green-knight.jpg"},
+	{Role: RoleWasteland, ID: 1006, Slug: "wasteland-knight", StaticPath: "static/images/coup/wasteland-knight.jpg", PublicPath: "/static/images/coup/wasteland-knight.jpg"},
 }
 
 var coupRoleImageExtensions = []string{".jpg", ".jpeg", ".png", ".webp"}
@@ -76,10 +76,10 @@ func LoadCoupRoleImages(imagesFS fs.FS) error {
 func readCoupRoleImage(imagesFS fs.FS, roleImage CoupRoleImage) (string, []byte, error) {
 	var lastMissing error
 	for _, extension := range coupRoleImageExtensions {
-		staticPath := fmt.Sprintf("static/images/coup/%d%s", roleImage.ID, extension)
+		staticPath := fmt.Sprintf("static/images/coup/%s%s", roleImage.Slug, extension)
 		imageData, err := fs.ReadFile(imagesFS, staticPath)
 		if err == nil {
-			return fmt.Sprintf("/static/images/coup/%d%s", roleImage.ID, extension), imageData, nil
+			return fmt.Sprintf("/static/images/coup/%s%s", roleImage.Slug, extension), imageData, nil
 		}
 		if !isMissingImageError(err) {
 			return "", nil, err
