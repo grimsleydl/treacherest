@@ -147,9 +147,10 @@ The current user-facing role taxonomy is Treachery-oriented: Leader, Guardian, A
 
 ### Green Knight
 
-- Opportunist.
-- May share King-side or Red-side victory only if eligible.
-- Uses Strict Green Eligibility by default.
+- Blue-hunter / conditional opportunist.
+- Serves neither crown by default.
+- Wants at least one Blue Knight dead before King Fall under the default Green Blue Hunt model.
+- May share King-side or Red-side victory only through Green Blue Hunt eligibility.
 - Must not gain Red-side eligibility merely because Blue loses when King falls.
 
 ### Wasteland Knight
@@ -290,10 +291,10 @@ King wins if:
 
 Blue wins with King.
 
-Green may win with King if:
+Green may share a King-side victory if:
 
 - Green is alive when King wins, and
-- either no Blue Knight is alive or Inquisition has succeeded.
+- either Green's Hunt is currently satisfied or Inquisition has succeeded.
 
 ### Black
 
@@ -311,23 +312,26 @@ Red wins if:
 - Red is alive, and
 - all Black Knights are dead or eliminated.
 
-Green may share Red victory only under Green Eligibility rules.
+Green may share Red victory only under Green Blue Hunt rules.
 
 ### Green
 
-Default Strict Green Eligibility:
+Default Green Blue Hunt:
 
-- Green can share King-side victory if alive and either no Blue Knight is alive or Inquisition has succeeded.
-- Green can share Red-side victory only if all Blue Knights were already dead before King Fall.
-- Blue Knights who lose because of King Fall do not count as having been dead for purposes of making Green eligible to share Red victory.
+- Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall.
+- Blue reveal, role exposure, Royal Guard reveal, Inquisition reveal, voluntary reveal, and table-talk proof do not satisfy the Hunt.
+- Green can share King-side victory if alive and either Green's Hunt is satisfied or Inquisition has succeeded.
+- Green can share Red-side victory if alive and Green's Hunt was locked as satisfied before King Fall.
+- Blue Knights who lose because of King Fall do not satisfy Green's Hunt for Red-side sharing.
 
 Broad Amnesty variant:
 
-- If Inquisition succeeded before King Fall, Green may share either King-side or Red-side victory.
+- If Inquisition succeeded before King Fall, Green may share either King-side or Red-side victory even if the Hunt was not satisfied by Blue death.
 
-Simple Green variant:
+Green Hunt Requirement variant:
 
-- Green wins with King if alive and loses if Black or Wasteland wins.
+- Default: one Blue Knight must die before King Fall.
+- Hard mode: all Blue Knights must die before King Fall.
 
 ### Wasteland
 
@@ -455,7 +459,7 @@ Potential state values:
 
 - Unit tests for Coup preset distributions.
 - Unit tests for information policy outputs.
-- Unit tests for Green Eligibility rules.
+- Unit tests for Green Blue Hunt rules.
 - Unit tests for Inquisition result policy.
 - Unit tests for Royal Guard setting serialization.
 - Integration tests for create/join/start/assign role flow.
@@ -480,7 +484,7 @@ Potential state values:
 
 ### Phase 2: Stronger State Tracking
 
-- Track Green Eligibility before King Fall.
+- Track Green Hunt Before King Fall.
 - Track King Fall explicitly.
 - Improve advisory win checks.
 - Add richer audit/history of reveals, eliminations, and Inquisitions.

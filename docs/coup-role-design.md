@@ -40,7 +40,7 @@ Coup has one public center, one loyal protector role, two anti-King roles with c
 | Blue Knight | Hidden protector | Makes loyalty valuable but not fully provable |
 | Black Knight | Assassin | Wants King dead but also wants Red gone |
 | Red Knight | Usurper | Wants King dead but must eliminate Black |
-| Green Knight | Opportunist | Can share a win only under bounded eligibility |
+| Green Knight | Blue-hunter / opportunist | Hunts Blue Knights and can share a win only under bounded Hunt eligibility |
 | Wasteland Knight | Solo chaos role | Adds larger-table pressure without sharing victory |
 
 The Red/Black split is central. Coup should not be "King team versus anti-King team." Black and Red both need the King dead, but they do not share the same endgame. That creates a temporary conspiracy with an expiration date.
@@ -174,20 +174,22 @@ That does not make Red and Black a team. Red knowing Black creates leverage, par
 
 ### Role Concept
 
-Green Knight is the opportunist. Green can share a King-side or Red-side victory only when eligible under the active Strict Green Eligibility rule.
+Green Knight is the Blue-hunter / conditional opportunist. Green serves neither crown by default. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall; a harder variant can require all Blue Knights to die or be eliminated before King Fall.
 
-Current default display:
+Current default display should tell Green:
 
-- Green may share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded.
-- Green may share a Red-side victory while alive only if all Blue Knights were already dead before King Fall.
-- Green does not share Black or Wasteland victories.
-- Blue Knights losing because the King falls do not make Green eligible to share Red's victory.
+- You serve neither crown.
+- You are hunting Blue Knights.
+- Your Hunt is satisfied when at least one Blue Knight dies before King Fall.
+- Blue dying with the King does not count.
+- If Inquisition succeeds, you may share a King-side victory even without a Blue death.
+- You do not share Black or Wasteland victories.
 
 ### Why The Role Exists
 
-Green gives the table a flexible bargaining role that is not simply loyalist, assassin, or usurper. Green should be able to make temporary deals with more than one side, but only inside boundaries that avoid toxic incentives.
+Green gives the table a flexible bargaining role that is not simply loyalist, assassin, or usurper. Green should be able to make temporary deals with more than one side, but only inside boundaries created by the Hunt.
 
-The goal is not "Green can always win with whoever is winning." The goal is "Green has a conditional path to profit from some outcomes, which makes their public behavior hard to read."
+The goal is not "Green can always win with whoever is winning." The goal is "Green wants the King's hidden protectors humbled before accepting either the King's continued rule or Red's usurpation."
 
 ### The Hostage-Pattern Problem
 
@@ -200,18 +202,19 @@ The main Green design trap is a hostage pattern:
 
 That pattern is bad because Green can convert the King's refusal into a forced Blue loss and then benefit from the very Blue death caused by King Fall.
 
-Strict Green Eligibility prevents this by locking Red-side eligibility before King Fall. Blue dying because the King loses does not make Green newly eligible for Red's victory.
+Green Blue Hunt prevents this by locking Green Hunt Before King Fall. Blue dying because the King loses does not make Green newly eligible for Red's victory.
 
 ### Inquisition Relationship
 
-Successful Inquisition gives Green a non-toxic path to cooperate with King-side victory. It can relax Green's King-side restriction without requiring Blue to die. That is useful because it lets Blue and Green sometimes align after Blue takes a meaningful public risk.
+Successful Inquisition gives Green a non-toxic path to cooperate with King-side victory. It creates King-Side Inquisition Amnesty without requiring Blue to die. That is useful because it lets Blue and Green sometimes align after Blue takes a meaningful public risk.
 
-Broad Amnesty, where successful Inquisition can also qualify Green for Red-side victory, is an optional variant. It is not the active default.
+Broad Amnesty, where successful Inquisition before King Fall can also qualify Green for Red-side victory, is an optional variant. It is not the active default.
 
 ### Failure Modes To Avoid
 
 - Letting Green always join the winning side.
 - Letting Green profit from Blue dying only because the King fell.
+- Letting Blue reveal or exposure satisfy the Hunt.
 - Making Green's in-game win condition vague.
 - Turning Green into a hidden hard teammate of either King or Red.
 
