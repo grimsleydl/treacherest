@@ -213,8 +213,28 @@ Whether Green is allowed to share a King-side or Red-side victory under the sele
 _Avoid_: Green team membership
 
 **Green Red-Share Lock**:
-The Red-side Green Eligibility latch recorded when King Fall happens. Before King Fall it is pending; after King Fall it is either eligible or not eligible and is not recomputed later.
+The Red-side Green Eligibility latch recorded when King Fall happens. Before King Fall it is pending; when King Fall is recorded it is computed from the current pre-King-Fall Blue elimination state and, when Broad Amnesty is enabled, pre-King-Fall Inquisition success. After King Fall it is either eligible or not eligible and is not recomputed later.
 _Avoid_: Live Green eligibility, Blue death after King Fall
+
+**Green Hunt Before King Fall**:
+The user-facing label for the Green Red-Share Lock. It should read as pending before King Fall, satisfied when the Hunt was locked as satisfied, and not satisfied when King Fall happened before the Hunt was satisfied.
+_Avoid_: Green Eligible Before King Fall
+
+**Green Hunt Satisfied Before King Fall**:
+The product meaning of the locked Red-side Green Eligibility state. It may temporarily map to an older implementation field, but product copy, tests, and new helpers should use Hunt-satisfaction language.
+_Avoid_: Generic Green eligibility
+
+**Green Blue Hunt**:
+The active default Green Eligibility model where Green is a Blue-hunter. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall; a harder variant may require all Blue Knights to die or be eliminated before King Fall. Blue reveal, role exposure, Royal Guard reveal, Inquisition reveal, or table-talk proof do not satisfy the Hunt.
+_Avoid_: Green wins with whoever is winning, Blue exposure is enough
+
+**Green Hunt Requirement**:
+The pre-start Coup variant setting that controls whether Green Blue Hunt requires one Blue Knight to die before King Fall or all Blue Knights to die before King Fall.
+_Avoid_: Green difficulty, Blue exposure threshold
+
+**King-Side Inquisition Amnesty**:
+The default Green Blue Hunt exception where successful Inquisition lets Green share a King-side victory even if no Blue Knight died before King Fall. By default this does not let Green share a Red-side victory.
+_Avoid_: Inquisition makes Red legitimate by default
 
 **Inquisition**:
 A Coup ability where a Blue Knight names a suspected Red Knight and may reveal Red if correct. The revealed King is not a valid Inquisition target. The caller form is private capability UI and belongs inside the Blue Knight's Privy Panel; public notices and public results belong in public table notices.
@@ -237,16 +257,24 @@ A Coup ability where a revealed Blue Knight can directly block for the King unde
 _Avoid_: Teammate blocking, shared combat
 
 **Strict Green Eligibility**:
-The active default Green Eligibility rule: Green may share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded; Green may share a Red-side victory only if all Blue Knights were already dead before King Fall. Blue losses caused by King Fall do not create Red-side eligibility.
-_Avoid_: Default Green team
+The earlier Green Eligibility model where Green's default Red-side sharing required all Blue Knights to be dead before King Fall. This is superseded by Green Blue Hunt as the default model.
+_Avoid_: Active default Green rule
 
 **Green Win Condition Display**:
-The canonical Green Knight role-card win condition explanation for active Strict Green Eligibility. It should use structured bullets to explicitly say Green may share King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded; may share Red-side victory while alive only if all Blue Knights were already dead before King Fall; does not share Black or Wasteland victories; and does not gain Red-side eligibility from Blue dying because of King Fall.
+The canonical Green Knight role-card win condition explanation for the active Green Blue Hunt model. It should explicitly tell Green: "You serve neither crown"; "You are hunting Blue Knights"; "Your Hunt is satisfied when at least one Blue Knight dies before King Fall"; "Blue dying with the King does not count"; "If Inquisition succeeds, you may share a King-side victory even without a Blue death"; and "You do not share Black or Wasteland victories."
 _Avoid_: Vague selected Green rules copy
 
+**Public Green Hunt Summary**:
+The public/revealed Green Knight rules summary. It should explain the same Hunt rules as the private Green role card, but without second-person private-role flavor.
+_Avoid_: Different public Green rules
+
 **Broad Amnesty**:
-A Green Eligibility variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory.
+A Green Eligibility variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory. It is not the default because exposing Red does not normally make Red's coup legitimate to Green.
 _Avoid_: Default Green rule
+
+**Inquisition Amnesty**:
+The pre-start Coup variant setting that controls whether successful Inquisition gives Green King-side amnesty only or Broad Amnesty for King-side and Red-side sharing.
+_Avoid_: Inquisition result policy
 
 **King Fall**:
 The event where the King loses or dies. Blue losses caused by King Fall do not make Green newly eligible for Red-side victory.
