@@ -1,6 +1,6 @@
 # Coup Role Image Prompts
 
-Status: first draft.
+Status: workflow ready.
 
 This document defines prompt guidance for generating Coup role-card art. Art is secondary to core rules UX, but prompts should produce assets that can later be imported through the existing Coup image pipeline.
 
@@ -13,6 +13,46 @@ Target a vertical card-art aspect ratio with MTG-like portrait composition. Keep
 Generated art should be purely illustrative. Role names, rules text, victory text, reveal state, and card layout must be rendered by Treacherest or a future print/export template so wording can change without regenerating art.
 
 The current import pipeline supports one image per Coup role. Optional style packs are prompt guidance only for now; they should not create parallel image sets or an in-app style selector until a later UI need is proven.
+
+## Asset Workflow
+
+Use this workflow when adding or replacing the production Coup role images.
+
+1. Generate final card-art images outside the app from the prompts in this document.
+2. Save the six final images in a temporary source directory outside git-tracked app assets, for example `.scratch/coup-role-images/final/`.
+3. Name the files by preferred slug:
+   - `king.png`
+   - `blue-knight.png`
+   - `black-knight.png`
+   - `red-knight.png`
+   - `green-knight.png`
+   - `wasteland-knight.png`
+4. From `nix/app`, run the importer:
+
+   ```sh
+   go run ./scripts/coup-images -source ../../.scratch/coup-role-images/final
+   ```
+
+5. Confirm the importer wrote canonical embedded assets under `nix/app/static/images/coup/`:
+   - `1001.*` King
+   - `1002.*` Blue Knight
+   - `1003.*` Black Knight
+   - `1004.*` Red Knight
+   - `1005.*` Green Knight
+   - `1006.*` Wasteland Knight
+6. Run the focused image tests from `nix/app`:
+
+   ```sh
+   go test ./scripts/coup-images ./internal/game -run 'TestImportCoupRoleImages|TestLoadCoupRoleImages' -count=1
+   ```
+
+7. Run the normal build/test path before committing product assets.
+
+The temporary source files in `.scratch/` are working material and should stay untracked. The canonical files copied into `nix/app/static/images/coup/` are product assets and should be committed when the image set is accepted.
+
+The importer requires a complete six-role image set. This is deliberate: importing a partial set can leave the role-card art style inconsistent. The runtime still allows missing Coup images before assets exist, so core gameplay is not blocked.
+
+When replacing an image, re-run the importer with all six source images. It removes stale canonical files for the same role across supported extensions, so switching King from `1001.jpg` to `1001.webp` does not leave both versions behind.
 
 ## Import Targets
 
