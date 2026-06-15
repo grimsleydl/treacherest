@@ -59,6 +59,22 @@ func TestLegacyThemesDoNotInheritTreacherestPalette(t *testing.T) {
 	}
 }
 
+func TestInteractionCSSIncludesPrivyPeekAndDebugMinimizeRules(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	for _, expected := range []string{
+		`.privy:has([data-privy-peek-button]:active) .privy-content`,
+		`.privy:has([data-privy-peek-button]:active) .privy-veil`,
+		`#debug-control-surface.debug-panel-minimized`,
+		`width: min(18rem, calc(100vw - 2rem));`,
+		`top: auto;`,
+	} {
+		if !strings.Contains(css, expected) {
+			t.Fatalf("expected generated CSS to contain %q", expected)
+		}
+	}
+}
+
 func readGeneratedCSS(t *testing.T) string {
 	t.Helper()
 

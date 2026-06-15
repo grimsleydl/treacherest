@@ -13,11 +13,14 @@ func TestPrivyPanelControlsAreKeyboardAccessibleAndLocalOnly(t *testing.T) {
 	for _, expected := range []string{
 		`id="zone-privy"`,
 		`data-signals="{_peek: false, _privyOpen: false}"`,
-		`data-class="{'is-showing': $_peek || $_privyOpen, 'is-peeking': $_peek, 'is-open': $_privyOpen}"`,
+		`data-class:showing="$_peek || $_privyOpen"`,
+		`data-class:peeking="$_peek"`,
+		`data-class:open="$_privyOpen"`,
 		`data-on:interval__duration.30s`,
 		`data-on:visibilitychange__window`,
 		`data-on:pointerup__window="$_peek = false"`,
 		`data-on:pointercancel__window="$_peek = false"`,
+		`data-privy-peek-button="true"`,
 		`type="button"`,
 		`min-h-11`,
 		`Hold to peek`,
@@ -37,6 +40,7 @@ func TestPrivyPanelControlsAreKeyboardAccessibleAndLocalOnly(t *testing.T) {
 		`mousemove`,
 		`requestAnimationFrame`,
 		`data-class:is-showing`,
+		`is-showing`,
 	} {
 		if strings.Contains(html, forbidden) {
 			t.Fatalf("Privy Panel should not rely on %q: %s", forbidden, html)

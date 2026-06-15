@@ -253,6 +253,8 @@ func TestHostDashboardLobby_DebugControlSurfaceCanBeMinimized(t *testing.T) {
 		AssertContains("Minimize").
 		AssertContains(`id="debug-panel-minimized"`).
 		AssertContains("Debug Mode minimized").
+		AssertContains("debug-panel-minimized").
+		AssertContains(`surface.classList.toggle("debug-panel-minimized", minimized)`).
 		AssertContains("treacherest_debug_panel_minimized_").
 		AssertContains("setDebugPanelMinimized")
 }

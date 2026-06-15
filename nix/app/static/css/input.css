@@ -138,7 +138,8 @@
     transition: opacity 180ms ease, filter 180ms ease;
   }
 
-  .privy.is-showing .privy-content {
+  .privy.showing .privy-content,
+  .privy:has([data-privy-peek-button]:active) .privy-content {
     opacity: 1;
     filter: none;
     pointer-events: auto;
@@ -148,12 +149,26 @@
     transition: opacity 180ms ease;
   }
 
-  .privy.is-showing .privy-veil {
+  .privy.showing .privy-veil,
+  .privy:has([data-privy-peek-button]:active) .privy-veil {
     opacity: 0;
   }
 
-  .privy.is-open .privy-veil {
+  .privy.open .privy-veil {
     pointer-events: none;
+  }
+
+  #debug-control-surface.debug-panel-minimized {
+    top: auto;
+    bottom: 1rem;
+    width: min(18rem, calc(100vw - 2rem));
+    max-height: none;
+    padding: 0.5rem;
+    overflow: visible;
+  }
+
+  #debug-control-surface.debug-panel-minimized > .debug-panel-header {
+    margin-bottom: 0.25rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
