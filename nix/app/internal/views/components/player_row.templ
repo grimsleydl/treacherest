@@ -60,13 +60,24 @@ templ playerRowPublicRole(card *game.Card) {
 				/>
 			</figure>
 		}
-		<p class="text-xs"><strong>Win Condition:</strong> { card.GetWinCondition() }</p>
+		@playerRowWinCondition(card)
 		if card.Text != "" {
 			<div class="text-xs text-base-content/80">
 				@RoleCardText(card.Text)
 			</div>
 		}
 	</div>
+}
+
+templ playerRowWinCondition(card *game.Card) {
+	if len(card.GetWinConditionBullets()) > 0 {
+		<div class="text-xs">
+			<strong>Win Condition:</strong>
+			@RoleWinCondition(card, "mt-1", "mt-1 list-disc space-y-1 pl-5")
+		</div>
+	} else {
+		<p class="text-xs"><strong>Win Condition:</strong> { card.GetWinCondition() }</p>
+	}
 }
 
 func playerRowPublicRoleVisible(player *game.Player) bool {

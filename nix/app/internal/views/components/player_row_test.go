@@ -89,6 +89,35 @@ func TestPlayerRowPublicState(t *testing.T) {
 		}
 	})
 
+	t.Run("revealed green row uses structured strict eligibility win condition", func(t *testing.T) {
+		green := &game.Player{
+			ID:           "green",
+			Name:         "Green Player",
+			Role:         playerRowCard("Green Knight", game.RoleGreenKnight),
+			RoleRevealed: true,
+			JoinedAt:     time.Unix(5, 0),
+		}
+		room.Players[green.ID] = green
+
+		html := renderer.Render(PlayerRow(room, green, viewer)).GetHTML()
+
+		for _, expected := range []string{
+			"<ul",
+			"<li",
+			"May share a King-side victory while alive",
+			"May share a Red-side victory while alive",
+			"Does not share Black or Wasteland victories",
+			"King falls do not make Green eligible",
+		} {
+			if !strings.Contains(html, expected) {
+				t.Fatalf("expected Green row details to contain %q: %s", expected, html)
+			}
+		}
+		if strings.Contains(html, "selected Green rules") {
+			t.Fatalf("expected Green row details to omit vague selected-rules copy: %s", html)
+		}
+	})
+
 	t.Run("eliminated row remains visible without strikethrough", func(t *testing.T) {
 		html := renderer.Render(PlayerRow(room, eliminated, viewer)).GetHTML()
 		if !strings.Contains(html, "Eliminated") {

@@ -159,6 +159,58 @@ func TestRoleCard(t *testing.T) {
 			t.Fatalf("expected win condition text exactly once, got %d in %s", got, html)
 		}
 	})
+
+	t.Run("renders green strict eligibility as structured win condition bullets", func(t *testing.T) {
+		greenCard := &game.Card{
+			Name:   "Green Knight",
+			Type:   "Coup Role",
+			Rarity: "Coup",
+			Text:   "Opportunist with conditional shared victories.",
+			Types: game.CardTypes{
+				Supertype: "Coup",
+				Subtype:   "Green Knight",
+			},
+			Rulings: []string{
+				"Role Goal: " + game.CoupStrictGreenWinCondition,
+				"Win Condition: " + game.CoupStrictGreenWinCondition,
+			},
+		}
+
+		for _, tc := range []struct {
+			name string
+			html string
+		}{
+			{name: "private hero", html: renderer.Render(RoleCard(greenCard, false, false)).GetHTML()},
+			{name: "compact", html: renderer.Render(RoleCard(greenCard, true, true)).GetHTML()},
+			{name: "public", html: renderer.Render(RoleCardPublic(greenCard)).GetHTML()},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				for _, expected := range []string{
+					"<ul",
+					"<li",
+					"May share a King-side victory while alive",
+					"no Blue Knights are alive or Inquisition has succeeded",
+					"May share a Red-side victory while alive",
+					"already dead before King Fall",
+					"Does not share Black or Wasteland victories",
+					"King falls do not make Green eligible",
+				} {
+					if !strings.Contains(tc.html, expected) {
+						t.Fatalf("expected Green role card to contain %q: %s", expected, tc.html)
+					}
+				}
+				if strings.Contains(tc.html, "selected Green rules") {
+					t.Fatalf("expected Green role card to omit vague selected-rules copy: %s", tc.html)
+				}
+				if strings.Contains(tc.html, "Broad Amnesty") || strings.Contains(tc.html, "Simple Green") {
+					t.Fatalf("expected Green role card to omit inactive variants: %s", tc.html)
+				}
+				if strings.Contains(tc.html, "Rulings") {
+					t.Fatalf("expected duplicate-only Green rulings to be omitted: %s", tc.html)
+				}
+			})
+		}
+	})
 }
 
 func TestRoleCardRulingsRenderBulletedRows(t *testing.T) {

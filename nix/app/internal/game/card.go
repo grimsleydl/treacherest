@@ -1,6 +1,18 @@
 package game
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+var coupStrictGreenWinConditionBullets = []string{
+	"May share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded.",
+	"May share a Red-side victory while alive only if all Blue Knights were already dead before King Fall.",
+	"Does not share Black or Wasteland victories.",
+	"Blue Knights losing because the King falls do not make Green eligible to share Red's victory.",
+}
+
+var CoupStrictGreenWinCondition = strings.Join(coupStrictGreenWinConditionBullets, " ")
 
 // CardTypes represents the type breakdown of a card
 type CardTypes struct {
@@ -88,12 +100,21 @@ func (c *Card) GetWinCondition() string {
 	case "Red Knight":
 		return "Win if the King is dead, Red survives, and all Black Knights are dead."
 	case "Green Knight":
-		return "Win with King or Red only when eligible under the selected Green rules."
+		return CoupStrictGreenWinCondition
 	case "Wasteland Knight":
 		return "Win alone when every other player is eliminated."
 	default:
 		return ""
 	}
+}
+
+func (c *Card) GetWinConditionBullets() []string {
+	if c.GetRoleType() != RoleGreenKnight {
+		return nil
+	}
+	bullets := make([]string, len(coupStrictGreenWinConditionBullets))
+	copy(bullets, coupStrictGreenWinConditionBullets)
+	return bullets
 }
 
 // GetLeaderlessWinCondition returns win conditions for leaderless games

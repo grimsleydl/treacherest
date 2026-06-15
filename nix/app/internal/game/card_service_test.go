@@ -164,6 +164,7 @@ func TestCard_GetWinCondition(t *testing.T) {
 		{"Guardian", "Guardian", "The Guardians help the Leader, they win or lose with them."},
 		{"Assassin", "Assassin", "The Assassins win if the Leader is eliminated."},
 		{"Traitor", "Traitor", "The Traitor wins if they are the last player standing."},
+		{"Green Knight", "Green Knight", "May share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded. May share a Red-side victory while alive only if all Blue Knights were already dead before King Fall. Does not share Black or Wasteland victories. Blue Knights losing because the King falls do not make Green eligible to share Red's victory."},
 		{"Unknown", "Unknown", ""},
 	}
 
