@@ -1,5 +1,7 @@
 package components
 
+import "strconv"
+
 templ ConfirmTwiceButton(signal string, idleLabel string, confirmLabel string, action string, tier string) {
 	<button
 		type="button"
@@ -9,12 +11,16 @@ templ ConfirmTwiceButton(signal string, idleLabel string, confirmLabel string, a
 		data-on:click={ "$" + signal + " ? " + action + " : ($" + signal + " = true)" }
 		data-on:click__outside={ "$" + signal + " = false" }
 		data-on:interval__duration.3s={ "$" + signal + " = false" }
-		data-text={ "$" + signal + " ? '" + confirmLabel + "' : '" + idleLabel + "'" }
-		data-attr:aria-label={ "$" + signal + " ? '" + confirmLabel + "' : '" + idleLabel + "'" }
+		data-text={ confirmTwiceLabelExpression(signal, idleLabel, confirmLabel) }
+		data-attr:aria-label={ confirmTwiceLabelExpression(signal, idleLabel, confirmLabel) }
 		aria-label={ idleLabel }
 	>
 		{ idleLabel }
 	</button>
+}
+
+func confirmTwiceLabelExpression(signal string, idleLabel string, confirmLabel string) string {
+	return "$" + signal + " ? " + strconv.Quote(confirmLabel) + " : " + strconv.Quote(idleLabel)
 }
 
 func confirmTwiceTierClass(tier string) string {

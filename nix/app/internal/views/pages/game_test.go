@@ -626,6 +626,9 @@ func TestGameActions_UseConfirmTwiceAndEliminatedNotice(t *testing.T) {
 			t.Fatalf("did not expect browser confirm %q in actions HTML: %s", forbidden, actionsHTML)
 		}
 	}
+	if strings.Contains(actionsHTML, `: &#39;I&#39;ve Been Eliminated&#39;`) {
+		t.Fatalf("elimination confirm label must be quoted safely for Datastar expressions: %s", actionsHTML)
+	}
 
 	player.RoleRevealed = true
 	revealedHTML := renderer.Render(GameBody(room, player)).GetHTML()
