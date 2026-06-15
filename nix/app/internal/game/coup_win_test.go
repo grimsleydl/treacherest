@@ -5,6 +5,41 @@ import (
 	"testing"
 )
 
+func TestRecordCoupKingFall_DefaultOneBlueHuntSatisfiedWhenOneBlueDead(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue-1", "Blue One", "Blue Knight", true),
+		coupWinPlayer("blue-2", "Blue Two", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+
+	RecordCoupKingFall(room)
+
+	if !room.CoupGreenEligibleBeforeKingFall {
+		t.Fatal("expected one dead Blue Knight to satisfy Green Hunt before King Fall by default")
+	}
+}
+
+func TestRecordCoupKingFall_AllBluesHuntRequiresEveryBlueDead(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue-1", "Blue One", "Blue Knight", true),
+		coupWinPlayer("blue-2", "Blue Two", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupGreenHuntRequirement = CoupGreenHuntAllBlues
+
+	RecordCoupKingFall(room)
+
+	if room.CoupGreenEligibleBeforeKingFall {
+		t.Fatal("expected all-Blues Green Hunt to stay unsatisfied while one Blue Knight remains alive")
+	}
+}
+
 func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenAfterInquisition(t *testing.T) {
 	room := newCoupWinRoom(
 		coupWinPlayer("king", "King Player", "King", false),
@@ -28,6 +63,31 @@ func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenAfterInquisition(t *testi
 		t.Fatal("expected eligible Green to share King-side prompt")
 	}
 	assertCoupWinFact(t, prompt, "Inquisition has succeeded")
+}
+
+func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenWhenHuntIsSatisfied(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue-1", "Blue One", "Blue Knight", true),
+		coupWinPlayer("blue-2", "Blue Two", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", true),
+		coupWinPlayer("red", "Red Player", "Red Knight", true),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+		coupWinPlayer("waste", "Wasteland Player", "Wasteland Knight", true),
+	)
+
+	prompt := CurrentCoupAdvisoryWin(room)
+
+	if prompt == nil {
+		t.Fatal("expected King-side advisory prompt")
+	}
+	if prompt.Outcome != CoupWinOutcomeKingSide {
+		t.Fatalf("expected King-side outcome, got %q", prompt.Outcome)
+	}
+	if !prompt.GreenShares {
+		t.Fatal("expected Green to share King-side victory when Green Hunt is satisfied")
+	}
+	assertCoupWinFact(t, prompt, "Green Hunt is satisfied")
 }
 
 func TestCurrentCoupAdvisoryWin_BlackWhenKingDeadAndRedDead(t *testing.T) {
@@ -75,7 +135,33 @@ func TestCurrentCoupAdvisoryWin_RedDoesNotShareGreenWhenBlueDiesAfterKing(t *tes
 	if prompt.GreenShares {
 		t.Fatal("expected Green not to share Red victory when eligibility was not locked before King fell")
 	}
-	assertCoupWinFact(t, prompt, "Green Knight is not eligible")
+	assertCoupWinFact(t, prompt, "Green Hunt was not satisfied before King Fall")
+}
+
+func TestCurrentCoupAdvisoryWin_RedSharesGreenWhenHuntWasSatisfiedBeforeKingFall(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", true),
+		coupWinPlayer("blue-1", "Blue One", "Blue Knight", true),
+		coupWinPlayer("blue-2", "Blue Two", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", true),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupKingFallen = true
+	room.CoupGreenEligibleBeforeKingFall = true
+
+	prompt := CurrentCoupAdvisoryWin(room)
+
+	if prompt == nil {
+		t.Fatal("expected Red advisory prompt")
+	}
+	if prompt.Outcome != CoupWinOutcomeRed {
+		t.Fatalf("expected Red outcome, got %q", prompt.Outcome)
+	}
+	if !prompt.GreenShares {
+		t.Fatal("expected Green to share Red victory when Green Hunt was satisfied before King Fall")
+	}
+	assertCoupWinFact(t, prompt, "Green Hunt was satisfied before King Fall")
 }
 
 func TestCurrentCoupAdvisoryWin_WastelandSoleSurvivor(t *testing.T) {

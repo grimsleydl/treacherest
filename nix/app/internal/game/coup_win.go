@@ -36,7 +36,9 @@ type coupWinSnapshot struct {
 	kingPresent bool
 	kingAlive   bool
 
-	blueAlive int
+	blueTotal      int
+	blueAlive      int
+	blueEliminated int
 
 	blackTotal int
 	blackAlive int
@@ -163,19 +165,25 @@ func RejectCoupWinPrompt(room *Room, prompt *CoupWinPrompt) {
 	state.RejectedAdvisoryID = prompt.ID
 }
 
-// RecordCoupKingFall locks strict Green eligibility at the moment before King is eliminated.
+// RecordCoupKingFall locks Green Hunt satisfaction at the moment before King is eliminated.
 func RecordCoupKingFall(room *Room) {
 	if room == nil || room.CoupKingFallen {
 		return
 	}
 	room.CoupKingFallen = true
-	room.CoupGreenEligibleBeforeKingFall = CoupStrictGreenEligibleBeforeKingFall(room)
+	room.CoupGreenEligibleBeforeKingFall = CoupGreenHuntSatisfiedBeforeKingFall(room)
 }
 
-// CoupStrictGreenEligibleBeforeKingFall implements the default Red-sharing eligibility rule.
-func CoupStrictGreenEligibleBeforeKingFall(room *Room) bool {
+// CoupGreenHuntSatisfiedBeforeKingFall implements Green's Red-sharing Hunt lock.
+func CoupGreenHuntSatisfiedBeforeKingFall(room *Room) bool {
 	snapshot := newCoupWinSnapshot(room)
-	return snapshot.blueAlive == 0
+	return coupGreenHuntSatisfied(room, snapshot)
+}
+
+// CoupStrictGreenEligibleBeforeKingFall is kept for older callers; use
+// CoupGreenHuntSatisfiedBeforeKingFall for new Coup code.
+func CoupStrictGreenEligibleBeforeKingFall(room *Room) bool {
+	return CoupGreenHuntSatisfiedBeforeKingFall(room)
 }
 
 func newCoupWinSnapshot(room *Room) coupWinSnapshot {
@@ -200,8 +208,11 @@ func newCoupWinSnapshot(room *Room) coupWinSnapshot {
 				snapshot.kingAlive = true
 			}
 		case RoleBlueKnight:
+			snapshot.blueTotal++
 			if !player.IsEliminated {
 				snapshot.blueAlive++
+			} else {
+				snapshot.blueEliminated++
 			}
 		case RoleBlackKnight:
 			snapshot.blackTotal++
@@ -231,7 +242,19 @@ func coupGreenSharesKing(room *Room, snapshot coupWinSnapshot) bool {
 	if snapshot.greenAlive == 0 {
 		return false
 	}
-	return snapshot.blueAlive == 0 || coupInquisitionSucceeded(room)
+	return coupGreenHuntSatisfied(room, snapshot) || coupInquisitionSucceeded(room)
+}
+
+func coupGreenHuntSatisfied(room *Room, snapshot coupWinSnapshot) bool {
+	if snapshot.blueTotal == 0 {
+		return false
+	}
+	switch NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) {
+	case CoupGreenHuntAllBlues:
+		return snapshot.blueEliminated == snapshot.blueTotal
+	default:
+		return snapshot.blueEliminated > 0
+	}
 }
 
 func coupGreenKingFact(room *Room, snapshot coupWinSnapshot, greenShares bool) string {
@@ -240,11 +263,11 @@ func coupGreenKingFact(room *Room, snapshot coupWinSnapshot, greenShares bool) s
 	}
 	if greenShares {
 		if coupInquisitionSucceeded(room) {
-			return "Green Knight is alive and eligible to share because Inquisition has succeeded."
+			return "Green Knight shares because Inquisition has succeeded."
 		}
-		return "Green Knight is alive and eligible to share because no Blue Knights are alive."
+		return "Green Knight shares because Green Hunt is satisfied."
 	}
-	return "Green Knight is alive but not eligible to share because a Blue Knight is still alive and Inquisition has not succeeded."
+	return "Green Knight is alive but does not share because Green Hunt is not satisfied and Inquisition has not succeeded."
 }
 
 func coupGreenRedFact(snapshot coupWinSnapshot, greenShares bool, eligibleBeforeKingFall bool) string {
@@ -252,12 +275,12 @@ func coupGreenRedFact(snapshot coupWinSnapshot, greenShares bool, eligibleBefore
 		return "No living Green Knight is available to share the Red victory."
 	}
 	if greenShares {
-		return "Green Knight is eligible to share because eligibility was locked before the King fell."
+		return "Green Knight shares because Green Hunt was satisfied before King Fall."
 	}
 	if !eligibleBeforeKingFall {
-		return "Green Knight is not eligible because eligibility was not locked before the King fell."
+		return "Green Knight does not share because Green Hunt was not satisfied before King Fall."
 	}
-	return "Green Knight is not eligible to share this Red victory."
+	return "Green Knight does not share this Red victory."
 }
 
 func coupInquisitionSucceeded(room *Room) bool {
