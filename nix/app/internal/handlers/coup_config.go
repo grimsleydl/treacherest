@@ -399,6 +399,42 @@ func (h *Handler) UpdateCoupInquisitionSettings(w http.ResponseWriter, r *http.R
 	h.renderCoupConfigResponse(w, r, room)
 }
 
+// UpdateCoupGreenHuntSettings updates Green Blue Hunt rule settings for a room.
+func (h *Handler) UpdateCoupGreenHuntSettings(w http.ResponseWriter, r *http.Request) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	if room.RulesMode != game.RulesModeCoup {
+		http.Error(w, "Room is not using Coup rules", http.StatusBadRequest)
+		return
+	}
+
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
+
+	room.CoupGreenHuntRequirement = game.NormalizeCoupGreenHuntRequirement(game.CoupGreenHuntRequirement(r.FormValue("huntRequirement")))
+	room.CoupInquisitionAmnesty = game.NormalizeCoupInquisitionAmnesty(game.CoupInquisitionAmnesty(r.FormValue("inquisitionAmnesty")))
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	h.renderCoupConfigResponse(w, r, room)
+}
+
 func (h *Handler) renderCoupConfigResponse(w http.ResponseWriter, r *http.Request, room *game.Room) {
 	playerCookie, err := r.Cookie("player_" + room.Code)
 	if err != nil {

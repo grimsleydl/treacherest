@@ -940,3 +940,79 @@ func TestSetupRouter_RoutesCoupInquisitionSettings(t *testing.T) {
 		t.Fatalf("expected private Inquisition result policy, got %q", updatedRoom.CoupInquisitionResultPolicy)
 	}
 }
+
+func TestUpdateCoupGreenHuntSettings(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	form := url.Values{}
+	form.Add("huntRequirement", string(game.CoupGreenHuntAllBlues))
+	form.Add("inquisitionAmnesty", string(game.CoupInquisitionAmnestyBroad))
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-green-hunt", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+
+	h.UpdateCoupGreenHuntSettings(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupGreenHuntRequirement != game.CoupGreenHuntAllBlues {
+		t.Fatalf("expected Green Hunt requirement %q, got %q", game.CoupGreenHuntAllBlues, updatedRoom.CoupGreenHuntRequirement)
+	}
+	if updatedRoom.CoupInquisitionAmnesty != game.CoupInquisitionAmnestyBroad {
+		t.Fatalf("expected Inquisition Amnesty %q, got %q", game.CoupInquisitionAmnestyBroad, updatedRoom.CoupInquisitionAmnesty)
+	}
+	if !strings.Contains(w.Body.String(), "All Blue Knights must die") {
+		t.Fatalf("expected updated Green Hunt setting in response, got: %s", w.Body.String())
+	}
+}
+
+func TestSetupRouter_RoutesCoupGreenHuntSettings(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	form := url.Values{}
+	form.Add("huntRequirement", string(game.CoupGreenHuntAllBlues))
+	form.Add("inquisitionAmnesty", string(game.CoupInquisitionAmnestyBroad))
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-green-hunt", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupGreenHuntRequirement != game.CoupGreenHuntAllBlues {
+		t.Fatalf("expected Green Hunt requirement %q, got %q", game.CoupGreenHuntAllBlues, updatedRoom.CoupGreenHuntRequirement)
+	}
+	if updatedRoom.CoupInquisitionAmnesty != game.CoupInquisitionAmnestyBroad {
+		t.Fatalf("expected Inquisition Amnesty %q, got %q", game.CoupInquisitionAmnestyBroad, updatedRoom.CoupInquisitionAmnesty)
+	}
+}

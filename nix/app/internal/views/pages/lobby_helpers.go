@@ -17,6 +17,8 @@ func LobbySettingsSummary(room *game.Room) string {
 			"Coup",
 			fmt.Sprintf("%d players", lobbySeatCount(room)),
 			coupInquisitionSummary(room),
+			coupGreenHuntSummary(room),
+			coupInquisitionAmnestySummary(room),
 			coupKingKnowledgeSummary(room),
 		}, " - ")
 	}
@@ -64,6 +66,20 @@ func coupInquisitionSummary(room *game.Room) string {
 		return "Private inquisition"
 	}
 	return "Public inquisition"
+}
+
+func coupGreenHuntSummary(room *game.Room) string {
+	if game.NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) == game.CoupGreenHuntAllBlues {
+		return "All Blue hunt"
+	}
+	return "One Blue hunt"
+}
+
+func coupInquisitionAmnestySummary(room *game.Room) string {
+	if game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad {
+		return "Broad amnesty"
+	}
+	return "King-side amnesty"
 }
 
 func coupKingKnowledgeSummary(room *game.Room) string {

@@ -360,6 +360,23 @@ templ HostDashboardCoupSetup(room *game.Room) {
 						</select>
 					}
 				</form>
+				<form
+					id="coup-green-hunt-settings-form"
+					data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-green-hunt', {contentType: 'form'})", room.Code) }
+				>
+					@ConfigRow("green-hunt-requirement", "Green Hunt Requirement", "Controls whether Green's Hunt needs one Blue Knight death or all Blue Knights dead before King Fall.") {
+						<select id="coup-green-hunt-requirement" name="huntRequirement" class="select select-bordered select-sm w-auto">
+							<option value={ string(game.CoupGreenHuntOneBlue) } selected?={ game.NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) == game.CoupGreenHuntOneBlue }>One Blue Knight must die</option>
+							<option value={ string(game.CoupGreenHuntAllBlues) } selected?={ game.NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) == game.CoupGreenHuntAllBlues }>All Blue Knights must die</option>
+						</select>
+					}
+					@ConfigRow("inquisition-amnesty", "Inquisition Amnesty", "Controls whether successful Inquisition only helps Green share King-side victory or also enables Broad Amnesty for Red-side sharing.") {
+						<select id="coup-inquisition-amnesty" name="inquisitionAmnesty" class="select select-bordered select-sm w-auto">
+							<option value={ string(game.CoupInquisitionAmnestyKingSideOnly) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyKingSideOnly }>King-side only</option>
+							<option value={ string(game.CoupInquisitionAmnestyBroad) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad }>Broad Amnesty</option>
+						</select>
+					}
+				</form>
 			</section>
 			<details id="role-count-advanced" class="rounded-box border border-base-300 bg-base-100 p-3">
 				<summary class="cursor-pointer font-semibold">Advanced</summary>

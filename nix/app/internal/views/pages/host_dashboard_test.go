@@ -110,6 +110,27 @@ func TestHostDashboardPlaying_PublicCoupFacts(t *testing.T) {
 		AssertNotContains("Red Knight")
 }
 
+func TestHostDashboardCoupSetup_GreenBlueHuntSettings(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:                     "HUNT1",
+		State:                    game.StateLobby,
+		RulesMode:                game.RulesModeCoup,
+		CoupPreset:               game.CoupPresetSeven,
+		CoupGreenHuntRequirement: game.CoupGreenHuntAllBlues,
+		CoupInquisitionAmnesty:   game.CoupInquisitionAmnestyBroad,
+		Players:                  make(map[string]*game.Player),
+	}
+
+	renderer.Render(HostDashboardCoupSetup(room)).
+		AssertContains("Green Hunt Requirement").
+		AssertContains("One Blue Knight must die").
+		AssertContains("All Blue Knights must die").
+		AssertContains("Inquisition Amnesty").
+		AssertContains("King-side only").
+		AssertContains("Broad Amnesty")
+}
+
 func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room, _ := makeCoupWinViewRoom()

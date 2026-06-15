@@ -122,6 +122,27 @@ func TestLobbyPage(t *testing.T) {
 			AssertContains("Coup")
 	})
 
+	t.Run("summarizes Green Blue Hunt settings", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:                     "COUPH",
+			State:                    game.StateLobby,
+			RulesMode:                game.RulesModeCoup,
+			CoupPreset:               game.CoupPresetSeven,
+			CoupGreenHuntRequirement: game.CoupGreenHuntAllBlues,
+			CoupInquisitionAmnesty:   game.CoupInquisitionAmnestyBroad,
+			Players:                  make(map[string]*game.Player),
+		}
+		coupRoom.Players[player1.ID] = player1
+		coupRoom.Players[player2.ID] = player2
+		coupRoom.OperatorSessionID = player1.SessionID
+
+		component := LobbyPage(coupRoom, player1, cfg, cardService)
+
+		renderer.Render(component).
+			AssertContains("All Blue hunt").
+			AssertContains("Broad amnesty")
+	})
+
 	t.Run("room operator coup lobby is read-only player surface", func(t *testing.T) {
 		coupRoom := &game.Room{
 			Code:       "COUP2",

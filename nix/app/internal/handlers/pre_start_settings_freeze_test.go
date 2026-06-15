@@ -268,6 +268,20 @@ func TestPreStartSettingsFreezeRejectsAllSetupEndpointsAfterLobby(t *testing.T) 
 					}
 				},
 			},
+			{
+				name:        "Green Blue Hunt variants",
+				path:        "/config/coup-green-hunt",
+				contentType: "application/x-www-form-urlencoded",
+				body:        "huntRequirement=all_blues&inquisitionAmnesty=broad",
+				assert: func(t *testing.T, room *game.Room) {
+					if room.CoupGreenHuntRequirement == game.CoupGreenHuntAllBlues {
+						t.Fatalf("Green Hunt requirement mutated to %q", room.CoupGreenHuntRequirement)
+					}
+					if room.CoupInquisitionAmnesty == game.CoupInquisitionAmnestyBroad {
+						t.Fatalf("Inquisition Amnesty mutated to %q", room.CoupInquisitionAmnesty)
+					}
+				},
+			},
 		}
 
 		for _, tt := range tests {

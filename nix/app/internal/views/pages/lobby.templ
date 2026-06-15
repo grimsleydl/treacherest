@@ -239,6 +239,22 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 								<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
 							</select>
 						</form>
+						<form
+							id="coup-green-hunt-settings-form"
+							class="form-control w-full"
+							data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-green-hunt', {contentType: 'form'})", room.Code) }
+						>
+							<label class="label" for="coup-green-hunt-requirement"><span class="label-text">Green Hunt Requirement</span></label>
+							<select id="coup-green-hunt-requirement" name="huntRequirement" class="select select-bordered select-sm w-full">
+								<option value={ string(game.CoupGreenHuntOneBlue) } selected?={ game.NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) == game.CoupGreenHuntOneBlue }>One Blue Knight must die</option>
+								<option value={ string(game.CoupGreenHuntAllBlues) } selected?={ game.NormalizeCoupGreenHuntRequirement(room.CoupGreenHuntRequirement) == game.CoupGreenHuntAllBlues }>All Blue Knights must die</option>
+							</select>
+							<label class="label" for="coup-inquisition-amnesty"><span class="label-text">Inquisition Amnesty</span></label>
+							<select id="coup-inquisition-amnesty" name="inquisitionAmnesty" class="select select-bordered select-sm w-full">
+								<option value={ string(game.CoupInquisitionAmnestyKingSideOnly) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyKingSideOnly }>King-side only</option>
+								<option value={ string(game.CoupInquisitionAmnestyBroad) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad }>Broad Amnesty</option>
+							</select>
+						</form>
 						if coupPresetMatchesActivePlayers(room) {
 							<p class="text-sm text-success" role="status" aria-live="polite">Matches current player count</p>
 						} else {

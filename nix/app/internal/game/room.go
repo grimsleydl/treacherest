@@ -70,6 +70,8 @@ type Room struct {
 	CoupRoyalGuardBlockerLimit      int
 	CoupInquisition                 *CoupInquisitionState
 	CoupInquisitionResultPolicy     CoupInquisitionResultPolicy
+	CoupGreenHuntRequirement        CoupGreenHuntRequirement
+	CoupInquisitionAmnesty          CoupInquisitionAmnesty
 	CoupKingFallen                  bool
 	CoupGreenEligibleBeforeKingFall bool
 	CoupWin                         *CoupWinState
