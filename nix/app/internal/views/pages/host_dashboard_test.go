@@ -283,11 +283,22 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 		Name:   "Host",
 		IsHost: true,
 	}
+	participant := &game.Player{
+		ID:   "p1",
+		Name: "Player One",
+	}
 	room.Players[host.ID] = host
+	room.Players[participant.ID] = participant
 	cfg := config.DefaultConfig()
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
+		AssertContains(`id="host-dashboard-container" class="min-h-screen bg-base-200 p-4"`).
+		AssertContains(`grid items-start gap-6`).
+		AssertContains(`card border border-base-300 bg-base-100 shadow-lg flex flex-col items-center justify-center p-6`).
+		AssertContains(`class="h-56 w-56 max-w-full"`).
+		AssertContains(`class="badge badge-neutral badge-sm mr-3"`).
 		AssertContains("Player Count").
+		AssertContains(`btn btn-square btn-sm btn-neutral join-item`).
 		AssertContains(`@post(&#39;/room/COUPH/config/coup-player-count/decrement&#39;)`).
 		AssertContains(`@post(&#39;/room/COUPH/config/coup-player-count/increment&#39;)`).
 		AssertContains("Coup Preset").
@@ -312,7 +323,11 @@ func TestHostDashboardLobby_CoupModeUsesCoupSetupControls(t *testing.T) {
 		AssertNotContains("Leaders").
 		AssertNotContains("Guardians").
 		AssertNotContains("Assassins").
-		AssertNotContains("Traitors")
+		AssertNotContains("Traitors").
+		AssertNotContains(`badge badge-primary`).
+		AssertNotContains(`w-[300px]`).
+		AssertNotContains(`h-[300px]`).
+		AssertNotContains(`btn btn-primary btn-sm join-item`)
 }
 
 func TestHostDashboardLobby_InvalidCoupSetupDisablesStartWithValidationLine(t *testing.T) {
@@ -357,6 +372,7 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
 		AssertContains("Role Count Configuration").
+		AssertContains(`card border border-base-300 bg-base-100 shadow-lg`).
 		AssertContains(`id="coup-role-counts-list"`).
 		AssertContains(`card bg-base-100 border border-base-300 rounded-2xl overflow-hidden`).
 		AssertContains(`id="role-row-king"`).
@@ -392,9 +408,14 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`select select-bordered select-sm w-auto`).
 		AssertContains(`collapse collapse-arrow`).
 		AssertContains(`id="role-accordion-blueKnight"`).
-		AssertContains(`collapse-title font-bold flex items-center gap-4`).
-		AssertContains(`btn btn-primary relative z-20`).
-		AssertNotContains(`btn btn-square btn-sm btn-neutral`).
+		AssertContains(`collapse-title min-h-0 flex items-center gap-4 px-4 py-2 pr-12`).
+		AssertContains(`btn btn-square btn-sm btn-neutral relative z-20`).
+		AssertContains(`text-xl font-extrabold leading-none text-base-content`).
+		AssertContains(`btn btn-ghost btn-xs ms-auto`).
+		AssertNotContains(`btn btn-primary relative z-20`).
+		AssertNotContains(`btn btn-primary btn-sm join-item`).
+		AssertNotContains(`text-primary">Role Counts`).
+		AssertNotContains(`text-primary">Rules Variants`).
 		AssertNotContains(`<summary class="collapse-title`).
 		AssertNotContains(`aria-hidden="true">v</span>`).
 		AssertNotContains(`onclick="event.stopPropagation(); const input`).
@@ -478,6 +499,8 @@ func TestHostDashboardLobby_TreacheryModeUsesUnifiedRoleCountConfiguration(t *te
 		AssertContains("Guardians").
 		AssertContains("Assassins").
 		AssertContains("Traitors").
+		AssertContains(`btn btn-square btn-sm btn-neutral relative z-20`).
+		AssertContains(`text-xl font-extrabold leading-none text-base-content`).
 		AssertNotContains("Coup Preset").
 		AssertNotContains("King-to-Blue Info").
 		AssertNotContains("Advanced Options")

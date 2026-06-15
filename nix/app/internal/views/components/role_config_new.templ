@@ -27,14 +27,14 @@ type PlayerCountDisplay struct {
 templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardService *game.CardService, playerCountDisplay PlayerCountDisplay) {
 	<div
 		id="role-config"
-		class="role-configuration card bg-base-200 shadow-xl"
+		class="role-configuration card border border-base-300 bg-base-100 shadow-lg"
 		data-signals="{cardId: '', cardChecked: false, roleType: '', roleCount: 0, action: ''}"
 		data-signals__ifmissing={ fmt.Sprintf(`{accordionLeader: false, accordionGuardian: false, accordionAssassin: false, accordionTraitor: false, allowLeaderless: %t, hideRoleDistribution: %t, fullyRandomRoles: %t, updatingLeaderless: false, updatingHideDistribution: false, updatingFullyRandom: false}`, room.RoleConfig.AllowLeaderlessGame, room.RoleConfig.HideRoleDistribution, room.RoleConfig.FullyRandomRoles) }
 	>
 		<div class="card-body gap-3">
 			<h2 class="card-title">Role Count Configuration</h2>
-			<div data-config-row="player-count" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
-				<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div data-config-row="player-count" class="config-row rounded-box border border-base-300 bg-base-100 px-4 py-3">
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div class="min-w-0">
 						<p class="font-semibold">Player Count</p>
 						<p class="mt-1 text-xs text-base-content/70">Changes the Treachery role count target for this room.</p>
@@ -43,7 +43,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 						<div class="join w-full">
 							<button
 								type="button"
-								class="btn btn-primary btn-sm join-item"
+								class="btn btn-square btn-sm btn-neutral join-item"
 								data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/decrement')`, room.Code) }
 								disabled?={ shouldDisableDecrement(playerCountDisplay, room, cfg) }
 								title={ getDecrementTitle(playerCountDisplay) }
@@ -55,7 +55,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 							</div>
 							<button
 								type="button"
-								class="btn btn-primary btn-sm join-item"
+								class="btn btn-square btn-sm btn-neutral join-item"
 								data-on:click={ fmt.Sprintf(`@post('/room/%s/config/player-count/increment')`, room.Code) }
 								disabled?={ shouldDisableIncrement(playerCountDisplay, room, cfg) }
 								title={ getIncrementTitle(playerCountDisplay) }
@@ -69,8 +69,8 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					</div>
 				</div>
 			</div>
-			<div data-config-row="role-preset" class="config-row rounded-box border border-base-300 bg-base-100 p-3" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
-				<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div data-config-row="role-preset" class="config-row rounded-box border border-base-300 bg-base-100 px-4 py-3" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
+				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div class="min-w-0">
 						<p class="font-semibold">Role Preset</p>
 						<p class="mt-1 text-xs text-base-content/70">Preset mode reseeds Treachery role counts for the selected player count.</p>
@@ -95,9 +95,8 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					<p class="mt-2 text-sm text-base-content/80">Preset auto-scales roles based on player count.</p>
 				}
 			</div>
-			<div class="divider my-1"></div>
-			<section id="treachery-role-counts" class="space-y-2">
-				<h3 class="font-semibold">Role Counts</h3>
+			<section id="treachery-role-counts" class="space-y-2 pt-1">
+				<h3 class="font-semibold text-base-content">Role Counts</h3>
 				<div class="card bg-base-100 border border-base-300 rounded-2xl overflow-hidden" data-show="!$hideRoleDistribution && !$fullyRandomRoles">
 					@RoleTypeSection(room, "Leader", room.RoleConfig.RoleTypes["Leader"], cardService.Leaders)
 					@RoleTypeSection(room, "Guardian", room.RoleConfig.RoleTypes["Guardian"], cardService.Guardians)
@@ -110,10 +109,9 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 					<span data-show="$fullyRandomRoles">Roles will be completely randomized when the game starts.</span>
 				</div>
 			</section>
-			<div class="divider my-1"></div>
-			<section id="treachery-rules-variants" class="space-y-2">
-				<h3 class="font-semibold">Rules Variants</h3>
-				<div data-config-row="allow-leaderless" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+			<section id="treachery-rules-variants" class="space-y-2 pt-1">
+				<h3 class="font-semibold text-base-content">Rules Variants</h3>
+				<div data-config-row="allow-leaderless" class="config-row rounded-box border border-base-300 bg-base-100 px-4 py-3">
 					<label class="flex items-start gap-3 text-sm">
 						<input
 							type="checkbox"
@@ -131,7 +129,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 						</span>
 					</label>
 				</div>
-				<div data-config-row="hide-role-distribution" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+				<div data-config-row="hide-role-distribution" class="config-row rounded-box border border-base-300 bg-base-100 px-4 py-3">
 					<label class="flex items-start gap-3 text-sm">
 						<input
 							type="checkbox"
@@ -149,7 +147,7 @@ templ RoleConfigurationNew(room *game.Room, cfg *config.ServerConfig, cardServic
 						</span>
 					</label>
 				</div>
-				<div data-config-row="fully-random-roles" class="config-row rounded-box border border-base-300 bg-base-100 p-3">
+				<div data-config-row="fully-random-roles" class="config-row rounded-box border border-base-300 bg-base-100 px-4 py-3">
 					<label class="flex items-start gap-3 text-sm">
 						<input
 							type="checkbox"

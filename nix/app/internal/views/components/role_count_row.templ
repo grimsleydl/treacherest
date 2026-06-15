@@ -19,21 +19,21 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 				name={ "accordion-" + roleKey }
 				id={ "role-accordion-" + roleKey }
 			/>
-			<div class="collapse-title font-bold flex items-center gap-4">
-				<div class="flex flex-col items-center gap-1 relative z-10">
+			<div class="collapse-title min-h-0 flex items-center gap-4 px-4 py-2 pr-12">
+				<div class="flex w-11 flex-col items-center gap-0.5 relative z-10">
 					if locked {
-						<button type="button" class="btn btn-primary relative z-20" disabled>+</button>
+						<button type="button" class="btn btn-square btn-sm btn-neutral relative z-20" disabled>+</button>
 					} else {
-						<button type="button" class="btn btn-primary relative z-20" data-on:click__stop={ incrementAction }>+</button>
+						<button type="button" class="btn btn-square btn-sm btn-neutral relative z-20" data-on:click__stop={ incrementAction }>+</button>
 					}
-					<span class="text-lg font-bold">{ fmt.Sprintf("%d", count) }</span>
+					<span class="text-xl font-extrabold leading-none text-base-content">{ fmt.Sprintf("%d", count) }</span>
 					if locked || decrementDisabled {
-						<button type="button" class="btn btn-primary relative z-20" disabled>-</button>
+						<button type="button" class="btn btn-square btn-sm btn-neutral relative z-20" disabled>-</button>
 					} else {
-						<button type="button" class="btn btn-primary relative z-20" data-on:click__stop={ decrementAction }>-</button>
+						<button type="button" class="btn btn-square btn-sm btn-neutral relative z-20" data-on:click__stop={ decrementAction }>-</button>
 					}
 				</div>
-				<div class="flex items-center gap-2 flex-wrap min-w-0">
+				<div class="flex flex-1 items-center gap-2 flex-wrap min-w-0">
 					<span class="font-bold">{ label }</span>
 					if badgeText != "" {
 						<span class={ "badge", badgeClass }>{ badgeText }</span>
@@ -44,7 +44,9 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 				</div>
 			</div>
 			<div class="collapse-content text-sm text-base-content/80">
-				{ children... }
+				<div class="pb-3 pl-[4.75rem] pr-4">
+					{ children... }
+				</div>
 			</div>
 		</div>
 	</div>
