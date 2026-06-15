@@ -15,6 +15,7 @@ func TestRoleCard(t *testing.T) {
 		Type:        "Creature - Guardian",
 		Rarity:      "Rare",
 		Text:        "Long role rules text appears after the goal.|Second rules line.",
+		URI:         "https://mtgtreachery.net/rules/oracle/?card=test-guardian",
 		Artist:      "Test Artist",
 		Base64Image: "data:image/jpeg;base64,test",
 		Rulings: []string{
@@ -117,6 +118,10 @@ func TestRoleCard(t *testing.T) {
 			"Test Guardian",
 			"<img",
 			`src="data:image/jpeg;base64,test"`,
+			`href="https://mtgtreachery.net/rules/oracle/?card=test-guardian"`,
+			"MTG Treachery",
+			`title="View on MTG Treachery Oracle"`,
+			`rel="noopener noreferrer"`,
 		} {
 			if !strings.Contains(html, expected) {
 				t.Fatalf("expected public role card to contain %q: %s", expected, html)

@@ -55,7 +55,10 @@ templ RoleCardPublic(card *game.Card) {
 templ roleCardHeader(card *game.Card, eyebrow string) {
 	<header class="space-y-2">
 		<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] opacity-70">{ eyebrow }</p>
-		<h2 class="font-display text-3xl font-semibold leading-tight">{ card.Name }</h2>
+		<div class="flex flex-wrap items-start gap-x-3 gap-y-1">
+			<h2 class="font-display text-3xl font-semibold leading-tight">{ card.Name }</h2>
+			@RoleCardExternalLink(card, "mt-1")
+		</div>
 		<div class="flex flex-wrap gap-2">
 			if card.Type != "" {
 				<span class="badge badge-primary">{ card.Type }</span>
@@ -65,6 +68,20 @@ templ roleCardHeader(card *game.Card, eyebrow string) {
 			}
 		</div>
 	</header>
+}
+
+templ RoleCardExternalLink(card *game.Card, extraClasses string) {
+	if card != nil && card.URI != "" {
+		<a
+			href={ templ.SafeURL(card.URI) }
+			target="_blank"
+			rel="noopener noreferrer"
+			class={ "link link-primary text-xs font-medium", extraClasses }
+			title="View on MTG Treachery Oracle"
+		>
+			MTG Treachery
+		</a>
+	}
 }
 
 templ roleCardGoal(card *game.Card) {
