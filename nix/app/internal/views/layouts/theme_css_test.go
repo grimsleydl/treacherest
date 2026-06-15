@@ -114,6 +114,19 @@ func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
 	}
 }
 
+func TestRoleCountChevronCSSRotatesWhenOpen(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	for _, expected := range []string{
+		`.role-count-disclosure > input:checked + .role-count-title .role-count-chevron-icon`,
+		`transform: rotate(180deg);`,
+	} {
+		if !strings.Contains(css, expected) {
+			t.Fatalf("expected generated CSS to contain %q", expected)
+		}
+	}
+}
+
 func readGeneratedCSS(t *testing.T) string {
 	t.Helper()
 

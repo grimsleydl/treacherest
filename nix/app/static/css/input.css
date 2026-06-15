@@ -188,6 +188,10 @@
     color: inherit;
   }
 
+  .role-count-disclosure > input:checked + .role-count-title .role-count-chevron-icon {
+    transform: rotate(180deg);
+  }
+
   #debug-control-surface.debug-panel-minimized {
     inset-block-start: auto;
     inset-block-end: 1rem;

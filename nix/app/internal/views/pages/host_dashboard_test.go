@@ -406,12 +406,17 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`data-config-row="royal-guard"`).
 		AssertContains(`data-config-row="inquisition-result"`).
 		AssertContains(`select select-bordered select-sm w-auto`).
-		AssertContains(`collapse collapse-arrow`).
+		AssertContains(`role-count-disclosure collapse rounded-none duration-100`).
 		AssertContains(`id="role-accordion-blueKnight"`).
-		AssertContains(`collapse-title min-h-0 flex items-center gap-4 px-4 py-2 pr-12`).
+		AssertContains(`aria-label="Toggle Blue Knight details"`).
+		AssertContains(`role-count-title collapse-title min-h-0 flex items-center gap-4 px-4 py-2`).
 		AssertContains(`btn btn-square btn-sm btn-neutral relative z-20`).
 		AssertContains(`text-xl font-extrabold leading-none text-base-content`).
-		AssertContains(`btn btn-ghost btn-xs ms-auto`).
+		AssertContains(`role-count-chevron btn btn-ghost btn-xs ms-auto pointer-events-none`).
+		AssertContains(`role-count-chevron-icon size-4 transition-transform`).
+		AssertContains(`<svg`).
+		AssertContains(`d="m6 9 6 6 6-6"`).
+		AssertNotContains(`collapse collapse-arrow`).
 		AssertNotContains(`btn btn-primary relative z-20`).
 		AssertNotContains(`btn btn-primary btn-sm join-item`).
 		AssertNotContains(`text-primary">Role Counts`).
@@ -499,8 +504,12 @@ func TestHostDashboardLobby_TreacheryModeUsesUnifiedRoleCountConfiguration(t *te
 		AssertContains("Guardians").
 		AssertContains("Assassins").
 		AssertContains("Traitors").
+		AssertContains(`role-count-disclosure collapse rounded-none duration-100`).
+		AssertContains(`role-count-chevron btn btn-ghost btn-xs ms-auto pointer-events-none`).
 		AssertContains(`btn btn-square btn-sm btn-neutral relative z-20`).
 		AssertContains(`text-xl font-extrabold leading-none text-base-content`).
+		AssertNotContains(`collapse collapse-arrow`).
+		AssertNotContains(`aria-hidden="true">v</span>`).
 		AssertNotContains("Coup Preset").
 		AssertNotContains("King-to-Blue Info").
 		AssertNotContains("Advanced Options")
