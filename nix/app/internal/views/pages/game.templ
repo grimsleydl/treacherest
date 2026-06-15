@@ -245,9 +245,9 @@ templ CoupRoyalGuardPanel(room *game.Room, currentPlayer *game.Player) {
 		room.State == game.StatePlaying &&
 		!currentPlayer.IsEliminated {
 		@components.NoticeCard("info", "Royal Guard") {
-			<p class="text-sm text-base-content/80">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
+			<p class="text-sm">{ game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit) }</p>
 			if !currentPlayer.RoleRevealed {
-				<p class="text-xs text-warning">Using Royal Guard publicly reveals you as Blue Knight.</p>
+				<p class="text-xs">Using Royal Guard publicly reveals you as Blue Knight.</p>
 			}
 			<div class="mt-3">
 				@components.ConfirmTwiceButton("_confirmRoyalGuard", "Use Royal Guard", "Confirm Royal Guard", fmt.Sprintf("@post('/room/%s/coup/royal-guard/%s')", room.Code, currentPlayer.ID), "primary")
@@ -260,10 +260,10 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 	if room.RulesMode == game.RulesModeCoup && room.State == game.StatePlaying {
 		if room.CoupInquisition != nil && room.CoupInquisition.Pending != nil {
 			@components.NoticeCard("info", "Inquisition Notice") {
-				<p class="text-sm text-base-content/80">
+				<p class="text-sm">
 					{ coupPlayerName(room, room.CoupInquisition.Pending.InquisitorID) } named { coupPlayerName(room, room.CoupInquisition.Pending.TargetID) }.
 				</p>
-				<p class="text-xs text-base-content/60">Waiting for one living non-Blue witness to confirm the table was notified.</p>
+				<p class="text-xs">Waiting for one living non-Blue witness to confirm the table was notified.</p>
 				if coupCanConfirmInquisition(room, currentPlayer) {
 					<div class="mt-3">
 						<button
@@ -280,16 +280,16 @@ templ CoupInquisitionPanel(room *game.Room, currentPlayer *game.Player) {
 			if room.CoupInquisition.Last.Success {
 				if game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic {
 					@components.NoticeCard("success", "Inquisition Result") {
-						<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
+						<p class="text-sm">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red and has been revealed.</p>
 					}
 				} else {
 					@components.NoticeCard("success", "Inquisition Result") {
-						<p class="text-sm text-success">Result delivered privately to the inquisitor.</p>
+						<p class="text-sm">Result delivered privately to the inquisitor.</p>
 					}
 				}
 			} else {
 				@components.NoticeCard("error", "Inquisition Result") {
-					<p class="text-sm text-error">Inquisition failed. { coupPlayerName(room, room.CoupInquisition.Last.InquisitorID) } should lose { fmt.Sprintf("%d", room.CoupInquisition.Last.PenaltyLife) } life.</p>
+					<p class="text-sm">Inquisition failed. { coupPlayerName(room, room.CoupInquisition.Last.InquisitorID) } should lose { fmt.Sprintf("%d", room.CoupInquisition.Last.PenaltyLife) } life.</p>
 				}
 			}
 		}
@@ -302,10 +302,10 @@ templ CoupInquisitionPrivatePanel(room *game.Room, currentPlayer *game.Player) {
 			room.CoupInquisition.Last != nil &&
 			room.CoupInquisition.Last.Success &&
 			currentPlayer != nil &&
-			game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate &&
-			currentPlayer.ID == room.CoupInquisition.Last.InquisitorID {
+				game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate &&
+				currentPlayer.ID == room.CoupInquisition.Last.InquisitorID {
 			@components.NoticeCard("success", "Private Inquisition result") {
-				<p class="text-sm text-success">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red.</p>
+				<p class="text-sm">Inquisition succeeded. { coupPlayerName(room, room.CoupInquisition.Last.TargetID) } was Red.</p>
 			}
 		}
 		if coupCanCallInquisition(room, currentPlayer) {
@@ -371,7 +371,7 @@ templ CoupWinPromptCard(room *game.Room, currentPlayer *game.Player, prompt *gam
 		if coupCanDecideWinPrompt(currentPlayer) {
 			<div class="mt-4 flex flex-wrap gap-2">
 				@components.ConfirmTwiceButton("_confirmCoupWin", "Confirm Win", "Confirm Coup Win", fmt.Sprintf("@post('/room/%s/coup/win/confirm')", room.Code), "primary")
-				@components.ConfirmTwiceButton("_rejectCoupWin", "Reject Prompt", "Confirm Reject Prompt", fmt.Sprintf("@post('/room/%s/coup/win/reject')", room.Code), "warning")
+				@components.ConfirmTwiceButton("_rejectCoupWin", "Reject Prompt", "Confirm Reject Prompt", fmt.Sprintf("@post('/room/%s/coup/win/reject')", room.Code), "")
 			</div>
 		}
 	}

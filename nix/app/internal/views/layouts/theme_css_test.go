@@ -96,6 +96,24 @@ func TestInteractionCSSIncludesPrivyPeekAndDebugMinimizeRules(t *testing.T) {
 	}
 }
 
+func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	for _, expected := range []string{
+		`.notice-card.alert`,
+		`background-color: var(--color-base-100);`,
+		`color: var(--color-base-content);`,
+		`--notice-card-accent: var(--color-info);`,
+		`--notice-card-accent: var(--color-success);`,
+		`--notice-card-accent: var(--color-warning);`,
+		`--notice-card-accent: var(--color-error);`,
+	} {
+		if !strings.Contains(css, expected) {
+			t.Fatalf("expected generated CSS to contain %q", expected)
+		}
+	}
+}
+
 func readGeneratedCSS(t *testing.T) string {
 	t.Helper()
 

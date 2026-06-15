@@ -1036,6 +1036,56 @@ func TestGameBody_CoupAdvisoryWinPromptRequiresConfirmation(t *testing.T) {
 			t.Fatalf("advisory prompt should not use browser confirm %q: %s", forbidden, html)
 		}
 	}
+	rejectPromptHTML := extractBetween(t, html, `data-signals="{_rejectCoupWin: false}"`, "Reject Prompt")
+	if strings.Contains(rejectPromptHTML, "btn-warning") {
+		t.Fatalf("Reject Prompt should use a neutral outline action inside advisory NoticeCard: %s", rejectPromptHTML)
+	}
+}
+
+func TestGameBody_CoupNoticeTextAvoidsSemanticTextOnSemanticCards(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room, blue, red, green := makeCoupInquisitionViewRoom()
+	room.CoupInquisitionResultPolicy = game.CoupInquisitionResultPublic
+	room.CoupInquisition = &game.CoupInquisitionState{
+		Attempts: map[string]game.CoupInquisitionAttempt{
+			blue.ID: {
+				InquisitorID: blue.ID,
+				TargetID:     red.ID,
+				CurrentLife:  39,
+				PenaltyLife:  20,
+				Resolved:     true,
+				Success:      true,
+			},
+		},
+		Last: &game.CoupInquisitionAttempt{
+			InquisitorID: blue.ID,
+			TargetID:     red.ID,
+			CurrentLife:  39,
+			PenaltyLife:  20,
+			Resolved:     true,
+			Success:      true,
+		},
+		Succeeded: true,
+	}
+	successHTML := renderer.Render(GameBody(room, green)).GetHTML()
+	if strings.Contains(successHTML, "text-success") {
+		t.Fatalf("Inquisition success copy should inherit readable NoticeCard text instead of text-success: %s", successHTML)
+	}
+
+	room.CoupInquisition.Last.Success = false
+	failureHTML := renderer.Render(GameBody(room, green)).GetHTML()
+	if strings.Contains(failureHTML, "text-error") {
+		t.Fatalf("Inquisition failure copy should inherit readable NoticeCard text instead of text-error: %s", failureHTML)
+	}
+
+	royalGuardHTML := renderer.Render(GameBody(room, blue)).GetHTML()
+	actionsHTML := extractBetween(t, royalGuardHTML, `id="zone-actions"`, `id="zone-roster"`)
+	for _, forbidden := range []string{"text-warning", "text-base-content/80"} {
+		if strings.Contains(actionsHTML, forbidden) {
+			t.Fatalf("Royal Guard NoticeCard copy should inherit readable NoticeCard text instead of %q: %s", forbidden, actionsHTML)
+		}
+	}
 }
 
 func TestGameBody_CoupConfirmedWinShowsOutcome(t *testing.T) {

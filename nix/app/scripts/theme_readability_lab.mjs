@@ -21,8 +21,8 @@ export const phaseOneSamples = [
     description: "Known nested-color case: info alert surface with base-content body text, warning text, and a primary action.",
     targets: [
       target("player-view.royal-guard.title", "Title", "alert-info text on info alert surface"),
-      target("player-view.royal-guard.body", "Body", "text-base-content/80 inside alert-info"),
-      target("player-view.royal-guard.warning", "Warning", "text-warning inside alert-info"),
+      target("player-view.royal-guard.body", "Body", "inherited NoticeCard text"),
+      target("player-view.royal-guard.warning", "Warning", "small inherited NoticeCard text"),
       target("player-view.royal-guard.button", "Button", "btn-primary inside alert-info"),
     ],
     markup: `
@@ -30,8 +30,8 @@ export const phaseOneSamples = [
         <div class="min-w-0">
           <h3 class="font-bold" data-review-target="player-view.royal-guard.title">Royal Guard</h3>
           <div class="mt-1 text-sm">
-            <p class="text-sm text-base-content/80" data-review-target="player-view.royal-guard.body">A revealed Blue Knight may have any number of untapped creatures they control block creatures attacking the King.</p>
-            <p class="text-xs text-warning" data-review-target="player-view.royal-guard.warning">Using Royal Guard publicly reveals you as Blue Knight.</p>
+            <p class="text-sm" data-review-target="player-view.royal-guard.body">A revealed Blue Knight may have any number of untapped creatures they control block creatures attacking the King.</p>
+            <p class="text-xs" data-review-target="player-view.royal-guard.warning">Using Royal Guard publicly reveals you as Blue Knight.</p>
             <div class="mt-3">
               <button type="button" class="btn min-h-11 btn-primary" data-review-target="player-view.royal-guard.button">Use Royal Guard</button>
             </div>
@@ -47,10 +47,10 @@ export const phaseOneSamples = [
     description: "Public and result notices for the Coup Inquisition flow.",
     targets: [
       target("player-view.inquisition.notice-title", "Notice title", "alert-info content"),
-      target("player-view.inquisition.notice-body", "Notice body", "text-base-content/80 inside alert-info"),
-      target("player-view.inquisition.waiting", "Waiting note", "text-base-content/60 inside alert-info"),
-      target("player-view.inquisition.success", "Success result", "text-success inside alert-success"),
-      target("player-view.inquisition.failure", "Failure result", "text-error inside alert-error"),
+      target("player-view.inquisition.notice-body", "Notice body", "inherited NoticeCard text"),
+      target("player-view.inquisition.waiting", "Waiting note", "small inherited NoticeCard text"),
+      target("player-view.inquisition.success", "Success result", "inherited NoticeCard text"),
+      target("player-view.inquisition.failure", "Failure result", "inherited NoticeCard text"),
       target("player-view.inquisition.confirm-button", "Witness button", "btn-outline btn-primary inside alert-info"),
     ],
     markup: `
@@ -59,8 +59,8 @@ export const phaseOneSamples = [
           <div class="min-w-0">
             <h3 class="font-bold" data-review-target="player-view.inquisition.notice-title">Inquisition Notice</h3>
             <div class="mt-1 text-sm">
-              <p class="text-sm text-base-content/80" data-review-target="player-view.inquisition.notice-body">Blue Knight has called an Inquisition and named a suspected Red Knight.</p>
-              <p class="text-xs text-base-content/60" data-review-target="player-view.inquisition.waiting">Waiting for one living non-Blue witness to confirm the table was notified.</p>
+              <p class="text-sm" data-review-target="player-view.inquisition.notice-body">Blue Knight has called an Inquisition and named a suspected Red Knight.</p>
+              <p class="text-xs" data-review-target="player-view.inquisition.waiting">Waiting for one living non-Blue witness to confirm the table was notified.</p>
               <button type="button" class="btn btn-sm btn-outline btn-primary mt-3" data-review-target="player-view.inquisition.confirm-button">I witnessed this</button>
             </div>
           </div>
@@ -68,13 +68,13 @@ export const phaseOneSamples = [
         <section class="notice-card alert flex items-start alert-success">
           <div class="min-w-0">
             <h3 class="font-bold">Inquisition Result</h3>
-            <p class="text-sm text-success" data-review-target="player-view.inquisition.success">Inquisition succeeded. Red Knight was revealed.</p>
+            <p class="text-sm" data-review-target="player-view.inquisition.success">Inquisition succeeded. Red Knight was revealed.</p>
           </div>
         </section>
         <section class="notice-card alert flex items-start alert-error">
           <div class="min-w-0">
             <h3 class="font-bold">Inquisition Result</h3>
-            <p class="text-sm text-error" data-review-target="player-view.inquisition.failure">Inquisition failed. Blue should lose half their life total.</p>
+            <p class="text-sm" data-review-target="player-view.inquisition.failure">Inquisition failed. Blue should lose half their life total.</p>
           </div>
         </section>
       </div>
@@ -90,7 +90,7 @@ export const phaseOneSamples = [
       target("player-view.advisory-win.title", "Title", "alert-warning content"),
       target("player-view.advisory-win.body", "Facts", "base text inside alert-warning"),
       target("player-view.advisory-win.confirm", "Confirm button", "btn-primary inside alert-warning"),
-      target("player-view.advisory-win.reject", "Reject button", "btn-outline btn-warning inside alert-warning"),
+      target("player-view.advisory-win.reject", "Reject button", "neutral btn-outline inside advisory NoticeCard"),
     ],
     markup: `
       <section class="notice-card alert flex items-start alert-warning">
@@ -101,7 +101,7 @@ export const phaseOneSamples = [
             <p data-review-target="player-view.advisory-win.body">King is dead, Red is alive, and all Black Knights are eliminated. Confirm with the table before ending the game.</p>
             <div class="mt-3 flex flex-wrap gap-2">
               <button type="button" class="btn min-h-11 btn-primary" data-review-target="player-view.advisory-win.confirm">Confirm Win</button>
-              <button type="button" class="btn min-h-11 btn-outline btn-warning" data-review-target="player-view.advisory-win.reject">Reject Prompt</button>
+              <button type="button" class="btn min-h-11 btn-outline" data-review-target="player-view.advisory-win.reject">Reject Prompt</button>
             </div>
           </div>
         </div>

@@ -50,6 +50,7 @@ The app exposes all 35 DaisyUI v5 built-in themes plus the two Treacherest theme
 - Avoid cross-token pairs such as `text-primary` on `bg-base-100` for body text unless the component has been tested across the theme matrix.
 - Dense text, small badges, form labels, and table rows should use `base-content` on a `base-*` surface unless the semantic color is essential.
 - Semantic colors are best for short status labels, icons, borders, and buttons that also use the paired `*-content` text token.
+- NoticeCard content uses a neutral readable surface with semantic border/accent treatment. Body copy inside a NoticeCard should normally inherit the NoticeCard text color instead of using `text-success`, `text-error`, `text-warning`, or muted base-content utilities on top of semantic alert backgrounds.
 - Do not communicate game state with color alone. Keep text labels such as `revealed`, `eliminated`, `operator`, `debug`, and role names.
 - Privy Panel, Operator Dashboard, Player View, and Debug Control Surface components should avoid custom color math unless it is backed by an audit case.
 
