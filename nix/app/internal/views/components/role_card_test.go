@@ -153,3 +153,25 @@ func TestRoleCard(t *testing.T) {
 		}
 	})
 }
+
+func TestRoleCardRulingsRenderBulletedRows(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	html := renderer.Render(RoleCardRulings([]string{
+		"First ruling.",
+		"Second ruling.",
+	})).GetHTML()
+
+	if got := strings.Count(html, ">•</span>"); got != 2 {
+		t.Fatalf("expected one bullet marker per ruling, got %d in %s", got, html)
+	}
+	for _, expected := range []string{
+		`class="flex gap-2"`,
+		`class="flex-1 break-words">First ruling.</span>`,
+		`class="flex-1 break-words">Second ruling.</span>`,
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected bulleted ruling markup %q in %s", expected, html)
+		}
+	}
+}

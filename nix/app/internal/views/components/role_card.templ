@@ -137,14 +137,17 @@ templ RoleCardText(text string) {
 }
 
 templ RoleCardRulings(rulings []string) {
-	<div class="space-y-1">
+	<div class="space-y-2 max-w-full overflow-hidden">
 		for _, ruling := range rulings {
 			if strings.HasPrefix(ruling, "———") {
 				<div class="divider my-2"></div>
 			} else {
-				<p>
-					@templ.Raw(escapeRoleCardHTML(ruling))
-				</p>
+				<div class="flex gap-2">
+					<span class="text-base-content/60 flex-shrink-0">•</span>
+					<span class="flex-1 break-words">
+						@templ.Raw(escapeRoleCardHTML(ruling))
+					</span>
+				</div>
 			}
 		}
 	</div>
