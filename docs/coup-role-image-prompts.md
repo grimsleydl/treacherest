@@ -27,10 +27,10 @@ Use this workflow when adding or replacing the production Coup role images.
    - `red-knight.png`
    - `green-knight.png`
    - `wasteland-knight.png`
-4. From `nix/app`, run the importer:
+4. From the repository root, run the importer:
 
    ```sh
-   go run ./scripts/coup-images -source ../../.scratch/coup-role-images/final
+   just import-coup-role-images
    ```
 
 5. Confirm the importer wrote canonical embedded assets under `nix/app/static/images/coup/`:
@@ -40,10 +40,10 @@ Use this workflow when adding or replacing the production Coup role images.
    - `1004.*` Red Knight
    - `1005.*` Green Knight
    - `1006.*` Wasteland Knight
-6. Run the focused image tests from `nix/app`:
+6. Run the focused image tests:
 
    ```sh
-   go test ./scripts/coup-images ./internal/game -run 'TestImportCoupRoleImages|TestLoadCoupRoleImages' -count=1
+   just test-coup-role-images
    ```
 
 7. Run the normal build/test path before committing product assets.

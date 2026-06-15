@@ -7,6 +7,25 @@ default:
 
 # Container registry settings
 registry := "ghcr.io/grimsleydl/treacherest"
+coup_role_image_source := ".scratch/coup-role-images/final"
+
+# ============================================================
+# Coup Role Image Recipes
+# ============================================================
+
+# Create the local staging directory for generated Coup role images
+prepare-coup-role-images:
+    mkdir -p "{{coup_role_image_source}}"
+    @echo "Save generated Coup role images in {{coup_role_image_source}}"
+
+# Import generated Coup role images into canonical app assets
+import-coup-role-images source=coup_role_image_source:
+    mkdir -p "{{source}}"
+    src="$$(realpath "{{source}}")"; cd nix/app; go run ./scripts/coup-images -source "$$src"
+
+# Verify Coup role image import and runtime loading tests
+test-coup-role-images:
+    cd nix/app && go test ./scripts/coup-images ./internal/game -run 'TestImportCoupRoleImages|TestLoadCoupRoleImages' -count=1
 
 # ============================================================
 # Container Build Recipes (nix build only)

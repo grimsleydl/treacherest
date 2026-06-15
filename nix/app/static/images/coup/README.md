@@ -14,10 +14,10 @@ Example source directory:
 └── wasteland-knight.png
 ```
 
-Run from `nix/app`:
+Run from the repository root:
 
 ```sh
-go run ./scripts/coup-images -source ../../.scratch/coup-role-images/final
+just import-coup-role-images
 ```
 
 The importer also accepts source filenames by role ID, such as `1001.png`, but slug filenames are preferred while reviewing generated art.
