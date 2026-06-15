@@ -13,22 +13,27 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 		} else {
 			<div data-stepper={ roleKey } class="hidden"></div>
 		}
-		<details class="collapse collapse-arrow rounded-none duration-100">
-			<summary class="collapse-title flex cursor-pointer items-center gap-4 px-4 py-3">
-				<div class="flex w-11 flex-col items-center gap-1">
+		<div class="collapse collapse-arrow rounded-none duration-100">
+			<input
+				type="checkbox"
+				name={ "accordion-" + roleKey }
+				id={ "role-accordion-" + roleKey }
+			/>
+			<div class="collapse-title font-bold flex items-center gap-4">
+				<div class="flex flex-col items-center gap-1 relative z-10">
 					if locked {
-						<button type="button" class="btn btn-square btn-sm btn-neutral btn-disabled" disabled>+</button>
+						<button type="button" class="btn btn-primary relative z-20" disabled>+</button>
 					} else {
-						<button type="button" class="btn btn-square btn-sm btn-neutral" data-on:click__stop={ incrementAction }>+</button>
+						<button type="button" class="btn btn-primary relative z-20" data-on:click__stop={ incrementAction }>+</button>
 					}
-					<span class="text-xl font-extrabold text-primary">{ fmt.Sprintf("%d", count) }</span>
+					<span class="text-lg font-bold">{ fmt.Sprintf("%d", count) }</span>
 					if locked || decrementDisabled {
-						<button type="button" class="btn btn-square btn-sm btn-neutral btn-disabled" disabled>-</button>
+						<button type="button" class="btn btn-primary relative z-20" disabled>-</button>
 					} else {
-						<button type="button" class="btn btn-square btn-sm btn-neutral" data-on:click__stop={ decrementAction }>-</button>
+						<button type="button" class="btn btn-primary relative z-20" data-on:click__stop={ decrementAction }>-</button>
 					}
 				</div>
-				<div class="flex-1 flex items-center gap-2 flex-wrap min-w-0">
+				<div class="flex items-center gap-2 flex-wrap min-w-0">
 					<span class="font-bold">{ label }</span>
 					if badgeText != "" {
 						<span class={ "badge", badgeClass }>{ badgeText }</span>
@@ -37,10 +42,10 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 						<span class={ statusClass }>{ statusText }</span>
 					}
 				</div>
-			</summary>
+			</div>
 			<div class="collapse-content text-sm text-base-content/80">
 				{ children... }
 			</div>
-		</details>
+		</div>
 	</div>
 }

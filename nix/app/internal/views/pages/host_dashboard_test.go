@@ -368,7 +368,6 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`data-stepper="blackKnight"`).
 		AssertContains(`data-stepper="greenKnight"`).
 		AssertContains(`data-stepper="wastelandKnight"`).
-		AssertContains(`btn btn-square btn-sm btn-neutral`).
 		AssertContains(`@post(&#39;/room/ROLEC/config/coup-role-count/blueKnight/increment&#39;)`).
 		AssertContains(`@post(&#39;/room/ROLEC/config/coup-role-count/blueKnight/decrement&#39;)`).
 		AssertContains(`id="role-count-mode-label"`).
@@ -383,8 +382,12 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`data-config-row="royal-guard"`).
 		AssertContains(`data-config-row="inquisition-result"`).
 		AssertContains(`select select-bordered select-sm w-auto`).
-		AssertContains(`<details`).
 		AssertContains(`collapse collapse-arrow`).
+		AssertContains(`id="role-accordion-blueKnight"`).
+		AssertContains(`collapse-title font-bold flex items-center gap-4`).
+		AssertContains(`btn btn-primary relative z-20`).
+		AssertNotContains(`btn btn-square btn-sm btn-neutral`).
+		AssertNotContains(`<summary class="collapse-title`).
 		AssertNotContains(`aria-hidden="true">v</span>`).
 		AssertNotContains(`onclick="event.stopPropagation(); const input`).
 		AssertNotContains(`id="role-count-required"`).
