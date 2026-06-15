@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"treacherest/internal/testhelpers"
@@ -124,6 +125,31 @@ func TestHomePage(t *testing.T) {
 			AssertContains(`value="treachery"`).
 			AssertContains(`value="coup"`).
 			AssertNotContains(`<select id="rulesMode"`)
+	})
+
+	t.Run("allows rules mode card text to wrap inside the card", func(t *testing.T) {
+		component := Home()
+		html := renderer.Render(component).GetHTML()
+
+		for _, mode := range []string{"treachery", "coup"} {
+			cardPattern := regexp.MustCompile(`<label[^>]*data-rules-mode-card="` + mode + `"[^>]*>`)
+			cardTag := cardPattern.FindString(html)
+			if cardTag == "" {
+				t.Fatalf("expected %s rules mode card label in %s", mode, html)
+			}
+			for _, expectedClass := range []string{"flex", "min-w-0", "whitespace-normal"} {
+				if !strings.Contains(cardTag, expectedClass) {
+					t.Fatalf("expected %s card to include %q for wrapping, got %s", mode, expectedClass, cardTag)
+				}
+			}
+			if regexp.MustCompile(`class="[^"]*\blabel\b`).MatchString(cardTag) {
+				t.Fatalf("rules mode card must not use DaisyUI label class because it applies nowrap: %s", cardTag)
+			}
+		}
+
+		renderer.
+			AssertContains(`data-rules-mode-copy="coup"`).
+			AssertContains(`class="block text-sm text-base-content/70 whitespace-normal break-words leading-snug"`)
 	})
 
 	t.Run("renames non-playing creation option without changing submitted value", func(t *testing.T) {
