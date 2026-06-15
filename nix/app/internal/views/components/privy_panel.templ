@@ -5,9 +5,11 @@ templ PrivyPanel() {
 		id="zone-privy"
 		class="privy w-full max-w-md overflow-hidden shadow-xl"
 		data-signals="{_peek: false, _privyOpen: false}"
-		data-class:is-showing="$_peek || $_privyOpen"
+		data-class="{'is-showing': $_peek || $_privyOpen, 'is-peeking': $_peek, 'is-open': $_privyOpen}"
 		data-on:interval__duration.30s="$_privyOpen = false"
 		data-on:visibilitychange__window="document.hidden && ($_privyOpen = false, $_peek = false)"
+		data-on:pointerup__window="$_peek = false"
+		data-on:pointercancel__window="$_peek = false"
 	>
 		<header class="flex items-center justify-between gap-3 border-b px-4 py-2" style="border-color: var(--privy-border)">
 			<span class="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">PRIVATE - ONLY YOU</span>

@@ -79,22 +79,28 @@ templ GameStatusZone(room *game.Room, currentPlayer *game.Player) {
 }
 
 templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
-	@components.PrivyPanel() {
-		if currentPlayer.Role != nil {
-			@components.RoleCard(currentPlayer.Role, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
-		}
-		@CoupInquisitionPrivatePanel(room, currentPlayer)
-		<!-- Transformation status display -->
-		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
-			@components.TransformationDisplay(room, currentPlayer)
-		}
-		<!-- Metamorph active indicator -->
-		@components.MetamorphActiveIndicator(room, currentPlayer)
-		<!-- Metamorph steal prompts for newly eliminated players -->
-		if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanUseMetamorph() {
-			for _, p := range room.GetPlayers() {
-				if p.IsEliminated && p.Role != nil && p.ID != currentPlayer.ID {
-					@components.MetamorphStealPrompt(room, currentPlayer, p)
+	if currentPlayer.Role != nil && roleUsesPublicRoleSurface(currentPlayer.Role) {
+		<section id="zone-privy" class="w-full max-w-md">
+			@components.RoleCard(currentPlayer.Role, true, true)
+		</section>
+	} else {
+		@components.PrivyPanel() {
+			if currentPlayer.Role != nil {
+				@components.RoleCard(currentPlayer.Role, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
+			}
+			@CoupInquisitionPrivatePanel(room, currentPlayer)
+			<!-- Transformation status display -->
+			if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.TransformState != nil {
+				@components.TransformationDisplay(room, currentPlayer)
+			}
+			<!-- Metamorph active indicator -->
+			@components.MetamorphActiveIndicator(room, currentPlayer)
+			<!-- Metamorph steal prompts for newly eliminated players -->
+			if currentPlayer.AbilityState != nil && currentPlayer.AbilityState.CanUseMetamorph() {
+				for _, p := range room.GetPlayers() {
+					if p.IsEliminated && p.Role != nil && p.ID != currentPlayer.ID {
+						@components.MetamorphStealPrompt(room, currentPlayer, p)
+					}
 				}
 			}
 		}
@@ -195,6 +201,18 @@ func showOperatorDashboardLink(room *game.Room, player *game.Player) bool {
 		return false
 	}
 	return room.IsOperatorSession(player.SessionID) && room.State != game.StateLobby
+}
+
+func roleUsesPublicRoleSurface(card *game.Card) bool {
+	if card == nil {
+		return false
+	}
+	switch card.GetRoleType() {
+	case game.RoleLeader, game.RoleKing:
+		return true
+	default:
+		return false
+	}
 }
 
 // FormatCardText formats card text similar to Scryfall's oracle text:

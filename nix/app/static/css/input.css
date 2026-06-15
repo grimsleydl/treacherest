@@ -150,6 +150,9 @@
 
   .privy.is-showing .privy-veil {
     opacity: 0;
+  }
+
+  .privy.is-open .privy-veil {
     pointer-events: none;
   }
 

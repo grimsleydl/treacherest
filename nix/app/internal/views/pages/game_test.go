@@ -388,6 +388,49 @@ func TestGameBody(t *testing.T) {
 		}
 	})
 
+	t.Run("renders treachery leader as public role without privy controls", func(t *testing.T) {
+		leaderRoom := &game.Room{
+			Code:       "LEAD1",
+			State:      game.StatePlaying,
+			Players:    make(map[string]*game.Player),
+			MaxPlayers: 4,
+		}
+		leader := &game.Player{
+			ID:           "leader",
+			Name:         "Leader Player",
+			Role:         mockLeaderCard(),
+			FaceUp:       true,
+			RoleRevealed: true,
+		}
+		leaderRoom.Players[leader.ID] = leader
+
+		html := renderer.Render(GameBody(leaderRoom, leader)).GetHTML()
+		privyHTML := extractBetween(t, html, `id="zone-privy"`, `id="zone-notices"`)
+
+		for _, expected := range []string{
+			"Test Leader",
+			"Win Condition:",
+			"role-card-compact",
+		} {
+			if !strings.Contains(privyHTML, expected) {
+				t.Fatalf("expected public leader role surface to contain %q: %s", expected, privyHTML)
+			}
+		}
+		for _, forbidden := range []string{
+			`class="privy`,
+			"PRIVATE - ONLY YOU",
+			"Hold to peek",
+			"Open until concealed",
+			"Conceal now",
+			"_peek",
+			"_privyOpen",
+		} {
+			if strings.Contains(privyHTML, forbidden) {
+				t.Fatalf("leader public role surface must not contain privy control %q: %s", forbidden, privyHTML)
+			}
+		}
+	})
+
 	t.Run("selects hero role card until own role is public", func(t *testing.T) {
 		player.FaceUp = false
 		player.RoleRevealed = false
@@ -408,6 +451,50 @@ func TestGameBody(t *testing.T) {
 			t.Fatalf("expected compact role card after own role is public/face-up: %s", publicPrivy)
 		}
 	})
+}
+
+func TestGameBody_CoupKingUsesPublicRoleSurface(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:      "KING1",
+		State:     game.StatePlaying,
+		RulesMode: game.RulesModeCoup,
+		Players:   make(map[string]*game.Player),
+	}
+	king := &game.Player{
+		ID:           "king",
+		Name:         "King Player",
+		Role:         mockCoupCard(1001, "King"),
+		FaceUp:       true,
+		RoleRevealed: true,
+	}
+	room.Players[king.ID] = king
+
+	html := renderer.Render(GameBody(room, king)).GetHTML()
+	privyHTML := extractBetween(t, html, `id="zone-privy"`, `id="zone-notices"`)
+
+	for _, expected := range []string{
+		"King",
+		"Win Condition:",
+		"role-card-compact",
+	} {
+		if !strings.Contains(privyHTML, expected) {
+			t.Fatalf("expected public King role surface to contain %q: %s", expected, privyHTML)
+		}
+	}
+	for _, forbidden := range []string{
+		`class="privy`,
+		"PRIVATE - ONLY YOU",
+		"Hold to peek",
+		"Open until concealed",
+		"Conceal now",
+		"_peek",
+		"_privyOpen",
+	} {
+		if strings.Contains(privyHTML, forbidden) {
+			t.Fatalf("King public role surface must not contain privy control %q: %s", forbidden, privyHTML)
+		}
+	}
 }
 
 func extractBetween(t *testing.T, html, startMarker, endMarker string) string {

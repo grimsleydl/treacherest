@@ -89,5 +89,11 @@ func TestRoleCard(t *testing.T) {
 		if !(rulingsDisclosureIndex < rulingIndex) {
 			t.Fatalf("expected rulings to be behind their disclosure: %s", html)
 		}
+		if !strings.Contains(html, `src="data:image/jpeg;base64,test"`) {
+			t.Fatalf("expected role card image to render its data URI source: %s", html)
+		}
+		if strings.Contains(html, `about:invalid`) {
+			t.Fatalf("role card image source should not be sanitized to an invalid URL: %s", html)
+		}
 	})
 }

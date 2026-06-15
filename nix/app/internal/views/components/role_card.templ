@@ -76,7 +76,7 @@ templ roleCardDisclosures(card *game.Card) {
 				<summary class="collapse-title min-h-11 py-3 text-sm font-semibold">Full card image</summary>
 				<div class="collapse-content">
 					<img
-						src={ card.GetImageBase64() }
+						src={ templ.SafeURL(card.GetImageBase64()) }
 						alt={ card.Name }
 						class="w-full rounded-box"
 						onerror="this.style.display='none'"
