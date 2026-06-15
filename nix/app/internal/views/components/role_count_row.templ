@@ -13,8 +13,8 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 		} else {
 			<div data-stepper={ roleKey } class="hidden"></div>
 		}
-		<details>
-			<summary class="flex cursor-pointer list-none items-center gap-4 px-4 py-3">
+		<details class="collapse collapse-arrow rounded-none duration-100">
+			<summary class="collapse-title flex cursor-pointer items-center gap-4 px-4 py-3">
 				<div class="flex w-11 flex-col items-center gap-1">
 					if locked {
 						<button type="button" class="btn btn-square btn-sm btn-neutral btn-disabled" disabled>+</button>
@@ -37,9 +37,8 @@ templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeT
 						<span class={ statusClass }>{ statusText }</span>
 					}
 				</div>
-				<span class="btn btn-ghost btn-xs" aria-hidden="true">v</span>
 			</summary>
-			<div class="px-4 pb-4 text-sm text-base-content/80">
+			<div class="collapse-content text-sm text-base-content/80">
 				{ children... }
 			</div>
 		</details>

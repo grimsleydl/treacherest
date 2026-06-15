@@ -384,6 +384,8 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`data-config-row="inquisition-result"`).
 		AssertContains(`select select-bordered select-sm w-auto`).
 		AssertContains(`<details`).
+		AssertContains(`collapse collapse-arrow`).
+		AssertNotContains(`aria-hidden="true">v</span>`).
 		AssertNotContains(`onclick="event.stopPropagation(); const input`).
 		AssertNotContains(`id="role-count-required"`).
 		AssertNotContains(`id="role-count-flexible"`).
