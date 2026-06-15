@@ -75,6 +75,12 @@ func TestPlayerRowPublicState(t *testing.T) {
 		if !strings.Contains(html, "Revealed Guardian") {
 			t.Fatalf("expected public role details in %s", html)
 		}
+		if !strings.Contains(html, `<img`) || !strings.Contains(html, `src="data:image/jpeg;base64,row-test"`) {
+			t.Fatalf("expected revealed row expanded details to include public role image: %s", html)
+		}
+		if strings.Contains(html, "Full card image") {
+			t.Fatalf("expected revealed row image inline, not behind a second disclosure: %s", html)
+		}
 	})
 
 	t.Run("eliminated row remains visible without strikethrough", func(t *testing.T) {
@@ -93,9 +99,10 @@ func TestPlayerRowPublicState(t *testing.T) {
 
 func playerRowCard(name string, roleType game.RoleType) *game.Card {
 	return &game.Card{
-		Name: name,
-		Type: "Role",
-		Text: "Test public role text",
+		Name:        name,
+		Type:        "Role",
+		Text:        "Test public role text",
+		Base64Image: "data:image/jpeg;base64,row-test",
 		Types: game.CardTypes{
 			Supertype: "Creature",
 			Subtype:   string(roleType),

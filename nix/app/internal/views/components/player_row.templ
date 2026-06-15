@@ -47,6 +47,16 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 templ playerRowPublicRole(card *game.Card) {
 	<div class="space-y-2 rounded-box bg-base-200 p-3">
 		<p class="font-semibold">{ card.Name }</p>
+		if card.GetImageBase64() != "" {
+			<figure class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+				<img
+					src={ templ.SafeURL(card.GetImageBase64()) }
+					alt={ card.Name }
+					class="h-auto w-full"
+					onerror="this.style.display='none'"
+				/>
+			</figure>
+		}
 		<p class="text-xs"><strong>Win Condition:</strong> { card.GetWinCondition() }</p>
 		if card.Text != "" {
 			<div class="text-xs text-base-content/80">
