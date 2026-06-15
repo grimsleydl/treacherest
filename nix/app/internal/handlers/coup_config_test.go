@@ -533,6 +533,132 @@ func TestSetupRouter_RoutesCoupRoleCountUpdates(t *testing.T) {
 	}
 }
 
+func TestSetupRouter_RoutesCoupRoleCountStepperUpdatesOneRole(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	counts, ok := game.CoupRoleCountsForPreset(game.CoupPresetFive)
+	if !ok {
+		t.Fatal("missing five-player Coup preset")
+	}
+	room.CoupRoleCounts = counts
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-count/blueKnight/increment", nil)
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if !updatedRoom.CoupRoleCountsCustom {
+		t.Fatal("expected row stepper edit to switch to custom role-count mode")
+	}
+	if updatedRoom.CoupRoleCounts[game.RoleBlueKnight] != 2 {
+		t.Fatalf("expected Blue Knight count 2, got counts %v", updatedRoom.CoupRoleCounts)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `id="role-row-blueKnight"`) {
+		t.Fatalf("expected response to render updated Blue Knight row, got: %s", body)
+	}
+	if !strings.Contains(body, "Custom role counts") {
+		t.Fatalf("expected response to render custom role-count state, got: %s", body)
+	}
+}
+
+func TestSetupRouter_RejectsLockedCoupRoleCountStepperWithoutUnsafeOverride(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	counts, ok := game.CoupRoleCountsForPreset(game.CoupPresetFive)
+	if !ok {
+		t.Fatal("missing five-player Coup preset")
+	}
+	room.CoupRoleCounts = counts
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-count/king/decrement", nil)
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupRoleCounts[game.RoleKing] != 1 {
+		t.Fatalf("expected locked King count to remain 1, got counts %v", updatedRoom.CoupRoleCounts)
+	}
+}
+
+func TestSetupRouter_AllowsRequiredCoupRoleStepperWithUnsafeOverride(t *testing.T) {
+	h := newTestHandler()
+
+	room, _ := h.store.CreateRoom()
+	room.RulesMode = game.RulesModeCoup
+	room.CoupPreset = game.CoupPresetFive
+	room.CoupAllowUnsafeRoleCounts = true
+	room.CoupRoleCountsCustom = true
+	counts, ok := game.CoupRoleCountsForPreset(game.CoupPresetFive)
+	if !ok {
+		t.Fatal("missing five-player Coup preset")
+	}
+	room.CoupRoleCounts = counts
+	player := game.NewPlayer("p1", "Player 1", "session1")
+	room.AddPlayer(player)
+	markRoomOperatorForTest(room, player)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+
+	req := httptest.NewRequest("POST", "/room/"+room.Code+"/config/coup-role-count/king/decrement", nil)
+	addPlayerSessionCookiesForTest(req, room, player)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, _ := h.store.GetRoom(room.Code)
+	if updatedRoom.CoupRoleCounts[game.RoleKing] != 0 {
+		t.Fatalf("expected unsafe King count decrement to 0, got counts %v", updatedRoom.CoupRoleCounts)
+	}
+	if !updatedRoom.CoupAllowUnsafeRoleCounts {
+		t.Fatal("expected unsafe role-count override to remain enabled")
+	}
+	if !strings.Contains(w.Body.String(), "Override") {
+		t.Fatalf("expected response to show override badge, got: %s", w.Body.String())
+	}
+}
+
 func TestUpdateCoupPresetRejectsFirstActivePlayerWhoIsNotRoomOperator(t *testing.T) {
 	h := newTestHandler()
 

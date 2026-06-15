@@ -350,25 +350,31 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
 		AssertContains("Role Count Configuration").
 		AssertContains(`id="coup-role-counts-list"`).
-		AssertContains(`class="join join-vertical w-full"`).
-		AssertContains(`data-coup-role-row="king"`).
-		AssertContains(`data-coup-role-row="blueKnight"`).
+		AssertContains(`card bg-base-100 border border-base-300 rounded-2xl overflow-hidden`).
+		AssertContains(`id="role-row-king"`).
+		AssertContains(`id="role-row-blueKnight"`).
+		AssertContains(`id="role-row-blackKnight"`).
+		AssertContains(`id="role-row-redKnight"`).
+		AssertContains(`id="role-row-greenKnight"`).
+		AssertContains(`id="role-row-wastelandKnight"`).
+		AssertContains(`data-role-count-row="king"`).
+		AssertContains(`data-role-count-row="blueKnight"`).
 		AssertContains(`data-config-row="role-preset"`).
 		AssertContains(`data-stepper-locked="king"`).
 		AssertContains(`data-stepper-locked="redKnight"`).
-		AssertContains("Required for Coup baseline").
-		AssertContains(`type="hidden" name="king" value="1"`).
-		AssertContains(`type="hidden" name="redKnight" value="1"`).
+		AssertContains(`badge badge-outline`).
+		AssertContains("Locked").
 		AssertContains(`data-stepper="blueKnight"`).
 		AssertContains(`data-stepper="blackKnight"`).
 		AssertContains(`data-stepper="greenKnight"`).
 		AssertContains(`data-stepper="wastelandKnight"`).
-		AssertContains(`name="blueKnight" value="1"`).
-		AssertContains(`data-role-count-action="increment"`).
-		AssertContains(`data-role-count-action="decrement"`).
+		AssertContains(`btn btn-square btn-sm btn-neutral`).
+		AssertContains(`@post(&#39;/room/ROLEC/config/coup-role-count/blueKnight/increment&#39;)`).
+		AssertContains(`@post(&#39;/room/ROLEC/config/coup-role-count/blueKnight/decrement&#39;)`).
 		AssertContains(`id="role-count-mode-label"`).
 		AssertContains("Preset role counts").
-		AssertContains(`id="role-count-advanced"`).
+		AssertContains(`data-config-row="unsafe-role-count-override"`).
+		AssertContains(`class="toggle toggle-warning toggle-sm"`).
 		AssertContains("Unsafe Role Count Override").
 		AssertContains(`data-config-row="king-to-blue"`).
 		AssertContains(`data-config-row="red-to-black"`).
@@ -376,7 +382,9 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`id="coup-rules-variants"`).
 		AssertContains(`data-config-row="royal-guard"`).
 		AssertContains(`data-config-row="inquisition-result"`).
+		AssertContains(`select select-bordered select-sm w-auto`).
 		AssertContains(`<details`).
+		AssertNotContains(`onclick="event.stopPropagation(); const input`).
 		AssertNotContains(`id="role-count-required"`).
 		AssertNotContains(`id="role-count-flexible"`).
 		AssertNotContains(`sm:grid-cols-2`)
@@ -410,9 +418,11 @@ func TestHostDashboardLobby_CoupUnsafeOverrideMakesRequiredRolesEditable(t *test
 		AssertContains("Unsafe Role Count Override").
 		AssertContains("Unsafe custom counts").
 		AssertContains(`data-stepper="king"`).
-		AssertContains(`name="king" value="0"`).
+		AssertContains(`id="role-row-king"`).
+		AssertContains(`@post(&#39;/room/UNSAF/config/coup-role-count/king/increment&#39;)`).
 		AssertContains(`data-stepper="redKnight"`).
-		AssertContains(`name="redKnight" value="2"`).
+		AssertContains(`id="role-row-redKnight"`).
+		AssertContains("Override").
 		AssertNotContains(`data-stepper-locked="king"`).
 		AssertNotContains(`data-stepper-locked="redKnight"`)
 }

@@ -83,6 +83,8 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/config/coup-player-count/increment", h.IncrementCoupPlayerCount)
 		r.Post("/room/{code}/config/coup-player-count/decrement", h.DecrementCoupPlayerCount)
 		r.Post("/room/{code}/config/coup-role-counts", h.UpdateCoupRoleCounts)
+		r.Post("/room/{code}/config/coup-role-count/{role}/increment", h.IncrementCoupRoleCount)
+		r.Post("/room/{code}/config/coup-role-count/{role}/decrement", h.DecrementCoupRoleCount)
 		r.Post("/room/{code}/config/coup-info", h.UpdateCoupInfoPolicy)
 		r.Post("/room/{code}/config/coup-royal-guard", h.UpdateCoupRoyalGuardSettings)
 		r.Post("/room/{code}/config/coup-inquisition", h.UpdateCoupInquisitionSettings)

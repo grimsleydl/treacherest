@@ -152,70 +152,98 @@ templ ValidationLine(id string, message string, ok bool) {
 	</p>
 }
 
-templ CoupRoleCountRow(role game.RoleType, count int, locked bool, reason string) {
-	if locked {
-		<div class="join-item border border-base-300" data-coup-role-row={ game.CoupRoleCountFormName(role) } data-stepper-locked={ game.CoupRoleCountFormName(role) }>
-			@CoupRoleCountRowBody(role, count, true, reason)
-		</div>
-	} else {
-		<div class="join-item border border-base-300" data-coup-role-row={ game.CoupRoleCountFormName(role) } data-stepper={ game.CoupRoleCountFormName(role) }>
-			@CoupRoleCountRowBody(role, count, false, reason)
-		</div>
+templ CoupRoleCountRow(room *game.Room, role game.RoleType, count int) {
+	@components.RoleCountRow(
+		"role-row-"+game.CoupRoleCountFormName(role),
+		game.CoupRoleCountFormName(role),
+		string(role),
+		count,
+		coupRoleCountBadgeText(room, role),
+		coupRoleCountBadgeClass(room, role),
+		coupRoleCountStatusText(room, role, count),
+		coupRoleCountStatusClass(room, role, count),
+		fmt.Sprintf("@post('/room/%s/config/coup-role-count/%s/increment')", room.Code, game.CoupRoleCountFormName(role)),
+		fmt.Sprintf("@post('/room/%s/config/coup-role-count/%s/decrement')", room.Code, game.CoupRoleCountFormName(role)),
+		coupRoleCountLocked(room, role),
+		count == 0,
+	) {
+		if coupRoleCountLocked(room, role) {
+			<p class="mb-2 text-base-content/70">Required for Coup baseline. Enable Unsafe Role Count Override to edit this row.</p>
+		} else if room.CoupAllowUnsafeRoleCounts && coupRoleCountRequired(role) {
+			<p class="mb-2 text-warning">Unsafe override is active for this required Coup role.</p>
+		}
+		<p>{ coupRoleSetupDetail(role) }</p>
 	}
 }
 
-templ CoupRoleCountRowBody(role game.RoleType, count int, locked bool, reason string) {
-	<details class="collapse collapse-arrow duration-100">
-		<summary class="collapse-title flex items-center gap-4 font-bold">
-			<div class="relative z-10 flex flex-col items-center gap-1">
-				<button
-					type="button"
-					class="btn btn-primary relative z-20"
-					data-role-count-action="increment"
-					onclick="event.stopPropagation(); const input = event.currentTarget.parentElement.querySelector('input[type=number]'); if (!input) return; const current = parseInt(input.value || '0', 10) || 0; input.value = current + 1; input.dispatchEvent(new Event('change', {bubbles: true}));"
-					disabled?={ locked }
-				>
-					+
-				</button>
-				if locked {
-					<input type="hidden" name={ game.CoupRoleCountFormName(role) } value={ fmt.Sprintf("%d", count) }/>
-					<span class="text-lg font-bold">{ fmt.Sprintf("%d", count) }</span>
-				} else {
-					<input
-						type="number"
-						min="0"
-						step="1"
-						name={ game.CoupRoleCountFormName(role) }
-						value={ fmt.Sprintf("%d", count) }
-						aria-label={ string(role) + " count" }
-						class="input input-ghost input-xs h-auto min-h-0 w-10 p-0 text-center text-lg font-bold"
-						onclick="event.stopPropagation()"
-					/>
-				}
-				<button
-					type="button"
-					class="btn btn-primary relative z-20"
-					data-role-count-action="decrement"
-					onclick="event.stopPropagation(); const input = event.currentTarget.parentElement.querySelector('input[type=number]'); if (!input) return; const current = parseInt(input.value || '0', 10) || 0; input.value = Math.max(0, current - 1); input.dispatchEvent(new Event('change', {bubbles: true}));"
-					disabled?={ locked || count == 0 }
-				>
-					-
-				</button>
-			</div>
-			<span>{ string(role) }</span>
-			if locked {
-				<span class="badge badge-outline">Locked</span>
-			} else if count > 0 {
-				<span class="text-success ml-2">✓</span>
-			}
-		</summary>
-		<div class="collapse-content">
-			if locked && reason != "" {
-				<p class="mb-2 text-sm text-base-content/70">{ reason }</p>
-			}
-			<p class="text-sm text-base-content/80">{ coupRoleSetupDetail(role) }</p>
-		</div>
-	</details>
+templ CoupUnsafeRoleCountOverrideRow(room *game.Room) {
+	<form
+		id="coup-unsafe-role-counts-form"
+		data-config-row="unsafe-role-count-override"
+		class="rounded-box border border-warning/40 bg-warning/10 px-4 py-3"
+		data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-role-counts', {contentType: 'form'})", room.Code) }
+	>
+		for _, role := range game.CoupRoleCountOptions() {
+			<input type="hidden" name={ game.CoupRoleCountFormName(role) } value={ fmt.Sprintf("%d", game.CoupRoleCountsForRoom(room)[role]) }/>
+		}
+		<label class="flex items-center justify-between gap-3 text-sm">
+			<span class="min-w-0">
+				<span class="font-semibold">Unsafe Role Count Override</span>
+				<details class="mt-1 text-xs text-base-content/70">
+					<summary class="cursor-pointer font-medium">What this changes</summary>
+					<p class="mt-1">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</p>
+				</details>
+			</span>
+			<input
+				type="checkbox"
+				name="unsafeRoleCounts"
+				class="toggle toggle-warning toggle-sm"
+				checked?={ room.CoupAllowUnsafeRoleCounts }
+			/>
+		</label>
+	</form>
+}
+
+func coupRoleCountRequired(role game.RoleType) bool {
+	return role == game.RoleKing || role == game.RoleRedKnight
+}
+
+func coupRoleCountLocked(room *game.Room, role game.RoleType) bool {
+	return coupRoleCountRequired(role) && (room == nil || !room.CoupAllowUnsafeRoleCounts)
+}
+
+func coupRoleCountBadgeText(room *game.Room, role game.RoleType) string {
+	if !coupRoleCountRequired(role) {
+		return ""
+	}
+	if room != nil && room.CoupAllowUnsafeRoleCounts {
+		return "Override"
+	}
+	return "Locked"
+}
+
+func coupRoleCountBadgeClass(room *game.Room, role game.RoleType) string {
+	if !coupRoleCountRequired(role) {
+		return ""
+	}
+	if room != nil && room.CoupAllowUnsafeRoleCounts {
+		return "badge-warning"
+	}
+	return "badge-outline"
+}
+
+func coupRoleCountStatusText(room *game.Room, role game.RoleType, count int) string {
+	if count <= 0 || coupRoleCountLocked(room, role) {
+		return ""
+	}
+	return "✓"
+}
+
+func coupRoleCountStatusClass(room *game.Room, role game.RoleType, count int) string {
+	if coupRoleCountStatusText(room, role, count) == "" {
+		return ""
+	}
+	return "text-success"
 }
 
 templ HostDashboardCoupSetup(room *game.Room) {
@@ -236,7 +264,7 @@ templ HostDashboardCoupSetup(room *game.Room) {
 					id="coup-preset-form"
 					data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-preset', {contentType: 'form'})", room.Code) }
 				>
-					<select id="coup-preset" name="preset" class="select select-bordered select-sm w-full" aria-label="Coup Preset">
+					<select id="coup-preset" name="preset" class="select select-bordered select-sm w-auto" aria-label="Coup Preset">
 						for _, preset := range game.CoupPresetOptions() {
 							<option value={ string(preset) } selected?={ game.NormalizeCoupPreset(room.CoupPreset) == preset }>
 								{ game.CoupPresetLabel(preset) }
@@ -252,117 +280,97 @@ templ HostDashboardCoupSetup(room *game.Room) {
 					<h3 class="font-semibold">Role Counts</h3>
 					<span id="role-count-mode-label" class="badge badge-outline">{ game.CoupRoleCountModeLabel(room) }</span>
 				</div>
-					<form
-						id="coup-role-counts-form"
-						class="space-y-2"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-role-counts', {contentType: 'form'})", room.Code) }
-					>
-						if room.CoupAllowUnsafeRoleCounts {
-							<input type="hidden" name="unsafeRoleCounts" value="on"/>
-						}
-						<div id="coup-role-counts-list" class="join join-vertical w-full">
-							@CoupRoleCountRow(game.RoleKing, game.CoupRoleCountsForRoom(room)[game.RoleKing], !room.CoupAllowUnsafeRoleCounts, "Required for Coup baseline")
-							@CoupRoleCountRow(game.RoleBlueKnight, game.CoupRoleCountsForRoom(room)[game.RoleBlueKnight], false, "")
-							@CoupRoleCountRow(game.RoleBlackKnight, game.CoupRoleCountsForRoom(room)[game.RoleBlackKnight], false, "")
-							@CoupRoleCountRow(game.RoleRedKnight, game.CoupRoleCountsForRoom(room)[game.RoleRedKnight], !room.CoupAllowUnsafeRoleCounts, "Required for Coup baseline")
-							@CoupRoleCountRow(game.RoleGreenKnight, game.CoupRoleCountsForRoom(room)[game.RoleGreenKnight], false, "")
-							@CoupRoleCountRow(game.RoleWasteland, game.CoupRoleCountsForRoom(room)[game.RoleWasteland], false, "")
-						</div>
-					</form>
-					<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
+				<div id="coup-role-counts-form" class="space-y-2">
+					<div id="coup-role-counts-list" class="card bg-base-100 border border-base-300 rounded-2xl overflow-hidden">
+						@CoupRoleCountRow(room, game.RoleKing, game.CoupRoleCountsForRoom(room)[game.RoleKing])
+						@CoupRoleCountRow(room, game.RoleBlueKnight, game.CoupRoleCountsForRoom(room)[game.RoleBlueKnight])
+						@CoupRoleCountRow(room, game.RoleBlackKnight, game.CoupRoleCountsForRoom(room)[game.RoleBlackKnight])
+						@CoupRoleCountRow(room, game.RoleRedKnight, game.CoupRoleCountsForRoom(room)[game.RoleRedKnight])
+						@CoupRoleCountRow(room, game.RoleGreenKnight, game.CoupRoleCountsForRoom(room)[game.RoleGreenKnight])
+						@CoupRoleCountRow(room, game.RoleWasteland, game.CoupRoleCountsForRoom(room)[game.RoleWasteland])
+					</div>
+					@CoupUnsafeRoleCountOverrideRow(room)
 				</div>
-				<div class="divider my-1"></div>
-				<section id="coup-rules-variants" class="space-y-2">
-					<h3 class="font-semibold">Rules Variants</h3>
-					<form
-						id="coup-info-form"
-						class="grid gap-3"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
-					>
-						@ConfigRow("king-to-blue", "King-to-Blue Info", "Controls whether the King knows Blue, gets candidates, or starts with no Blue information.") {
-							<select name="kingToBlue" class="select select-bordered select-sm w-full">
-								for _, option := range coupKingToBlueOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						}
-						@ConfigRow("red-to-black", "Red-to-Black Info", "Controls how much of the Black Knight network Red starts knowing.") {
-							<select name="redToBlack" class="select select-bordered select-sm w-full">
-								for _, option := range coupRedToBlackOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						}
-						@ConfigRow("black-to-red", "Black-to-Red Info", "Controls whether Black Knights know who hired them.") {
-							<select name="blackToRed" class="select select-bordered select-sm w-full">
-								for _, option := range coupBlackToRedOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						}
-						@ConfigRow("black-network", "Black Network", "Controls whether Black Knights know the rest of their network.") {
-							<select name="blackNetwork" class="select select-bordered select-sm w-full">
-								for _, option := range coupBlackNetworkOptions() {
-									<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
-										{ option.Label }
-									</option>
-								}
-							</select>
-						}
-					</form>
-					<form
-						id="coup-royal-guard-form"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
-					>
-						@ConfigRow("royal-guard", "Royal Guard Blockers", game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit)) {
-							<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-full">
-								<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
-								<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
-								<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
-								<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
-							</select>
-						}
-					</form>
-					<form
-						id="coup-inquisition-settings-form"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
-					>
-						@ConfigRow("inquisition-result", "Inquisition Result", "Controls whether a successful Inquisition reveals Red publicly or only to the inquisitor.") {
-							<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-full">
-								<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
-								<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
-							</select>
-						}
-					</form>
-				</section>
-				<div class="divider my-1"></div>
-				<details id="role-count-advanced" class="rounded-box border border-error/40 bg-error/10 p-3">
-					<summary class="cursor-pointer font-semibold text-error">Advanced</summary>
-					<form
-						id="coup-unsafe-role-counts-form"
-						data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-role-counts', {contentType: 'form'})", room.Code) }
-					>
-						for _, role := range game.CoupRoleCountOptions() {
-							<input type="hidden" name={ game.CoupRoleCountFormName(role) } value={ fmt.Sprintf("%d", game.CoupRoleCountsForRoom(room)[role]) }/>
-						}
-						<label class="mt-3 flex items-start gap-3 text-sm">
-							<input type="checkbox" name="unsafeRoleCounts" class="checkbox checkbox-error checkbox-sm mt-1" checked?={ room.CoupAllowUnsafeRoleCounts }/>
-							<span>
-								<span class="font-semibold">Unsafe Role Count Override</span>
-								<span class="block text-base-content/80">I know the game is probably broken if I start without exactly one King and exactly one Red Knight.</span>
-							</span>
-						</label>
-					</form>
-				</details>
-				if coupPresetMatchesActivePlayers(room) {
-					@ValidationLine("role-count-configuration-validation", "Matches current player count", true)
-				} else {
+				<p class="mt-2 text-sm text-base-content/80">{ game.CoupRoleCountsSummary(game.CoupRoleCountsForRoom(room)) }</p>
+			</div>
+			<div class="divider my-1"></div>
+			<section id="coup-rules-variants" class="space-y-2">
+				<h3 class="font-semibold">Rules Variants</h3>
+				<form
+					id="coup-info-form"
+					class="grid gap-3"
+					data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-info', {contentType: 'form'})", room.Code) }
+				>
+					@ConfigRow("king-to-blue", "King-to-Blue Info", "Controls whether the King knows Blue, gets candidates, or starts with no Blue information.") {
+						<select name="kingToBlue" class="select select-bordered select-sm w-auto">
+							for _, option := range coupKingToBlueOptions() {
+								<option value={ option.Value } selected?={ option.Value == selectedCoupKingToBlue(room) }>
+									{ option.Label }
+								</option>
+							}
+						</select>
+					}
+					@ConfigRow("red-to-black", "Red-to-Black Info", "Controls how much of the Black Knight network Red starts knowing.") {
+						<select name="redToBlack" class="select select-bordered select-sm w-auto">
+							for _, option := range coupRedToBlackOptions() {
+								<option value={ option.Value } selected?={ option.Value == selectedCoupRedToBlack(room) }>
+									{ option.Label }
+								</option>
+							}
+						</select>
+					}
+					@ConfigRow("black-to-red", "Black-to-Red Info", "Controls whether Black Knights know who hired them.") {
+						<select name="blackToRed" class="select select-bordered select-sm w-auto">
+							for _, option := range coupBlackToRedOptions() {
+								<option value={ option.Value } selected?={ option.Value == selectedCoupBlackToRed(room) }>
+									{ option.Label }
+								</option>
+							}
+						</select>
+					}
+					@ConfigRow("black-network", "Black Network", "Controls whether Black Knights know the rest of their network.") {
+						<select name="blackNetwork" class="select select-bordered select-sm w-auto">
+							for _, option := range coupBlackNetworkOptions() {
+								<option value={ option.Value } selected?={ option.Value == selectedCoupBlackNetwork(room) }>
+									{ option.Label }
+								</option>
+							}
+						</select>
+					}
+				</form>
+				<form
+					id="coup-royal-guard-form"
+					data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-royal-guard', {contentType: 'form'})", room.Code) }
+				>
+					@ConfigRow("royal-guard", "Royal Guard Blockers", game.CoupRoyalGuardRuleText(room.CoupRoyalGuardBlockerLimit)) {
+						<select id="coup-royal-guard-blockers" name="blockerLimit" class="select select-bordered select-sm w-auto">
+							<option value="0" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 0 }>Any number</option>
+							<option value="1" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 1 }>One blocker</option>
+							<option value="2" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 2 }>Up to 2 blockers</option>
+							<option value="3" selected?={ game.NormalizeCoupRoyalGuardBlockerLimit(room.CoupRoyalGuardBlockerLimit) == 3 }>Up to 3 blockers</option>
+						</select>
+					}
+				</form>
+				<form
+					id="coup-inquisition-settings-form"
+					data-on:change={ fmt.Sprintf("@post('/room/%s/config/coup-inquisition', {contentType: 'form'})", room.Code) }
+				>
+					@ConfigRow("inquisition-result", "Inquisition Result", "Controls whether a successful Inquisition reveals Red publicly or only to the inquisitor.") {
+						<select id="coup-inquisition-result" name="resultPolicy" class="select select-bordered select-sm w-auto">
+							<option value={ string(game.CoupInquisitionResultPublic) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPublic }>Public result</option>
+							<option value={ string(game.CoupInquisitionResultPrivate) } selected?={ game.NormalizeCoupInquisitionResultPolicy(room.CoupInquisitionResultPolicy) == game.CoupInquisitionResultPrivate }>Private result</option>
+						</select>
+					}
+				</form>
+			</section>
+			<div class="divider my-1"></div>
+			<details id="role-count-advanced" class="rounded-box border border-base-300 bg-base-100 p-3">
+				<summary class="cursor-pointer font-semibold">Advanced</summary>
+				<p class="mt-2 text-sm text-base-content/70">Unsafe role-count editing is controlled by the toggle in the Role Counts section.</p>
+			</details>
+			if coupPresetMatchesActivePlayers(room) {
+				@ValidationLine("role-count-configuration-validation", "Matches current player count", true)
+			} else {
 				@ValidationLine("role-count-configuration-validation", coupPresetValidationText(room), false)
 			}
 		</div>

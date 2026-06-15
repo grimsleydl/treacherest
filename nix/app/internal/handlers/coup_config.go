@@ -181,6 +181,85 @@ func (h *Handler) UpdateCoupRoleCounts(w http.ResponseWriter, r *http.Request) {
 	h.renderCoupConfigResponse(w, r, room)
 }
 
+// IncrementCoupRoleCount increments one editable Coup role-count row.
+func (h *Handler) IncrementCoupRoleCount(w http.ResponseWriter, r *http.Request) {
+	h.updateCoupRoleCount(w, r, 1)
+}
+
+// DecrementCoupRoleCount decrements one editable Coup role-count row.
+func (h *Handler) DecrementCoupRoleCount(w http.ResponseWriter, r *http.Request) {
+	h.updateCoupRoleCount(w, r, -1)
+}
+
+func (h *Handler) updateCoupRoleCount(w http.ResponseWriter, r *http.Request, delta int) {
+	roomCode := chi.URLParam(r, "code")
+
+	room, err := h.store.GetRoom(roomCode)
+	if err != nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	if room.RulesMode != game.RulesModeCoup {
+		http.Error(w, "Room is not using Coup rules", http.StatusBadRequest)
+		return
+	}
+
+	if !h.isRoomCreator(r, room) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if rejectPreStartSettingsMutationIfLocked(w, room) {
+		return
+	}
+
+	role, ok := coupRoleFromFormName(chi.URLParam(r, "role"))
+	if !ok {
+		http.Error(w, "Invalid Coup role", http.StatusBadRequest)
+		return
+	}
+	if isLockedCoupRoleCount(room, role) {
+		http.Error(w, "Coup role count is locked", http.StatusBadRequest)
+		return
+	}
+
+	counts := game.CoupRoleCountsForRoom(room)
+	next := counts[role] + delta
+	if next < 0 {
+		next = 0
+	}
+	counts[role] = next
+	counts = game.NormalizeCoupRoleCounts(counts)
+
+	room.CoupRoleCounts = counts
+	room.CoupRoleCountsCustom = room.CoupAllowUnsafeRoleCounts || !coupRoleCountsMatchPreset(counts, room.CoupPreset)
+	h.store.UpdateRoom(room)
+
+	h.eventBus.Publish(Event{
+		Type:     "coup_config_updated",
+		RoomCode: room.Code,
+		Data:     room,
+	})
+
+	h.renderCoupConfigResponse(w, r, room)
+}
+
+func coupRoleFromFormName(formName string) (game.RoleType, bool) {
+	for _, role := range game.CoupRoleCountOptions() {
+		if game.CoupRoleCountFormName(role) == formName {
+			return role, true
+		}
+	}
+	return "", false
+}
+
+func isLockedCoupRoleCount(room *game.Room, role game.RoleType) bool {
+	if room != nil && room.CoupAllowUnsafeRoleCounts {
+		return false
+	}
+	return role == game.RoleKing || role == game.RoleRedKnight
+}
+
 func coupRoleCountsMatchPreset(counts game.CoupRoleCounts, preset game.CoupPreset) bool {
 	presetCounts, ok := game.CoupRoleCountsForPreset(preset)
 	if !ok {

@@ -1,0 +1,47 @@
+package components
+
+import "fmt"
+
+templ RoleCountRow(rowID string, roleKey string, label string, count int, badgeText string, badgeClass string, statusText string, statusClass string, incrementAction string, decrementAction string, locked bool, decrementDisabled bool) {
+	<div
+		id={ rowID }
+		class="group border-b border-base-300 last:border-b-0"
+		data-role-count-row={ roleKey }
+	>
+		if locked {
+			<div data-stepper-locked={ roleKey } class="hidden"></div>
+		} else {
+			<div data-stepper={ roleKey } class="hidden"></div>
+		}
+		<details>
+			<summary class="flex cursor-pointer list-none items-center gap-4 px-4 py-3">
+				<div class="flex w-11 flex-col items-center gap-1">
+					if locked {
+						<button type="button" class="btn btn-square btn-sm btn-neutral btn-disabled" disabled>+</button>
+					} else {
+						<button type="button" class="btn btn-square btn-sm btn-neutral" data-on:click__stop={ incrementAction }>+</button>
+					}
+					<span class="text-xl font-extrabold text-primary">{ fmt.Sprintf("%d", count) }</span>
+					if locked || decrementDisabled {
+						<button type="button" class="btn btn-square btn-sm btn-neutral btn-disabled" disabled>-</button>
+					} else {
+						<button type="button" class="btn btn-square btn-sm btn-neutral" data-on:click__stop={ decrementAction }>-</button>
+					}
+				</div>
+				<div class="flex-1 flex items-center gap-2 flex-wrap min-w-0">
+					<span class="font-bold">{ label }</span>
+					if badgeText != "" {
+						<span class={ "badge", badgeClass }>{ badgeText }</span>
+					}
+					if statusText != "" {
+						<span class={ statusClass }>{ statusText }</span>
+					}
+				</div>
+				<span class="btn btn-ghost btn-xs" aria-hidden="true">v</span>
+			</summary>
+			<div class="px-4 pb-4 text-sm text-base-content/80">
+				{ children... }
+			</div>
+		</details>
+	</div>
+}
