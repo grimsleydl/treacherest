@@ -349,8 +349,10 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, &game.CardService{})).
 		AssertContains("Role Count Configuration").
-		AssertContains(`id="role-count-required"`).
-		AssertContains(`id="role-count-flexible"`).
+		AssertContains(`id="coup-role-counts-list"`).
+		AssertContains(`class="join join-vertical w-full"`).
+		AssertContains(`data-coup-role-row="king"`).
+		AssertContains(`data-coup-role-row="blueKnight"`).
 		AssertContains(`data-config-row="role-preset"`).
 		AssertContains(`data-stepper-locked="king"`).
 		AssertContains(`data-stepper-locked="redKnight"`).
@@ -361,6 +363,9 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`data-stepper="blackKnight"`).
 		AssertContains(`data-stepper="greenKnight"`).
 		AssertContains(`data-stepper="wastelandKnight"`).
+		AssertContains(`name="blueKnight" value="1"`).
+		AssertContains(`data-role-count-action="increment"`).
+		AssertContains(`data-role-count-action="decrement"`).
 		AssertContains(`id="role-count-mode-label"`).
 		AssertContains("Preset role counts").
 		AssertContains(`id="role-count-advanced"`).
@@ -371,7 +376,10 @@ func TestHostDashboardLobby_RoleCountConfigurationRedesign(t *testing.T) {
 		AssertContains(`id="coup-rules-variants"`).
 		AssertContains(`data-config-row="royal-guard"`).
 		AssertContains(`data-config-row="inquisition-result"`).
-		AssertContains(`<details`)
+		AssertContains(`<details`).
+		AssertNotContains(`id="role-count-required"`).
+		AssertNotContains(`id="role-count-flexible"`).
+		AssertNotContains(`sm:grid-cols-2`)
 }
 
 func TestHostDashboardLobby_CoupUnsafeOverrideMakesRequiredRolesEditable(t *testing.T) {
@@ -417,11 +425,11 @@ func TestHostDashboardLobby_TreacheryModeUsesUnifiedRoleCountConfiguration(t *te
 		t.Fatalf("create role config: %v", err)
 	}
 	room := &game.Room{
-		Code:      "TRCHY",
-		State:     game.StateLobby,
-		RulesMode: game.RulesModeTreachery,
+		Code:       "TRCHY",
+		State:      game.StateLobby,
+		RulesMode:  game.RulesModeTreachery,
 		RoleConfig: roleConfig,
-		Players: make(map[string]*game.Player),
+		Players:    make(map[string]*game.Player),
 	}
 	host := &game.Player{
 		ID:     "host",
