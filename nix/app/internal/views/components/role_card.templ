@@ -145,7 +145,7 @@ templ RoleCardRulings(rulings []string) {
 				<div class="flex gap-2">
 					<span class="text-base-content/60 flex-shrink-0">•</span>
 					<span class="flex-1 break-words">
-						@templ.Raw(escapeRoleCardHTML(ruling))
+						@RoleCardText(ruling)
 					</span>
 				</div>
 			}

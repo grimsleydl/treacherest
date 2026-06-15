@@ -159,7 +159,7 @@ func TestRoleCardRulingsRenderBulletedRows(t *testing.T) {
 
 	html := renderer.Render(RoleCardRulings([]string{
 		"First ruling.",
-		"Second ruling.",
+		"Second ruling with {X}.",
 	})).GetHTML()
 
 	if got := strings.Count(html, ">•</span>"); got != 2 {
@@ -167,11 +167,16 @@ func TestRoleCardRulingsRenderBulletedRows(t *testing.T) {
 	}
 	for _, expected := range []string{
 		`class="flex gap-2"`,
-		`class="flex-1 break-words">First ruling.</span>`,
-		`class="flex-1 break-words">Second ruling.</span>`,
+		`class="flex-1 break-words"`,
+		"First ruling.",
+		`class="ms ms-x ms-cost"`,
+		"Second ruling with ",
 	} {
 		if !strings.Contains(html, expected) {
 			t.Fatalf("expected bulleted ruling markup %q in %s", expected, html)
 		}
+	}
+	if strings.Contains(html, "{X}") {
+		t.Fatalf("expected mana notation in rulings to render as icon, got raw text in %s", html)
 	}
 }
