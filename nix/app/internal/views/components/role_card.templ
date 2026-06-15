@@ -18,8 +18,9 @@ templ RoleCardHero(card *game.Card) {
 		<div class="card-body gap-4">
 			@roleCardHeader(card, "Private role")
 			@roleCardGoal(card)
+			@roleCardImage(card)
 			@roleCardText(card)
-			@roleCardDisclosures(card)
+			@roleCardDisclosures(card, false)
 		</div>
 	</article>
 }
@@ -34,7 +35,7 @@ templ RoleCardCompact(card *game.Card) {
 			@roleCardText(card)
 		</div>
 		<div class="mt-3">
-			@roleCardDisclosures(card)
+			@roleCardDisclosures(card, true)
 		</div>
 	</article>
 }
@@ -69,18 +70,26 @@ templ roleCardText(card *game.Card) {
 	}
 }
 
-templ roleCardDisclosures(card *game.Card) {
+templ roleCardImage(card *game.Card) {
+	if card.GetImageBase64() != "" {
+		<figure class="overflow-hidden rounded-box border border-base-300 bg-base-200">
+			<img
+				src={ templ.SafeURL(card.GetImageBase64()) }
+				alt={ card.Name }
+				class="h-auto w-full"
+				onerror="this.style.display='none'"
+			/>
+		</figure>
+	}
+}
+
+templ roleCardDisclosures(card *game.Card, includeImage bool) {
 	<div class="space-y-2">
-		if card.GetImageBase64() != "" {
+		if includeImage && card.GetImageBase64() != "" {
 			<details class="collapse collapse-arrow border border-base-300 bg-base-200">
 				<summary class="collapse-title min-h-11 py-3 text-sm font-semibold">Full card image</summary>
 				<div class="collapse-content">
-					<img
-						src={ templ.SafeURL(card.GetImageBase64()) }
-						alt={ card.Name }
-						class="w-full rounded-box"
-						onerror="this.style.display='none'"
-					/>
+					@roleCardImage(card)
 				</div>
 			</details>
 		}

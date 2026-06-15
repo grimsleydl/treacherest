@@ -56,13 +56,12 @@ func TestRoleCard(t *testing.T) {
 		}
 	})
 
-	t.Run("prioritizes goal before long rules and discloses image and rulings", func(t *testing.T) {
+	t.Run("prioritizes goal before image and rules in private hero card", func(t *testing.T) {
 		html := renderer.Render(RoleCard(card, false, false)).GetHTML()
 
 		nameIndex := strings.Index(html, "Test Guardian")
 		winIndex := strings.Index(html, "Win Condition")
 		textIndex := strings.Index(html, "Long role rules text")
-		imageDisclosureIndex := strings.Index(html, "Full card image")
 		imageIndex := strings.Index(html, "<img")
 		rulingsDisclosureIndex := strings.Index(html, "Rulings")
 		rulingIndex := strings.Index(html, "Long ruling detail")
@@ -71,7 +70,6 @@ func TestRoleCard(t *testing.T) {
 			"role name":          nameIndex,
 			"win condition":      winIndex,
 			"rules text":         textIndex,
-			"image disclosure":   imageDisclosureIndex,
 			"image":              imageIndex,
 			"rulings disclosure": rulingsDisclosureIndex,
 			"ruling detail":      rulingIndex,
@@ -80,11 +78,11 @@ func TestRoleCard(t *testing.T) {
 				t.Fatalf("expected %s in role card HTML: %s", label, html)
 			}
 		}
-		if !(nameIndex < winIndex && winIndex < textIndex) {
-			t.Fatalf("expected role name, then win condition, then rules text: %s", html)
+		if strings.Contains(html, "Full card image") {
+			t.Fatalf("private hero role card should render image inline without second disclosure: %s", html)
 		}
-		if !(imageDisclosureIndex < imageIndex) {
-			t.Fatalf("expected full image to be behind its disclosure: %s", html)
+		if !(nameIndex < winIndex && winIndex < imageIndex && imageIndex < textIndex) {
+			t.Fatalf("expected role name, then win condition, then image, then rules text: %s", html)
 		}
 		if !(rulingsDisclosureIndex < rulingIndex) {
 			t.Fatalf("expected rulings to be behind their disclosure: %s", html)
@@ -94,6 +92,19 @@ func TestRoleCard(t *testing.T) {
 		}
 		if strings.Contains(html, `about:invalid`) {
 			t.Fatalf("role card image source should not be sanitized to an invalid URL: %s", html)
+		}
+	})
+
+	t.Run("keeps full image behind disclosure in compact public card", func(t *testing.T) {
+		html := renderer.Render(RoleCard(card, true, true)).GetHTML()
+
+		imageDisclosureIndex := strings.Index(html, "Full card image")
+		imageIndex := strings.Index(html, "<img")
+		if imageDisclosureIndex < 0 || imageIndex < 0 {
+			t.Fatalf("expected compact role card image disclosure and image: %s", html)
+		}
+		if !(imageDisclosureIndex < imageIndex) {
+			t.Fatalf("expected compact role card image to stay behind disclosure: %s", html)
 		}
 	})
 }
