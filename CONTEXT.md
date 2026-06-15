@@ -237,8 +237,12 @@ A Coup ability where a revealed Blue Knight can directly block for the King unde
 _Avoid_: Teammate blocking, shared combat
 
 **Strict Green Eligibility**:
-The default Green Eligibility rule where Inquisition can help Green share King-side victory, but Red-side sharing requires Blue to have died before the King fell.
+The active default Green Eligibility rule: Green may share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded; Green may share a Red-side victory only if all Blue Knights were already dead before King Fall. Blue losses caused by King Fall do not create Red-side eligibility.
 _Avoid_: Default Green team
+
+**Green Win Condition Display**:
+The canonical Green Knight role-card win condition explanation for active Strict Green Eligibility. It should use structured bullets to explicitly say Green may share King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded; may share Red-side victory while alive only if all Blue Knights were already dead before King Fall; does not share Black or Wasteland victories; and does not gain Red-side eligibility from Blue dying because of King Fall.
+_Avoid_: Vague selected Green rules copy
 
 **Broad Amnesty**:
 A Green Eligibility variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory.
