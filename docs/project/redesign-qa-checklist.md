@@ -20,10 +20,13 @@ Use this checklist for the Treacherest audience-split redesign release sweep. Au
 - Debug hidden-role spoilers are redacted by default and suppress role-color presentation until explicitly shown.
 - Datastar/SSE patches include stable target wrappers and do not reinitialize wrappers that own `data-init` SSE connections.
 - Selectable legacy themes have generated DaisyUI color-token blocks and do not inherit the Treacherest bespoke palette.
+- All selectable themes have generated DaisyUI color-token blocks, and `npm run audit:themes` has been reviewed for low-contrast token pairs.
+- The Theme Readability Lab has been generated with `npm run lab:themes`, and copied OK/Bad notes have been reviewed for selected themes.
 
 Suggested focused commands:
 
 ```sh
+cd nix/app && npm run build:css && npm run audit:themes && npm run lab:themes && npm run test:theme-lab
 env TMPDIR=/workspace/treacherest/.scratch/go-tmp GOCACHE=/workspace/treacherest/.scratch/go-cache CGO_ENABLED=0 go test ./internal/views/pages ./internal/views/components ./internal/views/layouts -count=1
 env TMPDIR=/workspace/treacherest/.scratch/go-tmp GOCACHE=/workspace/treacherest/.scratch/go-cache CGO_ENABLED=0 go test ./internal/handlers -run 'TestStreamGame|TestStreamHost|TestRenderGameContent_CoupPrivacyIsScopedPerClientLikeSSE|TestPreStartSettingsFreeze|TestUpdateCoup|TestUpdateTreacheryPlayerCount|TestDebugModeRoutes' -count=1
 env TMPDIR=/workspace/treacherest/.scratch/go-tmp GOCACHE=/workspace/treacherest/.scratch/go-cache CGO_ENABLED=0 build
