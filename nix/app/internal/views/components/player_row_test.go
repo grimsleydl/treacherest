@@ -79,8 +79,9 @@ func TestPlayerRowPublicState(t *testing.T) {
 			t.Fatalf("expected revealed row expanded details to include public role image: %s", html)
 		}
 		if !strings.Contains(html, `href="https://mtgtreachery.net/rules/oracle/?card=revealed-guardian"`) ||
-			!strings.Contains(html, "MTG Treachery") ||
-			!strings.Contains(html, `title="View on MTG Treachery Oracle"`) {
+			!strings.Contains(html, `title="View on MTG Treachery Oracle"`) ||
+			!strings.Contains(html, `<svg`) ||
+			!strings.Contains(html, `class="w-4 h-4"`) {
 			t.Fatalf("expected revealed row expanded details to include MTG Treachery role link: %s", html)
 		}
 		if strings.Contains(html, "Full card image") {

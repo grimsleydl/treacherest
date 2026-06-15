@@ -48,7 +48,7 @@ templ playerRowPublicRole(card *game.Card) {
 	<div class="space-y-2 rounded-box bg-base-200 p-3">
 		<div class="flex flex-wrap items-center gap-2">
 			<p class="font-semibold">{ card.Name }</p>
-			@RoleCardExternalLink(card, "")
+			@RoleCardExternalLink(card, "w-4 h-4")
 		</div>
 		if card.GetImageBase64() != "" {
 			<figure class="overflow-hidden rounded-box border border-base-300 bg-base-100">

@@ -119,9 +119,11 @@ func TestRoleCard(t *testing.T) {
 			"<img",
 			`src="data:image/jpeg;base64,test"`,
 			`href="https://mtgtreachery.net/rules/oracle/?card=test-guardian"`,
-			"MTG Treachery",
 			`title="View on MTG Treachery Oracle"`,
 			`rel="noopener noreferrer"`,
+			`<svg`,
+			`class="w-5 h-5"`,
+			`M13.5 6H5.25`,
 		} {
 			if !strings.Contains(html, expected) {
 				t.Fatalf("expected public role card to contain %q: %s", expected, html)
