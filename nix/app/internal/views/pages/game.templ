@@ -81,7 +81,7 @@ templ GameStatusZone(room *game.Room, currentPlayer *game.Player) {
 templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
 	if currentPlayer.Role != nil && roleUsesPublicRoleSurface(currentPlayer.Role) {
 		<section id="zone-privy" class="w-full max-w-md">
-			@components.RoleCard(currentPlayer.Role, true, true)
+			@components.RoleCardPublic(currentPlayer.Role)
 		</section>
 	} else {
 		@components.PrivyPanel() {

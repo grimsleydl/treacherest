@@ -40,6 +40,18 @@ templ RoleCardCompact(card *game.Card) {
 	</article>
 }
 
+templ RoleCardPublic(card *game.Card) {
+	<article class={ "role-card role-card-public card bg-base-100 shadow-xl", roleCardBorderClass(card) }>
+		<div class="card-body gap-4">
+			@roleCardHeader(card, "Public role")
+			@roleCardGoal(card)
+			@roleCardImage(card)
+			@roleCardText(card)
+			@roleCardDisclosures(card, false)
+		</div>
+	</article>
+}
+
 templ roleCardHeader(card *game.Card, eyebrow string) {
 	<header class="space-y-2">
 		<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] opacity-70">{ eyebrow }</p>
@@ -93,11 +105,11 @@ templ roleCardDisclosures(card *game.Card, includeImage bool) {
 				</div>
 			</details>
 		}
-		if len(card.Rulings) > 0 {
+		if len(roleCardAdditionalRulings(card)) > 0 {
 			<details class="collapse collapse-arrow border border-base-300 bg-base-200">
 				<summary class="collapse-title min-h-11 py-3 text-sm font-semibold">Rulings</summary>
 				<div class="collapse-content text-xs">
-					@RoleCardRulings(card.Rulings)
+					@RoleCardRulings(roleCardAdditionalRulings(card))
 				</div>
 			</details>
 		}
@@ -154,4 +166,34 @@ func roleCardBorderClass(card *game.Card) string {
 	default:
 		return ""
 	}
+}
+
+func roleCardAdditionalRulings(card *game.Card) []string {
+	if card == nil {
+		return nil
+	}
+	winCondition := normalizeRoleCardRulingText(card.GetWinCondition())
+	rulings := make([]string, 0, len(card.Rulings))
+	for _, ruling := range card.Rulings {
+		if winCondition != "" && normalizeRoleCardRulingText(stripRoleCardRulingPrefix(ruling)) == winCondition {
+			continue
+		}
+		rulings = append(rulings, ruling)
+	}
+	return rulings
+}
+
+func stripRoleCardRulingPrefix(ruling string) string {
+	trimmed := strings.TrimSpace(ruling)
+	lower := strings.ToLower(trimmed)
+	for _, prefix := range []string{"role goal:", "win condition:"} {
+		if strings.HasPrefix(lower, prefix) {
+			return strings.TrimSpace(trimmed[len(prefix):])
+		}
+	}
+	return trimmed
+}
+
+func normalizeRoleCardRulingText(text string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(text)), " ")
 }

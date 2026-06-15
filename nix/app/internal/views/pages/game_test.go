@@ -410,7 +410,8 @@ func TestGameBody(t *testing.T) {
 		for _, expected := range []string{
 			"Test Leader",
 			"Win Condition:",
-			"role-card-compact",
+			"role-card-public",
+			"<img",
 		} {
 			if !strings.Contains(privyHTML, expected) {
 				t.Fatalf("expected public leader role surface to contain %q: %s", expected, privyHTML)
@@ -424,6 +425,7 @@ func TestGameBody(t *testing.T) {
 			"Conceal now",
 			"_peek",
 			"_privyOpen",
+			"Full card image",
 		} {
 			if strings.Contains(privyHTML, forbidden) {
 				t.Fatalf("leader public role surface must not contain privy control %q: %s", forbidden, privyHTML)
@@ -476,7 +478,8 @@ func TestGameBody_CoupKingUsesPublicRoleSurface(t *testing.T) {
 	for _, expected := range []string{
 		"King",
 		"Win Condition:",
-		"role-card-compact",
+		"role-card-public",
+		"<img",
 	} {
 		if !strings.Contains(privyHTML, expected) {
 			t.Fatalf("expected public King role surface to contain %q: %s", expected, privyHTML)
@@ -490,6 +493,7 @@ func TestGameBody_CoupKingUsesPublicRoleSurface(t *testing.T) {
 		"Conceal now",
 		"_peek",
 		"_privyOpen",
+		"Full card image",
 	} {
 		if strings.Contains(privyHTML, forbidden) {
 			t.Fatalf("King public role surface must not contain privy control %q: %s", forbidden, privyHTML)

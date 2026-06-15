@@ -107,4 +107,49 @@ func TestRoleCard(t *testing.T) {
 			t.Fatalf("expected compact role card image to stay behind disclosure: %s", html)
 		}
 	})
+
+	t.Run("renders public role surface with inline image", func(t *testing.T) {
+		html := renderer.Render(RoleCardPublic(card)).GetHTML()
+
+		for _, expected := range []string{
+			"role-card-public",
+			"Public role",
+			"Test Guardian",
+			"<img",
+			`src="data:image/jpeg;base64,test"`,
+		} {
+			if !strings.Contains(html, expected) {
+				t.Fatalf("expected public role card to contain %q: %s", expected, html)
+			}
+		}
+		if strings.Contains(html, "Full card image") {
+			t.Fatalf("public role card should render image inline without second disclosure: %s", html)
+		}
+	})
+
+	t.Run("omits rulings that only repeat the win condition", func(t *testing.T) {
+		duplicateRulingCard := &game.Card{
+			Name:        "Blue Knight",
+			Text:        "Protects the King.",
+			Type:        "Coup Role",
+			Rarity:      "Coup",
+			Base64Image: "data:image/jpeg;base64,test",
+			Types: game.CardTypes{
+				Supertype: "Coup",
+				Subtype:   "Blue Knight",
+			},
+			Rulings: []string{
+				"Role Goal: Win with the King. Lose when the King loses.",
+				"Win Condition: Win with the King. Lose when the King loses.",
+			},
+		}
+
+		html := renderer.Render(RoleCard(duplicateRulingCard, false, false)).GetHTML()
+		if strings.Contains(html, "Rulings") {
+			t.Fatalf("expected duplicate-only rulings to be omitted: %s", html)
+		}
+		if got := strings.Count(html, "Win with the King. Lose when the King loses."); got != 1 {
+			t.Fatalf("expected win condition text exactly once, got %d in %s", got, html)
+		}
+	})
 }
