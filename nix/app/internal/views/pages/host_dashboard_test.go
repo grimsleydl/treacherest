@@ -77,37 +77,74 @@ func TestHostDashboardPlaying_PublicStateBoard(t *testing.T) {
 }
 
 func TestHostDashboardPlaying_PublicCoupFacts(t *testing.T) {
-	renderer := testhelpers.NewTemplateRenderer(t)
-	room := &game.Room{
-		Code:                            "FACTS",
-		State:                           game.StatePlaying,
-		RulesMode:                       game.RulesModeCoup,
-		CoupKingFallen:                  true,
-		CoupGreenEligibleBeforeKingFall: true,
-		CoupInquisition: &game.CoupInquisitionState{
-			Succeeded: true,
-			Last: &game.CoupInquisitionAttempt{
-				InquisitorID: "blue",
-				TargetID:     "red",
-				Success:      true,
-			},
+	tests := []struct {
+		name               string
+		kingFallen         bool
+		huntSatisfiedField bool
+		expectedKingFallen string
+		expectedHuntState  string
+	}{
+		{
+			name:               "pending before King Fall",
+			kingFallen:         false,
+			huntSatisfiedField: true,
+			expectedKingFallen: "King fallen: no",
+			expectedHuntState:  "Green Hunt Before King Fall: pending",
 		},
-		Players: make(map[string]*game.Player),
+		{
+			name:               "satisfied after King Fall",
+			kingFallen:         true,
+			huntSatisfiedField: true,
+			expectedKingFallen: "King fallen: yes",
+			expectedHuntState:  "Green Hunt Before King Fall: satisfied",
+		},
+		{
+			name:               "not satisfied after King Fall",
+			kingFallen:         true,
+			huntSatisfiedField: false,
+			expectedKingFallen: "King fallen: yes",
+			expectedHuntState:  "Green Hunt Before King Fall: not satisfied",
+		},
 	}
-	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
-	blue := &game.Player{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")}
-	red := &game.Player{ID: "red", Name: "Red Player", Role: mockCoupCard(1004, "Red Knight")}
-	room.Players[host.ID] = host
-	room.Players[blue.ID] = blue
-	room.Players[red.ID] = red
 
-	renderer.Render(HostDashboardPlaying(room, host)).
-		AssertContains("Public Coup facts").
-		AssertContains("King fallen: yes").
-		AssertContains("Green lock: eligible before King fall").
-		AssertContains("Inquisition: succeeded").
-		AssertNotContains("Blue Knight").
-		AssertNotContains("Red Knight")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			renderer := testhelpers.NewTemplateRenderer(t)
+			room := &game.Room{
+				Code:                            "FACTS",
+				State:                           game.StatePlaying,
+				RulesMode:                       game.RulesModeCoup,
+				CoupKingFallen:                  tt.kingFallen,
+				CoupGreenEligibleBeforeKingFall: tt.huntSatisfiedField,
+				CoupInquisition: &game.CoupInquisitionState{
+					Succeeded: true,
+					Last: &game.CoupInquisitionAttempt{
+						InquisitorID: "blue",
+						TargetID:     "red",
+						Success:      true,
+					},
+				},
+				Players: make(map[string]*game.Player),
+			}
+			host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+			blue := &game.Player{ID: "blue", Name: "Blue Player", Role: mockCoupCard(1002, "Blue Knight")}
+			red := &game.Player{ID: "red", Name: "Red Player", Role: mockCoupCard(1004, "Red Knight")}
+			room.Players[host.ID] = host
+			room.Players[blue.ID] = blue
+			room.Players[red.ID] = red
+
+			renderer.Render(HostDashboardPlaying(room, host)).
+				AssertContains("Public Coup facts").
+				AssertContains(tt.expectedKingFallen).
+				AssertContains(tt.expectedHuntState).
+				AssertContains("Inquisition: succeeded").
+				AssertNotContains("Green lock").
+				AssertNotContains("Green Eligible Before King Fall").
+				AssertNotContains("Green Red-Share Lock").
+				AssertNotContains("Blue Knight").
+				AssertNotContains("Red Knight")
+		})
+	}
 }
 
 func TestHostDashboardCoupSetup_GreenBlueHuntSettings(t *testing.T) {
@@ -664,7 +701,8 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Debug Player: yes").
 		AssertContains("Private information hidden").
 		AssertContains("King Fallen: yes").
-		AssertContains("Green Red-Share Lock: eligible").
+		AssertContains("Green Hunt Before King Fall: satisfied").
+		AssertNotContains("Green Red-Share Lock").
 		AssertContains("Inquisition: succeeded").
 		AssertContains("Advisory Win: black")
 }
@@ -751,13 +789,14 @@ func TestHostDashboardLobby_DebugInsightsDoNotLeakToNonOperator(t *testing.T) {
 		AssertNotContains(`/debug/view-as/`)
 }
 
-func TestHostDashboardLobby_DebugInsightsShowGreenRedShareLockPendingBeforeKingFall(t *testing.T) {
+func TestHostDashboardLobby_DebugInsightsShowGreenHuntBeforeKingFallPendingBeforeKingFall(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
 		Code:       "DBG02",
 		State:      game.StatePlaying,
 		RulesMode:  game.RulesModeCoup,
 		CoupPreset: game.CoupPresetFive,
+		CoupGreenEligibleBeforeKingFall: true,
 		Players:    make(map[string]*game.Player),
 	}
 	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
@@ -767,7 +806,8 @@ func TestHostDashboardLobby_DebugInsightsShowGreenRedShareLockPendingBeforeKingF
 	cfg.Server.DebugModeEnabled = true
 
 	renderer.Render(HostDashboardLobby(room, host, cfg, nil)).
-		AssertContains("Green Red-Share Lock: pending").
+		AssertContains("Green Hunt Before King Fall: pending").
+		AssertNotContains("Green Red-Share Lock").
 		AssertNotContains("Green Eligible Before King Fall")
 }
 

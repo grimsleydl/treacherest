@@ -512,7 +512,7 @@ templ DebugInsights(room *game.Room, roomCode string) {
 		</div>
 		if room.RulesMode == game.RulesModeCoup {
 			<div>King Fallen: { debugBool(room.CoupKingFallen) }</div>
-			<div>Green Red-Share Lock: { debugGreenRedShareLockStatus(room) }</div>
+			<div>Green Hunt Before King Fall: { debugGreenHuntBeforeKingFallStatus(room) }</div>
 			<div>Inquisition: { debugCoupInquisitionStatus(room) }</div>
 			<div>Advisory Win: { debugCoupAdvisoryWin(room) }</div>
 		}
@@ -644,14 +644,14 @@ func debugPrivateRulings(role *game.Card) []string {
 	return rulings
 }
 
-func debugGreenRedShareLockStatus(room *game.Room) string {
+func debugGreenHuntBeforeKingFallStatus(room *game.Room) string {
 	if room == nil || !room.CoupKingFallen {
 		return "pending"
 	}
 	if room.CoupGreenEligibleBeforeKingFall {
-		return "eligible"
+		return "satisfied"
 	}
-	return "not eligible"
+	return "not satisfied"
 }
 
 func debugCoupInquisitionStatus(room *game.Room) string {

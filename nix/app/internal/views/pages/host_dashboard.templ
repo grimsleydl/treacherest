@@ -418,7 +418,7 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 				<h2 class="mb-3 text-sm font-bold uppercase tracking-[0.12em] text-base-content/60">Public Coup facts</h2>
 				<div class="flex flex-wrap gap-2 text-sm">
 					@components.StateChip("facedown", "King fallen: "+operatorBoolText(room.CoupKingFallen))
-					@components.StateChip("facedown", "Green lock: "+operatorGreenLockText(room))
+					@components.StateChip("facedown", "Green Hunt Before King Fall: "+operatorGreenHuntBeforeKingFallText(room))
 					@components.StateChip("facedown", "Inquisition: "+operatorInquisitionText(room))
 				</div>
 			</section>
@@ -486,14 +486,14 @@ func operatorBoolText(value bool) string {
 	return "no"
 }
 
-func operatorGreenLockText(room *game.Room) string {
+func operatorGreenHuntBeforeKingFallText(room *game.Room) string {
 	if room == nil || !room.CoupKingFallen {
-		return "not locked yet"
+		return "pending"
 	}
 	if room.CoupGreenEligibleBeforeKingFall {
-		return "eligible before King fall"
+		return "satisfied"
 	}
-	return "not eligible before King fall"
+	return "not satisfied"
 }
 
 func operatorInquisitionText(room *game.Room) string {
