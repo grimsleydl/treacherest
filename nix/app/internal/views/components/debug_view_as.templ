@@ -61,10 +61,10 @@ func debugViewAsRoleAccent(role game.RoleType) string {
 		return "gold"
 	case game.RoleGuardian, game.RoleBlueKnight:
 		return "blue"
-	case game.RoleAssassin, game.RoleBlackKnight:
-		return "black"
-	case game.RoleTraitor, game.RoleRedKnight:
+	case game.RoleAssassin, game.RoleRedKnight:
 		return "red"
+	case game.RoleTraitor, game.RoleBlackKnight:
+		return "black"
 	case game.RoleGreenKnight:
 		return "green"
 	case game.RoleWasteland:

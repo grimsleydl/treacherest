@@ -1,6 +1,7 @@
 package layouts
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -194,11 +195,11 @@ func TestDebugInsightsShowsTreacheryRoleAccents(t *testing.T) {
 		`data-debug-role-accent="blue"`,
 		">blue</span>",
 		`id="debug-insight-player-assassin"`,
-		`data-debug-role-accent="black"`,
-		">black</span>",
-		`id="debug-insight-player-traitor"`,
 		`data-debug-role-accent="red"`,
 		">red</span>",
+		`id="debug-insight-player-traitor"`,
+		`data-debug-role-accent="black"`,
+		">black</span>",
 		"debug-role-accented",
 	} {
 		if !strings.Contains(html, expected) {
@@ -215,6 +216,21 @@ func TestDebugInsightsShowsTreacheryRoleAccents(t *testing.T) {
 	} {
 		if strings.Contains(html, forbidden) {
 			t.Fatalf("expected debug insights to use literal role accent styling, not %q in %s", forbidden, html)
+		}
+	}
+
+	for _, tc := range []struct {
+		playerID string
+		accent   string
+	}{
+		{playerID: "leader", accent: "gold"},
+		{playerID: "guardian", accent: "blue"},
+		{playerID: "assassin", accent: "red"},
+		{playerID: "traitor", accent: "black"},
+	} {
+		rowPattern := `id="debug-insight-player-` + regexp.QuoteMeta(tc.playerID) + `"[^>]*data-debug-role-accent="` + regexp.QuoteMeta(tc.accent) + `"`
+		if matched, err := regexp.MatchString(rowPattern, html); err != nil || !matched {
+			t.Fatalf("expected debug insight row %q to use accent %q in %s", tc.playerID, tc.accent, html)
 		}
 	}
 }

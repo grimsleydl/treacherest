@@ -46,9 +46,9 @@ func TestDebugViewAsPlayerSelectorLabelsTreacheryRoleColors(t *testing.T) {
 	for _, expected := range []string{
 		"Leader Player - gold - The Queen of Light",
 		"Guardian Player - blue - The Bodyguard",
-		"Assassin Player - black - The Assassin",
-		"Traitor Player - red - The Villain",
-		`<option value="traitor" selected>Traitor Player - red - The Villain</option>`,
+		"Assassin Player - red - The Assassin",
+		"Traitor Player - black - The Villain",
+		`<option value="traitor" selected>Traitor Player - black - The Villain</option>`,
 	} {
 		if !strings.Contains(html, expected) {
 			t.Fatalf("expected debug view-as selector to contain %q in %s", expected, html)
