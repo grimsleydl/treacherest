@@ -145,7 +145,7 @@ func TestDebugRoleAccentCSSColorCodesRows(t *testing.T) {
 	assertCSSRuleContains(t, css, ".debug-role-accented",
 		"background-image: linear-gradient(to right, var(--debug-role-accent-color, var(--color-base-300)) 0 0.5rem, transparent 0.5rem);",
 		"background-repeat: no-repeat;",
-		"padding-inline-start: 1rem;",
+		"padding-inline-start: 1.5rem;",
 	)
 	assertCSSRuleContains(t, css, ".debug-role-accent-label",
 		"color: var(--color-base-content);",
