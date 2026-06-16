@@ -77,9 +77,9 @@ func coupGreenHuntSummary(room *game.Room) string {
 
 func coupInquisitionAmnestySummary(room *game.Room) string {
 	if game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad {
-		return "Broad amnesty"
+		return "Broad Amnesty"
 	}
-	return "King-side amnesty"
+	return "King victory only"
 }
 
 func coupKingKnowledgeSummary(room *game.Room) string {

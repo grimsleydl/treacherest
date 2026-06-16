@@ -81,12 +81,12 @@ templ GameStatusZone(room *game.Room, currentPlayer *game.Player) {
 templ GamePrivyZone(room *game.Room, currentPlayer *game.Player) {
 	if currentPlayer.Role != nil && roleUsesPublicRoleSurface(currentPlayer.Role) {
 		<section id="zone-privy" class="w-full max-w-md">
-			@components.RoleCardPublic(currentPlayer.Role)
+			@components.RoleCardPublicForRoom(currentPlayer.Role, room)
 		</section>
 	} else {
 		@components.PrivyPanel() {
 			if currentPlayer.Role != nil {
-				@components.RoleCard(currentPlayer.Role, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
+				@components.RoleCardForRoom(currentPlayer.Role, room, currentPlayer.FaceUp, currentPlayer.RoleRevealed)
 			}
 			@CoupInquisitionPrivatePanel(room, currentPlayer)
 			<!-- Transformation status display -->

@@ -270,7 +270,7 @@ func coupGreenKingFact(room *Room, snapshot coupWinSnapshot, greenShares bool) s
 	}
 	if greenShares {
 		if coupInquisitionSucceeded(room) {
-			return "Green Knight shares through King-side Inquisition Amnesty because Inquisition has succeeded."
+			return "Green Knight shares because Inquisition has succeeded."
 		}
 		return "Green Knight shares because Green Hunt is satisfied."
 	}
@@ -282,19 +282,19 @@ func coupGreenRedFact(room *Room, snapshot coupWinSnapshot, greenShares bool, gr
 		return "No living Green Knight is available to share the Red victory."
 	}
 	if greenShares {
-		if NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad {
-			return "Green Knight shares because Green Hunt Before King Fall was satisfied; Broad Amnesty treats successful Inquisition before King Fall as satisfying that Red-side lock."
+		if NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad && coupInquisitionSucceeded(room) && !CoupGreenHuntSatisfiedBeforeKingFall(room) {
+			return "Green Knight shares because Broad Amnesty is on and Inquisition succeeded before the King fell."
 		}
-		return "Green Knight shares because Green Hunt was satisfied before King Fall."
+		return "Green Knight shares because Green Hunt was satisfied before the King fell."
 	}
 	if !greenHuntBeforeKingFall {
 		if coupInquisitionSucceeded(room) {
 			if NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad {
-				return "Green Knight does not share because Broad Amnesty was not satisfied before King Fall."
+				return "Green Knight does not share because Inquisition did not succeed before the King fell."
 			}
-			return "Green Knight does not share because Green Hunt was not satisfied before King Fall; King-side Inquisition Amnesty does not apply to Red victories."
+			return "Green Knight does not share because Inquisition only helps Green share King victories under the selected settings."
 		}
-		return "Green Knight does not share because Green Hunt was not satisfied before King Fall."
+		return "Green Knight does not share because Green Hunt was not satisfied before the King fell."
 	}
 	return "Green Knight does not share this Red victory."
 }

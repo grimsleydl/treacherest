@@ -251,8 +251,8 @@ templ LobbyContentInner(room *game.Room, currentPlayer *game.Player, cfg *config
 							</select>
 							<label class="label" for="coup-inquisition-amnesty"><span class="label-text">Inquisition Amnesty</span></label>
 							<select id="coup-inquisition-amnesty" name="inquisitionAmnesty" class="select select-bordered select-sm w-full">
-								<option value={ string(game.CoupInquisitionAmnestyKingSideOnly) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyKingSideOnly }>King-side only</option>
-								<option value={ string(game.CoupInquisitionAmnestyBroad) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad }>Broad Amnesty</option>
+								<option value={ string(game.CoupInquisitionAmnestyKingSideOnly) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyKingSideOnly }>King victory only</option>
+								<option value={ string(game.CoupInquisitionAmnestyBroad) } selected?={ game.NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == game.CoupInquisitionAmnestyBroad }>Broad Amnesty: King or Red victory</option>
 							</select>
 						</form>
 						if coupPresetMatchesActivePlayers(room) {
@@ -394,10 +394,10 @@ templ CoupRulesReference() {
 				<li>Role claims may be true or false. Do not prove a hidden role by showing the app screen unless a Coup rule reveals it.</li>
 				<li>Royal Guard lets a revealed Blue Knight block for the King under the selected blocking setting.</li>
 				<li>Inquisition is called in-app by Blue at sorcery speed; the table follows the selected public or private result setting.</li>
-				<li>Green Blue Hunt: Green hunts Blue Knights. The Green Hunt Requirement decides whether one Blue Knight must die before King Fall or all Blue Knights must die before King Fall.</li>
-				<li>King-Side Inquisition Amnesty: If Inquisition succeeds, Green may share a King-side victory even without a Blue death.</li>
-				<li>Green can share a Red-side victory only if Green Hunt was satisfied before King Fall.</li>
-				<li>Broad Amnesty is an optional variant where successful Inquisition before King Fall can also satisfy Green's Red-side lock.</li>
+				<li>Green Blue Hunt: Green hunts Blue Knights. The Green Hunt Requirement decides whether one Blue Knight must die before the King falls or all Blue Knights must die before the King falls.</li>
+				<li>King-Side Inquisition Amnesty: If Inquisition succeeds, Green may share a King victory even without a Blue death.</li>
+				<li>Green can share a Red victory only if Green Hunt was satisfied before the King fell.</li>
+				<li>If Broad Amnesty is on, a successful Inquisition before the King falls also lets Green share a Red victory.</li>
 				<li>Blue reveal, exposure, Royal Guard reveal, and Inquisition reveal do not satisfy the Hunt. Blue dying because the King falls does not count.</li>
 				<li>Wasteland is a chaos role for larger tables, wins alone, and never shares victory.</li>
 				<li>Advisory Win Prompts are reminders only. The table must confirm a win before the app ends the game.</li>

@@ -71,7 +71,7 @@ func TestRecordCoupKingFall_DefaultAmnestyDoesNotLockRedShareAfterInquisition(t 
 	RecordCoupKingFall(room)
 
 	if room.CoupGreenEligibleBeforeKingFall {
-		t.Fatal("expected default King-side-only Inquisition Amnesty not to satisfy Red-side Green lock")
+		t.Fatal("expected default King-side-only Inquisition Amnesty not to let Green share Red")
 	}
 }
 
@@ -122,9 +122,9 @@ func TestCurrentCoupAdvisoryWin_RedSharesGreenThroughBroadAmnestyBeforeKingFall(
 	if !prompt.GreenShares {
 		t.Fatal("expected Green to share Red victory through Broad Amnesty")
 	}
-	assertCoupWinFact(t, prompt, "Broad Amnesty")
-	assertCoupWinFact(t, prompt, "Inquisition")
+	assertCoupWinFact(t, prompt, "Green Knight shares because Broad Amnesty is on and Inquisition succeeded before the King fell.")
 	assertCoupWinFactAbsent(t, prompt, "eligib")
+	assertCoupWinFactAbsent(t, prompt, "Red-side lock")
 }
 
 func TestCurrentCoupAdvisoryWin_DefaultAmnestyDoesNotShareRedAfterInquisition(t *testing.T) {
@@ -149,7 +149,7 @@ func TestCurrentCoupAdvisoryWin_DefaultAmnestyDoesNotShareRedAfterInquisition(t 
 	if prompt.GreenShares {
 		t.Fatal("expected King-side-only Inquisition Amnesty not to share Red victory")
 	}
-	assertCoupWinFact(t, prompt, "King-side Inquisition Amnesty does not apply to Red victories")
+	assertCoupWinFact(t, prompt, "Green Knight does not share because Inquisition only helps Green share King victories under the selected settings.")
 }
 
 func TestCurrentCoupAdvisoryWin_BroadAmnestyDoesNotRetroactivelyShareRed(t *testing.T) {
@@ -173,7 +173,7 @@ func TestCurrentCoupAdvisoryWin_BroadAmnestyDoesNotRetroactivelyShareRed(t *test
 	if prompt.GreenShares {
 		t.Fatal("expected Broad Amnesty not to retroactively share Red after King Fall")
 	}
-	assertCoupWinFact(t, prompt, "Broad Amnesty was not satisfied before King Fall")
+	assertCoupWinFact(t, prompt, "Green Knight does not share because Inquisition did not succeed before the King fell.")
 }
 
 func TestCurrentCoupAdvisoryWin_DefaultKingSideAmnestySharesKingAfterInquisition(t *testing.T) {
@@ -198,7 +198,7 @@ func TestCurrentCoupAdvisoryWin_DefaultKingSideAmnestySharesKingAfterInquisition
 	if !prompt.GreenShares {
 		t.Fatal("expected eligible Green to share King-side prompt")
 	}
-	assertCoupWinFact(t, prompt, "King-side Inquisition Amnesty")
+	assertCoupWinFact(t, prompt, "Green Knight shares because Inquisition has succeeded.")
 	assertCoupWinFactAbsent(t, prompt, "eligib")
 }
 
@@ -272,7 +272,7 @@ func TestCurrentCoupAdvisoryWin_RedDoesNotShareGreenWhenBlueDiesAfterKing(t *tes
 	if prompt.GreenShares {
 		t.Fatal("expected Green not to share Red victory when eligibility was not locked before King fell")
 	}
-	assertCoupWinFact(t, prompt, "Green Hunt was not satisfied before King Fall")
+	assertCoupWinFact(t, prompt, "Green Hunt was not satisfied before the King fell")
 }
 
 func TestCurrentCoupAdvisoryWin_RedSharesGreenWhenHuntWasSatisfiedBeforeKingFall(t *testing.T) {
@@ -298,7 +298,7 @@ func TestCurrentCoupAdvisoryWin_RedSharesGreenWhenHuntWasSatisfiedBeforeKingFall
 	if !prompt.GreenShares {
 		t.Fatal("expected Green to share Red victory when Green Hunt was satisfied before King Fall")
 	}
-	assertCoupWinFact(t, prompt, "Green Hunt was satisfied before King Fall")
+	assertCoupWinFact(t, prompt, "Green Hunt was satisfied before the King fell")
 }
 
 func TestCurrentCoupAdvisoryWin_RedSharesGreenWhenAllBluesHuntSatisfiedBeforeKingFall(t *testing.T) {
@@ -327,7 +327,7 @@ func TestCurrentCoupAdvisoryWin_RedSharesGreenWhenAllBluesHuntSatisfiedBeforeKin
 	if !prompt.GreenShares {
 		t.Fatal("expected Green to share Red victory when all-Blues Hunt was satisfied before King Fall")
 	}
-	assertCoupWinFact(t, prompt, "Green Hunt was satisfied before King Fall")
+	assertCoupWinFact(t, prompt, "Green Hunt was satisfied before the King fell")
 }
 
 func TestCurrentCoupAdvisoryWin_WastelandSoleSurvivor(t *testing.T) {

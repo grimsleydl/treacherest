@@ -195,11 +195,10 @@ func TestPlayerRowPublicState(t *testing.T) {
 			"<li",
 			"Green serves neither crown",
 			"Green hunts Blue Knights",
-			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
+			"The default Hunt is satisfied when at least one Blue Knight dies before the King falls",
 			"Blue dying with the King does not count",
-			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
-			"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall",
-			"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
+			"If Inquisition succeeds, Green may share a King victory even without a Blue death",
+			"Green may share a Red victory only if Green&#39;s Hunt was satisfied before the King fell",
 			"Green does not share Black or Wasteland victories",
 		} {
 			if !strings.Contains(html, expected) {
@@ -217,9 +216,22 @@ func TestPlayerRowPublicState(t *testing.T) {
 			"Strict Green",
 			"Successful Inquisition can satisfy Green for a King victory",
 			"Blue exposure",
+			"Broad Amnesty",
+			"Red-side lock",
 		} {
 			if strings.Contains(html, private) {
 				t.Fatalf("expected Green row details to omit private/stale copy %q: %s", private, html)
+			}
+		}
+
+		room.CoupInquisitionAmnesty = game.CoupInquisitionAmnestyBroad
+		broadHTML := renderer.Render(PlayerRow(room, green, viewer)).GetHTML()
+		if !strings.Contains(broadHTML, "Green may share a Red victory if Green&#39;s Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell") {
+			t.Fatalf("expected Broad-Amnesty Green row to use active public Red-victory copy: %s", broadHTML)
+		}
+		for _, stale := range []string{"Broad Amnesty", "Red-side lock", "satisfy that Red-side lock"} {
+			if strings.Contains(broadHTML, stale) {
+				t.Fatalf("expected Broad-Amnesty Green row to omit %q: %s", stale, broadHTML)
 			}
 		}
 	})

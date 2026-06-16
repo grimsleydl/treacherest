@@ -140,7 +140,7 @@ func TestLobbyPage(t *testing.T) {
 
 		renderer.Render(component).
 			AssertContains("All Blue hunt").
-			AssertContains("Broad amnesty")
+			AssertContains("Broad Amnesty")
 	})
 
 	t.Run("room operator coup lobby is read-only player surface", func(t *testing.T) {
@@ -175,7 +175,7 @@ func TestLobbyPage(t *testing.T) {
 			"Green Blue Hunt",
 			"Green Hunt Requirement",
 			"King-Side Inquisition Amnesty",
-			"Broad Amnesty",
+			"If Broad Amnesty is on",
 			"Wasteland",
 			"Advisory Win Prompts",
 			"Leave Room",
@@ -195,12 +195,12 @@ func TestLobbyPage(t *testing.T) {
 			"Green Blue Hunt",
 			"Green hunts Blue Knights",
 			"Green Hunt Requirement",
-			"one Blue Knight must die before King Fall",
-			"all Blue Knights must die before King Fall",
+			"one Blue Knight must die before the King falls",
+			"all Blue Knights must die before the King falls",
 			"King-Side Inquisition Amnesty",
-			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
-			"Green can share a Red-side victory only if Green Hunt was satisfied before King Fall",
-			"Broad Amnesty",
+			"If Inquisition succeeds, Green may share a King victory even without a Blue death",
+			"Green can share a Red victory only if Green Hunt was satisfied before the King fell",
+			"If Broad Amnesty is on, a successful Inquisition before the King falls also lets Green share a Red victory.",
 			"Blue reveal, exposure, Royal Guard reveal, and Inquisition reveal do not satisfy the Hunt",
 		} {
 			if !strings.Contains(body, want) {
@@ -300,7 +300,7 @@ func TestLobbyPage(t *testing.T) {
 			`id="player-row-player"`,
 			"Open Seat 3",
 			"Open Seat 5",
-			"Coup - 5 players - Public inquisition - One Blue hunt - King-side amnesty - Full King knowledge",
+			"Coup - 5 players - Public inquisition - One Blue hunt - King victory only - Full King knowledge",
 			`id="lobby-settings-summary"`,
 			`id="rules-reference"`,
 			"Rules Reference",

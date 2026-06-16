@@ -174,15 +174,16 @@ That does not make Red and Black a team. Red knowing Black creates leverage, par
 
 ### Role Concept
 
-Green Knight is the Blue-hunter / conditional opportunist. Green serves neither crown by default. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall; a harder variant can require all Blue Knights to die or be eliminated before King Fall.
+Green Knight is the Blue-hunter / conditional opportunist. Green serves neither crown by default. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before the King falls; a harder variant can require all Blue Knights to die or be eliminated before the King falls.
 
 Current default display should tell Green:
 
 - You serve neither crown.
 - You are hunting Blue Knights.
-- Your Hunt is satisfied when at least one Blue Knight dies before King Fall.
+- Your Hunt is satisfied when at least one Blue Knight dies before the King falls.
 - Blue dying with the King does not count.
-- If Inquisition succeeds, you may share a King-side victory even without a Blue death.
+- If Inquisition succeeds, you may share a King victory even without a Blue death.
+- You may share a Red victory only if your Hunt was satisfied before the King fell.
 - You do not share Black or Wasteland victories.
 
 ### Why The Role Exists
@@ -206,9 +207,9 @@ Green Blue Hunt prevents this by locking Green Hunt Before King Fall. Blue dying
 
 ### Inquisition Relationship
 
-Successful Inquisition gives Green a non-toxic path to cooperate with King-side victory. It creates King-Side Inquisition Amnesty without requiring Blue to die. That is useful because it lets Blue and Green sometimes align after Blue takes a meaningful public risk.
+Successful Inquisition gives Green a non-toxic path to cooperate with a King victory. It creates King-Side Inquisition Amnesty without requiring Blue to die. That is useful because it lets Blue and Green sometimes align after Blue takes a meaningful public risk.
 
-Broad Amnesty, where successful Inquisition before King Fall can also qualify Green for Red-side victory, is an optional variant. It is not the active default.
+Broad Amnesty, where successful Inquisition before the King falls can also let Green share a Red victory, is an optional settings variant. It is not the active default, and the Green role card should explain the active Red-victory condition directly rather than using the Broad Amnesty label.
 
 ### Failure Modes To Avoid
 

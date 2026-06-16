@@ -6,18 +6,26 @@ import (
 )
 
 templ RoleCard(card *game.Card, faceUp bool, roleRevealed bool) {
+	@RoleCardForRoom(card, nil, faceUp, roleRevealed)
+}
+
+templ RoleCardForRoom(card *game.Card, room *game.Room, faceUp bool, roleRevealed bool) {
 	if !faceUp && !roleRevealed {
-		@RoleCardHero(card)
+		@RoleCardHeroForRoom(card, room)
 	} else {
-		@RoleCardCompact(card)
+		@RoleCardCompactForRoom(card, room)
 	}
 }
 
 templ RoleCardHero(card *game.Card) {
+	@RoleCardHeroForRoom(card, nil)
+}
+
+templ RoleCardHeroForRoom(card *game.Card, room *game.Room) {
 	<article class={ "role-card role-card-hero card bg-base-100 shadow-xl", roleCardBorderClass(card) }>
 		<div class="card-body gap-4">
 			@roleCardHeader(card, "Private role")
-			@roleCardGoal(card)
+			@roleCardGoalForRoom(card, room)
 			@roleCardImage(card)
 			@roleCardText(card)
 			@roleCardDisclosures(card, false)
@@ -26,10 +34,14 @@ templ RoleCardHero(card *game.Card) {
 }
 
 templ RoleCardCompact(card *game.Card) {
+	@RoleCardCompactForRoom(card, nil)
+}
+
+templ RoleCardCompactForRoom(card *game.Card, room *game.Room) {
 	<article class={ "role-card role-card-compact rounded-box border border-base-300 bg-base-100 p-4 shadow", roleCardBorderClass(card) }>
 		@roleCardHeader(card, "Role")
 		<div class="mt-3">
-			@roleCardGoal(card)
+			@roleCardGoalForRoom(card, room)
 		</div>
 		<div class="mt-3">
 			@roleCardText(card)
@@ -41,10 +53,14 @@ templ RoleCardCompact(card *game.Card) {
 }
 
 templ RoleCardPublic(card *game.Card) {
+	@RoleCardPublicForRoom(card, nil)
+}
+
+templ RoleCardPublicForRoom(card *game.Card, room *game.Room) {
 	<article class={ "role-card role-card-public card bg-base-100 shadow-xl", roleCardBorderClass(card) }>
 		<div class="card-body gap-4">
 			@roleCardHeader(card, "Public role")
-			@roleCardPublicGoal(card)
+			@roleCardPublicGoalForRoom(card, room)
 			@roleCardImage(card)
 			@roleCardText(card)
 			@roleCardDisclosures(card, false)
@@ -89,23 +105,35 @@ templ RoleCardExternalLink(card *game.Card, extraClasses string) {
 }
 
 templ roleCardGoal(card *game.Card) {
+	@roleCardGoalForRoom(card, nil)
+}
+
+templ roleCardGoalForRoom(card *game.Card, room *game.Room) {
 	<section class="rounded-box border border-primary/40 bg-primary/10 p-3">
 		<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Win Condition:</p>
-		@RoleWinCondition(card, "mt-1 text-sm font-semibold", "mt-2 list-disc space-y-1 pl-5 text-sm font-semibold")
+		@RoleWinConditionForRoom(card, room, "mt-1 text-sm font-semibold", "mt-2 list-disc space-y-1 pl-5 text-sm font-semibold")
 	</section>
 }
 
 templ roleCardPublicGoal(card *game.Card) {
+	@roleCardPublicGoalForRoom(card, nil)
+}
+
+templ roleCardPublicGoalForRoom(card *game.Card, room *game.Room) {
 	<section class="rounded-box border border-primary/40 bg-primary/10 p-3">
 		<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Win Condition:</p>
-		@RolePublicWinCondition(card, "mt-1 text-sm font-semibold", "mt-2 list-disc space-y-1 pl-5 text-sm font-semibold")
+		@RolePublicWinConditionForRoom(card, room, "mt-1 text-sm font-semibold", "mt-2 list-disc space-y-1 pl-5 text-sm font-semibold")
 	</section>
 }
 
 templ RoleWinCondition(card *game.Card, paragraphClasses string, listClasses string) {
-	if len(card.GetWinConditionBullets()) > 0 {
+	@RoleWinConditionForRoom(card, nil, paragraphClasses, listClasses)
+}
+
+templ RoleWinConditionForRoom(card *game.Card, room *game.Room, paragraphClasses string, listClasses string) {
+	if bullets := card.GetWinConditionBulletsForRoom(room); len(bullets) > 0 {
 		<ul class={ listClasses }>
-			for _, bullet := range card.GetWinConditionBullets() {
+			for _, bullet := range bullets {
 				<li>{ bullet }</li>
 			}
 		</ul>
@@ -115,9 +143,13 @@ templ RoleWinCondition(card *game.Card, paragraphClasses string, listClasses str
 }
 
 templ RolePublicWinCondition(card *game.Card, paragraphClasses string, listClasses string) {
-	if len(card.GetPublicWinConditionBullets()) > 0 {
+	@RolePublicWinConditionForRoom(card, nil, paragraphClasses, listClasses)
+}
+
+templ RolePublicWinConditionForRoom(card *game.Card, room *game.Room, paragraphClasses string, listClasses string) {
+	if bullets := card.GetPublicWinConditionBulletsForRoom(room); len(bullets) > 0 {
 		<ul class={ listClasses }>
-			for _, bullet := range card.GetPublicWinConditionBullets() {
+			for _, bullet := range bullets {
 				<li>{ bullet }</li>
 			}
 		</ul>

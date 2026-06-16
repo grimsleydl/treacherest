@@ -5,28 +5,16 @@ import (
 	"strings"
 )
 
-var coupGreenBlueHuntWinConditionBullets = []string{
-	"You serve neither crown.",
-	"A crown is legitimate only after the hidden guard bleeds.",
-	"You are hunting Blue Knights.",
-	"Your Hunt is satisfied when at least one Blue Knight dies before King Fall.",
-	"Blue dying with the King does not count.",
-	"If Inquisition succeeds, you may share a King-side victory even without a Blue death.",
-	"You may share a Red-side victory only if your Hunt was satisfied before King Fall.",
-	"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock.",
-	"You do not share Black or Wasteland victories.",
-}
+const (
+	coupGreenPrivateRedVictoryDefault = "You may share a Red victory only if your Hunt was satisfied before the King fell."
+	coupGreenPrivateRedVictoryBroad   = "You may share a Red victory if your Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell."
+	coupGreenPublicRedVictoryDefault  = "Green may share a Red victory only if Green's Hunt was satisfied before the King fell."
+	coupGreenPublicRedVictoryBroad    = "Green may share a Red victory if Green's Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell."
+)
 
-var coupGreenBlueHuntPublicWinConditionBullets = []string{
-	"Green serves neither crown.",
-	"Green hunts Blue Knights.",
-	"The default Hunt is satisfied when at least one Blue Knight dies before King Fall.",
-	"Blue dying with the King does not count.",
-	"If Inquisition succeeds, Green may share a King-side victory even without a Blue death.",
-	"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall.",
-	"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock.",
-	"Green does not share Black or Wasteland victories.",
-}
+var coupGreenBlueHuntWinConditionBullets = coupGreenBlueHuntPrivateWinConditionBullets(CoupInquisitionAmnestyKingSideOnly)
+
+var coupGreenBlueHuntPublicWinConditionBullets = coupGreenBlueHuntPublicWinConditionBulletsFor(CoupInquisitionAmnestyKingSideOnly)
 
 var CoupGreenBlueHuntWinCondition = strings.Join(coupGreenBlueHuntWinConditionBullets, " ")
 
@@ -129,12 +117,14 @@ func (c *Card) GetWinCondition() string {
 }
 
 func (c *Card) GetWinConditionBullets() []string {
+	return c.GetWinConditionBulletsForRoom(nil)
+}
+
+func (c *Card) GetWinConditionBulletsForRoom(room *Room) []string {
 	if c.GetRoleType() != RoleGreenKnight {
 		return nil
 	}
-	bullets := make([]string, len(coupGreenBlueHuntWinConditionBullets))
-	copy(bullets, coupGreenBlueHuntWinConditionBullets)
-	return bullets
+	return coupGreenBlueHuntPrivateWinConditionBullets(coupInquisitionAmnestyForRoom(room))
 }
 
 func (c *Card) GetPublicWinCondition() string {
@@ -145,12 +135,54 @@ func (c *Card) GetPublicWinCondition() string {
 }
 
 func (c *Card) GetPublicWinConditionBullets() []string {
+	return c.GetPublicWinConditionBulletsForRoom(nil)
+}
+
+func (c *Card) GetPublicWinConditionBulletsForRoom(room *Room) []string {
 	if c.GetRoleType() != RoleGreenKnight {
 		return nil
 	}
-	bullets := make([]string, len(coupGreenBlueHuntPublicWinConditionBullets))
-	copy(bullets, coupGreenBlueHuntPublicWinConditionBullets)
-	return bullets
+	return coupGreenBlueHuntPublicWinConditionBulletsFor(coupInquisitionAmnestyForRoom(room))
+}
+
+func coupInquisitionAmnestyForRoom(room *Room) CoupInquisitionAmnesty {
+	if room == nil {
+		return CoupInquisitionAmnestyKingSideOnly
+	}
+	return NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty)
+}
+
+func coupGreenBlueHuntPrivateWinConditionBullets(amnesty CoupInquisitionAmnesty) []string {
+	redVictory := coupGreenPrivateRedVictoryDefault
+	if NormalizeCoupInquisitionAmnesty(amnesty) == CoupInquisitionAmnestyBroad {
+		redVictory = coupGreenPrivateRedVictoryBroad
+	}
+	return []string{
+		"You serve neither crown.",
+		"A crown is legitimate only after the hidden guard bleeds.",
+		"You are hunting Blue Knights.",
+		"Your Hunt is satisfied when at least one Blue Knight dies before the King falls.",
+		"Blue dying with the King does not count.",
+		"If Inquisition succeeds, you may share a King victory even without a Blue death.",
+		redVictory,
+		"You do not share Black or Wasteland victories.",
+	}
+}
+
+func coupGreenBlueHuntPublicWinConditionBulletsFor(amnesty CoupInquisitionAmnesty) []string {
+	redVictory := coupGreenPublicRedVictoryDefault
+	if NormalizeCoupInquisitionAmnesty(amnesty) == CoupInquisitionAmnestyBroad {
+		redVictory = coupGreenPublicRedVictoryBroad
+	}
+	return []string{
+		"Green serves neither crown.",
+		"Green hunts Blue Knights.",
+		"The default Hunt is satisfied when at least one Blue Knight dies before the King falls.",
+		"Blue dying with the King does not count.",
+		"If Inquisition succeeds, Green may share a King victory even without a Blue death.",
+		redVictory,
+		"Green does not share Black or Wasteland victories.",
+	}
 }
 
 // GetLeaderlessWinCondition returns win conditions for leaderless games

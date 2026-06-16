@@ -245,11 +245,10 @@ func TestRoleCard(t *testing.T) {
 					"You serve neither crown",
 					"A crown is legitimate only after the hidden guard bleeds",
 					"You are hunting Blue Knights",
-					"Your Hunt is satisfied when at least one Blue Knight dies before King Fall",
+					"Your Hunt is satisfied when at least one Blue Knight dies before the King falls",
 					"Blue dying with the King does not count",
-					"If Inquisition succeeds, you may share a King-side victory even without a Blue death",
-					"You may share a Red-side victory only if your Hunt was satisfied before King Fall",
-					"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
+					"If Inquisition succeeds, you may share a King victory even without a Blue death",
+					"You may share a Red victory only if your Hunt was satisfied before the King fell",
 					"You do not share Black or Wasteland victories",
 				} {
 					if !strings.Contains(tc.html, expected) {
@@ -265,6 +264,8 @@ func TestRoleCard(t *testing.T) {
 					"already dead before King Fall",
 					"selected Green eligibility rules",
 					"Successful Inquisition can satisfy Green for a King victory",
+					"Broad Amnesty",
+					"Red-side lock",
 				} {
 					if strings.Contains(tc.html, stale) {
 						t.Fatalf("expected Green role card to omit stale copy %q: %s", stale, tc.html)
@@ -293,11 +294,10 @@ func TestRoleCard(t *testing.T) {
 		for _, expected := range []string{
 			"Green serves neither crown",
 			"Green hunts Blue Knights",
-			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
+			"The default Hunt is satisfied when at least one Blue Knight dies before the King falls",
 			"Blue dying with the King does not count",
-			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
-			"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall",
-			"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
+			"If Inquisition succeeds, Green may share a King victory even without a Blue death",
+			"Green may share a Red victory only if Green&#39;s Hunt was satisfied before the King fell",
 			"Green does not share Black or Wasteland victories",
 		} {
 			if !strings.Contains(html, expected) {
@@ -315,12 +315,57 @@ func TestRoleCard(t *testing.T) {
 			"Strict Green",
 			"Successful Inquisition can satisfy Green for a King victory",
 			"Blue exposure",
+			"Broad Amnesty",
+			"Red-side lock",
 		} {
 			if strings.Contains(html, private) {
 				t.Fatalf("expected public Green role card to omit private/stale copy %q: %s", private, html)
 			}
 		}
 	})
+}
+
+func TestRoleCardGreenWinConditionFollowsRoomInquisitionAmnesty(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{CoupInquisitionAmnesty: game.CoupInquisitionAmnestyBroad}
+	greenCard := &game.Card{
+		Name:   "Green Knight",
+		Type:   "Coup Role",
+		Rarity: "Coup",
+		Text:   "Blue-hunter / conditional opportunist.",
+		Types: game.CardTypes{
+			Supertype: "Coup",
+			Subtype:   "Green Knight",
+		},
+	}
+
+	privateHTML := renderer.Render(RoleCardForRoom(greenCard, room, false, false)).GetHTML()
+	for _, expected := range []string{
+		"You may share a Red victory if your Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell",
+	} {
+		if !strings.Contains(privateHTML, expected) {
+			t.Fatalf("expected Broad-Amnesty Green role card to contain %q: %s", expected, privateHTML)
+		}
+	}
+	for _, stale := range []string{"Broad Amnesty", "Red-side lock", "satisfy that Red-side lock"} {
+		if strings.Contains(privateHTML, stale) {
+			t.Fatalf("expected Broad-Amnesty Green role card to omit %q: %s", stale, privateHTML)
+		}
+	}
+
+	publicHTML := renderer.Render(RoleCardPublicForRoom(greenCard, room)).GetHTML()
+	for _, expected := range []string{
+		"Green may share a Red victory if Green&#39;s Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell",
+	} {
+		if !strings.Contains(publicHTML, expected) {
+			t.Fatalf("expected Broad-Amnesty public Green role card to contain %q: %s", expected, publicHTML)
+		}
+	}
+	for _, stale := range []string{"Broad Amnesty", "Red-side lock", "satisfy that Red-side lock"} {
+		if strings.Contains(publicHTML, stale) {
+			t.Fatalf("expected Broad-Amnesty public Green role card to omit %q: %s", stale, publicHTML)
+		}
+	}
 }
 
 func TestRoleCardRulingsRenderBulletedRows(t *testing.T) {

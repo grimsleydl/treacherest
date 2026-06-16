@@ -261,19 +261,27 @@ The earlier legacy Green model where Green's default Red-side sharing required a
 _Avoid_: Active default Green rule
 
 **Green Win Condition Display**:
-The canonical Green Knight role-card win condition explanation for the active Green Blue Hunt model. It should explicitly tell Green: "You serve neither crown"; "You are hunting Blue Knights"; "Your Hunt is satisfied when at least one Blue Knight dies before King Fall"; "Blue dying with the King does not count"; "If Inquisition succeeds, you may share a King-side victory even without a Blue death"; "You may share a Red-side victory only if your Hunt was satisfied before King Fall"; "Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock"; and "You do not share Black or Wasteland victories."
-_Avoid_: Vague selected Green rules copy
+The canonical Green Knight role-card win condition explanation for the active Green Blue Hunt model. It should explain the currently selected rules in plain win-condition language, such as "You may share a Red victory if your Hunt was satisfied before the King fell, or if Inquisition succeeded before the King fell," without using rules-setting jargon such as Broad Amnesty or Red-side lock.
+_Avoid_: Vague selected Green rules copy, Broad Amnesty settings copy, Red-side lock
 
 **Public Green Hunt Summary**:
-The public/revealed Green Knight rules summary. It should explain the same Hunt rules as the private Green role card, but without second-person private-role flavor.
-_Avoid_: Different public Green rules
+The public/revealed Green Knight rules summary. It should explain the same active Hunt and win-sharing rules as the private Green role card, but in third person and without rules-setting jargon such as Broad Amnesty or Red-side lock.
+_Avoid_: Different public Green rules, Broad Amnesty settings copy, Red-side lock
 
 **Broad Amnesty**:
 A Green Blue Hunt variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory. It is not the default because exposing Red does not normally make Red's coup legitimate to Green.
-_Avoid_: Default Green rule
+_Avoid_: Default Green rule, Green player role-card wording
+
+**Broad Amnesty Settings Copy**:
+The player-facing settings explanation for Broad Amnesty: "If Broad Amnesty is on, a successful Inquisition before the King falls also lets Green share a Red victory." This belongs in game settings and rules-variant summaries, not in the Green Knight's private role-card copy.
+_Avoid_: Red-side lock, satisfy Red-side lock
+
+**Broad Amnesty Advisory Copy**:
+The advisory win-prompt explanation for a Green-shared Red victory caused by Broad Amnesty. It may name Broad Amnesty, but should immediately explain the fact in plain language: "Green shares because Broad Amnesty is on and Inquisition succeeded before the King fell."
+_Avoid_: Red-side lock, satisfy
 
 **Inquisition Amnesty**:
-The pre-start Coup variant setting that controls whether successful Inquisition gives Green King-side amnesty only or Broad Amnesty for King-side and Red-side sharing.
+The pre-start Coup variant setting that controls whether successful Inquisition gives Green King-side amnesty only or Broad Amnesty for King-side and Red-side sharing. Its option labels should pair the variant name with plain meaning, such as "King victory only" and "Broad Amnesty: King or Red victory."
 _Avoid_: Inquisition result policy
 
 **King Fall**:

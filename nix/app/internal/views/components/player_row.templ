@@ -35,7 +35,7 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 			</summary>
 			<div class="border-t border-base-300 px-3 py-3 text-sm">
 				if playerRowRoleVisibleToViewer(room, player, viewer) {
-					@playerRowPublicRole(player.Role)
+					@playerRowPublicRole(room, player.Role)
 				} else {
 					<p class="text-base-content/60">Card is face down.</p>
 				}
@@ -44,7 +44,7 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 	</div>
 }
 
-templ playerRowPublicRole(card *game.Card) {
+templ playerRowPublicRole(room *game.Room, card *game.Card) {
 	<div class="space-y-2 rounded-box bg-base-200 p-3">
 		<div class="flex flex-wrap items-center gap-2">
 			<p class="font-semibold">{ card.Name }</p>
@@ -60,7 +60,7 @@ templ playerRowPublicRole(card *game.Card) {
 				/>
 			</figure>
 		}
-		@playerRowWinCondition(card)
+		@playerRowWinCondition(room, card)
 		if card.Text != "" {
 			<div class="text-xs text-base-content/80">
 				@RoleCardText(card.Text)
@@ -69,11 +69,11 @@ templ playerRowPublicRole(card *game.Card) {
 	</div>
 }
 
-templ playerRowWinCondition(card *game.Card) {
-	if len(card.GetPublicWinConditionBullets()) > 0 {
+templ playerRowWinCondition(room *game.Room, card *game.Card) {
+	if bullets := card.GetPublicWinConditionBulletsForRoom(room); len(bullets) > 0 {
 		<div class="text-xs">
 			<strong>Win Condition:</strong>
-			@RolePublicWinCondition(card, "mt-1", "mt-1 list-disc space-y-1 pl-5")
+			@RolePublicWinConditionForRoom(card, room, "mt-1", "mt-1 list-disc space-y-1 pl-5")
 		</div>
 	} else {
 		<p class="text-xs"><strong>Win Condition:</strong> { card.GetPublicWinCondition() }</p>

@@ -164,8 +164,9 @@ func TestHostDashboardCoupSetup_GreenBlueHuntSettings(t *testing.T) {
 		AssertContains("One Blue Knight must die").
 		AssertContains("All Blue Knights must die").
 		AssertContains("Inquisition Amnesty").
-		AssertContains("King-side only").
-		AssertContains("Broad Amnesty")
+		AssertContains("King victory only").
+		AssertContains("Broad Amnesty: King or Red victory").
+		AssertContains("If Broad Amnesty is on, a successful Inquisition before the King falls also lets Green share a Red victory.")
 }
 
 func TestHostDashboardPlaying_CoupAdvisoryWinControls(t *testing.T) {
