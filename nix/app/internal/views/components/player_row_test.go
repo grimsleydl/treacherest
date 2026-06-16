@@ -108,7 +108,9 @@ func TestPlayerRowPublicState(t *testing.T) {
 			"Green hunts Blue Knights",
 			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
 			"Blue dying with the King does not count",
-			"Successful Inquisition can satisfy Green for a King victory",
+			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
+			"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall",
+			"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
 			"Green does not share Black or Wasteland victories",
 		} {
 			if !strings.Contains(html, expected) {
@@ -124,6 +126,7 @@ func TestPlayerRowPublicState(t *testing.T) {
 			"A crown is legitimate only after the hidden guard bleeds",
 			"selected Green rules",
 			"Strict Green",
+			"Successful Inquisition can satisfy Green for a King victory",
 			"Blue exposure",
 		} {
 			if strings.Contains(html, private) {

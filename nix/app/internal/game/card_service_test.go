@@ -164,7 +164,7 @@ func TestCard_GetWinCondition(t *testing.T) {
 		{"Guardian", "Guardian", "The Guardians help the Leader, they win or lose with them."},
 		{"Assassin", "Assassin", "The Assassins win if the Leader is eliminated."},
 		{"Traitor", "Traitor", "The Traitor wins if they are the last player standing."},
-		{"Green Knight", "Green Knight", "You serve neither crown. A crown is legitimate only after the hidden guard bleeds. You are hunting Blue Knights. Your Hunt is satisfied when at least one Blue Knight dies before King Fall. Blue dying with the King does not count. Successful Inquisition can satisfy Green for a King victory. If Inquisition succeeds, you may share a King-side victory even without a Blue death. You do not share Black or Wasteland victories."},
+		{"Green Knight", "Green Knight", "You serve neither crown. A crown is legitimate only after the hidden guard bleeds. You are hunting Blue Knights. Your Hunt is satisfied when at least one Blue Knight dies before King Fall. Blue dying with the King does not count. If Inquisition succeeds, you may share a King-side victory even without a Blue death. You may share a Red-side victory only if your Hunt was satisfied before King Fall. Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock. You do not share Black or Wasteland victories."},
 		{"Unknown", "Unknown", ""},
 	}
 
@@ -191,7 +191,9 @@ func TestCard_GreenPublicWinCondition(t *testing.T) {
 		"Green hunts Blue Knights.",
 		"The default Hunt is satisfied when at least one Blue Knight dies before King Fall.",
 		"Blue dying with the King does not count.",
-		"Successful Inquisition can satisfy Green for a King victory.",
+		"If Inquisition succeeds, Green may share a King-side victory even without a Blue death.",
+		"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall.",
+		"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock.",
 		"Green does not share Black or Wasteland victories.",
 	} {
 		if !strings.Contains(got, want) {
@@ -207,6 +209,7 @@ func TestCard_GreenPublicWinCondition(t *testing.T) {
 		"A crown is legitimate only after the hidden guard bleeds",
 		"selected Green rules",
 		"Strict Green",
+		"Successful Inquisition can satisfy Green for a King victory",
 	} {
 		if strings.Contains(got, private) {
 			t.Fatalf("expected public Green win condition to omit %q, got %q", private, got)

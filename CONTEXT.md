@@ -261,7 +261,7 @@ The earlier legacy Green model where Green's default Red-side sharing required a
 _Avoid_: Active default Green rule
 
 **Green Win Condition Display**:
-The canonical Green Knight role-card win condition explanation for the active Green Blue Hunt model. It should explicitly tell Green: "You serve neither crown"; "You are hunting Blue Knights"; "Your Hunt is satisfied when at least one Blue Knight dies before King Fall"; "Blue dying with the King does not count"; "If Inquisition succeeds, you may share a King-side victory even without a Blue death"; and "You do not share Black or Wasteland victories."
+The canonical Green Knight role-card win condition explanation for the active Green Blue Hunt model. It should explicitly tell Green: "You serve neither crown"; "You are hunting Blue Knights"; "Your Hunt is satisfied when at least one Blue Knight dies before King Fall"; "Blue dying with the King does not count"; "If Inquisition succeeds, you may share a King-side victory even without a Blue death"; "You may share a Red-side victory only if your Hunt was satisfied before King Fall"; "Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock"; and "You do not share Black or Wasteland victories."
 _Avoid_: Vague selected Green rules copy
 
 **Public Green Hunt Summary**:

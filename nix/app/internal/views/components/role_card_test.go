@@ -192,8 +192,9 @@ func TestRoleCard(t *testing.T) {
 					"You are hunting Blue Knights",
 					"Your Hunt is satisfied when at least one Blue Knight dies before King Fall",
 					"Blue dying with the King does not count",
-					"Successful Inquisition can satisfy Green for a King victory",
 					"If Inquisition succeeds, you may share a King-side victory even without a Blue death",
+					"You may share a Red-side victory only if your Hunt was satisfied before King Fall",
+					"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
 					"You do not share Black or Wasteland victories",
 				} {
 					if !strings.Contains(tc.html, expected) {
@@ -208,6 +209,7 @@ func TestRoleCard(t *testing.T) {
 					"no Blue Knights are alive",
 					"already dead before King Fall",
 					"selected Green eligibility rules",
+					"Successful Inquisition can satisfy Green for a King victory",
 				} {
 					if strings.Contains(tc.html, stale) {
 						t.Fatalf("expected Green role card to omit stale copy %q: %s", stale, tc.html)
@@ -238,7 +240,9 @@ func TestRoleCard(t *testing.T) {
 			"Green hunts Blue Knights",
 			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
 			"Blue dying with the King does not count",
-			"Successful Inquisition can satisfy Green for a King victory",
+			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
+			"Green may share a Red-side victory only if Green Hunt was satisfied before King Fall",
+			"Broad Amnesty can let successful Inquisition before King Fall satisfy that Red-side lock",
 			"Green does not share Black or Wasteland victories",
 		} {
 			if !strings.Contains(html, expected) {
@@ -254,6 +258,7 @@ func TestRoleCard(t *testing.T) {
 			"A crown is legitimate only after the hidden guard bleeds",
 			"selected Green rules",
 			"Strict Green",
+			"Successful Inquisition can satisfy Green for a King victory",
 			"Blue exposure",
 		} {
 			if strings.Contains(html, private) {

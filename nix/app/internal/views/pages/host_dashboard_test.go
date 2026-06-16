@@ -251,9 +251,14 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		"right-4",
 		"inset-y-4",
 		"border-dashed",
-		`data-signals="{_showDebugSpoilers: false}"`,
+		`data-debug-spoilers-visible="false"`,
 		`id="debug-show-hidden-roles"`,
 		"Show hidden roles",
+		"treacherest_debug_show_hidden_roles_",
+		`surface.classList.toggle("debug-spoilers-visible", visible)`,
+		`surface.dataset.debugSpoilersVisible = visible ? "true" : "false"`,
+		`showHiddenRolesCheckbox.checked = visible`,
+		`localStorage.getItem(DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX + roomCode)`,
 		`id="debug-view-as-player-container"`,
 		`id="debug-start-override-controls"`,
 		`id="debug-start-with-debug-players"`,
@@ -744,7 +749,8 @@ func TestHostDashboardLobby_DebugInsightsAreRedactedRoleColoredAndClickable(t *t
 		`data-debug-role-accent="red"`,
 		`data-debug-role-accent="green"`,
 		`data-debug-role-accent="gray"`,
-		`data-class:hidden="!$_showDebugSpoilers"`,
+		`data-debug-spoiler-placeholder`,
+		`data-debug-spoiler-revealed`,
 		`id="debug-insight-player-debug-1"`,
 		`data-debug-viewed-player="true"`,
 		"Debug Player 1",
@@ -792,12 +798,12 @@ func TestHostDashboardLobby_DebugInsightsDoNotLeakToNonOperator(t *testing.T) {
 func TestHostDashboardLobby_DebugInsightsShowGreenHuntBeforeKingFallPendingBeforeKingFall(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
-		Code:       "DBG02",
-		State:      game.StatePlaying,
-		RulesMode:  game.RulesModeCoup,
-		CoupPreset: game.CoupPresetFive,
+		Code:                            "DBG02",
+		State:                           game.StatePlaying,
+		RulesMode:                       game.RulesModeCoup,
+		CoupPreset:                      game.CoupPresetFive,
 		CoupGreenEligibleBeforeKingFall: true,
-		Players:    make(map[string]*game.Player),
+		Players:                         make(map[string]*game.Player),
 	}
 	host := &game.Player{ID: "host", Name: "Host", IsHost: true, SessionID: "session-host"}
 	room.Players[host.ID] = host

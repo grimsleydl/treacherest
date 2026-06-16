@@ -133,10 +133,16 @@
     border-radius: var(--radius-box);
   }
 
+  .privy-body {
+    height: min(70vh, 38rem);
+    min-height: 22rem;
+  }
+
   .privy-content {
     opacity: 0;
     filter: blur(10px);
     pointer-events: none;
+    overflow-y: auto;
     transition: opacity 180ms ease, filter 180ms ease;
   }
 
@@ -148,6 +154,8 @@
   }
 
   .privy-veil {
+    display: grid;
+    align-content: center;
     transition: opacity 180ms ease;
   }
 
@@ -170,6 +178,27 @@
 
   .notice-card.alert-info {
     --notice-card-accent: var(--color-info);
+  }
+
+  [data-debug-spoiler-revealed],
+  [data-debug-role-accent] {
+    display: none;
+  }
+
+  .debug-spoilers-visible [data-debug-spoiler-placeholder] {
+    display: none;
+  }
+
+  .debug-spoilers-visible [data-debug-spoiler-revealed] {
+    display: inline;
+  }
+
+  .debug-spoilers-visible [data-debug-private-ruling-revealed] {
+    display: block;
+  }
+
+  .debug-spoilers-visible [data-debug-role-accent] {
+    display: inline-flex;
   }
 
   .notice-card.alert-success {

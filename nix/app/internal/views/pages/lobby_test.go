@@ -198,7 +198,8 @@ func TestLobbyPage(t *testing.T) {
 			"one Blue Knight must die before King Fall",
 			"all Blue Knights must die before King Fall",
 			"King-Side Inquisition Amnesty",
-			"Successful Inquisition can satisfy Green for a King victory",
+			"If Inquisition succeeds, Green may share a King-side victory even without a Blue death",
+			"Green can share a Red-side victory only if Green Hunt was satisfied before King Fall",
 			"Broad Amnesty",
 			"Blue reveal, exposure, Royal Guard reveal, and Inquisition reveal do not satisfy the Hunt",
 		} {
@@ -211,6 +212,7 @@ func TestLobbyPage(t *testing.T) {
 			"Strict Green",
 			"selected Green rules",
 			"selected Green eligibility rules",
+			"Successful Inquisition can satisfy Green for a King victory",
 			"Blue exposure satisfies",
 		} {
 			if strings.Contains(body, stale) {

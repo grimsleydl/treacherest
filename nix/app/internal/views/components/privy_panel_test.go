@@ -21,6 +21,7 @@ func TestPrivyPanelControlsAreKeyboardAccessibleAndLocalOnly(t *testing.T) {
 		`data-on:pointerup__window="$_peek = false"`,
 		`data-on:pointercancel__window="$_peek = false"`,
 		`data-privy-peek-button="true"`,
+		`class="privy-body grid"`,
 		`type="button"`,
 		`min-h-11`,
 		`Hold to peek`,
