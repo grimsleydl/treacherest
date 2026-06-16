@@ -156,6 +156,8 @@
   .privy:has([data-privy-peek-button]:active) .privy-content {
     opacity: 1;
     filter: none;
+    overflow: visible;
+    overscroll-behavior: auto;
     pointer-events: auto;
   }
 
@@ -182,13 +184,29 @@
     overflow: visible;
   }
 
+  .privy:has([data-privy-peek-button]:active) {
+    max-width: min(100%, 42rem);
+    overflow: visible;
+  }
+
   .privy.showing .privy-body {
     height: auto;
     max-height: none;
     overflow: visible;
   }
 
+  .privy:has([data-privy-peek-button]:active) .privy-body {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
   .privy.showing .privy-content {
+    overflow: visible;
+    overscroll-behavior: auto;
+  }
+
+  .privy:has([data-privy-peek-button]:active) .privy-content {
     overflow: visible;
     overscroll-behavior: auto;
   }

@@ -137,6 +137,19 @@ func TestPrivyPanelCSSAllowsShowingRoleSheet(t *testing.T) {
 		"overflow: visible;",
 		"overscroll-behavior: auto;",
 	)
+	assertCSSRuleContains(t, css, ".privy:has([data-privy-peek-button]:active)",
+		"max-width: min(100%, 42rem);",
+		"overflow: visible;",
+	)
+	assertCSSRuleContains(t, css, ".privy:has([data-privy-peek-button]:active) .privy-body",
+		"height: auto;",
+		"max-height: none;",
+		"overflow: visible;",
+	)
+	assertCSSRuleContains(t, css, ".privy:has([data-privy-peek-button]:active) .privy-content",
+		"overflow: visible;",
+		"overscroll-behavior: auto;",
+	)
 }
 
 func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
