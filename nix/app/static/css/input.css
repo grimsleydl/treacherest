@@ -205,6 +205,34 @@
     color: inherit;
   }
 
+  .debug-role-accented {
+    border-left-width: 0.25rem;
+  }
+
+  .debug-role-accented[data-debug-role-accent="gold"] {
+    border-left-color: var(--color-warning);
+  }
+
+  .debug-role-accented[data-debug-role-accent="blue"] {
+    border-left-color: var(--color-info);
+  }
+
+  .debug-role-accented[data-debug-role-accent="black"] {
+    border-left-color: var(--color-neutral);
+  }
+
+  .debug-role-accented[data-debug-role-accent="red"] {
+    border-left-color: var(--color-error);
+  }
+
+  .debug-role-accented[data-debug-role-accent="green"] {
+    border-left-color: var(--color-success);
+  }
+
+  .debug-role-accented[data-debug-role-accent="gray"] {
+    border-left-color: var(--color-base-300);
+  }
+
   .role-count-disclosure > input:checked + .role-count-title .role-count-chevron-icon {
     transform: rotate(180deg);
   }

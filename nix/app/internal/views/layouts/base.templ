@@ -480,6 +480,7 @@ templ DebugInsights(room *game.Room, roomCode string) {
 					id={ debugInsightPlayerElementID(player) }
 					type="button"
 					class={ debugInsightPlayerClass(room, player) }
+					data-debug-role-accent={ debugRoleAccent(player) }
 					data-debug-viewed-player={ debugTrueFalse(player.ID == room.DebugViewedPlayerID) }
 					data-on:click={ debugViewAsPlayerButtonAction(roomCode, player.ID) }
 				>
@@ -552,6 +553,9 @@ func debugInsightPlayerElementID(player *game.Player) string {
 
 func debugInsightPlayerClass(room *game.Room, player *game.Player) string {
 	className := "w-full rounded bg-base-200 p-2 space-y-1 border text-left transition-colors hover:bg-base-100"
+	if debugRoleAccent(player) != "none" {
+		className += " debug-role-accented"
+	}
 	if room != nil && player != nil && player.ID == room.DebugViewedPlayerID {
 		className += " ring-2 ring-warning"
 	}
@@ -563,13 +567,13 @@ func debugRoleAccent(player *game.Player) string {
 		return "none"
 	}
 	switch player.Role.GetRoleType() {
-	case game.RoleKing:
+	case game.RoleLeader, game.RoleKing:
 		return "gold"
-	case game.RoleBlueKnight:
+	case game.RoleGuardian, game.RoleBlueKnight:
 		return "blue"
-	case game.RoleBlackKnight:
+	case game.RoleAssassin, game.RoleBlackKnight:
 		return "black"
-	case game.RoleRedKnight:
+	case game.RoleTraitor, game.RoleRedKnight:
 		return "red"
 	case game.RoleGreenKnight:
 		return "green"

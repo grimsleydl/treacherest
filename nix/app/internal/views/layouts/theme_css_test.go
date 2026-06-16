@@ -139,6 +139,24 @@ func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
 	}
 }
 
+func TestDebugRoleAccentCSSColorCodesRows(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	assertCSSRuleContains(t, css, ".debug-role-accented",
+		"border-left-width: 0.25rem;",
+	)
+	for _, selector := range []string{
+		`.debug-role-accented[data-debug-role-accent="gold"]`,
+		`.debug-role-accented[data-debug-role-accent="blue"]`,
+		`.debug-role-accented[data-debug-role-accent="black"]`,
+		`.debug-role-accented[data-debug-role-accent="red"]`,
+		`.debug-role-accented[data-debug-role-accent="green"]`,
+		`.debug-role-accented[data-debug-role-accent="gray"]`,
+	} {
+		assertCSSRuleContains(t, css, selector, "border-left-color:")
+	}
+}
+
 func TestRoleCountChevronCSSRotatesWhenOpen(t *testing.T) {
 	css := readGeneratedCSS(t)
 

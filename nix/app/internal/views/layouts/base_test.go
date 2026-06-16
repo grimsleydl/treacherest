@@ -1,7 +1,9 @@
 package layouts
 
 import (
+	"strings"
 	"testing"
+	"time"
 	"treacherest/internal/game"
 	"treacherest/internal/testhelpers"
 )
@@ -146,4 +148,69 @@ func TestBaseLayout(t *testing.T) {
 			AssertNotContains("<script>alert('xss')</script>").
 			AssertContains("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;")
 	})
+}
+
+func TestDebugInsightsShowsTreacheryRoleAccents(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+	room := &game.Room{
+		Code:      "DBG02",
+		RulesMode: game.RulesModeTreachery,
+		Players: map[string]*game.Player{
+			"leader": {
+				ID:       "leader",
+				Name:     "Leader Player",
+				Role:     debugInsightCard("The Queen of Light", game.RoleLeader),
+				JoinedAt: time.Unix(1, 0),
+			},
+			"guardian": {
+				ID:       "guardian",
+				Name:     "Guardian Player",
+				Role:     debugInsightCard("The Bodyguard", game.RoleGuardian),
+				JoinedAt: time.Unix(2, 0),
+			},
+			"assassin": {
+				ID:       "assassin",
+				Name:     "Assassin Player",
+				Role:     debugInsightCard("The Assassin", game.RoleAssassin),
+				JoinedAt: time.Unix(3, 0),
+			},
+			"traitor": {
+				ID:       "traitor",
+				Name:     "Traitor Player",
+				Role:     debugInsightCard("The Villain", game.RoleTraitor),
+				JoinedAt: time.Unix(4, 0),
+			},
+		},
+	}
+
+	html := renderer.Render(DebugInsights(room, room.Code)).GetHTML()
+
+	for _, expected := range []string{
+		`id="debug-insight-player-leader"`,
+		`data-debug-role-accent="gold"`,
+		">gold</span>",
+		`id="debug-insight-player-guardian"`,
+		`data-debug-role-accent="blue"`,
+		">blue</span>",
+		`id="debug-insight-player-assassin"`,
+		`data-debug-role-accent="black"`,
+		">black</span>",
+		`id="debug-insight-player-traitor"`,
+		`data-debug-role-accent="red"`,
+		">red</span>",
+		"debug-role-accented",
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected Treachery debug insights to contain %q in %s", expected, html)
+		}
+	}
+}
+
+func debugInsightCard(name string, role game.RoleType) *game.Card {
+	return &game.Card{
+		Name: name,
+		Types: game.CardTypes{
+			Subtype: string(role),
+		},
+	}
 }
