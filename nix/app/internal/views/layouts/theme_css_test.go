@@ -121,19 +121,19 @@ func TestPrivyPanelCSSConstrainsRoleContentHeight(t *testing.T) {
 	)
 }
 
-func TestPrivyPanelCSSAllowsOpenRoleSheet(t *testing.T) {
+func TestPrivyPanelCSSAllowsShowingRoleSheet(t *testing.T) {
 	css := readGeneratedCSS(t)
 
-	assertCSSRuleContains(t, css, ".privy.open",
+	assertCSSRuleContains(t, css, ".privy.showing",
 		"max-width: min(100%, 42rem);",
 		"overflow: visible;",
 	)
-	assertCSSRuleContains(t, css, ".privy.open .privy-body",
+	assertCSSRuleContains(t, css, ".privy.showing .privy-body",
 		"height: auto;",
 		"max-height: none;",
 		"overflow: visible;",
 	)
-	assertCSSRuleContains(t, css, ".privy.open .privy-content",
+	assertCSSRuleContains(t, css, ".privy.showing .privy-content",
 		"overflow: visible;",
 		"overscroll-behavior: auto;",
 	)

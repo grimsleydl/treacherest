@@ -177,18 +177,18 @@
     pointer-events: none;
   }
 
-  .privy.open {
+  .privy.showing {
     max-width: min(100%, 42rem);
     overflow: visible;
   }
 
-  .privy.open .privy-body {
+  .privy.showing .privy-body {
     height: auto;
     max-height: none;
     overflow: visible;
   }
 
-  .privy.open .privy-content {
+  .privy.showing .privy-content {
     overflow: visible;
     overscroll-behavior: auto;
   }
