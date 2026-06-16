@@ -13,6 +13,9 @@ func TestRenderGameContent_CoupPrivacyIsScopedPerClientLikeSSE(t *testing.T) {
 		State:     game.StatePlaying,
 		RulesMode: game.RulesModeCoup,
 		Players:   make(map[string]*game.Player),
+		CoupInfoPolicy: game.CoupInformationPolicy{
+			KingToBlue: game.CoupKingKnowsAllBlue,
+		},
 	}
 
 	kingCard := mockHandlerCoupCard(1001, "King")
@@ -44,7 +47,8 @@ func TestRenderGameContent_CoupPrivacyIsScopedPerClientLikeSSE(t *testing.T) {
 	blackHTML := renderToString(pages.GameContent(room, black))
 	blueHTML := renderToString(pages.GameContent(room, blue))
 
-	assertContainsText(t, kingHTML, "Private information: Blue Knights: Blue Player")
+	assertContainsText(t, kingHTML, "Known: Blue Knight")
+	assertNotContainsText(t, kingHTML, "Private information: Blue Knights: Blue Player")
 	assertNotContainsText(t, kingHTML, "Private information: Red Knight: Red Player")
 	assertNotContainsText(t, kingHTML, "Black Knight")
 

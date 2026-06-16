@@ -21,8 +21,8 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 						if player.Role != nil && player.Role.GetRoleType() == game.RoleLeader {
 							@StateChip("leader", "Leader")
 						}
-						if playerRowPublicRoleVisible(player) {
-							@StateChip("revealed", "Revealed: "+player.Role.Name)
+						if playerRowRoleVisibleToViewer(room, player, viewer) {
+							@StateChip("revealed", playerRowRoleVisibilityLabel(room, player, viewer))
 						} else if !player.FaceUp && !player.IsEliminated {
 							@StateChip("facedown", "Face Down")
 						}
@@ -34,7 +34,7 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 				<span class="btn btn-ghost btn-xs">Details</span>
 			</summary>
 			<div class="border-t border-base-300 px-3 py-3 text-sm">
-				if playerRowPublicRoleVisible(player) {
+				if playerRowRoleVisibleToViewer(room, player, viewer) {
 					@playerRowPublicRole(player.Role)
 				} else {
 					<p class="text-base-content/60">Card is face down.</p>
@@ -80,9 +80,32 @@ templ playerRowWinCondition(card *game.Card) {
 	}
 }
 
-func playerRowPublicRoleVisible(player *game.Player) bool {
+func playerRowRoleVisibleToViewer(room *game.Room, player *game.Player, viewer *game.Player) bool {
 	if player == nil || player.Role == nil {
 		return false
 	}
-	return player.Role.GetRoleType() == game.RoleLeader || player.RoleRevealed || player.FaceUp
+	if player.Role.GetRoleType() == game.RoleLeader || player.RoleRevealed || player.FaceUp {
+		return true
+	}
+	return playerRowCoupRoleKnownToViewer(room, player, viewer)
+}
+
+func playerRowRoleVisibilityLabel(room *game.Room, player *game.Player, viewer *game.Player) string {
+	if playerRowCoupRoleKnownToViewer(room, player, viewer) {
+		return "Known: " + player.Role.Name
+	}
+	return "Revealed: " + player.Role.Name
+}
+
+func playerRowCoupRoleKnownToViewer(room *game.Room, player *game.Player, viewer *game.Player) bool {
+	if room == nil || player == nil || viewer == nil || player.Role == nil || viewer.Role == nil {
+		return false
+	}
+	if room.RulesMode != game.RulesModeCoup {
+		return false
+	}
+	if viewer.Role.GetRoleType() != game.RoleKing || player.Role.GetRoleType() != game.RoleBlueKnight {
+		return false
+	}
+	return game.NormalizeCoupInformationPolicy(room.CoupInfoPolicy).KingToBlue == game.CoupKingKnowsAllBlue
 }

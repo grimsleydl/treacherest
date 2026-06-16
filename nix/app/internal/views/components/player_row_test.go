@@ -89,6 +89,95 @@ func TestPlayerRowPublicState(t *testing.T) {
 		}
 	})
 
+	t.Run("Coup King full Blue knowledge reveals Blue only to King viewer", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:      "CROW1",
+			State:     game.StatePlaying,
+			RulesMode: game.RulesModeCoup,
+			CoupInfoPolicy: game.CoupInformationPolicy{
+				KingToBlue: game.CoupKingKnowsAllBlue,
+			},
+			Players: map[string]*game.Player{},
+		}
+		king := &game.Player{
+			ID:       "king",
+			Name:     "King Player",
+			Role:     playerRowCard("King", game.RoleKing),
+			JoinedAt: time.Unix(1, 0),
+		}
+		blue := &game.Player{
+			ID:       "blue",
+			Name:     "Blue Player",
+			Role:     playerRowCard("Blue Knight", game.RoleBlueKnight),
+			JoinedAt: time.Unix(2, 0),
+		}
+		black := &game.Player{
+			ID:       "black",
+			Name:     "Black Player",
+			Role:     playerRowCard("Black Knight", game.RoleBlackKnight),
+			JoinedAt: time.Unix(3, 0),
+		}
+		for _, player := range []*game.Player{king, blue, black} {
+			coupRoom.Players[player.ID] = player
+		}
+
+		kingHTML := renderer.Render(PlayerRow(coupRoom, blue, king)).GetHTML()
+		for _, expected := range []string{
+			"Blue Player",
+			"Known: Blue Knight",
+			"Blue Knight",
+		} {
+			if !strings.Contains(kingHTML, expected) {
+				t.Fatalf("expected King viewer Blue row to contain %q: %s", expected, kingHTML)
+			}
+		}
+		if strings.Contains(kingHTML, "Card is face down.") {
+			t.Fatalf("expected King viewer Blue row to show role details, not face-down copy: %s", kingHTML)
+		}
+
+		blackHTML := renderer.Render(PlayerRow(coupRoom, blue, black)).GetHTML()
+		if strings.Contains(blackHTML, "Blue Knight") {
+			t.Fatalf("expected non-King viewer Blue row not to leak role name: %s", blackHTML)
+		}
+		if !strings.Contains(blackHTML, "Card is face down.") {
+			t.Fatalf("expected non-King viewer Blue row to stay face down: %s", blackHTML)
+		}
+	})
+
+	t.Run("Coup King candidate knowledge does not reveal exact Blue row", func(t *testing.T) {
+		coupRoom := &game.Room{
+			Code:      "CROW2",
+			State:     game.StatePlaying,
+			RulesMode: game.RulesModeCoup,
+			CoupInfoPolicy: game.CoupInformationPolicy{
+				KingToBlue: game.CoupKingGetsBlueCandidates,
+			},
+			Players: map[string]*game.Player{},
+		}
+		king := &game.Player{
+			ID:       "king",
+			Name:     "King Player",
+			Role:     playerRowCard("King", game.RoleKing),
+			JoinedAt: time.Unix(1, 0),
+		}
+		blue := &game.Player{
+			ID:       "blue",
+			Name:     "Blue Player",
+			Role:     playerRowCard("Blue Knight", game.RoleBlueKnight),
+			JoinedAt: time.Unix(2, 0),
+		}
+		coupRoom.Players[king.ID] = king
+		coupRoom.Players[blue.ID] = blue
+
+		html := renderer.Render(PlayerRow(coupRoom, blue, king)).GetHTML()
+		if strings.Contains(html, "Blue Knight") {
+			t.Fatalf("expected candidate policy not to reveal exact Blue role in row: %s", html)
+		}
+		if !strings.Contains(html, "Card is face down.") {
+			t.Fatalf("expected candidate policy Blue row to stay face down: %s", html)
+		}
+	})
+
 	t.Run("revealed green row uses public green blue hunt summary", func(t *testing.T) {
 		green := &game.Player{
 			ID:           "green",

@@ -59,14 +59,16 @@ templ roleCardHeader(card *game.Card, eyebrow string) {
 			<h2 class="font-display text-3xl font-semibold leading-tight">{ card.Name }</h2>
 			@RoleCardExternalLink(card, "w-5 h-5")
 		</div>
-		<div class="flex flex-wrap gap-2">
-			if card.Type != "" {
-				<span class="badge badge-primary">{ card.Type }</span>
-			}
-			if card.Rarity != "" {
-				<span class="badge badge-secondary">{ card.Rarity }</span>
-			}
-		</div>
+		if roleCardShowsMetadataBadges(card) {
+			<div class="flex flex-wrap gap-2">
+				if card.Type != "" {
+					<span class="badge badge-primary">{ card.Type }</span>
+				}
+				if card.Rarity != "" {
+					<span class="badge badge-secondary">{ card.Rarity }</span>
+				}
+			</div>
+		}
 	</header>
 }
 
@@ -221,6 +223,18 @@ func roleCardBorderClass(card *game.Card) string {
 	}
 }
 
+func roleCardShowsMetadataBadges(card *game.Card) bool {
+	if card == nil {
+		return false
+	}
+	switch card.GetRoleType() {
+	case game.RoleKing, game.RoleBlueKnight, game.RoleBlackKnight, game.RoleRedKnight, game.RoleGreenKnight, game.RoleWasteland:
+		return false
+	default:
+		return card.Type != "" || card.Rarity != ""
+	}
+}
+
 func roleCardAdditionalRulings(card *game.Card) []string {
 	if card == nil {
 		return nil
@@ -228,12 +242,19 @@ func roleCardAdditionalRulings(card *game.Card) []string {
 	winCondition := normalizeRoleCardRulingText(card.GetWinCondition())
 	rulings := make([]string, 0, len(card.Rulings))
 	for _, ruling := range card.Rulings {
+		if roleCardRulingBelongsInRoster(ruling) {
+			continue
+		}
 		if winCondition != "" && normalizeRoleCardRulingText(stripRoleCardRulingPrefix(ruling)) == winCondition {
 			continue
 		}
 		rulings = append(rulings, ruling)
 	}
 	return rulings
+}
+
+func roleCardRulingBelongsInRoster(ruling string) bool {
+	return strings.HasPrefix(strings.TrimSpace(ruling), "Private information: Blue Knights:")
 }
 
 func stripRoleCardRulingPrefix(ruling string) string {

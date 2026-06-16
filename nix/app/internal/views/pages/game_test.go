@@ -1185,6 +1185,9 @@ func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {
 		RulesMode:  game.RulesModeCoup,
 		Players:    make(map[string]*game.Player),
 		MaxPlayers: 5,
+		CoupInfoPolicy: game.CoupInformationPolicy{
+			KingToBlue: game.CoupKingKnowsAllBlue,
+		},
 	}
 
 	kingCard := mockCoupCard(1001, "King")
@@ -1214,9 +1217,11 @@ func TestGameBody_CoupPrivateInformationScopedToRecipient(t *testing.T) {
 	}
 
 	renderer.Render(GameBody(room, king)).
-		AssertContains("Private information: Blue Knights: Blue Player")
+		AssertContains("Known: Blue Knight").
+		AssertNotContains("Private information: Blue Knights: Blue Player")
 
 	renderer.Render(GameBody(room, black)).
 		AssertNotContains("Private information:").
-		AssertNotContains("Blue Knights:")
+		AssertNotContains("Blue Knights:").
+		AssertNotContains("Known: Blue Knight")
 }

@@ -43,7 +43,8 @@ func TestGameBody_CoupInformationPolicyPrivacyBoundaries(t *testing.T) {
 	blackNetworkInfo := "Private information: Black Knights: " + coupPrivacyPlayerNames(blacks)
 
 	renderer.Render(GameBody(room, king)).
-		AssertContains(kingInfo).
+		AssertContains("Known: Blue Knight").
+		AssertNotContains(kingInfo).
 		AssertNotContains(redInfo).
 		AssertNotContains(blackRedInfo)
 

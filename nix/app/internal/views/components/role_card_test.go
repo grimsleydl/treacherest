@@ -134,6 +134,37 @@ func TestRoleCard(t *testing.T) {
 		}
 	})
 
+	t.Run("shows metadata badges for Treachery cards but not Coup roles", func(t *testing.T) {
+		treacheryHTML := renderer.Render(RoleCard(card, false, false)).GetHTML()
+		for _, expected := range []string{
+			"Creature - Guardian",
+			"Rare",
+		} {
+			if !strings.Contains(treacheryHTML, expected) {
+				t.Fatalf("expected Treachery role card to keep metadata badge %q: %s", expected, treacheryHTML)
+			}
+		}
+
+		coupCard := &game.Card{
+			Name:   "Blue Knight",
+			Type:   "Coup Role",
+			Rarity: "Coup",
+			Types: game.CardTypes{
+				Supertype: "Coup",
+				Subtype:   "Blue Knight",
+			},
+		}
+		coupHTML := renderer.Render(RoleCard(coupCard, false, false)).GetHTML()
+		for _, unexpected := range []string{
+			"Coup Role",
+			`badge-secondary">Coup</span>`,
+		} {
+			if strings.Contains(coupHTML, unexpected) {
+				t.Fatalf("expected Coup role card to omit metadata badge %q: %s", unexpected, coupHTML)
+			}
+		}
+	})
+
 	t.Run("omits rulings that only repeat the win condition", func(t *testing.T) {
 		duplicateRulingCard := &game.Card{
 			Name:        "Blue Knight",
@@ -157,6 +188,30 @@ func TestRoleCard(t *testing.T) {
 		}
 		if got := strings.Count(html, "Win with the King. Lose when the King loses."); got != 1 {
 			t.Fatalf("expected win condition text exactly once, got %d in %s", got, html)
+		}
+	})
+
+	t.Run("omits King-known Blue private info from role-card rulings", func(t *testing.T) {
+		kingCard := &game.Card{
+			Name:   "King",
+			Type:   "Coup Role",
+			Rarity: "Coup",
+			Text:   "Starts revealed.",
+			Types: game.CardTypes{
+				Supertype: "Coup",
+				Subtype:   "King",
+			},
+			Rulings: []string{
+				"Private information: Blue Knights: Blue Player",
+			},
+		}
+
+		html := renderer.Render(RoleCard(kingCard, true, true)).GetHTML()
+		if strings.Contains(html, "Private information: Blue Knights: Blue Player") {
+			t.Fatalf("expected King-known Blue info to be omitted from role-card rulings: %s", html)
+		}
+		if strings.Contains(html, "Rulings") {
+			t.Fatalf("expected King-known Blue info not to create an empty rulings disclosure: %s", html)
 		}
 	})
 
