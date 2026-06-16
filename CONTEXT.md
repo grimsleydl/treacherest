@@ -208,24 +208,24 @@ _Avoid_: Team assignment, teammate reveal
 A variant information policy where members of a role faction know one another.
 _Avoid_: Team, party, alliance
 
-**Green Eligibility**:
-Whether Green is allowed to share a King-side or Red-side victory under the selected Coup rules.
-_Avoid_: Green team membership
+**Legacy Green Eligibility**:
+Older shorthand for whether Green may share a King-side or Red-side victory. New product copy should use Green Blue Hunt, Green Hunt, Hunt satisfied, or Inquisition Amnesty instead.
+_Avoid_: Green team membership, active product labels using "eligible"
 
 **Green Red-Share Lock**:
-The Red-side Green Eligibility latch recorded when King Fall happens. Before King Fall it is pending; when King Fall is recorded it is computed from the current pre-King-Fall Blue elimination state and, when Broad Amnesty is enabled, pre-King-Fall Inquisition success. After King Fall it is either eligible or not eligible and is not recomputed later.
-_Avoid_: Live Green eligibility, Blue death after King Fall
+The internal Red-side Hunt latch recorded when King Fall happens. Before King Fall it is pending; when King Fall is recorded it is computed from the current pre-King-Fall Blue elimination state and, when Broad Amnesty is enabled, pre-King-Fall Inquisition success. After King Fall it is either satisfied or not satisfied and is not recomputed later.
+_Avoid_: Live Green eligibility, Blue death after King Fall, eligible/not eligible product labels
 
 **Green Hunt Before King Fall**:
 The user-facing label for the Green Red-Share Lock. It should read as pending before King Fall, satisfied when the Hunt was locked as satisfied, and not satisfied when King Fall happened before the Hunt was satisfied.
 _Avoid_: Green Eligible Before King Fall
 
 **Green Hunt Satisfied Before King Fall**:
-The product meaning of the locked Red-side Green Eligibility state. It may temporarily map to an older implementation field, but product copy, tests, and new helpers should use Hunt-satisfaction language.
+The product meaning of the locked Red-side Hunt state. It may temporarily map to an older implementation field, but product copy, tests, and new helpers should use Hunt-satisfaction language.
 _Avoid_: Generic Green eligibility
 
 **Green Blue Hunt**:
-The active default Green Eligibility model where Green is a Blue-hunter. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall; a harder variant may require all Blue Knights to die or be eliminated before King Fall. Blue reveal, role exposure, Royal Guard reveal, Inquisition reveal, or table-talk proof do not satisfy the Hunt.
+The active default Green model where Green is a Blue-hunter. Green's Hunt is satisfied when at least one Blue Knight dies or is eliminated before King Fall; a harder variant may require all Blue Knights to die or be eliminated before King Fall. Blue reveal, role exposure, Royal Guard reveal, Inquisition reveal, or table-talk proof do not satisfy the Hunt.
 _Avoid_: Green wins with whoever is winning, Blue exposure is enough
 
 **Green Hunt Requirement**:
@@ -257,7 +257,7 @@ A Coup ability where a revealed Blue Knight can directly block for the King unde
 _Avoid_: Teammate blocking, shared combat
 
 **Strict Green Eligibility**:
-The earlier Green Eligibility model where Green's default Red-side sharing required all Blue Knights to be dead before King Fall. This is superseded by Green Blue Hunt as the default model.
+The earlier legacy Green model where Green's default Red-side sharing required all Blue Knights to be dead before King Fall. This is superseded by Green Blue Hunt as the default model.
 _Avoid_: Active default Green rule
 
 **Green Win Condition Display**:
@@ -269,7 +269,7 @@ The public/revealed Green Knight rules summary. It should explain the same Hunt 
 _Avoid_: Different public Green rules
 
 **Broad Amnesty**:
-A Green Eligibility variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory. It is not the default because exposing Red does not normally make Red's coup legitimate to Green.
+A Green Blue Hunt variant where successful Inquisition before the King falls can qualify Green to share either King-side or Red-side victory. It is not the default because exposing Red does not normally make Red's coup legitimate to Green.
 _Avoid_: Default Green rule
 
 **Inquisition Amnesty**:

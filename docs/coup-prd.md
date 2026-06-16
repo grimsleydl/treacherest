@@ -150,7 +150,7 @@ The current user-facing role taxonomy is Treachery-oriented: Leader, Guardian, A
 - Blue-hunter / conditional opportunist.
 - Serves neither crown by default.
 - Wants at least one Blue Knight dead before King Fall under the default Green Blue Hunt model.
-- May share King-side or Red-side victory only through Green Blue Hunt eligibility.
+- May share King-side or Red-side victory only through Green Blue Hunt conditions.
 - Must not gain Red-side eligibility merely because Blue loses when King falls.
 
 ### Wasteland Knight
