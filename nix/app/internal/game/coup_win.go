@@ -136,7 +136,7 @@ func DetectCoupAdvisoryWin(room *Room) *CoupWinPrompt {
 				"All Black Knights are eliminated.",
 			},
 		}
-		prompt.Facts = append(prompt.Facts, coupGreenRedFact(snapshot, greenShares, room.CoupGreenEligibleBeforeKingFall))
+		prompt.Facts = append(prompt.Facts, coupGreenRedFact(room, snapshot, greenShares, room.CoupGreenEligibleBeforeKingFall))
 	}
 
 	if prompt == nil {
@@ -171,7 +171,7 @@ func RecordCoupKingFall(room *Room) {
 		return
 	}
 	room.CoupKingFallen = true
-	room.CoupGreenEligibleBeforeKingFall = CoupGreenHuntSatisfiedBeforeKingFall(room)
+	room.CoupGreenEligibleBeforeKingFall = coupGreenRedShareSatisfiedBeforeKingFall(room)
 }
 
 // CoupGreenHuntSatisfiedBeforeKingFall implements Green's Red-sharing Hunt lock.
@@ -257,27 +257,43 @@ func coupGreenHuntSatisfied(room *Room, snapshot coupWinSnapshot) bool {
 	}
 }
 
+func coupGreenRedShareSatisfiedBeforeKingFall(room *Room) bool {
+	if CoupGreenHuntSatisfiedBeforeKingFall(room) {
+		return true
+	}
+	return NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad && coupInquisitionSucceeded(room)
+}
+
 func coupGreenKingFact(room *Room, snapshot coupWinSnapshot, greenShares bool) string {
 	if snapshot.greenAlive == 0 {
 		return "No living Green Knight is available to share the King-side victory."
 	}
 	if greenShares {
 		if coupInquisitionSucceeded(room) {
-			return "Green Knight shares because Inquisition has succeeded."
+			return "Green Knight shares through King-side Inquisition Amnesty because Inquisition has succeeded."
 		}
 		return "Green Knight shares because Green Hunt is satisfied."
 	}
 	return "Green Knight is alive but does not share because Green Hunt is not satisfied and Inquisition has not succeeded."
 }
 
-func coupGreenRedFact(snapshot coupWinSnapshot, greenShares bool, eligibleBeforeKingFall bool) string {
+func coupGreenRedFact(room *Room, snapshot coupWinSnapshot, greenShares bool, greenHuntBeforeKingFall bool) string {
 	if snapshot.greenAlive == 0 {
 		return "No living Green Knight is available to share the Red victory."
 	}
 	if greenShares {
+		if NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad {
+			return "Green Knight shares because Green Hunt Before King Fall was satisfied; Broad Amnesty treats successful Inquisition before King Fall as satisfying that Red-side lock."
+		}
 		return "Green Knight shares because Green Hunt was satisfied before King Fall."
 	}
-	if !eligibleBeforeKingFall {
+	if !greenHuntBeforeKingFall {
+		if coupInquisitionSucceeded(room) {
+			if NormalizeCoupInquisitionAmnesty(room.CoupInquisitionAmnesty) == CoupInquisitionAmnestyBroad {
+				return "Green Knight does not share because Broad Amnesty was not satisfied before King Fall."
+			}
+			return "Green Knight does not share because Green Hunt was not satisfied before King Fall; King-side Inquisition Amnesty does not apply to Red victories."
+		}
 		return "Green Knight does not share because Green Hunt was not satisfied before King Fall."
 	}
 	return "Green Knight does not share this Red victory."

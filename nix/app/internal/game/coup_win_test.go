@@ -40,7 +40,143 @@ func TestRecordCoupKingFall_AllBluesHuntRequiresEveryBlueDead(t *testing.T) {
 	}
 }
 
-func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenAfterInquisition(t *testing.T) {
+func TestRecordCoupKingFall_BroadAmnestyLocksGreenHuntWhenInquisitionSucceededBeforeKingFall(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupInquisitionAmnesty = CoupInquisitionAmnestyBroad
+	room.CoupInquisition = &CoupInquisitionState{Succeeded: true}
+
+	RecordCoupKingFall(room)
+
+	if !room.CoupGreenEligibleBeforeKingFall {
+		t.Fatal("expected Broad Amnesty to satisfy Green Hunt before King Fall after successful Inquisition")
+	}
+}
+
+func TestRecordCoupKingFall_DefaultAmnestyDoesNotLockRedShareAfterInquisition(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupInquisition = &CoupInquisitionState{Succeeded: true}
+
+	RecordCoupKingFall(room)
+
+	if room.CoupGreenEligibleBeforeKingFall {
+		t.Fatal("expected default King-side-only Inquisition Amnesty not to satisfy Red-side Green lock")
+	}
+}
+
+func TestRecordCoupKingFall_FailedInquisitionDoesNotSatisfyBroadAmnesty(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupInquisitionAmnesty = CoupInquisitionAmnestyBroad
+	room.CoupInquisition = &CoupInquisitionState{
+		Last:      &CoupInquisitionAttempt{Resolved: true, Success: false},
+		Succeeded: false,
+	}
+
+	RecordCoupKingFall(room)
+
+	if room.CoupGreenEligibleBeforeKingFall {
+		t.Fatal("expected failed Inquisition not to satisfy Broad Amnesty before King Fall")
+	}
+}
+
+func TestCurrentCoupAdvisoryWin_RedSharesGreenThroughBroadAmnestyBeforeKingFall(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupInquisitionAmnesty = CoupInquisitionAmnestyBroad
+	room.CoupInquisition = &CoupInquisitionState{Succeeded: true}
+
+	RecordCoupKingFall(room)
+	room.GetPlayer("king").MarkEliminated()
+	room.GetPlayer("black").MarkEliminated()
+
+	prompt := CurrentCoupAdvisoryWin(room)
+
+	if prompt == nil {
+		t.Fatal("expected Red advisory prompt")
+	}
+	if prompt.Outcome != CoupWinOutcomeRed {
+		t.Fatalf("expected Red outcome, got %q", prompt.Outcome)
+	}
+	if !prompt.GreenShares {
+		t.Fatal("expected Green to share Red victory through Broad Amnesty")
+	}
+	assertCoupWinFact(t, prompt, "Broad Amnesty")
+	assertCoupWinFact(t, prompt, "Inquisition")
+	assertCoupWinFactAbsent(t, prompt, "eligib")
+}
+
+func TestCurrentCoupAdvisoryWin_DefaultAmnestyDoesNotShareRedAfterInquisition(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", false),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", false),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupInquisition = &CoupInquisitionState{Succeeded: true}
+
+	RecordCoupKingFall(room)
+	room.GetPlayer("king").MarkEliminated()
+	room.GetPlayer("black").MarkEliminated()
+
+	prompt := CurrentCoupAdvisoryWin(room)
+
+	if prompt == nil {
+		t.Fatal("expected Red advisory prompt")
+	}
+	if prompt.GreenShares {
+		t.Fatal("expected King-side-only Inquisition Amnesty not to share Red victory")
+	}
+	assertCoupWinFact(t, prompt, "King-side Inquisition Amnesty does not apply to Red victories")
+}
+
+func TestCurrentCoupAdvisoryWin_BroadAmnestyDoesNotRetroactivelyShareRed(t *testing.T) {
+	room := newCoupWinRoom(
+		coupWinPlayer("king", "King Player", "King", true),
+		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
+		coupWinPlayer("black", "Black Player", "Black Knight", true),
+		coupWinPlayer("red", "Red Player", "Red Knight", false),
+		coupWinPlayer("green", "Green Player", "Green Knight", false),
+	)
+	room.CoupKingFallen = true
+	room.CoupGreenEligibleBeforeKingFall = false
+	room.CoupInquisitionAmnesty = CoupInquisitionAmnestyBroad
+	room.CoupInquisition = &CoupInquisitionState{Succeeded: true}
+
+	prompt := CurrentCoupAdvisoryWin(room)
+
+	if prompt == nil {
+		t.Fatal("expected Red advisory prompt")
+	}
+	if prompt.GreenShares {
+		t.Fatal("expected Broad Amnesty not to retroactively share Red after King Fall")
+	}
+	assertCoupWinFact(t, prompt, "Broad Amnesty was not satisfied before King Fall")
+}
+
+func TestCurrentCoupAdvisoryWin_DefaultKingSideAmnestySharesKingAfterInquisition(t *testing.T) {
 	room := newCoupWinRoom(
 		coupWinPlayer("king", "King Player", "King", false),
 		coupWinPlayer("blue", "Blue Player", "Blue Knight", false),
@@ -62,7 +198,8 @@ func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenAfterInquisition(t *testi
 	if !prompt.GreenShares {
 		t.Fatal("expected eligible Green to share King-side prompt")
 	}
-	assertCoupWinFact(t, prompt, "Inquisition has succeeded")
+	assertCoupWinFact(t, prompt, "King-side Inquisition Amnesty")
+	assertCoupWinFactAbsent(t, prompt, "eligib")
 }
 
 func TestCurrentCoupAdvisoryWin_KingSideSharesWithGreenWhenHuntIsSatisfied(t *testing.T) {
@@ -196,6 +333,16 @@ func assertCoupWinFact(t *testing.T, prompt *CoupWinPrompt, want string) {
 		}
 	}
 	t.Fatalf("expected prompt facts to contain %q, got %#v", want, prompt.Facts)
+}
+
+func assertCoupWinFactAbsent(t *testing.T, prompt *CoupWinPrompt, unwanted string) {
+	t.Helper()
+
+	for _, fact := range prompt.Facts {
+		if strings.Contains(fact, unwanted) {
+			t.Fatalf("expected prompt facts not to contain %q, got %#v", unwanted, prompt.Facts)
+		}
+	}
 }
 
 func newCoupWinRoom(players ...*Player) *Room {
