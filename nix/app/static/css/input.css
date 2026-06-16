@@ -207,30 +207,49 @@
 
   .debug-role-accented {
     border-left-width: 0.25rem;
+    border-left-color: var(--debug-role-accent-color, var(--color-base-300));
   }
 
-  .debug-role-accented[data-debug-role-accent="gold"] {
-    border-left-color: var(--color-warning);
+  .debug-role-accent-badge {
+    background-color: var(--debug-role-accent-color, var(--color-base-300));
+    border-color: var(--debug-role-accent-color, var(--color-base-300));
+    color: var(--debug-role-accent-content, var(--color-base-content));
   }
 
-  .debug-role-accented[data-debug-role-accent="blue"] {
-    border-left-color: var(--color-info);
+  .debug-role-accented[data-debug-role-accent="gold"],
+  .debug-role-accent-badge[data-debug-role-accent="gold"] {
+    --debug-role-accent-color: oklch(78% 0.14 86);
+    --debug-role-accent-content: oklch(20% 0.04 86);
   }
 
-  .debug-role-accented[data-debug-role-accent="black"] {
-    border-left-color: var(--color-neutral);
+  .debug-role-accented[data-debug-role-accent="blue"],
+  .debug-role-accent-badge[data-debug-role-accent="blue"] {
+    --debug-role-accent-color: oklch(60% 0.18 250);
+    --debug-role-accent-content: oklch(98% 0.01 250);
   }
 
-  .debug-role-accented[data-debug-role-accent="red"] {
-    border-left-color: var(--color-error);
+  .debug-role-accented[data-debug-role-accent="black"],
+  .debug-role-accent-badge[data-debug-role-accent="black"] {
+    --debug-role-accent-color: oklch(18% 0.015 260);
+    --debug-role-accent-content: oklch(96% 0.01 260);
   }
 
-  .debug-role-accented[data-debug-role-accent="green"] {
-    border-left-color: var(--color-success);
+  .debug-role-accented[data-debug-role-accent="red"],
+  .debug-role-accent-badge[data-debug-role-accent="red"] {
+    --debug-role-accent-color: oklch(58% 0.22 29);
+    --debug-role-accent-content: oklch(98% 0.01 29);
   }
 
-  .debug-role-accented[data-debug-role-accent="gray"] {
-    border-left-color: var(--color-base-300);
+  .debug-role-accented[data-debug-role-accent="green"],
+  .debug-role-accent-badge[data-debug-role-accent="green"] {
+    --debug-role-accent-color: oklch(58% 0.16 145);
+    --debug-role-accent-content: oklch(98% 0.01 145);
+  }
+
+  .debug-role-accented[data-debug-role-accent="gray"],
+  .debug-role-accent-badge[data-debug-role-accent="gray"] {
+    --debug-role-accent-color: oklch(55% 0.02 260);
+    --debug-role-accent-content: oklch(98% 0.01 260);
   }
 
   .role-count-disclosure > input:checked + .role-count-title .role-count-chevron-icon {

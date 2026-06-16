@@ -516,7 +516,7 @@ templ DebugRoleSpoiler(player *game.Player) {
 	if debugRoleAccent(player) != "none" {
 		<span
 			data-debug-role-accent={ debugRoleAccent(player) }
-			class={ "badge badge-xs", debugRoleAccentClass(player) }
+			class="badge badge-xs debug-role-accent-badge"
 		>
 			{ debugRoleAccent(player) }
 		</span>
@@ -581,25 +581,6 @@ func debugRoleAccent(player *game.Player) string {
 		return "gray"
 	default:
 		return "none"
-	}
-}
-
-func debugRoleAccentClass(player *game.Player) string {
-	switch debugRoleAccent(player) {
-	case "gold":
-		return "badge-warning"
-	case "blue":
-		return "badge-info"
-	case "black":
-		return "badge-neutral"
-	case "red":
-		return "badge-error"
-	case "green":
-		return "badge-success"
-	case "gray":
-		return "badge-ghost"
-	default:
-		return ""
 	}
 }
 

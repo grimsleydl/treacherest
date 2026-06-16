@@ -144,16 +144,25 @@ func TestDebugRoleAccentCSSColorCodesRows(t *testing.T) {
 
 	assertCSSRuleContains(t, css, ".debug-role-accented",
 		"border-left-width: 0.25rem;",
+		"border-left-color: var(--debug-role-accent-color, var(--color-base-300));",
 	)
-	for _, selector := range []string{
-		`.debug-role-accented[data-debug-role-accent="gold"]`,
-		`.debug-role-accented[data-debug-role-accent="blue"]`,
-		`.debug-role-accented[data-debug-role-accent="black"]`,
-		`.debug-role-accented[data-debug-role-accent="red"]`,
-		`.debug-role-accented[data-debug-role-accent="green"]`,
-		`.debug-role-accented[data-debug-role-accent="gray"]`,
+	assertCSSRuleContains(t, css, ".debug-role-accent-badge",
+		"background-color: var(--debug-role-accent-color, var(--color-base-300));",
+		"border-color: var(--debug-role-accent-color, var(--color-base-300));",
+		"color: var(--debug-role-accent-content, var(--color-base-content));",
+	)
+
+	for _, expected := range []string{
+		`--debug-role-accent-color: oklch(78% 0.14 86);`,
+		`--debug-role-accent-color: oklch(60% 0.18 250);`,
+		`--debug-role-accent-color: oklch(18% 0.015 260);`,
+		`--debug-role-accent-color: oklch(58% 0.22 29);`,
+		`--debug-role-accent-color: oklch(58% 0.16 145);`,
+		`--debug-role-accent-color: oklch(55% 0.02 260);`,
 	} {
-		assertCSSRuleContains(t, css, selector, "border-left-color:")
+		if !strings.Contains(css, expected) {
+			t.Fatalf("expected generated CSS to contain literal debug role color %q", expected)
+		}
 	}
 }
 
