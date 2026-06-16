@@ -393,6 +393,10 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 				function setDebugSpoilersVisible(visible) {
 					if (!surface || !showHiddenRolesCheckbox) return;
 
+					document.documentElement.classList.toggle(
+						"debug-spoilers-visible",
+						visible,
+					);
 					surface.classList.toggle("debug-spoilers-visible", visible);
 					surface.dataset.debugSpoilersVisible = visible ? "true" : "false";
 					showHiddenRolesCheckbox.checked = visible;
@@ -407,9 +411,11 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 						localStorage.getItem(DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX + roomCode) ===
 							"true",
 					);
-					showHiddenRolesCheckbox.onchange = () => {
-						setDebugSpoilersVisible(showHiddenRolesCheckbox.checked);
-					};
+					surface.addEventListener("change", (event) => {
+						if (event.target && event.target.id === "debug-show-hidden-roles") {
+							setDebugSpoilersVisible(event.target.checked);
+						}
+					});
 				}
 
 				if (dumpBtn) {
