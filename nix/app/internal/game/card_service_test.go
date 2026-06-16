@@ -164,7 +164,7 @@ func TestCard_GetWinCondition(t *testing.T) {
 		{"Guardian", "Guardian", "The Guardians help the Leader, they win or lose with them."},
 		{"Assassin", "Assassin", "The Assassins win if the Leader is eliminated."},
 		{"Traitor", "Traitor", "The Traitor wins if they are the last player standing."},
-		{"Green Knight", "Green Knight", "May share a King-side victory while alive if no Blue Knights are alive or Inquisition has succeeded. May share a Red-side victory while alive only if all Blue Knights were already dead before King Fall. Does not share Black or Wasteland victories. Blue Knights losing because the King falls do not make Green eligible to share Red's victory."},
+		{"Green Knight", "Green Knight", "You serve neither crown. A crown is legitimate only after the hidden guard bleeds. You are hunting Blue Knights. Your Hunt is satisfied when at least one Blue Knight dies before King Fall. Blue dying with the King does not count. Successful Inquisition can satisfy Green for a King victory. If Inquisition succeeds, you may share a King-side victory even without a Blue death. You do not share Black or Wasteland victories."},
 		{"Unknown", "Unknown", ""},
 	}
 
@@ -177,6 +177,40 @@ func TestCard_GetWinCondition(t *testing.T) {
 				t.Errorf("GetWinCondition() = %v, want %v", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestCard_GreenPublicWinCondition(t *testing.T) {
+	card := &Card{
+		Types: CardTypes{Subtype: "Green Knight"},
+	}
+
+	got := card.GetPublicWinCondition()
+	for _, want := range []string{
+		"Green serves neither crown.",
+		"Green hunts Blue Knights.",
+		"The default Hunt is satisfied when at least one Blue Knight dies before King Fall.",
+		"Blue dying with the King does not count.",
+		"Successful Inquisition can satisfy Green for a King victory.",
+		"Green does not share Black or Wasteland victories.",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected public Green win condition to contain %q, got %q", want, got)
+		}
+	}
+	for _, private := range []string{
+		"You serve neither crown",
+		"Your Hunt is satisfied",
+		"You are hunting",
+		"you may share",
+		"You do not share",
+		"A crown is legitimate only after the hidden guard bleeds",
+		"selected Green rules",
+		"Strict Green",
+	} {
+		if strings.Contains(got, private) {
+			t.Fatalf("expected public Green win condition to omit %q, got %q", private, got)
+		}
 	}
 }
 

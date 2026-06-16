@@ -172,7 +172,10 @@ func TestLobbyPage(t *testing.T) {
 			"Do not prove a hidden role",
 			"Royal Guard",
 			"Inquisition",
-			"Green Eligibility",
+			"Green Blue Hunt",
+			"Green Hunt Requirement",
+			"King-Side Inquisition Amnesty",
+			"Broad Amnesty",
 			"Wasteland",
 			"Advisory Win Prompts",
 			"Leave Room",
@@ -182,6 +185,38 @@ func TestLobbyPage(t *testing.T) {
 			}
 		}
 		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
+	})
+
+	t.Run("coup rules reference explains green blue hunt without stale strict copy", func(t *testing.T) {
+		body := renderer.Render(CoupRulesReference()).GetHTML()
+
+		for _, want := range []string{
+			"Coup Rules Reference",
+			"Green Blue Hunt",
+			"Green hunts Blue Knights",
+			"Green Hunt Requirement",
+			"one Blue Knight must die before King Fall",
+			"all Blue Knights must die before King Fall",
+			"King-Side Inquisition Amnesty",
+			"Successful Inquisition can satisfy Green for a King victory",
+			"Broad Amnesty",
+			"Blue reveal, exposure, Royal Guard reveal, and Inquisition reveal do not satisfy the Hunt",
+		} {
+			if !strings.Contains(body, want) {
+				t.Fatalf("expected Coup rules reference to contain %q, got %q", want, body)
+			}
+		}
+		for _, stale := range []string{
+			"Green Eligibility",
+			"Strict Green",
+			"selected Green rules",
+			"selected Green eligibility rules",
+			"Blue exposure satisfies",
+		} {
+			if strings.Contains(body, stale) {
+				t.Fatalf("expected Coup rules reference to omit stale copy %q, got %q", stale, body)
+			}
+		}
 	})
 
 	t.Run("hides room management controls from first active non-operator", func(t *testing.T) {
@@ -263,7 +298,7 @@ func TestLobbyPage(t *testing.T) {
 			`id="player-row-player"`,
 			"Open Seat 3",
 			"Open Seat 5",
-			"Coup - 5 players - Public inquisition - Full King knowledge",
+			"Coup - 5 players - Public inquisition - One Blue hunt - King-side amnesty - Full King knowledge",
 			`id="lobby-settings-summary"`,
 			`id="rules-reference"`,
 			"Rules Reference",

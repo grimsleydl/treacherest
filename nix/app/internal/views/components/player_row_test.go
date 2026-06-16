@@ -89,7 +89,7 @@ func TestPlayerRowPublicState(t *testing.T) {
 		}
 	})
 
-	t.Run("revealed green row uses structured strict eligibility win condition", func(t *testing.T) {
+	t.Run("revealed green row uses public green blue hunt summary", func(t *testing.T) {
 		green := &game.Player{
 			ID:           "green",
 			Name:         "Green Player",
@@ -104,17 +104,31 @@ func TestPlayerRowPublicState(t *testing.T) {
 		for _, expected := range []string{
 			"<ul",
 			"<li",
-			"May share a King-side victory while alive",
-			"May share a Red-side victory while alive",
-			"Does not share Black or Wasteland victories",
-			"King falls do not make Green eligible",
+			"Green serves neither crown",
+			"Green hunts Blue Knights",
+			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
+			"Blue dying with the King does not count",
+			"Successful Inquisition can satisfy Green for a King victory",
+			"Green does not share Black or Wasteland victories",
 		} {
 			if !strings.Contains(html, expected) {
 				t.Fatalf("expected Green row details to contain %q: %s", expected, html)
 			}
 		}
-		if strings.Contains(html, "selected Green rules") {
-			t.Fatalf("expected Green row details to omit vague selected-rules copy: %s", html)
+		for _, private := range []string{
+			"You serve neither crown",
+			"Your Hunt is satisfied",
+			"You are hunting",
+			"you may share",
+			"You do not share",
+			"A crown is legitimate only after the hidden guard bleeds",
+			"selected Green rules",
+			"Strict Green",
+			"Blue exposure",
+		} {
+			if strings.Contains(html, private) {
+				t.Fatalf("expected Green row details to omit private/stale copy %q: %s", private, html)
+			}
 		}
 	})
 

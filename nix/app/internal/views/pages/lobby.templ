@@ -394,7 +394,10 @@ templ CoupRulesReference() {
 				<li>Role claims may be true or false. Do not prove a hidden role by showing the app screen unless a Coup rule reveals it.</li>
 				<li>Royal Guard lets a revealed Blue Knight block for the King under the selected blocking setting.</li>
 				<li>Inquisition is called in-app by Blue at sorcery speed; the table follows the selected public or private result setting.</li>
-				<li>Green Eligibility is locked before the King falls. Blue dying because the King falls does not create Red-victory eligibility.</li>
+				<li>Green Blue Hunt: Green hunts Blue Knights. The Green Hunt Requirement decides whether one Blue Knight must die before King Fall or all Blue Knights must die before King Fall.</li>
+				<li>King-Side Inquisition Amnesty: Successful Inquisition can satisfy Green for a King victory even without a Blue death.</li>
+				<li>Broad Amnesty is an optional variant where successful Inquisition before King Fall can also satisfy Green's Red-side lock.</li>
+				<li>Blue reveal, exposure, Royal Guard reveal, and Inquisition reveal do not satisfy the Hunt. Blue dying because the King falls does not count.</li>
 				<li>Wasteland is a chaos role for larger tables, wins alone, and never shares victory.</li>
 				<li>Advisory Win Prompts are reminders only. The table must confirm a win before the app ends the game.</li>
 			</ul>
@@ -475,7 +478,7 @@ func coupRoleSetupDetail(role game.RoleType) string {
 	case game.RoleRedKnight:
 		return "Usurper. Wins when the King is dead, Red survives, and all Black Knights are gone."
 	case game.RoleGreenKnight:
-		return "Opportunist. Can share some victories based on the selected Green eligibility rules."
+		return "Blue-hunter. Green serves neither crown and can share victories after Green Hunt or Inquisition Amnesty conditions are met."
 	case game.RoleWasteland:
 		return "Chaos role for larger tables. Wins alone and never shares victory."
 	default:

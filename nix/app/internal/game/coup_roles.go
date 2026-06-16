@@ -76,7 +76,7 @@ var coupRoleCards = map[RoleType]*Card{
 	RoleBlueKnight:  coupRoleCard(1002, string(RoleBlueKnight), "Protects the King. Can call Inquisition.", "Win with the King. Lose when the King loses."),
 	RoleBlackKnight: coupRoleCard(1003, string(RoleBlackKnight), "Assassin hired to kill the King, then betray Red.", "Win if the King is dead, at least one Black Knight survives, and Red is dead."),
 	RoleRedKnight:   coupRoleCard(1004, string(RoleRedKnight), "Usurper who hired Black to kill the King.", "Win if the King is dead, Red survives, and all Black Knights are dead."),
-	RoleGreenKnight: coupRoleCard(1005, string(RoleGreenKnight), "Opportunist with conditional shared victories.", CoupStrictGreenWinCondition),
+	RoleGreenKnight: coupRoleCard(1005, string(RoleGreenKnight), "Blue-hunter / conditional opportunist.", CoupGreenBlueHuntWinCondition),
 	RoleWasteland:   coupRoleCard(1006, string(RoleWasteland), "Chaos role for larger tables. Wants everyone else dead.", "Win only as the sole surviving player. Never share victory."),
 }
 

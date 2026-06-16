@@ -160,19 +160,19 @@ func TestRoleCard(t *testing.T) {
 		}
 	})
 
-	t.Run("renders green strict eligibility as structured win condition bullets", func(t *testing.T) {
+	t.Run("renders private green blue hunt as structured win condition bullets", func(t *testing.T) {
 		greenCard := &game.Card{
 			Name:   "Green Knight",
 			Type:   "Coup Role",
 			Rarity: "Coup",
-			Text:   "Opportunist with conditional shared victories.",
+			Text:   "Blue-hunter / conditional opportunist.",
 			Types: game.CardTypes{
 				Supertype: "Coup",
 				Subtype:   "Green Knight",
 			},
 			Rulings: []string{
-				"Role Goal: " + game.CoupStrictGreenWinCondition,
-				"Win Condition: " + game.CoupStrictGreenWinCondition,
+				"Role Goal: " + game.CoupGreenBlueHuntWinCondition,
+				"Win Condition: " + game.CoupGreenBlueHuntWinCondition,
 			},
 		}
 
@@ -182,18 +182,19 @@ func TestRoleCard(t *testing.T) {
 		}{
 			{name: "private hero", html: renderer.Render(RoleCard(greenCard, false, false)).GetHTML()},
 			{name: "compact", html: renderer.Render(RoleCard(greenCard, true, true)).GetHTML()},
-			{name: "public", html: renderer.Render(RoleCardPublic(greenCard)).GetHTML()},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				for _, expected := range []string{
 					"<ul",
 					"<li",
-					"May share a King-side victory while alive",
-					"no Blue Knights are alive or Inquisition has succeeded",
-					"May share a Red-side victory while alive",
-					"already dead before King Fall",
-					"Does not share Black or Wasteland victories",
-					"King falls do not make Green eligible",
+					"You serve neither crown",
+					"A crown is legitimate only after the hidden guard bleeds",
+					"You are hunting Blue Knights",
+					"Your Hunt is satisfied when at least one Blue Knight dies before King Fall",
+					"Blue dying with the King does not count",
+					"Successful Inquisition can satisfy Green for a King victory",
+					"If Inquisition succeeds, you may share a King-side victory even without a Blue death",
+					"You do not share Black or Wasteland victories",
 				} {
 					if !strings.Contains(tc.html, expected) {
 						t.Fatalf("expected Green role card to contain %q: %s", expected, tc.html)
@@ -202,13 +203,62 @@ func TestRoleCard(t *testing.T) {
 				if strings.Contains(tc.html, "selected Green rules") {
 					t.Fatalf("expected Green role card to omit vague selected-rules copy: %s", tc.html)
 				}
-				if strings.Contains(tc.html, "Broad Amnesty") || strings.Contains(tc.html, "Simple Green") {
-					t.Fatalf("expected Green role card to omit inactive variants: %s", tc.html)
+				for _, stale := range []string{
+					"Strict Green",
+					"no Blue Knights are alive",
+					"already dead before King Fall",
+					"selected Green eligibility rules",
+				} {
+					if strings.Contains(tc.html, stale) {
+						t.Fatalf("expected Green role card to omit stale copy %q: %s", stale, tc.html)
+					}
 				}
 				if strings.Contains(tc.html, "Rulings") {
 					t.Fatalf("expected duplicate-only Green rulings to be omitted: %s", tc.html)
 				}
 			})
+		}
+	})
+
+	t.Run("renders public green summary without private second-person copy", func(t *testing.T) {
+		greenCard := &game.Card{
+			Name:   "Green Knight",
+			Type:   "Coup Role",
+			Rarity: "Coup",
+			Text:   "Blue-hunter / conditional opportunist.",
+			Types: game.CardTypes{
+				Supertype: "Coup",
+				Subtype:   "Green Knight",
+			},
+		}
+
+		html := renderer.Render(RoleCardPublic(greenCard)).GetHTML()
+		for _, expected := range []string{
+			"Green serves neither crown",
+			"Green hunts Blue Knights",
+			"The default Hunt is satisfied when at least one Blue Knight dies before King Fall",
+			"Blue dying with the King does not count",
+			"Successful Inquisition can satisfy Green for a King victory",
+			"Green does not share Black or Wasteland victories",
+		} {
+			if !strings.Contains(html, expected) {
+				t.Fatalf("expected public Green role card to contain %q: %s", expected, html)
+			}
+		}
+		for _, private := range []string{
+			"You serve neither crown",
+			"Your Hunt is satisfied",
+			"You are hunting",
+			"you may share",
+			"You do not share",
+			"A crown is legitimate only after the hidden guard bleeds",
+			"selected Green rules",
+			"Strict Green",
+			"Blue exposure",
+		} {
+			if strings.Contains(html, private) {
+				t.Fatalf("expected public Green role card to omit private/stale copy %q: %s", private, html)
+			}
 		}
 	})
 }

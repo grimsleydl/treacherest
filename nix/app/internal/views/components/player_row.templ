@@ -70,13 +70,13 @@ templ playerRowPublicRole(card *game.Card) {
 }
 
 templ playerRowWinCondition(card *game.Card) {
-	if len(card.GetWinConditionBullets()) > 0 {
+	if len(card.GetPublicWinConditionBullets()) > 0 {
 		<div class="text-xs">
 			<strong>Win Condition:</strong>
-			@RoleWinCondition(card, "mt-1", "mt-1 list-disc space-y-1 pl-5")
+			@RolePublicWinCondition(card, "mt-1", "mt-1 list-disc space-y-1 pl-5")
 		</div>
 	} else {
-		<p class="text-xs"><strong>Win Condition:</strong> { card.GetWinCondition() }</p>
+		<p class="text-xs"><strong>Win Condition:</strong> { card.GetPublicWinCondition() }</p>
 	}
 }
 
