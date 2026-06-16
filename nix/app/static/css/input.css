@@ -131,18 +131,24 @@
     color: var(--privy-content, var(--color-base-content));
     border: 1px solid var(--privy-border, color-mix(in oklab, var(--color-base-content) 30%, transparent));
     border-radius: var(--radius-box);
+    display: flex;
+    flex-direction: column;
   }
 
   .privy-body {
     height: min(70vh, 38rem);
     min-height: 22rem;
+    overflow: hidden;
   }
 
   .privy-content {
+    min-height: 0;
+    min-width: 0;
     opacity: 0;
     filter: blur(10px);
     pointer-events: none;
     overflow-y: auto;
+    overscroll-behavior: contain;
     transition: opacity 180ms ease, filter 180ms ease;
   }
 
@@ -154,8 +160,11 @@
   }
 
   .privy-veil {
+    min-height: 0;
+    min-width: 0;
     display: grid;
     align-content: center;
+    overflow: hidden;
     transition: opacity 180ms ease;
   }
 

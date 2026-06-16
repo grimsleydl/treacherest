@@ -20,7 +20,7 @@ templ DebugViewAsPlayerSelector(room *game.Room, roomCode string) {
 			>
 				<option value="" selected?={ room.DebugViewedPlayerID == "" } disabled>Choose player</option>
 				for _, player := range room.GetActivePlayers() {
-					<option value={ player.ID } selected?={ player.ID == room.DebugViewedPlayerID }>{ player.Name }</option>
+					<option value={ player.ID } selected?={ player.ID == room.DebugViewedPlayerID }>{ debugViewAsPlayerLabel(player) }</option>
 				}
 			</select>
 			<div id="debug-view-as-player-result"></div>
@@ -34,4 +34,42 @@ func debugOperatorViewAction(roomCode string) string {
 
 func debugViewAsPlayerAction(roomCode string) string {
 	return "evt.target.value && fetch('/room/" + roomCode + "/debug/view-as/' + encodeURIComponent(evt.target.value)).then(resp => { if (!resp.ok) return resp.text().then(text => { throw new Error(text || resp.statusText) }); window.location.reload(); }).catch(err => alert('Debug view-as failed: ' + err.message))"
+}
+
+func debugViewAsPlayerLabel(player *game.Player) string {
+	if player == nil {
+		return "Unknown player"
+	}
+	if player.Role == nil {
+		return player.Name
+	}
+
+	roleName := player.Role.Name
+	if roleName == "" {
+		roleName = string(player.Role.GetRoleType())
+	}
+	accent := debugViewAsRoleAccent(player.Role.GetRoleType())
+	if accent == "" {
+		return player.Name + " - " + roleName
+	}
+	return player.Name + " - " + accent + " - " + roleName
+}
+
+func debugViewAsRoleAccent(role game.RoleType) string {
+	switch role {
+	case game.RoleLeader, game.RoleKing:
+		return "gold"
+	case game.RoleGuardian, game.RoleBlueKnight:
+		return "blue"
+	case game.RoleAssassin, game.RoleBlackKnight:
+		return "black"
+	case game.RoleTraitor, game.RoleRedKnight:
+		return "red"
+	case game.RoleGreenKnight:
+		return "green"
+	case game.RoleWasteland:
+		return "gray"
+	default:
+		return ""
+	}
 }

@@ -83,10 +83,6 @@ func TestInteractionCSSIncludesPrivyPeekAndDebugMinimizeRules(t *testing.T) {
 	for _, expected := range []string{
 		`.privy:has([data-privy-peek-button]:active) .privy-content`,
 		`.privy:has([data-privy-peek-button]:active) .privy-veil`,
-		`.privy-body`,
-		`height: min(70vh, 38rem);`,
-		`min-height: 22rem;`,
-		`overflow-y: auto;`,
 		`#debug-control-surface.debug-panel-minimized`,
 		`inset-block-start: auto;`,
 		`inset-block-end: 1rem;`,
@@ -98,6 +94,31 @@ func TestInteractionCSSIncludesPrivyPeekAndDebugMinimizeRules(t *testing.T) {
 			t.Fatalf("expected generated CSS to contain %q", expected)
 		}
 	}
+}
+
+func TestPrivyPanelCSSConstrainsRoleContentHeight(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	assertCSSRuleContains(t, css, ".privy",
+		"display: flex;",
+		"flex-direction: column;",
+	)
+	assertCSSRuleContains(t, css, ".privy-body",
+		"height: min(70vh, 38rem);",
+		"min-height: 22rem;",
+		"overflow: hidden;",
+	)
+	assertCSSRuleContains(t, css, ".privy-content",
+		"min-height: 0;",
+		"min-width: 0;",
+		"overflow-y: auto;",
+		"overscroll-behavior: contain;",
+	)
+	assertCSSRuleContains(t, css, ".privy-veil",
+		"min-height: 0;",
+		"min-width: 0;",
+		"overflow: hidden;",
+	)
 }
 
 func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
@@ -184,4 +205,43 @@ func themeBlock(css string, theme string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func assertCSSRuleContains(t *testing.T, css string, selector string, declarations ...string) {
+	t.Helper()
+
+	block := cssRuleBlock(t, css, selector)
+	for _, declaration := range declarations {
+		if !strings.Contains(block, declaration) {
+			t.Fatalf("expected CSS rule %q to contain %q in block:\n%s", selector, declaration, block)
+		}
+	}
+}
+
+func cssRuleBlock(t *testing.T, css string, selector string) string {
+	t.Helper()
+
+	start := strings.Index(css, selector+" {")
+	if start < 0 {
+		t.Fatalf("missing CSS rule %q", selector)
+	}
+	openOffset := strings.Index(css[start:], "{")
+	if openOffset < 0 {
+		t.Fatalf("missing opening brace for CSS rule %q", selector)
+	}
+
+	depth := 0
+	for i := start + openOffset; i < len(css); i++ {
+		switch css[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return css[start : i+1]
+			}
+		}
+	}
+	t.Fatalf("missing closing brace for CSS rule %q", selector)
+	return ""
 }
