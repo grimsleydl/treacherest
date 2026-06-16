@@ -188,7 +188,7 @@ func TestDebugInsightsShowsTreacheryRoleAccents(t *testing.T) {
 	for _, expected := range []string{
 		`id="debug-insight-player-leader"`,
 		`data-debug-role-accent="gold"`,
-		"debug-role-accent-badge",
+		"debug-role-accent-label",
 		">gold</span>",
 		`id="debug-insight-player-guardian"`,
 		`data-debug-role-accent="blue"`,
@@ -211,6 +211,7 @@ func TestDebugInsightsShowsTreacheryRoleAccents(t *testing.T) {
 		"badge-info",
 		"badge-neutral",
 		"badge-error",
+		"debug-role-accent-badge",
 	} {
 		if strings.Contains(html, forbidden) {
 			t.Fatalf("expected debug insights to use literal role accent styling, not %q in %s", forbidden, html)

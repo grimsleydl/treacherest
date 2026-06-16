@@ -1,12 +1,10 @@
 package layouts
 
 import (
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 	"treacherest/internal/testhelpers"
@@ -145,41 +143,25 @@ func TestDebugRoleAccentCSSColorCodesRows(t *testing.T) {
 	css := readGeneratedCSS(t)
 
 	assertCSSRuleContains(t, css, ".debug-role-accented",
-		"border-inline-start-width: 0.5rem;",
-		"border-inline-start-color: var(--debug-role-accent-color, var(--color-base-300));",
+		"background-image: linear-gradient(to right, var(--debug-role-accent-color, var(--color-base-300)) 0 0.5rem, transparent 0.5rem);",
+		"background-repeat: no-repeat;",
+		"padding-inline-start: 1rem;",
 	)
-	assertCSSRuleContains(t, css, ".badge.debug-role-accent-badge",
-		"--badge-color: var(--debug-role-accent-color, var(--color-base-300));",
-		"--badge-fg: var(--debug-role-accent-content, var(--color-base-content));",
-		"background-color: var(--debug-role-accent-color, var(--color-base-300));",
-		"border-color: var(--debug-role-accent-color, var(--color-base-300));",
-		"color: var(--debug-role-accent-content, var(--color-base-content));",
-		"text-shadow: none;",
+	assertCSSRuleContains(t, css, ".debug-role-accent-label",
+		"color: var(--color-base-content);",
+		"background-color: transparent;",
 	)
 
-	for _, pair := range []struct {
-		name       string
-		background string
-		foreground string
-	}{
-		{name: "gold", background: "#d4af37", foreground: "#1f1600"},
-		{name: "blue", background: "#1d4ed8", foreground: "#ffffff"},
-		{name: "black", background: "#111827", foreground: "#ffffff"},
-		{name: "red", background: "#b91c1c", foreground: "#ffffff"},
-		{name: "green", background: "#15803d", foreground: "#ffffff"},
-		{name: "gray", background: "#4b5563", foreground: "#ffffff"},
+	for _, expected := range []string{
+		`--debug-role-accent-color: #d4af37;`,
+		`--debug-role-accent-color: #1d4ed8;`,
+		`--debug-role-accent-color: #111827;`,
+		`--debug-role-accent-color: #b91c1c;`,
+		`--debug-role-accent-color: #15803d;`,
+		`--debug-role-accent-color: #4b5563;`,
 	} {
-		for _, expected := range []string{
-			`--debug-role-accent-color: ` + pair.background + `;`,
-			`--debug-role-accent-content: ` + pair.foreground + `;`,
-		} {
-			if !strings.Contains(css, expected) {
-				t.Fatalf("expected generated CSS to contain literal debug %s color %q", pair.name, expected)
-			}
-		}
-
-		if contrast := contrastRatio(pair.background, pair.foreground); contrast < 4.5 {
-			t.Fatalf("debug %s badge contrast %.2f is below WCAG AA 4.5:1", pair.name, contrast)
+		if !strings.Contains(css, expected) {
+			t.Fatalf("expected generated CSS to contain literal debug role stripe color %q", expected)
 		}
 	}
 }
@@ -289,44 +271,4 @@ func cssRuleBlock(t *testing.T, css string, selector string) string {
 	}
 	t.Fatalf("missing closing brace for CSS rule %q", selector)
 	return ""
-}
-
-func contrastRatio(background string, foreground string) float64 {
-	bg := relativeLuminance(background)
-	fg := relativeLuminance(foreground)
-	lighter := math.Max(bg, fg)
-	darker := math.Min(bg, fg)
-	return (lighter + 0.05) / (darker + 0.05)
-}
-
-func relativeLuminance(hex string) float64 {
-	r, g, b := hexToRGB(hex)
-	return 0.2126*linearSRGB(r) + 0.7152*linearSRGB(g) + 0.0722*linearSRGB(b)
-}
-
-func hexToRGB(hex string) (float64, float64, float64) {
-	hex = strings.TrimPrefix(hex, "#")
-	if len(hex) != 6 {
-		panic("expected 6-digit hex color")
-	}
-	r, err := strconv.ParseUint(hex[0:2], 16, 8)
-	if err != nil {
-		panic(err)
-	}
-	g, err := strconv.ParseUint(hex[2:4], 16, 8)
-	if err != nil {
-		panic(err)
-	}
-	b, err := strconv.ParseUint(hex[4:6], 16, 8)
-	if err != nil {
-		panic(err)
-	}
-	return float64(r) / 255, float64(g) / 255, float64(b) / 255
-}
-
-func linearSRGB(value float64) float64 {
-	if value <= 0.04045 {
-		return value / 12.92
-	}
-	return math.Pow((value+0.055)/1.055, 2.4)
 }
