@@ -213,7 +213,12 @@
   .badge.debug-role-accent-badge {
     --badge-color: var(--debug-role-accent-color, var(--color-base-300));
     --badge-fg: var(--debug-role-accent-content, var(--color-base-content));
+    background-color: var(--debug-role-accent-color, var(--color-base-300));
+    background-image: none;
+    border-color: var(--debug-role-accent-color, var(--color-base-300));
     box-shadow: 0 0 0 1px color-mix(in oklab, var(--debug-role-accent-color, var(--color-base-content)) 70%, transparent);
+    color: var(--debug-role-accent-content, var(--color-base-content));
+    text-shadow: none;
   }
 
   .debug-role-accented[data-debug-role-accent="gold"],
@@ -224,7 +229,7 @@
 
   .debug-role-accented[data-debug-role-accent="blue"],
   .debug-role-accent-badge[data-debug-role-accent="blue"] {
-    --debug-role-accent-color: #2563eb;
+    --debug-role-accent-color: #1d4ed8;
     --debug-role-accent-content: #ffffff;
   }
 
@@ -236,19 +241,19 @@
 
   .debug-role-accented[data-debug-role-accent="red"],
   .debug-role-accent-badge[data-debug-role-accent="red"] {
-    --debug-role-accent-color: #dc2626;
+    --debug-role-accent-color: #b91c1c;
     --debug-role-accent-content: #ffffff;
   }
 
   .debug-role-accented[data-debug-role-accent="green"],
   .debug-role-accent-badge[data-debug-role-accent="green"] {
-    --debug-role-accent-color: #16a34a;
+    --debug-role-accent-color: #15803d;
     --debug-role-accent-content: #ffffff;
   }
 
   .debug-role-accented[data-debug-role-accent="gray"],
   .debug-role-accent-badge[data-debug-role-accent="gray"] {
-    --debug-role-accent-color: #6b7280;
+    --debug-role-accent-color: #4b5563;
     --debug-role-accent-content: #ffffff;
   }
 
