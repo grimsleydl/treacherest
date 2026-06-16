@@ -177,6 +177,22 @@
     pointer-events: none;
   }
 
+  .privy.open {
+    max-width: min(100%, 42rem);
+    overflow: visible;
+  }
+
+  .privy.open .privy-body {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .privy.open .privy-content {
+    overflow: visible;
+    overscroll-behavior: auto;
+  }
+
   .notice-card.alert {
     background-color: var(--color-base-100);
     color: var(--color-base-content);

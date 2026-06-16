@@ -121,6 +121,24 @@ func TestPrivyPanelCSSConstrainsRoleContentHeight(t *testing.T) {
 	)
 }
 
+func TestPrivyPanelCSSAllowsOpenRoleSheet(t *testing.T) {
+	css := readGeneratedCSS(t)
+
+	assertCSSRuleContains(t, css, ".privy.open",
+		"max-width: min(100%, 42rem);",
+		"overflow: visible;",
+	)
+	assertCSSRuleContains(t, css, ".privy.open .privy-body",
+		"height: auto;",
+		"max-height: none;",
+		"overflow: visible;",
+	)
+	assertCSSRuleContains(t, css, ".privy.open .privy-content",
+		"overflow: visible;",
+		"overscroll-behavior: auto;",
+	)
+}
+
 func TestNoticeCardCSSUsesNeutralReadableSurface(t *testing.T) {
 	css := readGeneratedCSS(t)
 
