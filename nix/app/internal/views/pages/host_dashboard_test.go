@@ -251,17 +251,6 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 		"right-4",
 		"inset-y-4",
 		"border-dashed",
-		`data-debug-spoilers-visible="false"`,
-		`id="debug-show-hidden-roles"`,
-		"Show hidden roles",
-		"treacherest_debug_show_hidden_roles_",
-		`document.documentElement.classList.toggle(`,
-		`surface.classList.toggle("debug-spoilers-visible", visible)`,
-		`surface.dataset.debugSpoilersVisible = visible ? "true" : "false"`,
-		`showHiddenRolesCheckbox.checked = visible`,
-		`surface.addEventListener("change", (event) =>`,
-		`event.target.id === "debug-show-hidden-roles"`,
-		`localStorage.getItem(DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX + roomCode)`,
 		`id="debug-view-as-player-container"`,
 		`id="debug-start-override-controls"`,
 		`id="debug-start-with-debug-players"`,
@@ -278,6 +267,17 @@ func TestHostDashboardLobby_DebugControlSurfaceShell(t *testing.T) {
 	} {
 		if !strings.Contains(html, expected) {
 			t.Fatalf("expected debug surface shell detail %q in HTML: %s", expected, html)
+		}
+	}
+	for _, forbidden := range []string{
+		`data-debug-spoilers-visible=`,
+		`id="debug-show-hidden-roles"`,
+		"Show hidden roles",
+		"treacherest_debug_show_hidden_roles_",
+		"debug-spoilers-visible",
+	} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("expected debug surface shell to omit obsolete spoiler toggle detail %q: %s", forbidden, html)
 		}
 	}
 	if strings.Contains(html, "confirm(\"Clear room") {
@@ -701,13 +701,13 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Debug Start: as-is").
 		AssertContains("King Player").
 		AssertContains("Role:").
-		AssertContains("Hidden role").
+		AssertContains(`data-debug-role-name="King"`).
 		AssertContains("Revealed: yes").
 		AssertContains("Black Player").
 		AssertContains("Eliminated: yes").
 		AssertContains("Debug Player 1").
 		AssertContains("Debug Player: yes").
-		AssertContains("Private information hidden").
+		AssertContains("Private information: Blue Knights: Blue Player").
 		AssertContains("King Fallen: yes").
 		AssertContains("Green Hunt Before King Fall: satisfied").
 		AssertNotContains("Green Red-Share Lock").
@@ -715,7 +715,7 @@ func TestHostDashboardLobby_DebugInsightsShowRepresentativeCoupState(t *testing.
 		AssertContains("Advisory Win: black")
 }
 
-func TestHostDashboardLobby_DebugInsightsAreRedactedRoleColoredAndClickable(t *testing.T) {
+func TestHostDashboardLobby_DebugInsightsShowRolesColoredAndClickable(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 	room := &game.Room{
 		Code:                "DBG10",
@@ -745,15 +745,18 @@ func TestHostDashboardLobby_DebugInsightsAreRedactedRoleColoredAndClickable(t *t
 
 	html := renderer.Render(HostDashboardLobby(room, host, cfg, nil)).GetHTML()
 	for _, expected := range []string{
-		`data-debug-spoiler="role"`,
+		`data-debug-role-name="King"`,
+		`data-debug-role-name="Blue Knight"`,
+		`data-debug-role-name="Black Knight"`,
+		`data-debug-role-name="Red Knight"`,
+		`data-debug-role-name="Green Knight"`,
+		`data-debug-role-name="Wasteland Knight"`,
 		`data-debug-role-accent="gold"`,
 		`data-debug-role-accent="blue"`,
 		`data-debug-role-accent="black"`,
 		`data-debug-role-accent="red"`,
 		`data-debug-role-accent="green"`,
 		`data-debug-role-accent="gray"`,
-		`data-debug-spoiler-placeholder`,
-		`data-debug-spoiler-revealed`,
 		`id="debug-insight-player-debug-1"`,
 		`data-debug-viewed-player="true"`,
 		"Debug Player 1",
@@ -766,12 +769,14 @@ func TestHostDashboardLobby_DebugInsightsAreRedactedRoleColoredAndClickable(t *t
 		}
 	}
 	for _, forbidden := range []string{
-		"Role: King",
-		"Role: Blue Knight",
+		`data-debug-spoiler=`,
+		`data-debug-spoiler-placeholder`,
+		`data-debug-spoiler-revealed`,
+		"Private information hidden",
 		"border-color:#",
 	} {
 		if strings.Contains(html, forbidden) {
-			t.Fatalf("expected hidden role/color detail %q to be suppressed by default: %s", forbidden, html)
+			t.Fatalf("expected debug insight to omit obsolete redaction detail %q: %s", forbidden, html)
 		}
 	}
 }

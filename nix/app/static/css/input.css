@@ -180,27 +180,6 @@
     --notice-card-accent: var(--color-info);
   }
 
-  [data-debug-spoiler-revealed],
-  [data-debug-role-accent] {
-    display: none;
-  }
-
-  .debug-spoilers-visible [data-debug-spoiler-placeholder] {
-    display: none;
-  }
-
-  .debug-spoilers-visible [data-debug-spoiler-revealed] {
-    display: inline;
-  }
-
-  .debug-spoilers-visible [data-debug-private-ruling-revealed] {
-    display: block;
-  }
-
-  .debug-spoilers-visible [data-debug-role-accent] {
-    display: inline-flex;
-  }
-
   .notice-card.alert-success {
     --notice-card-accent: var(--color-success);
   }

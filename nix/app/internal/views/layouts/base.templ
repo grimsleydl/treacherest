@@ -208,7 +208,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 		class="fixed inset-y-4 right-4 w-96 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border-2 border-dashed border-error bg-base-100/95 p-4 shadow-2xl"
 		style="z-index: 99999;"
 		data-debug-panel-minimized="false"
-		data-debug-spoilers-visible="false"
 	>
 		<div class="debug-panel-header flex items-center justify-between gap-2 mb-3">
 			<div>
@@ -238,14 +237,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 						@components.DebugViewAsPlayerSelector(room, roomCode)
 					}
 				</section>
-				<label class="flex items-center justify-between gap-3 rounded-box border border-base-300 bg-base-200 p-2 text-xs">
-					<span class="font-semibold uppercase text-base-content/70">Show hidden roles</span>
-					<input
-						id="debug-show-hidden-roles"
-						type="checkbox"
-						class="toggle toggle-warning toggle-sm"
-					/>
-				</label>
 				<section id="debug-start-override-controls" class="space-y-2" aria-label="Debug start override controls">
 					if roomCode != "" {
 						<button
@@ -293,8 +284,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 		(function () {
 			const BACKUP_KEY_PREFIX = "treacherest_backup_";
 			const DEBUG_PANEL_STATE_KEY_PREFIX = "treacherest_debug_panel_minimized_";
-			const DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX =
-				"treacherest_debug_show_hidden_roles_";
 
 			function getRoomCode() {
 				const path = window.location.pathname;
@@ -321,9 +310,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 				const panel = document.getElementById("debug-panel");
 				const minimizedPanel = document.getElementById("debug-panel-minimized");
 				const panelToggleBtn = document.getElementById("debug-panel-toggle");
-				const showHiddenRolesCheckbox = document.getElementById(
-					"debug-show-hidden-roles",
-				);
 				const dumpBtn = document.getElementById("debug-dump");
 				const restoreBtn = document.getElementById("debug-restore");
 
@@ -388,34 +374,6 @@ templ DebugPanel(roomCode string, room *game.Room, viewer *game.Player) {
 							panelToggleBtn.getAttribute("aria-expanded") === "true",
 						);
 					};
-				}
-
-				function setDebugSpoilersVisible(visible) {
-					if (!surface || !showHiddenRolesCheckbox) return;
-
-					document.documentElement.classList.toggle(
-						"debug-spoilers-visible",
-						visible,
-					);
-					surface.classList.toggle("debug-spoilers-visible", visible);
-					surface.dataset.debugSpoilersVisible = visible ? "true" : "false";
-					showHiddenRolesCheckbox.checked = visible;
-					localStorage.setItem(
-						DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX + roomCode,
-						visible ? "true" : "false",
-					);
-				}
-
-				if (showHiddenRolesCheckbox) {
-					setDebugSpoilersVisible(
-						localStorage.getItem(DEBUG_SHOW_HIDDEN_ROLES_KEY_PREFIX + roomCode) ===
-							"true",
-					);
-					surface.addEventListener("change", (event) => {
-						if (event.target && event.target.id === "debug-show-hidden-roles") {
-							setDebugSpoilersVisible(event.target.checked);
-						}
-					});
 				}
 
 				if (dumpBtn) {
@@ -551,13 +509,8 @@ templ DebugInsights(room *game.Room, roomCode string) {
 }
 
 templ DebugRoleSpoiler(player *game.Player) {
-	<span data-debug-spoiler="role" data-debug-spoiler-text={ debugRoleName(player) }>
-		<span data-debug-spoiler-placeholder class="inline-flex rounded bg-base-content/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em]">
-			Hidden role
-		</span>
-		<span data-debug-spoiler-revealed>
-			{ debugRoleName(player) }
-		</span>
+	<span data-debug-role-name={ debugRoleName(player) } class="font-semibold">
+		{ debugRoleName(player) }
 	</span>
 	if debugRoleAccent(player) != "none" {
 		<span
@@ -570,9 +523,8 @@ templ DebugRoleSpoiler(player *game.Player) {
 }
 
 templ DebugPrivateSpoiler(ruling string) {
-	<div data-debug-spoiler="private-ruling" data-debug-spoiler-text={ ruling }>
-		<span data-debug-spoiler-placeholder class="italic text-base-content/60">Private information hidden</span>
-		<span data-debug-spoiler-revealed data-debug-private-ruling-revealed>{ ruling }</span>
+	<div data-debug-private-ruling={ ruling } class="text-base-content/80">
+		{ ruling }
 	</div>
 }
 
