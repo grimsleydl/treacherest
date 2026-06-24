@@ -36,7 +36,7 @@ pkgs.stdenv.mkDerivation {
   '';
 
   # This is a fixed-output derivation
-  outputHash = "sha256-4YBITZeMVZmEJQXwUg1RG/9BFI3LUsxHh7FaczBcypg=";
+  outputHash = "sha256-oHi3P3pVFRjVJs8V6D2NX6+D29c5RFXY5zqeuoqaNVU=";
   outputHashAlgo = "sha256";
   outputHashMode = "recursive";
 }
