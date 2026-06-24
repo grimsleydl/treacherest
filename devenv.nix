@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
+{ config, inputs, lib, pkgs, ... }:
 
 let
+  system = pkgs.stdenv.hostPlatform.system;
+  gomod2nixPackage = inputs.gomod2nix.packages.${system}.default;
+  templPackage = inputs.templ.packages.${system}.templ;
   devPortBase = 8888;
   devPortMax = 8899;
   devPort = config.processes.treacherest.ports.http.value;
@@ -10,7 +13,7 @@ in
 {
   name = "treacherest";
 
-  nixpkgs.config.allowUnfree = true;
+  cachix.enable = false;
 
   packages = with pkgs; [
     air
@@ -24,8 +27,8 @@ in
     gnugrep
     gnused
     go
+    gomod2nixPackage
     golangci-lint
-    gomod2nix
     gopls
     gotools
     jq
@@ -34,7 +37,7 @@ in
     nodejs_22
     podman
     skopeo
-    templ
+    templPackage
     (lib.hiPrio playwright-driver)
     (lib.hiPrio playwright-test)
   ];

@@ -1,5 +1,14 @@
 require_version: ">=2.1"
 strict_ports: false
+nixpkgs:
+  allow_unfree: true
 inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
+  gomod2nix:
+    url: github:nix-community/gomod2nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  templ:
+    url: github:a-h/templ/v0.3.906
