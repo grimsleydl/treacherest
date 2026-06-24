@@ -13,6 +13,10 @@ image_port := env_var_or_default("TREACHEREST_IMAGE_PORT", "8080")
 dev:
     devenv up
 
+# Repair generated devenv cache files when direnv reports failed enter tasks
+repair-devenv:
+    bash scripts/dev/repair-devenv-state.sh
+
 # Run the normal Go test suite
 test:
     devenv shell -- bash -lc 'cd nix/app && CGO_ENABLED=0 go test ./...'
