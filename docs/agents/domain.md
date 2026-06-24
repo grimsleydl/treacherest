@@ -6,6 +6,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 - `CONTEXT.md` at the repo root
 - `docs/adr/` for ADRs that touch the area about to be changed
+- `docs/agents/dev-workflow.md` before running project commands
 
 If any of these files don't exist, proceed silently. Don't flag their absence or suggest creating them upfront. The producer skill (`/grill-with-docs`) creates them lazily when terms or decisions actually get resolved.
 

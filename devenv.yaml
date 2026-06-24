@@ -1,0 +1,5 @@
+require_version: ">=2.1"
+strict_ports: false
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable

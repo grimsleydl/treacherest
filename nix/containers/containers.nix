@@ -7,6 +7,15 @@
   
   # Import nix2container
   n2c = inputs.nix2container.packages.${inputs.nixpkgs.system};
+  revision = inputs.self.rev or inputs.self.dirtyRev or "unknown";
+  version = inputs.cells.app.packages.default.version or "0.1.0";
+  source = "https://github.com/grimsleydl/treacherest";
+  commonLabels = {
+    "org.opencontainers.image.source" = source;
+    "org.opencontainers.image.revision" = revision;
+    "org.opencontainers.image.version" = version;
+    "org.opencontainers.image.licenses" = "MIT";
+  };
 in {
   # Main production container
   default = n2c.nix2container.buildImage {
@@ -44,7 +53,7 @@ in {
         "8080/tcp" = {};
       };
       
-      labels = {
+      labels = commonLabels // {
         "org.opencontainers.image.title" = "Treacherest";
         "org.opencontainers.image.description" = "Real-time multiplayer MTG Treachery game";
       };
@@ -93,7 +102,7 @@ in {
         "8080/tcp" = {};
       };
       
-      labels = {
+      labels = commonLabels // {
         "org.opencontainers.image.title" = "Treacherest Development";
         "org.opencontainers.image.description" = "Development container for Treacherest";
       };
@@ -136,7 +145,7 @@ in {
         "8080/tcp" = {};
       };
       
-      labels = {
+      labels = commonLabels // {
         "org.opencontainers.image.title" = "Treacherest Minimal";
         "org.opencontainers.image.description" = "Minimal container with just the binary";
       };

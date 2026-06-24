@@ -11,9 +11,9 @@
     "audit:themes": "node scripts/theme_contrast_audit.mjs",
     "lab:themes": "node scripts/theme_readability_lab.mjs",
     "test:theme-lab": "node --test scripts/theme_readability_lab.test.mjs",
-    "build:css": "postcss static/css/input.css -o static/css/output.css --verbose",
-    "build:css:prod": "NODE_ENV=production postcss static/css/input.css -o static/css/output.min.css",
-    "watch:css": "postcss static/css/input.css -o static/css/output.css --watch --verbose",
+    "build:css": "node node_modules/postcss-cli/index.js static/css/input.css -o static/css/output.css --verbose",
+    "build:css:prod": "NODE_ENV=production node node_modules/postcss-cli/index.js static/css/input.css -o static/css/output.min.css",
+    "watch:css": "node node_modules/postcss-cli/index.js static/css/input.css -o static/css/output.css --watch --verbose",
     "backup:css": "cp -r internal/views internal/views.backup-$(date +%Y%m%d-%H%M%S)"
   },
   "devDependencies": {

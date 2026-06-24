@@ -1,5 +1,7 @@
 /issues/
 /.scratch/
+/.devenv/
+/.direnv/
 
 *_templ.go
 

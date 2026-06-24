@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.BASE_URL ?? 'http://localhost:8080';
+const parsedBaseURL = new URL(baseURL);
+const webServerPort = Number(parsedBaseURL.port || (parsedBaseURL.protocol === 'https:' ? 443 : 80));
+const repoRoot = process.env.PRJ_ROOT ?? '../..';
+
 export default defineConfig({
   testDir: './tests/playwright',
   timeout: 30 * 1000,
@@ -12,7 +17,7 @@ export default defineConfig({
   workers: 1, // Single worker for SSE connection tests
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -26,10 +31,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: process.env.PRJ_ROOT 
-      ? `cd ${process.env.PRJ_ROOT}/nix/app && dev`
-      : 'cd ../.. && nix develop --command bash -c "cd nix/app && dev"',
-    port: 8080,
+    command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ?? `cd ${repoRoot} && just _serve-test ${webServerPort}`,
+    port: webServerPort,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
   },

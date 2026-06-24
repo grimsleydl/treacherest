@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
 test.describe('SSE Countdown Synchronization', () => {
-  const baseURL = 'http://localhost:8080';
+  const baseURL = process.env.BASE_URL ?? 'http://localhost:8080';
   
   test('multiple browsers should all auto-refresh to countdown when game starts', async ({ browser }) => {
     // Create 3 browser contexts to simulate 3 different players

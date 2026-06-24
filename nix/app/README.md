@@ -1,84 +1,81 @@
 # MTG Treacherest
 
-A real-time multiplayer game of deception and hidden roles, built with Go, Templ, and Datastar.
+A real-time multiplayer game of deception and hidden roles, built with Go,
+Templ, Datastar, and DaisyUI.
 
 ## Development
 
-This project uses Nix for development environment management and gomod2nix for Go dependency management.
+Treacherest uses `devenv` as the primary project environment and `just` as the
+stable command facade.
 
 ### Prerequisites
 
-- Nix with flakes enabled
+- Nix
+- `devenv` 2.1 or newer
+- Podman only for image smoke tests and local container runs
+
+Docker Compose and Podman Compose are not part of the local development
+workflow.
 
 ### Getting Started
 
-1. Enter the development shell:
+1. Enter the project shell:
+
    ```bash
-   nix develop
+   devenv shell
    ```
 
-2. Start the development server with hot reload:
+2. Start the local development process graph:
+
    ```bash
-   dev
+   just dev
    ```
 
-3. Visit http://localhost:8080
+3. Open the `http://localhost:<port>` URL printed by the startup logs.
 
-### Available Commands
+Interactive development starts from port `8888` and auto-increments within the
+Treacherest dev range when the base port is occupied. Runtime and container
+paths stay fixed on app port `8080`.
 
-- `dev` - Start development server with hot reload
-- `run` - Run the server (builds templates first)
-- `build` - Build the application
-- `test` - Run all tests
-- `test-all` - Run tests with coverage report
-- `fmt` - Format Go and templ code
-- `build-templ` - Generate Go code from templ templates
-- `update-deps` - Update Go dependencies and regenerate gomod2nix.toml
+### Standard Commands
 
-### Project Structure
+- `just dev`: start the `devenv up` process graph.
+- `just test`: run the normal Go test suite.
+- `just check`: run the desired full verification gate. This command is honest
+  about current known-red tests and may fail until those application defects are
+  fixed.
+- `just check-known-green`: run the temporary trusted passing subset.
+- `just build`: build the Nix package artifact.
+- `just image`: build the production OCI image.
+- `just image-run`: run the image locally with an explicit strict host port and
+  verify `/health/ready`.
+- `just image-push [tag]`: push the image manually until CI/CD exists. With no
+  tag it uses `sha-<shortsha>`.
+- `just release <tag>`: push a release tag.
 
-```
-.
-├── cmd/server/         # Application entry point
-├── internal/
-│   ├── game/          # Core game logic
-│   ├── handlers/      # HTTP and SSE handlers
-│   ├── store/         # In-memory game storage
-│   └── views/         # Templ templates
-├── static/            # Static assets
-├── go.mod             # Go module definition
-├── go.sum             # Go module checksums
-└── gomod2nix.toml     # Nix dependency management
-```
+Project-specific Coup role image helpers remain available through `just --list`.
 
-### Architecture
+### Testing
 
-The application uses:
-- **Server-side rendering** with Templ templates
-- **Real-time updates** via Server-Sent Events (SSE)
-- **Full page morphing** with Datastar's idiomorph algorithm
-- **In-memory storage** for game state
+`just check-known-green` is the day-to-day transition gate. It currently covers:
 
-### Game Flow
+- Templ generation
+- CSS build
+- selected Go packages that pass today
+- theme readability tests
 
-1. Players create or join rooms with 5-character codes
-2. 4-8 players required per game
-3. Roles are randomly assigned when game starts
-4. 5-second countdown before role reveal
-5. Players work toward their role's win condition
+`just check` is the full target gate and is expected to stay red while known
+application failures remain. Known-red failures are tracked in
+`docs/project/dev-environment-workflow.md`.
 
 ### Dependencies
 
-All Go dependencies are managed through gomod2nix. To add or update dependencies:
+Go dependencies are managed through gomod2nix. To add or update dependencies:
 
-1. Use standard Go commands:
-   ```bash
-   go get package@version
-   ```
+```bash
+go get package@version
+gomod2nix generate
+```
 
-2. Regenerate gomod2nix.toml:
-   ```bash
-   update-deps
-   ```
-
-This ensures reproducible builds in the Nix environment.
+Do not commit secrets or bake them into images. Secrets-provider selection is
+intentionally deferred.

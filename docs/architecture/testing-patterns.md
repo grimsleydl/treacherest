@@ -666,7 +666,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v22
-      - run: nix develop --command test-coverage
+      - run: devenv shell -- just check
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:

@@ -75,7 +75,10 @@ in {
         help = "Start development server with hot reload";
         command = ''
           cd $PRJ_ROOT/nix/app
-          templ generate --watch --proxy="http://localhost:8888" --open-browser=false &
+          export HOST="''${HOST:-localhost}"
+          export PORT="''${PORT:-8888}"
+          export CONFIG_PATH="''${CONFIG_PATH:-../../configs/server-development.yaml}"
+          templ generate --watch --proxy="http://localhost:$PORT" --open-browser=false &
           air
         '';
       }
@@ -234,6 +237,9 @@ in {
         help = "Start development server with CSS watching";
         command = ''
           cd $PRJ_ROOT/nix/app
+          export HOST="''${HOST:-localhost}"
+          export PORT="''${PORT:-8888}"
+          export CONFIG_PATH="''${CONFIG_PATH:-../../configs/server-development.yaml}"
           
           # Kill any existing processes
           pkill -f "postcss.*watch" || true
@@ -244,7 +250,7 @@ in {
           CSS_PID=$!
           
           # Start templ watcher
-          templ generate --watch --proxy="http://localhost:8080" --open-browser=false &
+          templ generate --watch --proxy="http://localhost:$PORT" --open-browser=false &
           TEMPL_PID=$!
           
           # Cleanup on exit
