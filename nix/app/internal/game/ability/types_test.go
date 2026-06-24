@@ -65,39 +65,39 @@ func TestEffectTypes(t *testing.T) {
 // TestManaCost tests mana cost structure
 func TestManaCost(t *testing.T) {
 	tests := []struct {
-		name     string
-		cost     *ManaCost
-		hasX     bool
-		hasY     bool
-		generic  int
+		name    string
+		cost    *ManaCost
+		hasX    bool
+		hasY    bool
+		generic int
 	}{
 		{
-			name:     "simple generic",
-			cost:     &ManaCost{Generic: 3, X: false, Y: false},
-			hasX:     false,
-			hasY:     false,
-			generic:  3,
+			name:    "simple generic",
+			cost:    &ManaCost{Generic: 3, X: false, Y: false},
+			hasX:    false,
+			hasY:    false,
+			generic: 3,
 		},
 		{
-			name:     "with X",
-			cost:     &ManaCost{Generic: 0, X: true, Y: false},
-			hasX:     true,
-			hasY:     false,
-			generic:  0,
+			name:    "with X",
+			cost:    &ManaCost{Generic: 0, X: true, Y: false},
+			hasX:    true,
+			hasY:    false,
+			generic: 0,
 		},
 		{
-			name:     "with X and Y",
-			cost:     &ManaCost{Generic: 0, X: true, Y: true},
-			hasX:     true,
-			hasY:     true,
-			generic:  0,
+			name:    "with X and Y",
+			cost:    &ManaCost{Generic: 0, X: true, Y: true},
+			hasX:    true,
+			hasY:    true,
+			generic: 0,
 		},
 		{
-			name:     "X plus generic",
-			cost:     &ManaCost{Generic: 4, X: true, Y: false},
-			hasX:     true,
-			hasY:     false,
-			generic:  4,
+			name:    "X plus generic",
+			cost:    &ManaCost{Generic: 4, X: true, Y: false},
+			hasX:    true,
+			hasY:    false,
+			generic: 4,
 		},
 	}
 
@@ -272,12 +272,12 @@ func TestCondition(t *testing.T) {
 // TestTransformParams tests transform effect parameters
 func TestTransformParams(t *testing.T) {
 	params := &TransformParams{
-		SourceZone:      ZoneOutsideGame,
-		Filter:          []Filter{{Type: FilterRole, Value: "Leader", Negate: true}},
-		RevealCount:     3,
-		RequiresChoice:  true,
-		KeepTypes:       []string{"Traitor"},
-		CopyAbilities:   true,
+		SourceZone:     ZoneOutsideGame,
+		Filter:         []Filter{{Type: FilterRole, Value: "Leader", Negate: true}},
+		RevealCount:    3,
+		RequiresChoice: true,
+		KeepTypes:      []string{"Traitor"},
+		CopyAbilities:  true,
 	}
 
 	if params.EffectType() != EffectTransform {

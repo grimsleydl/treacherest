@@ -85,11 +85,11 @@ type ExileSpec struct {
 type TargetType string
 
 const (
-	TargetPlayer      TargetType = "player"
-	TargetPermanent   TargetType = "permanent"
-	TargetSpell       TargetType = "spell"
-	TargetCardInZone  TargetType = "card_in_zone"
-	TargetAbility     TargetType = "ability"
+	TargetPlayer     TargetType = "player"
+	TargetPermanent  TargetType = "permanent"
+	TargetSpell      TargetType = "spell"
+	TargetCardInZone TargetType = "card_in_zone"
+	TargetAbility    TargetType = "ability"
 )
 
 // TargetSpec defines targeting requirements
@@ -113,11 +113,11 @@ type CountSpec struct {
 type FilterType string
 
 const (
-	FilterRole           FilterType = "role"            // "Leader", "Traitor", etc.
-	FilterPermanentType  FilterType = "permanent_type"  // "creature", "land", etc.
-	FilterController     FilterType = "controller"      // "opponent", "you"
-	FilterSubtype        FilterType = "subtype"
-	FilterCardType       FilterType = "card_type"
+	FilterRole          FilterType = "role"           // "Leader", "Traitor", etc.
+	FilterPermanentType FilterType = "permanent_type" // "creature", "land", etc.
+	FilterController    FilterType = "controller"     // "opponent", "you"
+	FilterSubtype       FilterType = "subtype"
+	FilterCardType      FilterType = "card_type"
 )
 
 // Filter represents a targeting restriction
@@ -132,14 +132,14 @@ type Filter struct {
 type Zone string
 
 const (
-	ZoneBattlefield  Zone = "battlefield"
-	ZoneGraveyard    Zone = "graveyard"
-	ZoneHand         Zone = "hand"
-	ZoneLibrary      Zone = "library"
-	ZoneExile        Zone = "exile"
-	ZoneCommand      Zone = "command"     // Identity cards
-	ZoneStack        Zone = "stack"
-	ZoneOutsideGame  Zone = "outside_game" // For Wearer of Masks
+	ZoneBattlefield Zone = "battlefield"
+	ZoneGraveyard   Zone = "graveyard"
+	ZoneHand        Zone = "hand"
+	ZoneLibrary     Zone = "library"
+	ZoneExile       Zone = "exile"
+	ZoneCommand     Zone = "command" // Identity cards
+	ZoneStack       Zone = "stack"
+	ZoneOutsideGame Zone = "outside_game" // For Wearer of Masks
 )
 
 // Effect represents a single effect in an ability
@@ -171,9 +171,9 @@ func (p *TransformParams) EffectType() EffectType {
 
 // DamageParams defines damage effect parameters
 type DamageParams struct {
-	Amount     int
-	Targets    []string // Player IDs or permanent IDs
-	Divided    bool     // "divided as you choose"
+	Amount  int
+	Targets []string // Player IDs or permanent IDs
+	Divided bool     // "divided as you choose"
 }
 
 func (p *DamageParams) EffectType() EffectType {
@@ -266,9 +266,9 @@ type GameStateProvider interface {
 
 // AbilityContext provides game state for ability resolution
 type AbilityContext struct {
-	RoomCode     string
-	PlayerID     string
-	CardID       int
-	TempData     map[string]interface{} // Mutable state for multi-step abilities
-	GameState    GameStateProvider      // Access to game state
+	RoomCode  string
+	PlayerID  string
+	CardID    int
+	TempData  map[string]interface{} // Mutable state for multi-step abilities
+	GameState GameStateProvider      // Access to game state
 }

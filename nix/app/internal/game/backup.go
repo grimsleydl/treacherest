@@ -14,12 +14,12 @@ import (
 
 // Backup-related errors
 var (
-	ErrBackupExpired      = errors.New("backup is too old")
-	ErrBackupTampered     = errors.New("backup failed authentication")
-	ErrBackupInvalid      = errors.New("backup is invalid")
-	ErrRoomCodeMismatch   = errors.New("backup room code doesn't match")
-	ErrBackupKeyInvalid   = errors.New("backup encryption key is invalid")
-	ErrBackupKeyTooShort  = errors.New("backup encryption key must be 32 bytes (64 hex chars)")
+	ErrBackupExpired     = errors.New("backup is too old")
+	ErrBackupTampered    = errors.New("backup failed authentication")
+	ErrBackupInvalid     = errors.New("backup is invalid")
+	ErrRoomCodeMismatch  = errors.New("backup room code doesn't match")
+	ErrBackupKeyInvalid  = errors.New("backup encryption key is invalid")
+	ErrBackupKeyTooShort = errors.New("backup encryption key must be 32 bytes (64 hex chars)")
 )
 
 const (

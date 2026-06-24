@@ -14,7 +14,6 @@ templ RoomNotFound(roomCode string) {
 							<h2 class="text-2xl font-semibold mt-4">Reconnecting...</h2>
 							<p class="text-base-content/70 mt-2">Checking for saved game state...</p>
 						</div>
-
 						<!-- Failed state - shown if restore fails -->
 						<div id="restore-failed" class="hidden">
 							<div class="text-6xl mb-4">:(</div>
@@ -31,62 +30,61 @@ templ RoomNotFound(roomCode string) {
 				</div>
 			</div>
 		</div>
-
 		<script>
 			// Attempt to restore room from backup
-			(async function() {
-				const roomCode = '{ roomCode }';
-				const BACKUP_KEY_PREFIX = 'treacherest_backup_';
+			(async function () {
+				const roomCode = "{ roomCode }";
+				const BACKUP_KEY_PREFIX = "treacherest_backup_";
 				const backup = localStorage.getItem(BACKUP_KEY_PREFIX + roomCode);
 
 				if (!backup) {
 					// No backup found, show failed state immediately
-					document.getElementById('restore-loading').classList.add('hidden');
-					document.getElementById('restore-failed').classList.remove('hidden');
+					document.getElementById("restore-loading").classList.add("hidden");
+					document.getElementById("restore-failed").classList.remove("hidden");
 					return;
 				}
 
 				// Get player ID from cookie
 				function getPlayerID() {
-					const cookies = document.cookie.split(';');
+					const cookies = document.cookie.split(";");
 					for (const cookie of cookies) {
-						const [name, value] = cookie.trim().split('=');
-						if (name === 'player_' + roomCode) {
+						const [name, value] = cookie.trim().split("=");
+						if (name === "player_" + roomCode) {
 							return value;
 						}
 					}
-					return '';
+					return "";
 				}
 
 				try {
 					const formData = new URLSearchParams();
-					formData.append('roomCode', roomCode);
-					formData.append('backup', backup);
-					formData.append('playerID', getPlayerID());
+					formData.append("roomCode", roomCode);
+					formData.append("backup", backup);
+					formData.append("playerID", getPlayerID());
 
-					const resp = await fetch('/room/restore', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-						body: formData.toString()
+					const resp = await fetch("/room/restore", {
+						method: "POST",
+						headers: { "Content-Type": "application/x-www-form-urlencoded" },
+						body: formData.toString(),
 					});
 
 					if (resp.ok) {
 						const result = await resp.json();
-						if (result.status === 'restored' || result.status === 'exists') {
+						if (result.status === "restored" || result.status === "exists") {
 							// Success! Reload the page to get the restored room
 							window.location.reload();
 							return;
 						}
 					}
 				} catch (e) {
-					console.error('Restore failed:', e);
+					console.error("Restore failed:", e);
 				}
 
 				// Restore failed - clean up invalid backup and show error
 				localStorage.removeItem(BACKUP_KEY_PREFIX + roomCode);
-				localStorage.removeItem(BACKUP_KEY_PREFIX + roomCode + '_time');
-				document.getElementById('restore-loading').classList.add('hidden');
-				document.getElementById('restore-failed').classList.remove('hidden');
+				localStorage.removeItem(BACKUP_KEY_PREFIX + roomCode + "_time");
+				document.getElementById("restore-loading").classList.add("hidden");
+				document.getElementById("restore-failed").classList.remove("hidden");
 			})();
 		</script>
 	}

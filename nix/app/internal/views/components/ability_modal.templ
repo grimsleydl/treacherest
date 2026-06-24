@@ -14,7 +14,6 @@ templ AbilityModal(room *game.Room, player *game.Player, pendingAbility *ability
 	if pendingAbility == nil {
 		return
 	}
-
 	// Check if modal is dismissed
 	if player.AbilityState.IsModalDismissed(pendingAbility.ID) {
 		// Show restore indicator instead of full modal
@@ -44,8 +43,8 @@ templ RestoreIndicator(room *game.Room, player *game.Player, pendingAbility *abi
 				title="Restore ability modal"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
 				</svg>
 				Show
 			</button>
@@ -65,11 +64,10 @@ templ FullAbilityModal(room *game.Room, player *game.Player, pendingAbility *abi
 					title="Dismiss modal (you can restore it later)"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75"></path>
 					</svg>
 				</button>
 			</div>
-
 			// Content varies by ability type
 			switch pendingAbility.AbilityType {
 				case "unveil":
@@ -111,7 +109,6 @@ templ UnveilAbilityContent(room *game.Room, player *game.Player, pendingAbility 
 				</svg>
 				<span>Choose a card to transform into. You will gain this card's abilities while keeping your original role type.</span>
 			</div>
-
 			// Get available cards from ability data
 			if availableCardIDs, ok := pendingAbility.Data["available_cards"].([]int); ok && len(availableCardIDs) > 0 {
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -160,7 +157,7 @@ templ SelectableCard(room *game.Room, pendingAbility *ability.PendingAbility, ca
 					title={ fmt.Sprintf("Transform into %s", card.Name) }
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 					</svg>
 					Select This Card
 				</button>
@@ -178,11 +175,9 @@ templ DefaultAbilityContent(room *game.Room, player *game.Player, pendingAbility
 			</svg>
 			<span>Action required for ability: { pendingAbility.AbilityType }</span>
 		</div>
-
 		<div class="text-sm text-base-content/80">
 			Ability ID: { pendingAbility.ID }
 		</div>
-
 		<div class="text-sm text-base-content/80">
 			Card ID: { fmt.Sprintf("%d", pendingAbility.CardID) }
 		</div>
@@ -260,7 +255,7 @@ templ LeaderConfirmationCard(room *game.Room, abilityOwner *game.Player, pending
 			data-on:click={ fmt.Sprintf("@post('/room/%s/ability/%s/confirm')", room.Code, pendingAbility.ID) }
 		>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+				<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"></path>
 			</svg>
 			I've Seen It
 		</button>
@@ -319,7 +314,6 @@ templ PuppetMasterPlayerSelection(room *game.Room, player *game.Player, pendingA
 				<p class="text-sm">Choose which players' identity cards to include in the redistribution. You can select any number of players (or none to skip).</p>
 			</div>
 		</div>
-
 		<div class="space-y-2">
 			for _, p := range room.GetLivingPlayers() {
 				if p.ID != player.ID {
@@ -345,7 +339,6 @@ templ PuppetMasterPlayerSelection(room *game.Room, player *game.Player, pendingA
 				}
 			}
 		</div>
-
 		<div class="flex justify-end gap-2 mt-4">
 			<button
 				type="button"
@@ -361,7 +354,7 @@ templ PuppetMasterPlayerSelection(room *game.Room, player *game.Player, pendingA
 			>
 				Continue to Assignment
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
 				</svg>
 			</button>
 		</div>
@@ -380,16 +373,15 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 				<p class="text-sm">Decide which role each player receives. Use the dropdown to reassign. Non-Leader cards will be turned face down.</p>
 			</div>
 		</div>
-
 		<div class="join join-vertical w-full">
 			for _, playerID := range getSelectedPlayerIDs(pendingAbility) {
 				if p := room.GetPlayer(playerID); p != nil && p.Role != nil {
 					<div class="collapse join-item border border-base-300">
-						<input type="checkbox" id={ fmt.Sprintf("pm-reveal-%s", p.ID) } class="peer min-h-0" />
+						<input type="checkbox" id={ fmt.Sprintf("pm-reveal-%s", p.ID) } class="peer min-h-0"/>
 						<div class="collapse-title flex items-center justify-between gap-2 pr-4 min-h-0 py-2 pointer-events-none">
 							<label for={ fmt.Sprintf("pm-reveal-%s", p.ID) } class="flex items-center gap-2 flex-wrap flex-1 cursor-pointer pointer-events-auto">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path>
 								</svg>
 								<span class="font-medium">{ p.Name }</span>
 								if !p.FaceUp {
@@ -403,7 +395,7 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 							<!-- Arrow and new role selector -->
 							<div class="flex items-center gap-2 pointer-events-auto">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-base-content/40">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
 								</svg>
 								<select
 									class="select select-bordered select-xs pointer-events-auto relative z-10"
@@ -449,7 +441,6 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 				}
 			}
 		</div>
-
 		<!-- Info message (shown when valid) -->
 		<div
 			class="alert alert-info mt-4"
@@ -460,7 +451,6 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 			</svg>
 			<span class="text-sm">All non-Leader cards will be turned face down after redistribution.</span>
 		</div>
-
 		<!-- Error message (shown when duplicates exist) -->
 		<div
 			class="alert alert-error mt-4"
@@ -471,7 +461,6 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 			</svg>
 			<span class="text-sm">Each role must be assigned to exactly one player. Resolve duplicate assignments to continue.</span>
 		</div>
-
 		<div class="flex justify-between mt-4">
 			<button
 				type="button"
@@ -479,7 +468,7 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 				data-on:click={ fmt.Sprintf("@post('/room/%s/puppet-master/%s/back')", room.Code, pendingAbility.ID) }
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"></path>
 				</svg>
 				Back to Selection
 			</button>
@@ -490,7 +479,7 @@ templ PuppetMasterRoleAssignment(room *game.Room, player *game.Player, pendingAb
 				data-attr:disabled="new Set(Object.values($assignments)).size !== Object.keys($assignments).length"
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 				</svg>
 				Confirm Redistribution
 			</button>

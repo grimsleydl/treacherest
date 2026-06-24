@@ -94,9 +94,9 @@ func (r *WearerOfMasksResolver) OnTrigger(ctx *ability.AbilityContext) (*ability
 		CardID:      ctx.CardID,
 		AbilityType: "wearer_transform",
 		Data: map[string]interface{}{
-			"revealed_cards": cardData,
-			"revealed_ids":   cardIDs,
-			"requires_choice": true,
+			"revealed_cards":   cardData,
+			"revealed_ids":     cardIDs,
+			"requires_choice":  true,
 			"original_card_id": ctx.CardID,
 		},
 		ModalDismissed: false,

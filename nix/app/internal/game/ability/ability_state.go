@@ -6,10 +6,10 @@ import (
 
 // AbilityState tracks all ability-related state for a player
 type AbilityState struct {
-	PendingAbilities     []*PendingAbility
-	ActiveEffects        []*ActiveEffect
-	TransformState       *TransformState
-	MetamorphState       *MetamorphState // Tracks The Metamorph's steal ability
+	PendingAbilities      []*PendingAbility
+	ActiveEffects         []*ActiveEffect
+	TransformState        *TransformState
+	MetamorphState        *MetamorphState // Tracks The Metamorph's steal ability
 	CanViewOthersFaceDown bool            // The Puppet Master can view face-down identity cards
 }
 
@@ -171,8 +171,8 @@ func (as *AbilityState) StealIdentity(originalCardID, stolenCardID int) {
 		IsTransformed:     true,
 		OriginalCardID:    originalCardID,
 		TransformedCardID: stolenCardID,
-		KeepTypes:         []string{},    // No types kept - full identity change
-		EndCondition:      "never",       // Permanent
+		KeepTypes:         []string{}, // No types kept - full identity change
+		EndCondition:      "never",    // Permanent
 		ChangeType:        RoleChangeSteal,
 		IsPermanent:       true,
 		SourceCardRemoved: true, // Metamorph removed from game

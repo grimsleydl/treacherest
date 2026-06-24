@@ -145,7 +145,7 @@ func TestRemoveActiveEffect(t *testing.T) {
 func TestStartTransform(t *testing.T) {
 	state := NewAbilityState()
 
-	originalCardID := 31 // The Wearer of Masks
+	originalCardID := 31    // The Wearer of Masks
 	transformedCardID := 15 // The Bodyguard
 	keepTypes := []string{"Traitor"}
 	endCondition := "face_down"
@@ -181,7 +181,7 @@ func TestStartTransform(t *testing.T) {
 func TestEndTransform(t *testing.T) {
 	state := NewAbilityState()
 
-	originalCardID := 31 // The Wearer of Masks
+	originalCardID := 31    // The Wearer of Masks
 	transformedCardID := 15 // The Bodyguard
 
 	state.StartTransform(originalCardID, transformedCardID, []string{"Traitor"}, "face_down")
@@ -437,9 +437,9 @@ func TestGetModalState(t *testing.T) {
 	state := NewAbilityState()
 
 	ability := &PendingAbility{
-		ID:         "ability-1",
-		PlayerID:   "player-1",
-		CardID:     31,
+		ID:       "ability-1",
+		PlayerID: "player-1",
+		CardID:   31,
 		ModalState: map[string]interface{}{
 			"option1": "value1",
 			"option2": 42,

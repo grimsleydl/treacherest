@@ -18,16 +18,14 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 		<div class="modal-box">
 			<h3 class="font-bold text-lg flex items-center gap-2">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"></path>
 				</svg>
 				Unveil { player.Role.Name }
 			</h3>
-
 			<div class="py-4">
 				<p class="text-sm opacity-80 mb-4">
 					{ requirements.InputDescription }
 				</p>
-
 				// Numeric input variant
 				<div class="form-control" id="x-input-numeric">
 					<label class="label">
@@ -57,7 +55,6 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 						</button>
 					</div>
 				</div>
-
 				// Preview of what will happen
 				<div class="alert alert-info mt-4">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -74,7 +71,6 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 					</div>
 				</div>
 			</div>
-
 			<div class="modal-action">
 				<button
 					class="btn btn-ghost"
@@ -87,8 +83,8 @@ templ XInputModal(room *game.Room, player *game.Player, requirements *ability.Un
 					data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-wearer/' + $xValue)", room.Code, player.ID) }
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
 					</svg>
 					Unveil
 				</button>
@@ -120,8 +116,8 @@ templ InlinePendingAbilityButton(room *game.Room, player *game.Player, pending *
 		title="Continue with ability - click to show options"
 	>
 		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-			<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-			<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
 		</svg>
 		Choose Card
 	</button>
@@ -136,55 +132,55 @@ templ UnveilButton(room *game.Room, player *game.Player) {
 		if pending := getPendingAbilityForCard(player, player.Role.GetID()); pending != nil {
 			@InlinePendingAbilityButton(room, player, pending)
 		} else if req := ability.GetUnveilRequirements(player.Role.GetID()); req.InputType == ability.NumericInput {
-		// Card needs X input - show button that opens modal
-		<button
-			class="btn btn-primary btn-sm"
-			data-on:click={ fmt.Sprintf("@get('/room/%s/unveil-modal/%s')", room.Code, player.ID) }
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-			</svg>
-			Unveil
-		</button>
-	} else if player.Role.GetID() == 25 {
-		// The Metamorph - trigger metamorph ability with confirmation
-		<button
-			class="btn btn-primary btn-sm"
-			onclick="return confirm('Pay 8 life and discard a card to unveil The Metamorph?')"
-			data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-metamorph')", room.Code, player.ID) }
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-			</svg>
-			Unveil - Pay 8 Life, Discard
-		</button>
-	} else if player.Role.GetID() == 27 {
-		// The Puppet Master - trigger redistribution ability with confirmation
-		<button
-			class="btn btn-primary btn-sm"
-			onclick="return confirm('Pay 6 mana to unveil The Puppet Master and redistribute identity cards?')"
-			data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-puppet-master')", room.Code, player.ID) }
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-			</svg>
-			Unveil - Pay 6
-		</button>
-	} else {
-		// Card has no special requirements - simple unveil
-		<button
-			class="btn btn-primary btn-sm"
-			data-on:click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"/>
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-			</svg>
-			Unveil
-		</button>
+			// Card needs X input - show button that opens modal
+			<button
+				class="btn btn-primary btn-sm"
+				data-on:click={ fmt.Sprintf("@get('/room/%s/unveil-modal/%s')", room.Code, player.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+				</svg>
+				Unveil
+			</button>
+		} else if player.Role.GetID() == 25 {
+			// The Metamorph - trigger metamorph ability with confirmation
+			<button
+				class="btn btn-primary btn-sm"
+				onclick="return confirm('Pay 8 life and discard a card to unveil The Metamorph?')"
+				data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-metamorph')", room.Code, player.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+				</svg>
+				Unveil - Pay 8 Life, Discard
+			</button>
+		} else if player.Role.GetID() == 27 {
+			// The Puppet Master - trigger redistribution ability with confirmation
+			<button
+				class="btn btn-primary btn-sm"
+				onclick="return confirm('Pay 6 mana to unveil The Puppet Master and redistribute identity cards?')"
+				data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/trigger-puppet-master')", room.Code, player.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+				</svg>
+				Unveil - Pay 6
+			</button>
+		} else {
+			// Card has no special requirements - simple unveil
+			<button
+				class="btn btn-primary btn-sm"
+				data-on:click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.573-3.007-9.963-7.178z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+				</svg>
+				Unveil
+			</button>
 		}
 	}
 }
