@@ -8,7 +8,7 @@ let
   devPortMax = 8899;
   devPort = config.processes.treacherest.ports.http.value;
   devPortString = toString devPort;
-  appDir = "${config.git.root}/nix/app";
+  appDir = "${config.devenv.root}/nix/app";
 in
 {
   name = "treacherest";
