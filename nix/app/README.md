@@ -47,8 +47,10 @@ paths stay fixed on app port `8080`.
 - `just check-known-green`: run the temporary trusted passing subset.
 - `just build`: build the Nix package artifact.
 - `just image`: build the production OCI image.
-- `just image-run`: run the image locally with an explicit strict host port and
-  verify `/health/ready`.
+- `just image-load [tag]`: load the Nix-built image into local Podman storage.
+- `just image-smoke [port] [tag]`: run the loaded image with an explicit strict
+  host port and verify `/health/ready`.
+- `just image-run [port] [tag]`: load and smoke-test the image locally.
 - `just image-push [tag]`: push the image manually until CI/CD exists. With no
   tag it uses `sha-<shortsha>`.
 - `just release <tag>`: push a release tag.

@@ -52,8 +52,12 @@ private `just _serve-test` helper.
 - `just check-known-green`: run the temporary trusted passing subset.
 - `just build`: build the Nix package artifact.
 - `just image`: build the production OCI image.
-- `just image-run`: run the production image locally and smoke-test
-  `/health/ready`.
+- `just image-load [tag]`: load the Nix-built production image into local
+  Podman storage. Without a tag this uses `sha-<shortsha>`.
+- `just image-smoke [port] [tag]`: run the already-loaded production image and
+  smoke-test `/health/ready`.
+- `just image-run [port] [tag]`: load the production image locally and
+  smoke-test `/health/ready`.
 - `just image-push [tag]`: manually push the image until CI/CD exists. Without a
   tag this uses `sha-<shortsha>`.
 - `just release <tag>`: push a release tag.
@@ -86,12 +90,20 @@ Known-red baseline failures observed during this migration:
 ## Images And Deployment
 
 OCI containers are the runtime artifact. `just image` builds the production
-image through the Nix container output. `just image-run` loads that image into
-local Podman storage, runs it with an explicit host port, and verifies:
+image through the Nix container output. `just image-load` copies that
+nix2container output into local Podman storage. `just image-smoke` runs the
+loaded image with an explicit host port and verifies:
 
 ```text
 GET /health/ready
 ```
+
+`just image-run` is the convenience form for `image-load` followed by
+`image-smoke`.
+
+The load and push steps use the nix2container `copyTo` app. That copy path may
+build or run `skopeo` locally because `skopeo` performs OCI image copies between
+Nix outputs, local container storage, and registries.
 
 Image tags should use immutable identities:
 

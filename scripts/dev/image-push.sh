@@ -16,5 +16,6 @@ case "$tag" in
 esac
 
 cd "$repo_root"
+echo "Pushing nix2container image: ${registry}:${tag}"
 nix run .#containers.x86_64-linux.default.copyTo -- "docker://${registry}:${tag}"
 echo "Pushed ${registry}:${tag}"

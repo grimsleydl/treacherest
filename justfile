@@ -37,9 +37,18 @@ build:
 image:
     nix build .#containers.x86_64-linux.default
 
-# Run the production OCI image locally and smoke-test /health/ready with a strict host port
-image-run port=image_port:
-    devenv shell -- bash scripts/dev/image-run-smoke.sh "{{registry}}" "{{port}}"
+# Load the nix2container production image into local Podman storage
+image-load tag="":
+    devenv shell -- bash scripts/dev/image-load.sh "{{registry}}" "{{tag}}"
+
+# Smoke-test the loaded production image on a strict explicit host port
+image-smoke port=image_port tag="":
+    devenv shell -- bash scripts/dev/image-smoke.sh "{{registry}}" "{{port}}" "{{tag}}"
+
+# Load and smoke-test the production image locally
+image-run port=image_port tag="":
+    devenv shell -- bash scripts/dev/image-load.sh "{{registry}}" "{{tag}}"
+    devenv shell -- bash scripts/dev/image-smoke.sh "{{registry}}" "{{port}}" "{{tag}}"
 
 # Push the production OCI image; defaults to sha-<shortsha> when no tag is provided
 image-push tag="":

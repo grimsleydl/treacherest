@@ -9,8 +9,10 @@ Use the same command contract as humans.
 - Use `just check-known-green` for a passing transition gate.
 - Use `just check` when you need the full desired gate; it is currently allowed
   to fail on documented known-red application tests.
-- Use `just build`, `just image`, and `just image-run` for package and image
-  verification.
+- Use `just build`, `just image`, `just image-load`, `just image-smoke`, and
+  `just image-run` for package and image verification. `image-load` copies the
+  Nix container output into local Podman storage; `image-smoke` runs the loaded
+  image and checks `/health/ready`.
 
 Do not use Docker Compose or Podman Compose for local development.
 
