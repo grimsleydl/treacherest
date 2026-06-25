@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 	"time"
 )
+
+var errDownloadFailed = errors.New("one or more card images failed to download")
 
 // Card represents the minimal structure needed for downloading
 type Card struct {
@@ -29,6 +32,13 @@ type CardCollection struct {
 }
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	fmt.Println("MTG Treachery Card Image Downloader")
 	fmt.Println("===================================")
 	fmt.Println()
@@ -41,22 +51,19 @@ func main() {
 	// Load the cards JSON from the current directory
 	jsonData, err := os.ReadFile("treachery-cards.json")
 	if err != nil {
-		fmt.Printf("Error reading treachery-cards.json: %v\n", err)
-		return
+		return fmt.Errorf("read treachery-cards.json: %w", err)
 	}
 
 	var collection CardCollection
 	if err := json.Unmarshal(jsonData, &collection); err != nil {
-		fmt.Printf("Error parsing JSON: %v\n", err)
-		return
+		return fmt.Errorf("parse treachery-cards.json: %w", err)
 	}
 
 	// Create output directory in the current working directory.
 	// The Nix build script will move this to the correct final location.
 	outputDir := "cards"
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		fmt.Printf("Error creating directory: %v\n", err)
-		return
+		return fmt.Errorf("create output directory: %w", err)
 	}
 
 	absPath, _ := filepath.Abs(outputDir)
@@ -67,6 +74,7 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 
+	failed := 0
 	for _, card := range collection.Cards {
 		// Construct the correct URL pattern: https://mtgtreachery.net/images/cards/en/trd/{ID} - {Role} - {Card Name}.jpg
 		role := card.Types.Subtype
@@ -89,6 +97,7 @@ func main() {
 		req, err := http.NewRequest("GET", imageURL, nil)
 		if err != nil {
 			fmt.Printf("Error creating request for %s: %v\n", card.Name, err)
+			failed++
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
@@ -97,12 +106,14 @@ func main() {
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Printf("Error downloading %s: %v\n", card.Name, err)
+			failed++
 			continue
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			fmt.Printf("Error downloading %s: HTTP %d\n", card.Name, resp.StatusCode)
+			resp.Body.Close()
+			failed++
 			continue
 		}
 
@@ -110,14 +121,28 @@ func main() {
 		file, err := os.Create(outputPath)
 		if err != nil {
 			fmt.Printf("Error creating file for %s: %v\n", card.Name, err)
+			resp.Body.Close()
+			failed++
 			continue
 		}
-		defer file.Close()
 
 		// Write the image data
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
+		if _, err = io.Copy(file, resp.Body); err != nil {
 			fmt.Printf("Error writing %s: %v\n", card.Name, err)
+			file.Close()
+			resp.Body.Close()
+			failed++
+			continue
+		}
+		if err := file.Close(); err != nil {
+			fmt.Printf("Error closing file for %s: %v\n", card.Name, err)
+			resp.Body.Close()
+			failed++
+			continue
+		}
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response for %s: %v\n", card.Name, err)
+			failed++
 			continue
 		}
 
@@ -146,8 +171,13 @@ This project is not produced by, endorsed by, supported by, or affiliated with W
 `
 
 	if err := os.WriteFile(filepath.Join(outputDir, "ATTRIBUTION.txt"), []byte(attribution), 0644); err != nil {
-		fmt.Printf("Error writing attribution file: %v\n", err)
+		return fmt.Errorf("write attribution file: %w", err)
+	}
+
+	if failed > 0 {
+		return fmt.Errorf("%w: %d failed", errDownloadFailed, failed)
 	}
 
 	fmt.Println("\nDownload complete!")
+	return nil
 }
