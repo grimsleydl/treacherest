@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -80,19 +79,19 @@ func TestStreamHost(t *testing.T) {
 	// Wait a bit for messages to be processed
 	time.Sleep(100 * time.Millisecond)
 
-	// Check we got messages
+	// Check we got a dashboard fragment without reinitializing the data-init wrapper.
 	messageCount := 0
-	hasQRCode := false
-	hasFragment := false
+	fragmentMessageIndex := -1
 	hasDataInitWrapper := false
+	hasQRCodeSignal := false
 
 	for msg := range sseMessages {
 		messageCount++
 		if strings.Contains(msg, "qrCode") {
-			hasQRCode = true
+			hasQRCodeSignal = true
 		}
 		if strings.Contains(msg, "host-dashboard-container") {
-			hasFragment = true
+			fragmentMessageIndex = messageCount
 		}
 		if strings.Contains(msg, "data-init") {
 			hasDataInitWrapper = true
@@ -102,9 +101,8 @@ func TestStreamHost(t *testing.T) {
 		}
 	}
 
-	// Verify we got both QR code signal and dashboard fragment
-	assert.True(t, hasQRCode, "Should have received QR code signal")
-	assert.True(t, hasFragment, "Should have received dashboard fragment")
+	assert.NotEqual(t, -1, fragmentMessageIndex, "Should have received dashboard fragment")
+	assert.False(t, hasQRCodeSignal, "Host dashboard QR should use the static image endpoint instead of SSE signals")
 	assert.False(t, hasDataInitWrapper, "Host dashboard SSE fragments must not reinitialize the data-init wrapper")
 }
 
@@ -464,6 +462,61 @@ func TestQRCodeGeneration(t *testing.T) {
 	assert.Equal(t, pngHeader, decoded[:len(pngHeader)], "Should have valid PNG header")
 }
 
+func TestQRCodeGenerationDoesNotRequireTempDir(t *testing.T) {
+	t.Setenv("TMPDIR", t.TempDir()+"/missing")
+
+	qrCode, err := generateQRCode("http://example.com/room/NOTMP")
+
+	require.NoError(t, err, "QR code generation must not require a writable temp directory")
+	decoded, err := base64.StdEncoding.DecodeString(qrCode)
+	require.NoError(t, err, "Should be valid base64")
+	pngHeader := []byte{137, 80, 78, 71, 13, 10, 26, 10}
+	require.GreaterOrEqual(t, len(decoded), len(pngHeader))
+	assert.Equal(t, pngHeader, decoded[:len(pngHeader)])
+}
+
+func TestRoomQRCode(t *testing.T) {
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+
+	room, err := gameStore.CreateRoom()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("GET", "/room/"+room.Code+"/qr.png", nil)
+	req.Host = "example.com"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	w := httptest.NewRecorder()
+
+	h.RoomQRCode(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+	assert.Equal(t, "no-store", w.Header().Get("Cache-Control"))
+	pngHeader := []byte{137, 80, 78, 71, 13, 10, 26, 10}
+	require.GreaterOrEqual(t, len(w.Body.Bytes()), len(pngHeader))
+	assert.Equal(t, pngHeader, w.Body.Bytes()[:len(pngHeader)])
+}
+
+func TestRoomQRCodeNotFound(t *testing.T) {
+	cfg := config.DefaultConfig()
+	gameStore := store.NewMemoryStore(cfg)
+	h := New(gameStore, createMockCardService(), cfg, nil)
+
+	req := httptest.NewRequest("GET", "/room/MISSING/qr.png", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", "MISSING")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	w := httptest.NewRecorder()
+
+	h.RoomQRCode(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
 // TestGetBaseURL tests base URL construction
 func TestGetBaseURL(t *testing.T) {
 	tests := []struct {
@@ -513,23 +566,4 @@ func TestGetBaseURL(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-// TestMarshalAndPatchSignals tests the signal sending for QR code
-func TestMarshalAndPatchSignals(t *testing.T) {
-	// This test verifies that the signal format is correct
-	signals := map[string]string{
-		"qrCode": "data:image/png;base64,iVBORw0KGgoAAAANS...",
-	}
-
-	// Marshal to JSON to verify format
-	data, err := json.Marshal(signals)
-	require.NoError(t, err)
-
-	// Should be valid JSON
-	var parsed map[string]string
-	err = json.Unmarshal(data, &parsed)
-	require.NoError(t, err)
-
-	assert.Equal(t, signals["qrCode"], parsed["qrCode"])
 }

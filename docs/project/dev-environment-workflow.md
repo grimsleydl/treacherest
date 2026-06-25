@@ -57,13 +57,15 @@ private `just _serve-test` helper.
 - `just build`: build the Nix package artifact.
 - `just image`: build the production OCI image.
 - `just image-load [tag]`: load the Nix-built production image into local
-  Podman storage. Without a tag this uses `sha-<shortsha>`.
+  Podman storage. Without a tag this uses the short git SHA for a clean tree
+  and `latest` for a dirty tree.
 - `just image-smoke [port] [tag]`: run the already-loaded production image and
   smoke-test `/health/ready`.
 - `just image-run [port] [tag]`: load the production image locally and
   smoke-test `/health/ready`.
 - `just image-push [tag]`: manually push the image until CI/CD exists. Without a
-  tag this uses `sha-<shortsha>`.
+  tag this uses the short git SHA for a clean tree and `latest` for a dirty
+  tree.
 - `just release <tag>`: push a release tag.
 
 Project-specific commands may exist, but they should name the local concern
@@ -111,7 +113,9 @@ Nix outputs, local container storage, and registries.
 
 Image tags should use immutable identities:
 
-- `sha-<shortsha>` for source revision tags.
+- Short git SHAs for source revision tags.
+- `latest` for dirty local working-tree images and other convenience-only
+  cases.
 - Semantic release tags through `just release <tag>`.
 - `latest` is convenience only and must not be used as the production deployment
   identity.

@@ -6,7 +6,11 @@ registry="${1:-ghcr.io/grimsleydl/treacherest}"
 tag="${2:-}"
 
 if [ -z "$tag" ]; then
-  tag="sha-$(git -C "$repo_root" rev-parse --short HEAD)"
+  if [ -z "$(git -C "$repo_root" status --short --untracked-files=normal)" ]; then
+    tag="$(git -C "$repo_root" rev-parse --short HEAD)"
+  else
+    tag="latest"
+  fi
 fi
 
 image="${registry}:${tag}"

@@ -199,11 +199,11 @@ func TestHandler_StreamLobby(t *testing.T) {
 		}
 
 		body := w.Body.String()
-		if !strings.Contains(body, `"qrCode"`) {
-			t.Fatalf("expected lobby SSE to send QR code signal, got %q", body)
+		if !strings.Contains(body, `"canStartGame"`) {
+			t.Fatalf("expected lobby SSE to send validation state, got %q", body)
 		}
-		if !strings.Contains(body, "data:image/png;base64,") {
-			t.Fatalf("expected lobby SSE to send QR code data URI, got %q", body)
+		if strings.Contains(body, `"qrCode"`) || strings.Contains(body, "data:image/png;base64,") {
+			t.Fatalf("expected lobby QR to use the static image endpoint instead of SSE signals, got %q", body)
 		}
 	})
 

@@ -50,7 +50,7 @@ image-run port=image_port tag="":
     devenv shell -- bash scripts/dev/image-load.sh "{{registry}}" "{{tag}}"
     devenv shell -- bash scripts/dev/image-smoke.sh "{{registry}}" "{{port}}" "{{tag}}"
 
-# Push the production OCI image; defaults to sha-<shortsha> when no tag is provided
+# Push the production OCI image; defaults to short git SHA when clean, latest when dirty
 image-push tag="":
     devenv shell -- bash scripts/dev/image-push.sh "{{registry}}" "{{tag}}"
 

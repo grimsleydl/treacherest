@@ -7,7 +7,11 @@ host_port="${2:-8080}"
 tag="${3:-}"
 
 if [ -z "$tag" ]; then
-  tag="sha-$(git -C "$repo_root" rev-parse --short HEAD)"
+  if [ -z "$(git -C "$repo_root" status --short --untracked-files=normal)" ]; then
+    tag="$(git -C "$repo_root" rev-parse --short HEAD)"
+  else
+    tag="latest"
+  fi
   load_hint="just image-load"
 else
   load_hint="just image-load ${tag}"

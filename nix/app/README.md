@@ -55,7 +55,7 @@ paths stay fixed on app port `8080`.
   host port and verify `/health/ready`.
 - `just image-run [port] [tag]`: load and smoke-test the image locally.
 - `just image-push [tag]`: push the image manually until CI/CD exists. With no
-  tag it uses `sha-<shortsha>`.
+  tag it uses the short git SHA for a clean tree and `latest` for a dirty tree.
 - `just release <tag>`: push a release tag.
 
 Project-specific Coup role image helpers remain available through `just --list`.

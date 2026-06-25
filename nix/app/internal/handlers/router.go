@@ -65,6 +65,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		// Main pages
 		r.Get("/", h.Home)
 		r.Post("/room/new", h.CreateRoom) // Changed from /room/create to match form action
+		r.Get("/room/{code}/qr.png", h.RoomQRCode)
 		r.Get("/room/{code}", h.JoinRoom)
 		r.Get("/room/{code}/operator", h.OperatorDashboard)
 		r.Post("/join-room", h.JoinRoomPost)   // New POST endpoint for joining rooms

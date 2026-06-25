@@ -295,6 +295,7 @@ func TestLobbyPage(t *testing.T) {
 			`id="player-lobby-hero"`,
 			`id="lobby-qr-code"`,
 			`aria-label="QR code for room COUP5"`,
+			`src="/room/COUP5/qr.png"`,
 			"Waiting for Room Operator",
 			"2 of 5 seats filled",
 			`id="player-row-player"`,
@@ -310,6 +311,9 @@ func TestLobbyPage(t *testing.T) {
 			if !strings.Contains(body, want) {
 				t.Fatalf("expected redesigned player lobby to contain %q, got %q", want, body)
 			}
+		}
+		if strings.Contains(body, `lobby-qr-placeholder`) || strings.Contains(body, `data-attr:src="$qrCode"`) {
+			t.Fatalf("expected player lobby QR to render a static image endpoint, got %q", body)
 		}
 		assertNoLobbyManagementDOM(t, body, coupRoom.Code)
 	})

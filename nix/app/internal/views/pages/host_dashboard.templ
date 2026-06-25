@@ -18,7 +18,6 @@ templ HostDashboardBody(room *game.Room, player *game.Player, cfg *config.Server
 	// Wrapper div with data-init that never gets morphed
 	<div
 		data-init={ "@get('/sse/host/" + room.Code + "')" }
-		data-signals="{qrCode: ''}"
 		data-signals:can-start-game="true"
 		data-signals:validation-message=""
 		data-signals:can-auto-scale="false"
@@ -55,17 +54,12 @@ templ HostDashboardContent(room *game.Room, player *game.Player, cfg *config.Ser
 				<h1 class="text-2xl font-bold mb-4">Scan to Join</h1>
 				<div class="text-5xl font-bold tracking-[0.3em] text-base-content mb-4">{ room.Code }</div>
 				<div class="bg-white p-4 rounded-lg mb-4" id="qr-code-container">
-					<!-- QR code will be generated and inserted here -->
 					<img
 						id="qr-code-img"
-						data-attr:src="$qrCode"
-						data-show="$qrCode != ''"
-						alt="QR Code"
+						src={ templ.SafeURL("/room/" + room.Code + "/qr.png") }
+						alt={ "QR code for room " + room.Code }
 						class="h-56 w-56 max-w-full"
 					/>
-					<div id="qr-placeholder" data-show="$qrCode == ''" class="flex h-56 w-56 max-w-full items-center justify-center rounded bg-base-300 text-base-content/60">
-						Generating QR Code...
-					</div>
 				</div>
 				<div class="text-center text-sm text-base-content/60">
 					Players can scan this code

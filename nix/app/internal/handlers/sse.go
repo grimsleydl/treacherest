@@ -89,18 +89,6 @@ func (h *Handler) StreamLobby(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to send initial validation state: %v", err)
 	}
 
-	baseURL := getBaseURL(r)
-	qrURL := fmt.Sprintf("%s/room/%s", baseURL, roomCode)
-	qrCode, err := generateQRCode(qrURL)
-	if err != nil {
-		log.Printf("❌ Failed to generate lobby QR code for room %s: %v", roomCode, err)
-	} else if qrCode != "" {
-		qrDataURI := fmt.Sprintf("data:image/png;base64,%s", qrCode)
-		if err := sse.MarshalAndPatchSignals(map[string]string{"qrCode": qrDataURI}); err != nil {
-			log.Printf("❌ Failed to send lobby QR code signal for room %s: %v", roomCode, err)
-		}
-	}
-
 	// Send debug mode signal if debug mode is enabled (for debug panel visibility)
 	if h.config.Server.DebugModeEnabled {
 		sse.MarshalAndPatchSignals(map[string]interface{}{
@@ -665,26 +653,6 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 	// Create SSE connection
 	sse := datastar.NewSSE(w, r)
 
-	// Generate and send QR code once
-	baseURL := getBaseURL(r)
-	qrURL := fmt.Sprintf("%s/room/%s", baseURL, roomCode)
-
-	qrCode, err := generateQRCode(qrURL)
-	if err != nil {
-		log.Printf("❌ Failed to generate QR code for room %s: %v", roomCode, err)
-	} else if qrCode != "" {
-		// Send QR code as a signal
-		qrDataURI := fmt.Sprintf("data:image/png;base64,%s", qrCode)
-		signals := map[string]string{
-			"qrCode": qrDataURI,
-		}
-		if err := sse.MarshalAndPatchSignals(signals); err != nil {
-			log.Printf("❌ Failed to send QR code signal for room %s: %v", roomCode, err)
-		} else {
-			log.Printf("📱 Sent QR code for room %s", roomCode)
-		}
-	}
-
 	// Send initial player list
 	h.renderHostDashboard(sse, room, player)
 
@@ -882,6 +850,14 @@ func (h *Handler) renderHostDashboard(sse *datastar.ServerSentEventGenerator, ro
 	log.Printf("✅ Sent host dashboard update for room %s", room.Code)
 }
 
+type qrBufferWriteCloser struct {
+	*bytes.Buffer
+}
+
+func (w qrBufferWriteCloser) Close() error {
+	return nil
+}
+
 // generateQRCode generates a QR code for the given URL and returns it as base64 encoded PNG
 func generateQRCode(url string) (string, error) {
 	// Create QR code with medium error correction level
@@ -893,39 +869,21 @@ func generateQRCode(url string) (string, error) {
 		return "", fmt.Errorf("failed to create QR code: %w", err)
 	}
 
-	tmp, err := os.CreateTemp("", "treacherest-qr-*.png")
-	if err != nil {
-		return "", fmt.Errorf("failed to create QR temp file: %w", err)
-	}
-	tmpFile := tmp.Name()
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpFile)
-		return "", fmt.Errorf("failed to close QR temp file: %w", err)
-	}
-	defer os.Remove(tmpFile)
+	buf := &bytes.Buffer{}
 
 	// Create a writer with appropriate options
-	w, err := standard.New(tmpFile,
+	w := standard.NewWithWriter(qrBufferWriteCloser{Buffer: buf},
 		standard.WithBuiltinImageEncoder(standard.PNG_FORMAT),
 		standard.WithQRWidth(8), // 8 pixels per module
 	)
-	if err != nil {
-		return "", fmt.Errorf("failed to create writer: %w", err)
-	}
 
 	// Save the QR code to the file
 	if err := qrc.Save(w); err != nil {
 		return "", fmt.Errorf("failed to save QR code: %w", err)
 	}
 
-	// Read the file back
-	data, err := os.ReadFile(tmpFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read QR code file: %w", err)
-	}
-
 	// Encode the PNG data as base64
-	encoded := base64.StdEncoding.EncodeToString(data)
+	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
 
 	return encoded, nil
 }

@@ -85,14 +85,14 @@
     --privy-bg: oklch(91% 0.035 90);
     --privy-content: oklch(28% 0.025 75);
     --privy-border: oklch(72% 0.06 88);
-    --font-display: "Cormorant Garamond", serif;
+    --font-display: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, var(--font-sans, sans-serif);
   }
 
   [data-theme="treacherest-day"] {
     --privy-bg: oklch(89% 0.055 92);
     --privy-content: oklch(26% 0.02 75);
     --privy-border: oklch(62% 0.09 88);
-    --font-display: "Cormorant Garamond", serif;
+    --font-display: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, var(--font-sans, sans-serif);
   }
 }
 
@@ -124,6 +124,10 @@
 @layer components {
   .font-display {
     font-family: var(--font-display, inherit);
+  }
+
+  .role-card {
+    color: var(--color-base-content);
   }
 
   .privy {

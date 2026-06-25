@@ -8,6 +8,38 @@ import (
 	"treacherest/internal/testhelpers"
 )
 
+func TestHostDashboardContent_QRUsesStaticImageEndpoint(t *testing.T) {
+	renderer := testhelpers.NewTemplateRenderer(t)
+
+	room := &game.Room{
+		Code:    "HOSTQR",
+		State:   game.StateLobby,
+		Players: make(map[string]*game.Player),
+	}
+	host := &game.Player{ID: "host", Name: "Host", IsHost: true}
+	room.Players[host.ID] = host
+
+	html := renderer.Render(HostDashboardContent(room, host, config.DefaultConfig(), nil)).GetHTML()
+	for _, expected := range []string{
+		`id="qr-code-img"`,
+		`src="/room/HOSTQR/qr.png"`,
+		`alt="QR code for room HOSTQR"`,
+	} {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("expected host dashboard QR markup to contain %q in %s", expected, html)
+		}
+	}
+	for _, forbidden := range []string{
+		`id="qr-placeholder"`,
+		"Generating QR Code",
+		`data-attr:src="$qrCode"`,
+	} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("host dashboard QR should not depend on a client-side QR signal; found %q in %s", forbidden, html)
+		}
+	}
+}
+
 func TestHostDashboardPlaying_PublicStateBoard(t *testing.T) {
 	renderer := testhelpers.NewTemplateRenderer(t)
 
