@@ -6,6 +6,10 @@ Treacherest uses `devenv` as the primary project interface and `just` as the
 human command facade. The accepted local workflow is native development through
 `devenv`; containers are runtime and deployment artifacts.
 
+Plain `nix develop` remains a compatibility tool shell for callers that need
+flake-provided packages, but it is not the command surface. Use `devenv shell`
+for the project environment and `just --list` for supported workflow commands.
+
 ## Primary Local Workflow
 
 ```bash

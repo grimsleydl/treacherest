@@ -8,6 +8,9 @@ Templ, Datastar, and DaisyUI.
 Treacherest uses `devenv` as the primary project environment and `just` as the
 stable command facade.
 
+`nix develop` remains a compatibility tool shell, not the primary workflow
+surface. Use `devenv shell` and the `just` commands below for normal work.
+
 ### Prerequisites
 
 - Nix
