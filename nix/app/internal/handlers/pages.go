@@ -236,7 +236,9 @@ func (h *Handler) JoinRoomPost(w http.ResponseWriter, r *http.Request) {
 	// Get room
 	room, err := h.store.GetRoom(roomCode)
 	if err != nil {
-		http.Error(w, "Room not found", http.StatusNotFound)
+		component := pages.RoomNotFound(roomCode)
+		w.WriteHeader(http.StatusNotFound)
+		component.Render(r.Context(), w)
 		return
 	}
 

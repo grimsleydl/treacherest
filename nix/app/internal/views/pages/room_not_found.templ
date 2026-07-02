@@ -24,7 +24,35 @@ templ RoomNotFound(roomCode string) {
 							<p class="text-base-content/70 mt-2 text-sm">
 								This can happen if the server was restarted and no saved game state was found.
 							</p>
-							<a href="/" class="btn btn-primary mt-6">Back to Home</a>
+							<div class="mt-6 flex flex-col gap-3">
+								<a href="/" class="btn btn-primary">Back to Home</a>
+								<form
+									action="/join-room"
+									method="POST"
+									data-on:submit="evt.preventDefault(); window.location.href = '/room/' + document.getElementById('roomCode').value.toUpperCase()"
+									class="space-y-2"
+								>
+									<label class="label justify-center py-0" for="roomCode">
+										<span class="label-text">Enter another room code</span>
+									</label>
+									<div class="join w-full">
+										<input
+											type="text"
+											id="roomCode"
+											name="room_code"
+											placeholder="ABC12"
+											pattern="[A-Za-z0-9]{5}"
+											maxlength="5"
+											autocapitalize="characters"
+											autocomplete="off"
+											required
+											class="input input-bordered join-item min-w-0 flex-1 text-center font-mono uppercase tracking-[0.35em]"
+										/>
+										<button type="submit" class="btn btn-primary join-item shrink-0">Join</button>
+									</div>
+								</form>
+								<a href="/" class="btn btn-outline btn-secondary">Create a new room</a>
+							</div>
 						</div>
 					</div>
 				</div>

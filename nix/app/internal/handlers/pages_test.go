@@ -567,6 +567,61 @@ func TestHandler_JoinRoom(t *testing.T) {
 	})
 }
 
+func TestHandler_RoomNotFoundPageStructure(t *testing.T) {
+	const roomCode = "ZZ999"
+
+	t.Run("join room route", func(t *testing.T) {
+		h := newTestHandler()
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}", h.JoinRoom)
+
+		req := httptest.NewRequest("GET", "/room/"+roomCode, nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", w.Code)
+		}
+		assertRoomNotFoundPageStructure(t, w.Body.String(), roomCode)
+	})
+
+	t.Run("operator dashboard route", func(t *testing.T) {
+		h := newTestHandler()
+
+		router := chi.NewRouter()
+		router.Get("/room/{code}/operator", h.OperatorDashboard)
+
+		req := httptest.NewRequest("GET", "/room/"+roomCode+"/operator", nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", w.Code)
+		}
+		assertRoomNotFoundPageStructure(t, w.Body.String(), roomCode)
+	})
+
+	t.Run("game page route", func(t *testing.T) {
+		h := newTestHandler()
+
+		router := chi.NewRouter()
+		router.Get("/game/{code}", h.GamePage)
+
+		req := httptest.NewRequest("GET", "/game/"+roomCode, nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", w.Code)
+		}
+		assertRoomNotFoundPageStructure(t, w.Body.String(), roomCode)
+	})
+}
+
 func TestHandler_JoinRoomPost(t *testing.T) {
 	t.Run("successfully joins room via POST", func(t *testing.T) {
 		h := newTestHandler()
@@ -782,6 +837,28 @@ func TestHandler_JoinRoomPost(t *testing.T) {
 		}
 		if !found2 {
 			t.Error("expected Alice in room 2")
+		}
+	})
+
+	t.Run("renders styled room not found page for unknown room", func(t *testing.T) {
+		h := newTestHandler()
+
+		const roomCode = "NOPE1"
+		formData := "room_code=" + roomCode + "&player_name=Test+Player"
+		req := httptest.NewRequest("POST", "/join-room", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+
+		h.JoinRoomPost(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", w.Code)
+		}
+
+		body := w.Body.String()
+		assertRoomNotFoundPageStructure(t, body, roomCode)
+		if body == "Room not found\n" {
+			t.Fatal("expected styled room not found page, got plain text")
 		}
 	})
 }
@@ -1000,4 +1077,23 @@ func TestHandler_GamePage(t *testing.T) {
 			t.Errorf("expected status 401, got %d", resp.StatusCode)
 		}
 	})
+}
+
+func assertRoomNotFoundPageStructure(t *testing.T, body, roomCode string) {
+	t.Helper()
+
+	expected := []string{
+		roomCode,
+		"Room Not Found",
+		`href="/"`,
+		"Back to Home",
+		`action="/join-room"`,
+		`method="POST"`,
+		"Create a new room",
+	}
+	for _, want := range expected {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected room not found page to contain %q", want)
+		}
+	}
 }
