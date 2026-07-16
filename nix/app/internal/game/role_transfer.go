@@ -4,6 +4,16 @@ import (
 	"fmt"
 )
 
+func forceLeaderFaceUp(player *Player) bool {
+	if player == nil || player.Role == nil || player.Role.GetRoleType() != RoleLeader {
+		return false
+	}
+
+	player.FaceUp = true
+	player.RoleRevealed = true
+	return true
+}
+
 // TransferRole moves a role from one player to another
 // The 'from' player will have their role set to nil
 // If turnFaceDown is true, the transferred role will be face down (unless it's a Leader)
@@ -31,13 +41,10 @@ func (r *Room) TransferRole(from, to *Player, turnFaceDown bool) error {
 
 	// Determine face up/down state
 	// Leaders are always face up, other roles follow turnFaceDown parameter
-	if transferredRole.GetRoleType() == RoleLeader {
-		to.FaceUp = true
-		to.RoleRevealed = true
-	} else if turnFaceDown {
+	if !forceLeaderFaceUp(to) && turnFaceDown {
 		to.FaceUp = false
 		to.RoleRevealed = false
-	} else {
+	} else if transferredRole.GetRoleType() != RoleLeader {
 		// Keep the current revealed state
 		to.RoleRevealed = true
 	}
@@ -65,10 +72,7 @@ func (r *Room) SwapRoles(player1, player2 *Player, turnFaceDown bool) error {
 
 	// Set face states for player1
 	if role2 != nil {
-		if role2.GetRoleType() == RoleLeader {
-			player1.FaceUp = true
-			player1.RoleRevealed = true
-		} else if turnFaceDown {
+		if !forceLeaderFaceUp(player1) && turnFaceDown {
 			player1.FaceUp = false
 			player1.RoleRevealed = false
 		}
@@ -79,10 +83,7 @@ func (r *Room) SwapRoles(player1, player2 *Player, turnFaceDown bool) error {
 
 	// Set face states for player2
 	if role1 != nil {
-		if role1.GetRoleType() == RoleLeader {
-			player2.FaceUp = true
-			player2.RoleRevealed = true
-		} else if turnFaceDown {
+		if !forceLeaderFaceUp(player2) && turnFaceDown {
 			player2.FaceUp = false
 			player2.RoleRevealed = false
 		}
@@ -127,15 +128,39 @@ func (r *Room) StealRole(stealer, victim *Player, turnFaceDown bool) error {
 	stealer.Role = stolenRole
 
 	// Determine face state for the stolen role
-	if stolenRole.GetRoleType() == RoleLeader {
-		stealer.FaceUp = true
-		stealer.RoleRevealed = true
-	} else if turnFaceDown {
+	if !forceLeaderFaceUp(stealer) && turnFaceDown {
 		stealer.FaceUp = false
 		stealer.RoleRevealed = false
-	} else {
+	} else if stolenRole.GetRoleType() != RoleLeader {
 		stealer.FaceUp = true
 		stealer.RoleRevealed = true
+	}
+
+	return nil
+}
+
+// RedistributeRoles reassigns roles simultaneously. Leaders are always face up
+// and publicly revealed; all other redistributed roles are turned face down.
+func (r *Room) RedistributeRoles(assignments map[string]*Card) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for playerID, role := range assignments {
+		if r.Players[playerID] == nil {
+			return fmt.Errorf("target player %s not found", playerID)
+		}
+		if role == nil {
+			return fmt.Errorf("target player %s has no assigned role", playerID)
+		}
+	}
+
+	for playerID, role := range assignments {
+		player := r.Players[playerID]
+		player.Role = role
+		if !forceLeaderFaceUp(player) {
+			player.FaceUp = false
+			player.RoleRevealed = false
+		}
 	}
 
 	return nil

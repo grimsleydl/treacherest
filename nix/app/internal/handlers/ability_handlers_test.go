@@ -4,14 +4,169 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 	"treacherest/internal/config"
 	"treacherest/internal/game"
+	"treacherest/internal/game/ability"
 	"treacherest/internal/store"
+	"treacherest/internal/testhelpers"
+	"treacherest/internal/views/pages"
 
 	"github.com/go-chi/chi/v5"
 )
+
+func TestPuppetMasterExecute_RedistributedLeaderRemainsPublic(t *testing.T) {
+	cfg := config.DefaultConfig()
+	memStore := store.NewMemoryStore(cfg)
+	handler := New(memStore, createMockCardService(), cfg, nil)
+
+	room, err := memStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("CreateRoom() error = %v", err)
+	}
+	room.State = game.StatePlaying
+	// Exercise the operator's reveal control as well as the Treachery role state.
+	room.RulesMode = game.RulesModeCoup
+
+	host := game.NewPlayer("host", "Room Operator", "host-session")
+	host.IsHost = true
+	puppetMaster := game.NewPlayer("puppet", "Puppet Master Player", "puppet-session")
+	puppetMaster.Role = &game.Card{
+		ID:    27,
+		Name:  "The Puppet Master",
+		Types: game.CardTypes{Subtype: "Traitor"},
+	}
+	formerLeader := game.NewPlayer("former-leader", "Former Leader", "leader-session")
+	formerLeader.Role = mockLeaderCard()
+	formerLeader.FaceUp = true
+	formerLeader.RoleRevealed = true
+	newLeader := game.NewPlayer("new-leader", "New Leader", "new-leader-session")
+	newLeader.Role = mockGuardianCard()
+	newLeader.FaceUp = false
+	newLeader.RoleRevealed = false
+
+	for _, player := range []*game.Player{host, puppetMaster, formerLeader, newLeader} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("AddPlayer(%q) error = %v", player.ID, err)
+		}
+	}
+
+	const abilityID = "puppet-master-regression"
+	puppetMaster.AbilityState.AddPendingAbility(&ability.PendingAbility{
+		ID:       abilityID,
+		PlayerID: puppetMaster.ID,
+		CardID:   27,
+		Data: map[string]interface{}{
+			"selected_players": []string{formerLeader.ID, newLeader.ID},
+		},
+	})
+	memStore.UpdateRoom(room)
+
+	body := `{"assignments":{"former-leader":2,"new-leader":1}}`
+	req := httptest.NewRequest(http.MethodPost, "/room/"+room.Code+"/puppet-master/"+abilityID+"/execute", strings.NewReader(body))
+	req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: puppetMaster.ID})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	rctx.URLParams.Add("abilityID", abilityID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	w := httptest.NewRecorder()
+
+	handler.PuppetMasterExecute(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("PuppetMasterExecute() status = %d, want %d; body = %s", w.Code, http.StatusOK, w.Body.String())
+	}
+	updatedRoom, err := memStore.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("GetRoom() error = %v", err)
+	}
+	updatedLeader := updatedRoom.GetPlayer(newLeader.ID)
+	if updatedLeader.Role == nil || updatedLeader.Role.GetRoleType() != game.RoleLeader {
+		t.Fatalf("new controller role = %#v, want Leader", updatedLeader.Role)
+	}
+	if !updatedLeader.FaceUp || !updatedLeader.RoleRevealed {
+		t.Fatalf("moved Leader face state = FaceUp %v, RoleRevealed %v; want both true", updatedLeader.FaceUp, updatedLeader.RoleRevealed)
+	}
+	updatedFormerLeader := updatedRoom.GetPlayer(formerLeader.ID)
+	if updatedFormerLeader.Role == nil || updatedFormerLeader.Role.GetRoleType() == game.RoleLeader {
+		t.Fatalf("former Leader role = %#v, want redistributed non-Leader", updatedFormerLeader.Role)
+	}
+	if updatedFormerLeader.FaceUp || updatedFormerLeader.RoleRevealed {
+		t.Fatalf("redistributed non-Leader face state = FaceUp %v, RoleRevealed %v; want both false", updatedFormerLeader.FaceUp, updatedFormerLeader.RoleRevealed)
+	}
+
+	renderer := testhelpers.NewTemplateRenderer(t)
+	operatorHTML := renderer.Render(pages.HostDashboardPlaying(updatedRoom, host)).GetHTML()
+	operatorTile := renderedSectionByID(t, operatorHTML, "operator-tile-"+newLeader.ID, "</article>")
+	for _, expected := range []string{"Revealed: Test Leader", "Record Elimination"} {
+		if !strings.Contains(operatorTile, expected) {
+			t.Errorf("moved Leader operator tile missing %q in %s", expected, operatorTile)
+		}
+	}
+	for _, forbidden := range []string{"Face Down", "Record Reveal"} {
+		if strings.Contains(operatorTile, forbidden) {
+			t.Errorf("moved Leader operator tile contains %q in %s", forbidden, operatorTile)
+		}
+	}
+	formerLeaderOperatorTile := renderedSectionByID(t, operatorHTML, "operator-tile-"+formerLeader.ID, "</article>")
+	for _, expected := range []string{"Face Down", "Record Reveal"} {
+		if !strings.Contains(formerLeaderOperatorTile, expected) {
+			t.Errorf("redistributed non-Leader operator tile missing %q in %s", expected, formerLeaderOperatorTile)
+		}
+	}
+	if strings.Contains(formerLeaderOperatorTile, "Test Guardian") {
+		t.Errorf("redistributed non-Leader leaked to operator in %s", formerLeaderOperatorTile)
+	}
+
+	publicHTML := renderer.Render(pages.GameBody(updatedRoom, puppetMaster)).GetHTML()
+	publicRow := renderedSectionByID(t, publicHTML, "player-row-"+newLeader.ID, "</details>")
+	for _, expected := range []string{"Leader", "Revealed: Test Leader", "Test Leader"} {
+		if !strings.Contains(publicRow, expected) {
+			t.Errorf("moved Leader public row missing %q in %s", expected, publicRow)
+		}
+	}
+	if strings.Contains(publicRow, "Card is face down.") {
+		t.Errorf("moved Leader public row rendered face down in %s", publicRow)
+	}
+	formerLeaderPublicRow := renderedSectionByID(t, publicHTML, "player-row-"+formerLeader.ID, "</details>")
+	for _, expected := range []string{"Face Down", "Card is face down."} {
+		if !strings.Contains(formerLeaderPublicRow, expected) {
+			t.Errorf("redistributed non-Leader public row missing %q in %s", expected, formerLeaderPublicRow)
+		}
+	}
+	if strings.Contains(formerLeaderPublicRow, "Test Guardian") {
+		t.Errorf("redistributed non-Leader leaked to another player in %s", formerLeaderPublicRow)
+	}
+
+	renderer.Render(pages.GameBody(updatedRoom, updatedLeader)).
+		AssertContains("role-card role-card-public").
+		AssertContains("Public role").
+		AssertNotContains("Publicly Reveal Role")
+	renderer.Render(pages.GameBody(updatedRoom, updatedFormerLeader)).
+		AssertContains("role-card role-card-hero").
+		AssertContains("Private role").
+		AssertContains("Test Guardian")
+	renderer.Render(pages.GamePageWithDebug(updatedRoom, updatedLeader, true)).
+		AssertContains(`id="debug-control-surface"`).
+		AssertContains("role-card role-card-public").
+		AssertContains("Public role").
+		AssertNotContains("Publicly Reveal Role")
+}
+
+func renderedSectionByID(t *testing.T, html, id, closingTag string) string {
+	t.Helper()
+	start := strings.Index(html, `id="`+id+`"`)
+	if start < 0 {
+		t.Fatalf("rendered HTML missing id %q in %s", id, html)
+	}
+	end := strings.Index(html[start:], closingTag)
+	if end < 0 {
+		t.Fatalf("rendered section %q missing closing tag %q in %s", id, closingTag, html[start:])
+	}
+	return html[start : start+end+len(closingTag)]
+}
 
 // TestTriggerWearerAbility tests triggering The Wearer of Masks ability
 func TestTriggerWearerAbility(t *testing.T) {

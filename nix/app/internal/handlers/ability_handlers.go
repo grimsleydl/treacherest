@@ -975,7 +975,7 @@ func (h *Handler) PuppetMasterExecute(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Execute the redistribution
+	redistribution := make(map[string]*game.Card, len(assignments))
 	for playerID, cardID := range assignments {
 		p := room.GetPlayer(playerID)
 		if p == nil {
@@ -995,14 +995,12 @@ func (h *Handler) PuppetMasterExecute(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Assign the new role
-		p.Role = newRole
+		redistribution[playerID] = newRole
+	}
 
-		// Turn face down if not a Leader
-		if newRole.GetRoleType() != game.RoleLeader {
-			p.FaceUp = false
-			p.RoleRevealed = false
-		}
+	if err := room.RedistributeRoles(redistribution); err != nil {
+		http.Error(w, "Failed to redistribute roles", http.StatusBadRequest)
+		return
 	}
 
 	// Resolve the ability
