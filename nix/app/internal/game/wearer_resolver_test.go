@@ -120,9 +120,12 @@ func TestWearerOfMasksResolver_OnTrigger(t *testing.T) {
 			GameState: mockState,
 		}
 
-		_, err := resolver.OnTrigger(ctx)
-		if err == nil {
-			t.Error("Expected error when no cards available")
+		pending, err := resolver.OnTrigger(ctx)
+		if err != nil {
+			t.Errorf("OnTrigger returned an error for an empty outside-game pool: %v", err)
+		}
+		if pending != nil {
+			t.Errorf("OnTrigger returned a choice with no candidates: %#v", pending)
 		}
 	})
 

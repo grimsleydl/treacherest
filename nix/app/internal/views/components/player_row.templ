@@ -49,6 +49,9 @@ templ playerRowPublicRole(room *game.Room, card *game.Card) {
 		<div class="flex flex-wrap items-center gap-2">
 			<p class="font-semibold">{ card.Name }</p>
 			@RoleCardExternalLink(card, "w-4 h-4")
+			if card.Type != "" {
+				<span class="badge badge-outline">{ card.Type }</span>
+			}
 		</div>
 		if card.GetImageBase64() != "" {
 			<figure class="overflow-hidden rounded-box border border-base-300 bg-base-100">

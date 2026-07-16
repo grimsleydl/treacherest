@@ -117,6 +117,7 @@ templ GameNoticesZone(room *game.Room, currentPlayer *game.Player) {
 		}
 		<!-- Leader confirmation prompts for pending ability reveals -->
 		@components.LeaderConfirmationPrompts(room, currentPlayer)
+		@components.WearerPublicReveals(room)
 		@CoupConfirmedWinPanel(room)
 		@CoupAdvisoryWinPanel(room, currentPlayer)
 		@CoupInquisitionPanel(room, currentPlayer)

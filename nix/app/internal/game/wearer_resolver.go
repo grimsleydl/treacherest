@@ -28,14 +28,7 @@ func (r *WearerOfMasksResolver) OnTrigger(ctx *ability.AbilityContext) (*ability
 		}
 	}
 
-	// Check role options for custom configuration
-	useAllCards := false
 	maxReveal := xValue
-	if val, ok := ctx.GameState.GetRoleOption(ctx.CardID, "use_all_cards"); ok {
-		if boolVal, ok := val.(bool); ok {
-			useAllCards = boolVal
-		}
-	}
 	if val, ok := ctx.GameState.GetRoleOption(ctx.CardID, "max_reveal"); ok {
 		if intVal, ok := val.(int); ok && intVal > 0 {
 			if intVal < maxReveal {
@@ -53,15 +46,11 @@ func (r *WearerOfMasksResolver) OnTrigger(ctx *ability.AbilityContext) (*ability
 		},
 	}
 
-	var availableCards []ability.CardLike
-	if useAllCards {
-		// Use all cards regardless of assignment status
-		filters = append(filters, ability.Filter{
-			Type:  ability.FilterRole,
-			Value: "all",
-		})
+	if maxReveal <= 0 {
+		return nil, nil
 	}
-	availableCards = ctx.GameState.GetAvailableCards(filters)
+
+	availableCards := ctx.GameState.GetAvailableCards(filters)
 
 	// Limit to max reveal count
 	if len(availableCards) > maxReveal {
@@ -72,9 +61,9 @@ func (r *WearerOfMasksResolver) OnTrigger(ctx *ability.AbilityContext) (*ability
 		availableCards = availableCards[:maxReveal]
 	}
 
-	// If no cards available, ability fizzles
+	// Revealing up to X cards is allowed to find none.
 	if len(availableCards) == 0 {
-		return nil, fmt.Errorf("no non-Leader cards available to reveal")
+		return nil, nil
 	}
 
 	// Create pending ability with revealed cards
@@ -96,6 +85,8 @@ func (r *WearerOfMasksResolver) OnTrigger(ctx *ability.AbilityContext) (*ability
 		Data: map[string]interface{}{
 			"revealed_cards":   cardData,
 			"revealed_ids":     cardIDs,
+			"available_cards":  cardIDs,
+			"x_value":          xValue,
 			"requires_choice":  true,
 			"original_card_id": ctx.CardID,
 		},

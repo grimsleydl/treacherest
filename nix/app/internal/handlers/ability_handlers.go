@@ -63,101 +63,44 @@ func (h *Handler) TriggerWearerAbility(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If X is 0, player chose not to reveal any cards - ability resolves with no effect
-	if xValue == 0 {
-		// Just set the card face up without transformation
-		player.FaceUp = true
-		player.RoleRevealed = true
-		h.store.UpdateRoom(room)
-
-		log.Printf("🎭 Wearer ability for %s in room %s - X=0, no transformation", player.Name, roomCode)
-
-		h.eventBus.Publish(Event{
-			Type:     "role_revealed",
-			RoomCode: room.Code,
-			Data:     room,
-		})
-
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	// Get role options for whether to include Leader cards
-	var useAllCards bool = false
-
-	if room.RoleOptionsManager != nil && room.RoleOptionsManager.HasOptions(31) {
-		opts := room.RoleOptionsManager.GetOrCreateOptions(31)
-		if val, err := opts.GetBoolOption("use_all_cards"); err == nil {
-			useAllCards = val
-		}
-	}
-
-	// X value is now the maxReveal
-	maxReveal := xValue
-
-	// Get available cards from CardPool
 	if room.CardPool == nil {
 		http.Error(w, "Card pool not initialized", http.StatusInternalServerError)
 		return
 	}
 
-	// Get available cards based on options
-	// By default, include all role types EXCEPT Leaders (unless useAllCards is enabled)
-	var filterTypes []string
-	if !useAllCards {
-		// Default: exclude Leaders, include all other role types
-		filterTypes = []string{"Guardian", "Assassin", "Traitor"}
+	resolver := game.NewWearerOfMasksResolver()
+	ctx := &ability.AbilityContext{
+		RoomCode: roomCode,
+		PlayerID: playerID,
+		CardID:   31,
+		TempData: map[string]interface{}{
+			"X": xValue,
+		},
+		GameState: room,
 	}
-	// If useAllCards is true, filterTypes remains empty, which returns ALL available cards
-
-	availableCards := room.CardPool.GetCardsByTypes(filterTypes...)
-
-	// Shuffle the cards to ensure random selection
-	rand.Shuffle(len(availableCards), func(i, j int) {
-		availableCards[i], availableCards[j] = availableCards[j], availableCards[i]
-	})
-
-	// Limit to maxReveal cards (now from a shuffled pool)
-	if len(availableCards) > maxReveal {
-		availableCards = availableCards[:maxReveal]
-	}
-
-	if len(availableCards) == 0 {
-		http.Error(w, "No cards available to reveal", http.StatusBadRequest)
+	pendingAbility, err := resolver.OnTrigger(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Create pending ability with confirmation requirement
-	// The Leader must confirm they've witnessed the physical card reveal
-	// before the player can see their transformation options
-	// If there's no Leader in the game, skip confirmation requirement
-	leader := room.GetLeader()
-	requiresConfirmation := leader != nil
-
-	abilityID := fmt.Sprintf("wearer-%s-%d", playerID, room.CountdownRemaining)
-	pendingAbility := &ability.PendingAbility{
-		ID:          abilityID,
-		PlayerID:    playerID,
-		CardID:      31,
-		AbilityType: "unveil",
-		Data: map[string]interface{}{
-			"available_cards": convertCardsToIDs(availableCards),
-			"x_value":         xValue,
-			"use_all_cards":   useAllCards,
-			"player_name":     player.Name,
-			"card_name":       player.Role.Name,
-		},
-		ModalDismissed:       false,
-		RequiresConfirmation: requiresConfirmation,
-		ConfirmationRole:     "leader", // Leader must confirm they've seen the reveal
-		ConfirmedBy:          []string{},
+	// This is an "as unveiled" replacement effect: the unveil and every
+	// candidate are public immediately, without a confirmation window.
+	player.FaceUp = true
+	player.RoleRevealed = true
+	if pendingAbility != nil {
+		pendingAbility.Data["player_name"] = player.Name
+		pendingAbility.Data["card_name"] = player.Role.Name
+		player.AbilityState.AddPendingAbility(pendingAbility)
 	}
-
-	player.AbilityState.AddPendingAbility(pendingAbility)
 
 	h.store.UpdateRoom(room)
 
-	log.Printf("🎭 Triggered Wearer ability for %s in room %s (revealed %d cards)", player.Name, roomCode, len(availableCards))
+	revealedCount := 0
+	if pendingAbility != nil {
+		revealedCount = len(pendingAbility.Data["revealed_ids"].([]int))
+	}
+	log.Printf("🎭 Unveiled Wearer for %s in room %s (publicly revealed %d candidates)", player.Name, roomCode, revealedCount)
 
 	// Publish event
 	h.eventBus.Publish(Event{
@@ -198,12 +141,6 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ability has been confirmed (if required)
-	if pendingAbility.RequiresConfirmation && !pendingAbility.IsConfirmed() {
-		http.Error(w, "Ability has not been confirmed by the Leader yet", http.StatusForbidden)
-		return
-	}
-
 	// Get card ID from URL path
 	cardIDStr := chi.URLParam(r, "cardID")
 	cardID, err := strconv.Atoi(cardIDStr)
@@ -239,15 +176,42 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine keep types based on original role
-	keepTypes := []string{string(player.Role.GetRoleType())} // Keep original type (e.g., "Traitor")
+	resolver := game.NewWearerOfMasksResolver()
+	ctx := &ability.AbilityContext{
+		RoomCode:  roomCode,
+		PlayerID:  player.ID,
+		CardID:    pendingAbility.CardID,
+		TempData:  make(map[string]interface{}),
+		GameState: room,
+	}
+	if err := resolver.OnChoice(ctx, cardID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	transformCardID, ok := ctx.TempData["transform_to_card_id"].(int)
+	if !ok {
+		http.Error(w, "Invalid transformation data", http.StatusInternalServerError)
+		return
+	}
+	keepTypes, ok := ctx.TempData["keep_types"].([]string)
+	if !ok {
+		http.Error(w, "Invalid transformation types", http.StatusInternalServerError)
+		return
+	}
+	endCondition, ok := ctx.TempData["end_condition"].(string)
+	if !ok {
+		http.Error(w, "Invalid transformation duration", http.StatusInternalServerError)
+		return
+	}
 
 	// Start transformation
 	originalCardID := player.Role.GetID()
-	player.AbilityState.StartTransform(originalCardID, cardID, keepTypes, "face_down")
+	player.AbilityState.StartTransform(originalCardID, transformCardID, keepTypes, endCondition)
 
-	// Update player's role to the transformed card
-	player.Role = selectedCard
+	// The copied identity keeps its name, rules, and original type line while
+	// retaining Traitor as its effective role type.
+	player.Role = wearerOfMasksCopy(selectedCard)
 
 	// Mark player as face up since they unveiled
 	player.FaceUp = true
@@ -258,7 +222,7 @@ func (h *Handler) SelectWearerCard(w http.ResponseWriter, r *http.Request) {
 
 	h.store.UpdateRoom(room)
 
-	log.Printf("🎭 Player %s transformed from card %d to card %d in room %s", player.Name, originalCardID, cardID, roomCode)
+	log.Printf("🎭 Player %s transformed from card %d to card %d in room %s", player.Name, originalCardID, transformCardID, roomCode)
 
 	// Publish event
 	h.eventBus.Publish(Event{
@@ -353,13 +317,17 @@ func (h *Handler) ConfirmAbility(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Helper function to convert cards to card IDs
-func convertCardsToIDs(cards []*game.Card) []int {
-	ids := make([]int, len(cards))
-	for i, card := range cards {
-		ids[i] = card.GetID()
+func wearerOfMasksCopy(card *game.Card) *game.Card {
+	copyCard := *card
+	if card.GetRoleType() != game.RoleTraitor {
+		if copyCard.Type == "" {
+			copyCard.Type = "Identity — " + copyCard.Types.Subtype + " Traitor"
+		} else {
+			copyCard.Type += " Traitor"
+		}
 	}
-	return ids
+	copyCard.Types.Subtype = string(game.RoleTraitor)
+	return &copyCard
 }
 
 // TriggerMetamorphAbility activates The Metamorph's steal ability when unveiled

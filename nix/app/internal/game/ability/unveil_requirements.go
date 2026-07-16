@@ -105,15 +105,14 @@ var unveilRequirementEntries = []*UnveilRequirements{
 	// "Unveil {X}: As The Wearer of Masks is unveiled, reveal up to X non-Leader
 	// identity cards at random from outside the game..."
 	{
-		CardID:                     31,
-		RequiresLeaderConfirmation: true,
-		InputType:                  NumericInput,
-		InputLabel:                 "Mana to Spend (X)",
-		InputDescription:           "Choose how much mana to spend. You will reveal up to X non-Leader identity cards to choose from.",
-		MinValue:                   0,
-		MaxValue:                   -1, // No limit
-		DefaultValue:               3,
-		SetsFaceUp:                 true,
+		CardID:           31,
+		InputType:        NumericInput,
+		InputLabel:       "Mana to Spend (X)",
+		InputDescription: "Choose how much mana to spend. Up to X random non-Leader identity cards from outside the game will be revealed publicly.",
+		MinValue:         0,
+		MaxValue:         -1, // No limit
+		DefaultValue:     3,
+		SetsFaceUp:       true,
 	},
 }
 

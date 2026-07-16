@@ -45,6 +45,11 @@ func TestHandler_StartGame(t *testing.T) {
 		room.AddPlayer(player2)
 		room.AddPlayer(player3)
 		room.AddPlayer(player4)
+		allCards := append([]*game.Card{}, h.cardService.Leaders...)
+		allCards = append(allCards, h.cardService.Guardians...)
+		allCards = append(allCards, h.cardService.Assassins...)
+		allCards = append(allCards, h.cardService.Traitors...)
+		room.CardPool = game.NewCardPool(allCards)
 		markRoomOperatorForTest(room, player1)
 		h.store.UpdateRoom(room)
 
@@ -83,6 +88,11 @@ func TestHandler_StartGame(t *testing.T) {
 		}
 		if !rolesAssigned {
 			t.Error("no roles were assigned to players")
+		}
+		for _, p := range players {
+			if p.Role != nil && !updatedRoom.CardPool.IsCardAssigned(p.Role.GetID()) {
+				t.Errorf("dealt role %d (%s) was left in the undealt card pool", p.Role.GetID(), p.Role.Name)
+			}
 		}
 
 		// Wait a bit to ensure countdown goroutine starts

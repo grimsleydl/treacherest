@@ -417,6 +417,9 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 				</div>
 			</section>
 		}
+		<div class="mb-6">
+			@components.WearerPublicReveals(room)
+		</div>
 		<section class="card border border-base-300 bg-base-100 shadow-lg">
 			<div class="card-body gap-4">
 				<div>
@@ -446,6 +449,9 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 									}
 									if operatorRolePublic(p) {
 										@components.StateChip("revealed", "Revealed: "+p.Role.Name)
+										if p.Role.Type != "" {
+											@components.StateChip("revealed", "Type: "+p.Role.Type)
+										}
 									} else if !p.IsEliminated {
 										@components.StateChip("facedown", "Face Down")
 									}

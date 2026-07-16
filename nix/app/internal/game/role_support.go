@@ -3,7 +3,6 @@ package game
 // unsupportedCardIDs is the interim exclusion list for role mechanics that the
 // app cannot represent yet. Remove IDs from this set as support lands.
 var unsupportedCardIDs = map[int]struct{}{
-	31: {}, // The Wearer of Masks
 	53: {}, // The Debt Collector
 	54: {}, // The Gathering
 	55: {}, // Her Seedborn Highness

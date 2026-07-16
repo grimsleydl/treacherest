@@ -69,9 +69,11 @@ templ FullAbilityModal(room *game.Room, player *game.Player, pendingAbility *abi
 				</button>
 			</div>
 			// Content varies by ability type
-			switch pendingAbility.AbilityType {
-				case "unveil":
-					@UnveilAbilityContent(room, player, pendingAbility)
+				switch pendingAbility.AbilityType {
+					case "unveil":
+						@UnveilAbilityContent(room, player, pendingAbility)
+					case "wearer_transform":
+						@UnveilAbilityContent(room, player, pendingAbility)
 				case "puppet_master_redistribution":
 					@PuppetMasterRedistributionContent(room, player, pendingAbility)
 				default:
@@ -187,7 +189,7 @@ templ DefaultAbilityContent(room *game.Room, player *game.Player, pendingAbility
 // Helper function to get user-friendly title for ability
 func getAbilityTitle(pendingAbility *ability.PendingAbility) string {
 	switch pendingAbility.AbilityType {
-	case "unveil":
+	case "unveil", "wearer_transform":
 		return "Choose a Card to Transform Into"
 	case "puppet_master_redistribution":
 		return "Redistribute Identity Cards"

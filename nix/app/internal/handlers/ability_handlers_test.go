@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -168,6 +170,168 @@ func renderedSectionByID(t *testing.T, html, id, closingTag string) string {
 	return html[start : start+end+len(closingTag)]
 }
 
+func TestWearerUnveilResolverPublicLifecycle(t *testing.T) {
+	cfg := config.DefaultConfig()
+	memStore := store.NewMemoryStore(cfg)
+	handler := &Handler{store: memStore, config: cfg, eventBus: NewEventBus()}
+
+	room, err := memStore.CreateRoom()
+	if err != nil {
+		t.Fatalf("CreateRoom() error = %v", err)
+	}
+	room.State = game.StatePlaying
+	host := game.NewPlayer("host", "Room Operator", "host-session")
+	host.IsHost = true
+	wearer := game.NewPlayer("wearer", "Mask Bearer", "wearer-session")
+	wearer.Role = &game.Card{ID: 31, Name: "The Wearer of Masks", Type: "Identity — Traitor", Types: game.CardTypes{Subtype: "Traitor"}}
+	wearer.FaceUp = false
+	observer := game.NewPlayer("observer", "Other Player", "observer-session")
+	observer.Role = &game.Card{ID: 16, Name: "Dealt Guardian", Type: "Identity — Guardian", Types: game.CardTypes{Subtype: "Guardian"}}
+	for _, player := range []*game.Player{host, wearer, observer} {
+		if err := room.AddPlayer(player); err != nil {
+			t.Fatalf("AddPlayer(%q) error = %v", player.ID, err)
+		}
+	}
+
+	guardianCandidate := &game.Card{ID: 15, Name: "Outside Guardian", Type: "Identity — Guardian", Types: game.CardTypes{Subtype: "Guardian"}, Text: "Guardian copy text"}
+	assassinCandidate := &game.Card{ID: 20, Name: "Outside Assassin", Type: "Identity — Assassin", Types: game.CardTypes{Subtype: "Assassin"}, Text: "Assassin copy text"}
+	undealtLeader := &game.Card{ID: 32, Name: "Undealt Leader", Type: "Identity — Leader", Types: game.CardTypes{Subtype: "Leader"}}
+	room.CardPool = game.NewCardPool([]*game.Card{wearer.Role, observer.Role, guardianCandidate, assassinCandidate, undealtLeader})
+	for _, dealtCardID := range []int{31, 16} {
+		if err := room.CardPool.MarkCardAssigned(dealtCardID); err != nil {
+			t.Fatalf("MarkCardAssigned(%d) error = %v", dealtCardID, err)
+		}
+	}
+	memStore.UpdateRoom(room)
+
+	trigger := func(x int) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/room/%s/player/%s/trigger-wearer/%d", room.Code, wearer.ID, x), nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: wearer.ID})
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("code", room.Code)
+		rctx.URLParams.Add("playerID", wearer.ID)
+		rctx.URLParams.Add("xValue", strconv.Itoa(x))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		w := httptest.NewRecorder()
+		handler.TriggerWearerAbility(w, req)
+		return w
+	}
+	selectCard := func(abilityID string, cardID int) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/room/%s/ability/%s/select-card/%d", room.Code, abilityID, cardID), nil)
+		req.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: wearer.ID})
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("code", room.Code)
+		rctx.URLParams.Add("abilityID", abilityID)
+		rctx.URLParams.Add("cardID", strconv.Itoa(cardID))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		w := httptest.NewRecorder()
+		handler.SelectWearerCard(w, req)
+		return w
+	}
+
+	if w := trigger(5); w.Code != http.StatusOK {
+		t.Fatalf("first unveil status = %d, want 200; body = %s", w.Code, w.Body.String())
+	}
+	if !wearer.FaceUp || !wearer.RoleRevealed {
+		t.Fatalf("Wearer unveil state = FaceUp %v, RoleRevealed %v; want both public", wearer.FaceUp, wearer.RoleRevealed)
+	}
+	if len(wearer.AbilityState.PendingAbilities) != 1 {
+		t.Fatalf("first unveil pending abilities = %#v, want one", wearer.AbilityState.PendingAbilities)
+	}
+	firstPending := wearer.AbilityState.PendingAbilities[0]
+	revealedIDs, ok := firstPending.Data["revealed_ids"].([]int)
+	if !ok {
+		t.Fatalf("first unveil revealed IDs = %#v, want []int", firstPending.Data["revealed_ids"])
+	}
+	if len(revealedIDs) != 2 {
+		t.Fatalf("first unveil revealed %d cards, want both undealt non-Leaders: %#v", len(revealedIDs), revealedIDs)
+	}
+	revealedSet := make(map[int]bool, len(revealedIDs))
+	for _, cardID := range revealedIDs {
+		revealedSet[cardID] = true
+	}
+	if !revealedSet[15] || !revealedSet[20] || revealedSet[16] || revealedSet[32] {
+		t.Fatalf("revealed IDs = %#v, want only undealt non-Leaders 15 and 20", revealedIDs)
+	}
+
+	renderer := testhelpers.NewTemplateRenderer(t)
+	for surface, html := range map[string]string{
+		"operator dashboard": renderer.Render(pages.HostDashboardPlaying(room, host)).GetHTML(),
+		"other player":       renderer.Render(pages.GameBody(room, observer)).GetHTML(),
+	} {
+		publicReveal := renderedSectionByID(t, html, "wearer-public-reveal-"+wearer.ID, "</section>")
+		for _, expected := range []string{"Mask Bearer unveiled The Wearer of Masks", guardianCandidate.Name, guardianCandidate.Text, assassinCandidate.Name, assassinCandidate.Text, "outside the game"} {
+			if !strings.Contains(publicReveal, expected) {
+				t.Errorf("%s public reveal missing %q in %s", surface, expected, publicReveal)
+			}
+		}
+		for _, forbidden := range []string{observer.Role.Name, undealtLeader.Name} {
+			if strings.Contains(publicReveal, forbidden) {
+				t.Errorf("%s public reveal included ineligible card %q in %s", surface, forbidden, publicReveal)
+			}
+		}
+	}
+
+	if w := selectCard(firstPending.ID, guardianCandidate.ID); w.Code != http.StatusOK {
+		t.Fatalf("first copy choice status = %d, want 200; body = %s", w.Code, w.Body.String())
+	}
+	if wearer.Role.GetID() != guardianCandidate.ID || wearer.Role.GetRoleType() != game.RoleTraitor {
+		t.Fatalf("copied role = %#v, want card %d retaining Traitor type", wearer.Role, guardianCandidate.ID)
+	}
+	for _, expectedType := range []string{"Guardian", "Traitor"} {
+		if !strings.Contains(wearer.Role.Type, expectedType) {
+			t.Errorf("copied role type line %q missing %q", wearer.Role.Type, expectedType)
+		}
+	}
+	operatorTile := renderedSectionByID(t, renderer.Render(pages.HostDashboardPlaying(room, host)).GetHTML(), "operator-tile-"+wearer.ID, "</article>")
+	observerRow := renderedSectionByID(t, renderer.Render(pages.GameBody(room, observer)).GetHTML(), "player-row-"+wearer.ID, "</details>")
+	for surface, section := range map[string]string{"operator dashboard": operatorTile, "other player": observerRow} {
+		for _, expected := range []string{guardianCandidate.Name, "Traitor"} {
+			if !strings.Contains(section, expected) {
+				t.Errorf("%s copied role missing %q in %s", surface, expected, section)
+			}
+		}
+	}
+
+	faceDownReq := httptest.NewRequest(http.MethodPost, "/room/"+room.Code+"/facestate/"+wearer.ID, nil)
+	faceDownReq.AddCookie(&http.Cookie{Name: "player_" + room.Code, Value: wearer.ID})
+	faceDownRctx := chi.NewRouteContext()
+	faceDownRctx.URLParams.Add("code", room.Code)
+	faceDownRctx.URLParams.Add("playerID", wearer.ID)
+	faceDownReq = faceDownReq.WithContext(context.WithValue(faceDownReq.Context(), chi.RouteCtxKey, faceDownRctx))
+	faceDownW := httptest.NewRecorder()
+	handler.ToggleFaceState(faceDownW, faceDownReq)
+	if faceDownW.Code != http.StatusOK {
+		t.Fatalf("face-down status = %d, want 200; body = %s", faceDownW.Code, faceDownW.Body.String())
+	}
+	if wearer.FaceUp || wearer.Role.GetID() != 31 || wearer.AbilityState.TransformState != nil {
+		t.Fatalf("face-down revert left state FaceUp=%v Role=%#v Transform=%#v", wearer.FaceUp, wearer.Role, wearer.AbilityState.TransformState)
+	}
+
+	if w := trigger(1); w.Code != http.StatusOK {
+		t.Fatalf("second unveil status = %d, want 200; body = %s", w.Code, w.Body.String())
+	}
+	if len(wearer.AbilityState.PendingAbilities) != 1 {
+		t.Fatalf("second unveil pending abilities = %#v, want one fresh choice", wearer.AbilityState.PendingAbilities)
+	}
+	secondPending := wearer.AbilityState.PendingAbilities[0]
+	if secondPending.ID == firstPending.ID {
+		t.Fatalf("second unveil reused pending ability ID %q", secondPending.ID)
+	}
+	secondRevealedIDs, ok := secondPending.Data["revealed_ids"].([]int)
+	if !ok || len(secondRevealedIDs) != 1 {
+		t.Fatalf("second unveil revealed IDs = %#v, want one fresh random candidate", secondPending.Data["revealed_ids"])
+	}
+	if w := selectCard(secondPending.ID, secondRevealedIDs[0]); w.Code != http.StatusOK {
+		t.Fatalf("second copy choice status = %d, want 200; body = %s", w.Code, w.Body.String())
+	}
+	if !wearer.AbilityState.IsTransformed() || wearer.Role.GetRoleType() != game.RoleTraitor {
+		t.Fatalf("second unveil did not repeat copy with Traitor typing: role=%#v transform=%#v", wearer.Role, wearer.AbilityState.TransformState)
+	}
+}
+
 // TestTriggerWearerAbility tests triggering The Wearer of Masks ability
 func TestTriggerWearerAbility(t *testing.T) {
 	cfg := config.DefaultConfig()
@@ -238,8 +402,8 @@ func TestTriggerWearerAbility(t *testing.T) {
 		}
 
 		ability := abilities[0]
-		if ability.AbilityType != "unveil" {
-			t.Errorf("Expected ability type 'unveil', got %s", ability.AbilityType)
+		if ability.AbilityType != "wearer_transform" {
+			t.Errorf("Expected ability type 'wearer_transform', got %s", ability.AbilityType)
 		}
 
 		if ability.CardID != 31 {
@@ -386,23 +550,6 @@ func TestSelectWearerCard(t *testing.T) {
 	updatedRoom, _ := memStore.GetRoom(room.Code)
 	updatedPlayer := updatedRoom.GetPlayer("player1")
 	abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
-
-	// Leader confirms the ability (required before card selection)
-	confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
-	confirmRctx := chi.NewRouteContext()
-	confirmRctx.URLParams.Add("code", room.Code)
-	confirmRctx.URLParams.Add("abilityID", abilityID)
-	confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
-	confirmReq.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: "leader1",
-	})
-	confirmW := httptest.NewRecorder()
-	handler.ConfirmAbility(confirmW, confirmReq)
-
-	if confirmW.Code != http.StatusOK {
-		t.Fatalf("Expected status 200 for confirm, got %d", confirmW.Code)
-	}
 
 	t.Run("Select card successfully", func(t *testing.T) {
 		// Select card ID 15 (The Bodyguard)
@@ -640,34 +787,7 @@ func TestWearerAbilityEventPublishing(t *testing.T) {
 	updatedPlayer := updatedRoom.GetPlayer("player1")
 	abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
 
-	// Leader confirms the ability (required before card selection)
-	confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
-	confirmRctx := chi.NewRouteContext()
-	confirmRctx.URLParams.Add("code", room.Code)
-	confirmRctx.URLParams.Add("abilityID", abilityID)
-	confirmReq = confirmReq.WithContext(context.WithValue(confirmReq.Context(), chi.RouteCtxKey, confirmRctx))
-	confirmReq.AddCookie(&http.Cookie{
-		Name:  "player_" + room.Code,
-		Value: "leader1",
-	})
-	confirmW := httptest.NewRecorder()
-	handler.ConfirmAbility(confirmW, confirmReq)
-
-	if confirmW.Code != http.StatusOK {
-		t.Fatalf("Leader confirmation failed with status %d", confirmW.Code)
-	}
-
-	// Wait for ability_confirmed event
-	select {
-	case event := <-eventChan:
-		if event.Type != "ability_confirmed" {
-			t.Errorf("Expected event type 'ability_confirmed', got %s", event.Type)
-		}
-	case <-time.After(1 * time.Second):
-		t.Error("Timeout waiting for ability_confirmed event")
-	}
-
-	// Now select a card
+	// Select a card; the public replacement effect has no confirmation window.
 	req2 := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 	req2.AddCookie(&http.Cookie{
 		Name:  "player_" + room.Code,
@@ -749,6 +869,8 @@ func TestConfirmAbility(t *testing.T) {
 
 		// Verify ability requires confirmation and is not confirmed
 		pendingAbility := updatedPlayer.AbilityState.GetPendingAbility(abilityID)
+		pendingAbility.RequiresConfirmation = true
+		pendingAbility.ConfirmationRole = "leader"
 		if !pendingAbility.RequiresConfirmation {
 			t.Error("Expected ability to require confirmation")
 		}
@@ -830,6 +952,9 @@ func TestConfirmAbility(t *testing.T) {
 		updatedRoom, _ := memStore.GetRoom(room.Code)
 		updatedPlayer := updatedRoom.GetPlayer("player1")
 		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
+		pendingAbility := updatedPlayer.AbilityState.GetPendingAbility(abilityID)
+		pendingAbility.RequiresConfirmation = true
+		pendingAbility.ConfirmationRole = "leader"
 
 		// Non-leader player tries to confirm (should fail)
 		confirmReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/confirm", nil)
@@ -878,7 +1003,7 @@ func TestConfirmAbility(t *testing.T) {
 		}
 	})
 
-	t.Run("Cannot select card without confirmation", func(t *testing.T) {
+	t.Run("Wearer selection does not require confirmation", func(t *testing.T) {
 		room, _ := memStore.CreateRoom()
 		player1 := game.NewPlayer("player1", "Alice", "session1")
 		player1.Role = &game.Card{
@@ -919,7 +1044,7 @@ func TestConfirmAbility(t *testing.T) {
 		updatedPlayer := updatedRoom.GetPlayer("player1")
 		abilityID := updatedPlayer.AbilityState.PendingAbilities[0].ID
 
-		// Try to select card WITHOUT Leader confirmation (should fail)
+		// Select directly: candidates and the unveil are already public.
 		selectReq := httptest.NewRequest("POST", "/room/"+room.Code+"/ability/"+abilityID+"/select-card/15", nil)
 		selectReq.AddCookie(&http.Cookie{
 			Name:  "player_" + room.Code,
@@ -933,8 +1058,8 @@ func TestConfirmAbility(t *testing.T) {
 		selectW := httptest.NewRecorder()
 		handler.SelectWearerCard(selectW, selectReq)
 
-		if selectW.Code != http.StatusForbidden {
-			t.Errorf("Expected status 403, got %d", selectW.Code)
+		if selectW.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", selectW.Code)
 		}
 	})
 }

@@ -26,16 +26,6 @@ type OptionSelectValue struct {
 // This is where we define which cards have options and what they are
 func GetCardOptions(cardID int, cardName string) []OptionField {
 	switch cardID {
-	case 31: // The Wearer of Masks
-		return []OptionField{
-			{
-				Key:          "use_all_cards",
-				Label:        "Include Leaders",
-				Description:  "Also include Leader cards in the reveal pool (normally excluded)",
-				Type:         "checkbox",
-				DefaultValue: false,
-			},
-		}
 	default:
 		return []OptionField{}
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 // RoleOptions stores card-specific configuration options
-// Example: The Wearer of Masks might have options for "use_all_cards" or "max_reveal"
+// Options are interpreted by the card-specific resolver that owns them.
 type RoleOptions struct {
 	CardID  int
 	Options map[string]interface{}

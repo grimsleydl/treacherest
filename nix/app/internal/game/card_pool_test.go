@@ -227,8 +227,8 @@ func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
 
 	assertOnlySupported := func(t *testing.T, cards []*Card) {
 		t.Helper()
-		if len(cards) != 2 {
-			t.Fatalf("expected 2 supported cards, got %d", len(cards))
+		if len(cards) != 3 {
+			t.Fatalf("expected 3 supported cards, got %d", len(cards))
 		}
 		for _, card := range cards {
 			if !IsCardSupported(card.ID) {

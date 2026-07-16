@@ -163,6 +163,7 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 			game.AssignRoles(players, h.cardService)
 		}
 		// Log assigned roles
+		markRoomRolesAssigned(room)
 		for _, p := range players {
 			if p.Role != nil {
 				log.Printf("🎲 Player %s assigned role: %s", p.Name, p.Role.Name)
@@ -210,6 +211,21 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	// Flush the response to ensure redirect is sent immediately
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
+	}
+}
+
+func markRoomRolesAssigned(room *game.Room) {
+	if room == nil || room.CardPool == nil {
+		return
+	}
+	room.CardPool.ResetAssignments()
+	for _, player := range room.GetPlayers() {
+		if player.Role == nil || room.CardPool.GetCardByID(player.Role.GetID()) == nil {
+			continue
+		}
+		if err := room.CardPool.MarkCardAssigned(player.Role.GetID()); err != nil {
+			log.Printf("❌ Failed to mark role %d assigned for %s: %v", player.Role.GetID(), player.Name, err)
+		}
 	}
 }
 
@@ -833,21 +849,7 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 	// Calculate max available cards based on CardPool and options
 	maxAvailableCards := 0
 	if room.CardPool != nil {
-		// Check if Leaders should be included
-		var useAllCards bool = false
-		if room.RoleOptionsManager != nil && room.RoleOptionsManager.HasOptions(31) {
-			opts := room.RoleOptionsManager.GetOrCreateOptions(31)
-			if val, err := opts.GetBoolOption("use_all_cards"); err == nil {
-				useAllCards = val
-			}
-		}
-
-		// Get available cards based on options
-		var filterTypes []string
-		if !useAllCards {
-			filterTypes = []string{"Guardian", "Assassin", "Traitor"}
-		}
-		availableCards := room.CardPool.GetCardsByTypes(filterTypes...)
+		availableCards := room.CardPool.FilterAvailableByRoleType(game.RoleLeader, true)
 		maxAvailableCards = len(availableCards)
 	}
 

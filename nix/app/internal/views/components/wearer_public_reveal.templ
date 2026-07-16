@@ -1,0 +1,54 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+	"treacherest/internal/game/ability"
+)
+
+// WearerPublicReveals renders the public replacement-effect state for every
+// Wearer of Masks choice currently in progress.
+templ WearerPublicReveals(room *game.Room) {
+	for _, player := range room.GetActivePlayers() {
+		if pending := pendingWearerReveal(player); pending != nil {
+			<section
+				id={ fmt.Sprintf("wearer-public-reveal-%s", player.ID) }
+				class="w-full rounded-box border border-warning/50 bg-warning/10 p-4"
+			>
+				<p class="font-semibold">{ player.Name } unveiled The Wearer of Masks</p>
+				<p class="mt-1 text-sm text-base-content/70">These random non-Leader identities were revealed from outside the game:</p>
+				if cardIDs, ok := pending.Data["revealed_ids"].([]int); ok {
+					<ul class="mt-3 space-y-2">
+						for _, cardID := range cardIDs {
+							if card := room.CardPool.GetCardByID(cardID); card != nil {
+								<li class="space-y-2 rounded-box bg-base-100 px-3 py-2">
+									<div class="flex flex-wrap items-center justify-between gap-2">
+										<span class="font-semibold">{ card.Name }</span>
+										<span class="badge badge-outline">{ card.Type }</span>
+									</div>
+									if card.Text != "" {
+										<div class="text-xs text-base-content/80">
+											@RoleCardText(card.Text)
+										</div>
+									}
+								</li>
+							}
+						}
+					</ul>
+				}
+			</section>
+		}
+	}
+}
+
+func pendingWearerReveal(player *game.Player) *ability.PendingAbility {
+	if player == nil || player.AbilityState == nil {
+		return nil
+	}
+	for _, pending := range player.AbilityState.PendingAbilities {
+		if pending != nil && pending.CardID == 31 && pending.AbilityType == "wearer_transform" {
+			return pending
+		}
+	}
+	return nil
+}
