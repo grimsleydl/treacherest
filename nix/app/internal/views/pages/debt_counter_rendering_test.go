@@ -36,8 +36,8 @@ func TestDebtCounterCountIsPublicOnHiddenCardWithoutLeakingContents(t *testing.T
 				`id="` + surface.id + `"`,
 				`data-debt-counter-count="2"`,
 				"Debt counters: 2",
-				"Placement #2: Alice placed a debt counter on Bob&#39;s identity card (1 → 2).",
-				"Bob should draw a card at the table.",
+				"Alice placed 2 debt counters on Bob&#39;s identity card (0 → 2).",
+				"Bob should draw a card for each at the table.",
 			} {
 				if !strings.Contains(segment, expected) {
 					t.Fatalf("%s missing non-vacuous public debt rendering %q in %s", surface.name, expected, segment)

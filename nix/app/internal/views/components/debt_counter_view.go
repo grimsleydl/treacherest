@@ -42,22 +42,34 @@ func buildDebtCounterPublicView(card *game.Card) (debtCounterPublicView, bool) {
 	}
 	if state.Count > 0 {
 		view.CurrentAdvisory = fmt.Sprintf(
-			"Upkeep advisory: this card's controller should lose %d life during The Debt Collector's upkeep.",
+			"Reminder: at The Debt Collector's upkeep, this card's controller loses %d life (1 per debt counter) and The Debt Collector gains that much — resolve at the table.",
 			state.Count,
 		)
 	}
 
+	// Coalesce consecutive placements by the same collector on this card into
+	// one line; the full per-event history stays in state for the record.
 	view.PlacementEvents = make([]string, 0, len(state.Placements))
-	for _, event := range state.Placements {
-		view.PlacementEvents = append(view.PlacementEvents, fmt.Sprintf(
-			"Placement #%d: %s placed a debt counter on %s's identity card (%d → %d). %s should draw a card at the table.",
-			event.Number,
-			event.CollectorPlayerName,
-			event.TargetPlayerName,
-			event.Before,
-			event.After,
-			event.TargetPlayerName,
-		))
+	for i := 0; i < len(state.Placements); {
+		event := state.Placements[i]
+		j := i
+		for j < len(state.Placements) && state.Placements[j].CollectorPlayerName == event.CollectorPlayerName {
+			j++
+		}
+		run := state.Placements[i:j]
+		last := run[len(run)-1]
+		if len(run) == 1 {
+			view.PlacementEvents = append(view.PlacementEvents, fmt.Sprintf(
+				"%s placed a debt counter on %s's identity card (%d → %d). %s should draw a card at the table.",
+				event.CollectorPlayerName, event.TargetPlayerName, event.Before, last.After, event.TargetPlayerName,
+			))
+		} else {
+			view.PlacementEvents = append(view.PlacementEvents, fmt.Sprintf(
+				"%s placed %d debt counters on %s's identity card (%d → %d). %s should draw a card for each at the table.",
+				event.CollectorPlayerName, len(run), event.TargetPlayerName, event.Before, last.After, event.TargetPlayerName,
+			))
+		}
+		i = j
 	}
 
 	view.UpkeepAdvisories = make([]string, 0, len(state.UpkeepAdvisories))
