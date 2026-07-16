@@ -228,8 +228,8 @@ func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
 
 	assertOnlySupported := func(t *testing.T, cards []*Card) {
 		t.Helper()
-		if len(cards) != 4 {
-			t.Fatalf("expected 4 supported cards, got %d", len(cards))
+		if len(cards) != 5 {
+			t.Fatalf("expected 5 supported cards, got %d", len(cards))
 		}
 		for _, card := range cards {
 			if !IsCardSupported(card.ID) {
@@ -243,16 +243,16 @@ func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
 	assertOnlySupported(t, pool.GetRandomAvailableCards(10))
 
 	leaders := pool.FilterByRoleType(RoleLeader, false)
-	if len(leaders) != 2 {
-		t.Fatalf("expected two supported Leaders, got %+v", leaders)
+	if len(leaders) != 3 {
+		t.Fatalf("expected three supported Leaders, got %+v", leaders)
 	}
 	for _, leader := range leaders {
-		if leader.ID != 32 && leader.ID != TheDebtCollectorCardID {
+		if leader.ID != 32 && leader.ID != TheDebtCollectorCardID && leader.ID != TheGatheringCardID {
 			t.Errorf("unexpected supported Leader %+v", leader)
 		}
 	}
 	if card := pool.GetCardByID(54); card == nil {
-		t.Error("unsupported cards should remain available for catalog lookup")
+		t.Error("The Gathering should remain available for catalog lookup")
 	}
 }
 

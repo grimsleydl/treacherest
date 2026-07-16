@@ -121,6 +121,7 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		r.Post("/room/{code}/player/{playerID}/leader-counter/reset-turn", h.ResetLeaderCounterTurn)
 		r.Post("/room/{code}/player/{playerID}/debt-counter/place/{targetID}", h.PlaceDebtCounter)
 		r.Post("/room/{code}/player/{playerID}/debt-counter/upkeep", h.RecordDebtCounterUpkeep)
+		r.Post("/room/{code}/player/{playerID}/gathering/choose/{mode}", h.ChooseGatheringMode)
 
 		// Metamorph ability endpoints
 		r.Post("/room/{code}/player/{playerID}/trigger-metamorph", h.TriggerMetamorphAbility)

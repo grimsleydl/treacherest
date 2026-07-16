@@ -134,6 +134,7 @@ templ GameActionsZone(room *game.Room, currentPlayer *game.Player) {
 	<section id="zone-actions" class="flex w-full max-w-md flex-col items-center gap-4">
 		@CoupRoyalGuardPanel(room, currentPlayer)
 		@components.LeaderCounterOwnerControls(room, currentPlayer)
+		@components.GatheringOwnerControls(room, currentPlayer)
 		@components.DebtCollectorOwnerControls(room, currentPlayer)
 		<!-- Unveil button and face state toggle for current player -->
 		if currentPlayer.Role != nil && room.State == game.StatePlaying && !currentPlayer.IsEliminated {

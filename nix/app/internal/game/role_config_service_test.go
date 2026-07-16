@@ -156,9 +156,7 @@ func TestDefaultRoleConfigExcludesUnsupportedCardsAndDealsLeader(t *testing.T) {
 		t.Fatalf("CreateFromPreset() error = %v", err)
 	}
 
-	unsupportedNames := []string{
-		"The Gathering",
-	}
+	unsupportedNames := []string{}
 	enabledCards := 0
 	for roleType, typeConfig := range roleConfig.RoleTypes {
 		for _, enabled := range typeConfig.EnabledCards {
@@ -172,8 +170,8 @@ func TestDefaultRoleConfigExcludesUnsupportedCardsAndDealsLeader(t *testing.T) {
 			}
 		}
 	}
-	if enabledCards != 61 {
-		t.Errorf("default config enabled %d supported cards, want 61", enabledCards)
+	if enabledCards != 62 {
+		t.Errorf("default config enabled %d supported cards, want 62", enabledCards)
 	}
 
 	players := make([]*Player, 5)

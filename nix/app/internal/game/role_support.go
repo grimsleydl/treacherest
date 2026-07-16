@@ -2,9 +2,7 @@ package game
 
 // unsupportedCardIDs is the interim exclusion list for role mechanics that the
 // app cannot represent yet. Remove IDs from this set as support lands.
-var unsupportedCardIDs = map[int]struct{}{
-	54: {}, // The Gathering
-}
+var unsupportedCardIDs = map[int]struct{}{}
 
 // IsCardSupported reports whether a card may be offered or dealt.
 func IsCardSupported(cardID int) bool {

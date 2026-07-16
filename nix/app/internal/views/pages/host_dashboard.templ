@@ -458,6 +458,7 @@ templ HostDashboardPlaying(room *game.Room, player *game.Player) {
 								</div>
 								if operatorRolePublic(p) {
 									@components.LeaderCounterPublicState(p.Role)
+									@components.GatheringChecklistPublicState(p.Role)
 								}
 								@components.DebtCounterPublicState(p.Role)
 								if room.RulesMode == game.RulesModeCoup && p.Role != nil {

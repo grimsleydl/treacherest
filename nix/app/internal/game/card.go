@@ -56,6 +56,11 @@ type Card struct {
 	// instance. It lives on Card so counters remain on the physical identity card
 	// through face changes, control changes, and backup restore.
 	DebtCounters *DebtCounterState `json:"debt_counters,omitempty"`
+
+	// GatheringChecklist is public mutable state belonging to this dealt
+	// identity-card instance. Chosen modes remain marked through all face and
+	// control changes and backup restore.
+	GatheringChecklist *GatheringChecklist `json:"gathering_checklist,omitempty"`
 }
 
 // CardCollection represents the full JSON structure

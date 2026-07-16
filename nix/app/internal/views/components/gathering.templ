@@ -1,0 +1,57 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+templ GatheringChecklistPublicState(card *game.Card) {
+	if view, ok := buildGatheringChecklistView(card); ok {
+		<section
+			class="gathering-checklist-public-state rounded-box border border-secondary/50 bg-secondary/10 p-3 text-sm"
+			data-gathering-card={ fmt.Sprintf("%d", view.CardID) }
+		>
+			<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-secondary">Public chosen-mode checklist</p>
+			<p class="mt-1 text-xs text-base-content/70">Chosen modes stay marked on this identity card when control changes.</p>
+			<ol class="mt-3 space-y-2" aria-label="The Gathering chosen modes">
+				for _, mode := range view.Modes {
+					<li
+						class={ mode.ItemClass }
+						data-gathering-mode={ mode.Mode }
+						data-gathering-chosen={ mode.ChosenValue }
+						data-gathering-selectable={ mode.SelectableValue }
+						aria-disabled={ mode.AriaDisabledValue }
+					>
+						<div class="flex items-start justify-between gap-2">
+							<span class="font-semibold">{ mode.Color }</span>
+							<span class="text-xs text-base-content/70">{ mode.ChosenText }</span>
+						</div>
+						<p class="mt-1 text-xs text-base-content/80">{ mode.Effect }</p>
+					</li>
+				}
+			</ol>
+		</section>
+	}
+}
+
+templ GatheringOwnerControls(room *game.Room, player *game.Player) {
+	if view, ok := buildGatheringOwnerView(room, player); ok {
+		<section class="gathering-owner-controls card w-full max-w-md border border-secondary/50 bg-base-100 p-4">
+			<h3 class="font-semibold">The Gathering upkeep choice</h3>
+			<p class="mb-3 text-xs text-base-content/70">Choose as the trigger goes on the stack. Record only the mode here; confirm legal targets and resolve its effect at the table.</p>
+			<div class="space-y-2">
+				for _, mode := range view.Modes {
+					<button
+						class="btn btn-sm btn-outline btn-secondary w-full"
+						data-gathering-mode-control={ mode.Mode }
+						data-gathering-chosen={ mode.ChosenValue }
+						disabled?={ mode.ControlDisabled }
+						data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/gathering/choose/%s')", room.Code, player.ID, mode.Mode) }
+					>
+						{ mode.ControlLabel }
+					</button>
+				}
+			</div>
+		</section>
+	}
+}

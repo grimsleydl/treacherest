@@ -71,11 +71,6 @@ func TestCounterPoolLeadersAreSupported(t *testing.T) {
 			t.Errorf("counter Leader %d (%s) remains excluded from deals", role.id, role.name)
 		}
 	}
-	for _, cardID := range []int{54} {
-		if IsCardSupported(cardID) {
-			t.Errorf("unimplemented card %d unexpectedly became dealable", cardID)
-		}
-	}
 }
 
 func TestLeaderCounterPoolsDecrementAndBlockAtZero(t *testing.T) {

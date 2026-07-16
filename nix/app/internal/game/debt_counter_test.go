@@ -188,9 +188,6 @@ func TestDebtCollectorIsSupportedWithoutProliferateIntegration(t *testing.T) {
 	if !IsCardSupported(TheDebtCollectorCardID) {
 		t.Fatal("The Debt Collector remains excluded from deals")
 	}
-	if IsCardSupported(54) {
-		t.Fatal("The Gathering unexpectedly left the unsupported list")
-	}
 	// Identity-card debt counters are intentionally absent from the permanent
 	// counter/proliferate ability subsystem; their only mutation is the room
 	// placement command exercised above.

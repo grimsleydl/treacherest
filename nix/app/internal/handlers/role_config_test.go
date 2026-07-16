@@ -142,7 +142,7 @@ func TestUpdateRolePreset(t *testing.T) {
 	}
 }
 
-func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
+func TestOperatorCanEnableSupportedGatheringRoleCard(t *testing.T) {
 	h := newTestHandler()
 	h.cardService.Leaders = append(h.cardService.Leaders, &game.Card{
 		ID:         54,
@@ -175,15 +175,15 @@ func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected unsupported card enablement to be rejected with 400, got %d: %s", w.Code, w.Body.String())
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected supported Gathering enablement to succeed with 200, got %d: %s", w.Code, w.Body.String())
 	}
 	updatedRoom, err := h.store.GetRoom(room.Code)
 	if err != nil {
 		t.Fatalf("GetRoom() error = %v", err)
 	}
-	if updatedRoom.RoleConfig.RoleTypes["Leader"].EnabledCards["The Gathering"] {
-		t.Error("unsupported card was enabled in role configuration")
+	if !updatedRoom.RoleConfig.RoleTypes["Leader"].EnabledCards["The Gathering"] {
+		t.Error("supported Gathering card was not enabled in role configuration")
 	}
 }
 

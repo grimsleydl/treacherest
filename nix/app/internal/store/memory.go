@@ -157,6 +157,10 @@ func (s *MemoryStore) RegisterRestoredRoom(room *game.Room) error {
 					refreshedRole := *freshCard
 					refreshedRole.LeaderCounterPool = player.Role.LeaderCounterPool
 					refreshedRole.DebtCounters = player.Role.DebtCounters
+					refreshedRole.GatheringChecklist = player.Role.GatheringChecklist
+					if refreshedRole.ID == game.TheGatheringCardID && refreshedRole.GatheringChecklist == nil {
+						refreshedRole.GatheringChecklist = &game.GatheringChecklist{}
+					}
 					player.Role = &refreshedRole
 				}
 			}

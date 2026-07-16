@@ -58,6 +58,7 @@ templ playerRowPublicRole(room *game.Room, card *game.Card) {
 			}
 		</div>
 		@LeaderCounterPublicState(card)
+		@GatheringChecklistPublicState(card)
 		if card.GetImageBase64() != "" {
 			<figure class="overflow-hidden rounded-box border border-base-300 bg-base-100">
 				<img

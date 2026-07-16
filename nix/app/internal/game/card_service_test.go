@@ -33,13 +33,13 @@ func TestNewCardService(t *testing.T) {
 		})
 	}
 
-	// Unsupported roles remain in the full catalog but not in dealable categories.
+	// The unsupported-role mechanism currently excludes no catalog cards.
 	totalCards := len(service.Leaders) + len(service.Guardians) + len(service.Assassins) + len(service.Traitors)
 	if len(service.allCards) != 62 {
 		t.Errorf("Expected full 62-card catalog, got %d", len(service.allCards))
 	}
-	if totalCards != 61 {
-		t.Errorf("Expected 61 dealable cards, got %d", totalCards)
+	if totalCards != 62 {
+		t.Errorf("Expected 62 dealable cards, got %d", totalCards)
 	}
 
 	// Verify we have a reasonable distribution for gameplay
