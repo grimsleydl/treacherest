@@ -38,8 +38,8 @@ func TestNewCardService(t *testing.T) {
 	if len(service.allCards) != 62 {
 		t.Errorf("Expected full 62-card catalog, got %d", len(service.allCards))
 	}
-	if totalCards != 56 {
-		t.Errorf("Expected 56 dealable cards, got %d", totalCards)
+	if totalCards != 60 {
+		t.Errorf("Expected 60 dealable cards, got %d", totalCards)
 	}
 
 	// Verify we have a reasonable distribution for gameplay

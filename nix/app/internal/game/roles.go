@@ -153,7 +153,7 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 				continue
 			}
 
-			shuffled[playerIndex].Role = card
+			shuffled[playerIndex].Role = NewDealtRoleCard(card, count)
 			usedCards[card] = true
 
 			// Leader is always revealed and face up
@@ -182,20 +182,20 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 		}
 	}
 
-	count := len(activePlayers)
-	if count == 0 {
+	playerCount := len(activePlayers)
+	if playerCount == 0 {
 		return // No active players to assign roles to
 	}
 
 	// Shuffle players first
-	shuffled := make([]*Player, count)
+	shuffled := make([]*Player, playerCount)
 	copy(shuffled, activePlayers)
-	rand.Shuffle(count, func(i, j int) {
+	rand.Shuffle(playerCount, func(i, j int) {
 		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 	})
 
 	// Get role distribution based on player count
-	roleDistribution := getRoleDistribution(count)
+	roleDistribution := getRoleDistribution(playerCount)
 
 	// Track used cards to prevent duplicates
 	usedCards := make(map[*Card]bool)
@@ -206,13 +206,13 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 	playerIndex := 0
 
 	for _, roleType := range roleOrder {
-		count, exists := roleDistribution[roleType]
-		if !exists || count == 0 {
+		neededCount, exists := roleDistribution[roleType]
+		if !exists || neededCount == 0 {
 			continue
 		}
 
 		// Get random cards for this role type
-		cards := cardService.GetRandomCards(roleType, count)
+		cards := cardService.GetRandomCards(roleType, neededCount)
 
 		// Assign cards to players
 		for _, card := range cards {
@@ -225,7 +225,7 @@ func AssignRolesLegacy(players []*Player, cardService *CardService) {
 				continue
 			}
 
-			shuffled[playerIndex].Role = card
+			shuffled[playerIndex].Role = NewDealtRoleCard(card, playerCount)
 			usedCards[card] = true
 
 			// Leader is always revealed and face up
@@ -409,6 +409,7 @@ func handleFullyRandomDistribution(shuffled []*Player, cardService *CardService,
 
 // assignRolesFromDistribution is a helper that assigns roles based on a distribution map
 func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, roleDistribution map[RoleType]int, roleConfig *RoleConfiguration) {
+	playerCount := len(shuffled)
 	// Map role types to card categories
 	categoryToCards := map[RoleType][]*Card{
 		RoleLeader:   cardService.GetCardsForRoleType(RoleLeader),
@@ -459,7 +460,7 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 		for i := 0; i < neededCount && playerIndex < len(shuffled); i++ {
 			// Use modulo to reuse cards if needed
 			card := shuffledCards[i%len(shuffledCards)]
-			shuffled[playerIndex].Role = card
+			shuffled[playerIndex].Role = NewDealtRoleCard(card, playerCount)
 
 			// Leaders start face up and publicly revealed; all other roles start hidden.
 			if !forceLeaderFaceUp(shuffled[playerIndex]) {

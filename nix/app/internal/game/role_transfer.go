@@ -31,7 +31,8 @@ func (r *Room) TransferRole(from, to *Player, turnFaceDown bool) error {
 		return fmt.Errorf("source player %s has no role to transfer", from.Name)
 	}
 
-	// Transfer the role
+	// Transfer the identity-card pointer. Card-attached state, including Leader
+	// counters and activation history, moves with it.
 	transferredRole := from.Role
 	from.Role = nil
 	from.FaceUp = false
@@ -62,7 +63,7 @@ func (r *Room) SwapRoles(player1, player2 *Player, turnFaceDown bool) error {
 		return fmt.Errorf("both players must be provided")
 	}
 
-	// Store original roles
+	// Store original identity-card pointers so all attached state is swapped.
 	role1 := player1.Role
 	role2 := player2.Role
 
@@ -115,7 +116,7 @@ func (r *Room) StealRole(stealer, victim *Player, turnFaceDown bool) error {
 		return fmt.Errorf("victim %s has no role to steal", victim.Name)
 	}
 
-	// Store the stolen role
+	// Store the stolen identity-card pointer so all attached state is stolen.
 	stolenRole := victim.Role
 
 	// Remove roles from both players
@@ -156,6 +157,8 @@ func (r *Room) RedistributeRoles(assignments map[string]*Card) error {
 
 	for playerID, role := range assignments {
 		player := r.Players[playerID]
+		// Redistribute the identity-card pointer, not a catalog replacement, so
+		// Puppet Master preserves all card-attached state.
 		player.Role = role
 		if !forceLeaderFaceUp(player) {
 			player.FaceUp = false

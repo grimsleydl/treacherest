@@ -152,8 +152,11 @@ func (s *MemoryStore) RegisterRestoredRoom(room *game.Room) error {
 				freshCard := room.CardPool.GetCardByID(player.Role.ID)
 				if freshCard != nil {
 					room.CardPool.MarkCardAssigned(freshCard.ID)
-					// Update player's role reference to the fresh card
-					player.Role = freshCard
+					// Refresh immutable catalog data without discarding mutable state
+					// attached to this dealt identity-card instance.
+					refreshedRole := *freshCard
+					refreshedRole.LeaderCounterPool = player.Role.LeaderCounterPool
+					player.Role = &refreshedRole
 				}
 			}
 		}

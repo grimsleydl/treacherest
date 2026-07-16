@@ -5,10 +5,6 @@ package game
 var unsupportedCardIDs = map[int]struct{}{
 	53: {}, // The Debt Collector
 	54: {}, // The Gathering
-	55: {}, // Her Seedborn Highness
-	58: {}, // The Lich Queen
-	60: {}, // The Queen of Light
-	62: {}, // The Void Tyrant
 }
 
 // IsCardSupported reports whether a card may be offered or dealt.

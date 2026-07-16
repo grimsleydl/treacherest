@@ -1,0 +1,50 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+templ LeaderCounterPublicState(card *game.Card) {
+	if view, ok := buildLeaderCounterPublicView(card); ok {
+		<section
+			class="leader-counter-public-state rounded-box border border-warning/50 bg-warning/10 p-3 text-sm"
+			data-leader-counter-card={ fmt.Sprintf("%d", view.CardID) }
+		>
+			<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-warning">Public identity counters</p>
+			<p class="leader-counter-count mt-1 font-semibold">{ view.CountText }</p>
+			<p class="leader-counter-turn-status text-xs text-base-content/70">{ view.TurnStatus }</p>
+			if len(view.ActivationEvents) > 0 {
+				<ol class="leader-counter-events mt-2 space-y-1 text-xs" aria-label="Public counter activation history">
+					for _, event := range view.ActivationEvents {
+						<li>{ event }</li>
+					}
+				</ol>
+			}
+		</section>
+	}
+}
+
+templ LeaderCounterOwnerControls(room *game.Room, player *game.Player) {
+	if showLeaderCounterOwnerControls(room, player) {
+		if view, ok := buildLeaderCounterPublicView(player.Role); ok {
+			<div class="leader-counter-owner-controls card w-full max-w-md border border-warning/50 bg-base-100 p-4">
+				<p class="font-semibold">{ view.CountText }</p>
+				<p class="mb-3 text-xs text-base-content/70">Record only the activation and counter removal here. Resolve the battlefield effect at the table.</p>
+				<button
+					class="btn btn-sm btn-warning w-full"
+					disabled?={ view.ActivationDisabled }
+					data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/leader-counter/activate')", room.Code, player.ID) }
+				>
+					{ view.ActivationLabel }
+				</button>
+				if view.ShowTurnReset {
+					<p class="mt-3 text-xs text-base-content/70">When the table advances to your next turn, confirm the reset below.</p>
+					<div class="mt-2">
+						@ConfirmTwiceButton("_confirmLeaderCounterTurnReset", "Reset for next turn", "Confirm next turn", fmt.Sprintf("@post('/room/%s/player/%s/leader-counter/reset-turn')", room.Code, player.ID), "outline")
+					</div>
+				}
+			</div>
+		}
+	}
+}

@@ -159,10 +159,6 @@ func TestDefaultRoleConfigExcludesUnsupportedCardsAndDealsLeader(t *testing.T) {
 	unsupportedNames := []string{
 		"The Debt Collector",
 		"The Gathering",
-		"Her Seedborn Highness",
-		"The Lich Queen",
-		"The Queen of Light",
-		"The Void Tyrant",
 	}
 	enabledCards := 0
 	for roleType, typeConfig := range roleConfig.RoleTypes {
@@ -177,8 +173,8 @@ func TestDefaultRoleConfigExcludesUnsupportedCardsAndDealsLeader(t *testing.T) {
 			}
 		}
 	}
-	if enabledCards != 56 {
-		t.Errorf("default config enabled %d supported cards, want 56", enabledCards)
+	if enabledCards != 60 {
+		t.Errorf("default config enabled %d supported cards, want 60", enabledCards)
 	}
 
 	players := make([]*Player, 5)

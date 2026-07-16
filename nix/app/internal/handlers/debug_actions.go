@@ -63,6 +63,7 @@ func (h *Handler) DebugStartAsIs(w http.ResponseWriter, r *http.Request) {
 		}
 		roleService := game.NewRoleConfigService(h.config)
 		game.AssignRolesWithConfig(room.GetPlayers(), h.cardService, room.RoleConfig, roleService)
+		markRoomRolesAssigned(room)
 	}
 
 	room.DebugStartMode = game.DebugStartModeAsIs

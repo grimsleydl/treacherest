@@ -53,6 +53,7 @@ templ playerRowPublicRole(room *game.Room, card *game.Card) {
 				<span class="badge badge-outline">{ card.Type }</span>
 			}
 		</div>
+		@LeaderCounterPublicState(card)
 		if card.GetImageBase64() != "" {
 			<figure class="overflow-hidden rounded-box border border-base-300 bg-base-100">
 				<img

@@ -116,6 +116,10 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		// Player elimination
 		r.Post("/room/{code}/player/{playerID}/eliminate", h.EliminatePlayer)
 
+		// Public identity-card counter pools
+		r.Post("/room/{code}/player/{playerID}/leader-counter/activate", h.ActivateLeaderCounter)
+		r.Post("/room/{code}/player/{playerID}/leader-counter/reset-turn", h.ResetLeaderCounterTurn)
+
 		// Metamorph ability endpoints
 		r.Post("/room/{code}/player/{playerID}/trigger-metamorph", h.TriggerMetamorphAbility)
 		r.Post("/room/{code}/player/{playerID}/steal-role/{targetPlayerID}", h.StealRole)

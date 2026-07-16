@@ -46,6 +46,11 @@ type Card struct {
 	Rulings     []string  `json:"rulings"`
 	ImagePath   string    `json:"-"` // Local image path, not from JSON
 	Base64Image string    `json:"-"` // Base64-encoded image data URI
+
+	// LeaderCounterPool is mutable state belonging to this dealt identity-card
+	// instance. It intentionally lives on Card rather than Player so role
+	// movement carries the counters with the physical card it represents.
+	LeaderCounterPool *LeaderCounterPool `json:"leader_counter_pool,omitempty"`
 }
 
 // CardCollection represents the full JSON structure
