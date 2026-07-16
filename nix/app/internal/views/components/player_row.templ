@@ -87,14 +87,35 @@ func playerRowRoleVisibleToViewer(room *game.Room, player *game.Player, viewer *
 	if player.Role.GetRoleType() == game.RoleLeader || player.RoleRevealed || player.FaceUp {
 		return true
 	}
+	if playerRowFaceDownRolePrivatelyVisibleToViewer(room, player, viewer) {
+		return true
+	}
 	return playerRowCoupRoleKnownToViewer(room, player, viewer)
 }
 
 func playerRowRoleVisibilityLabel(room *game.Room, player *game.Player, viewer *game.Player) string {
+	if !player.RoleRevealed && playerRowFaceDownRolePrivatelyVisibleToViewer(room, player, viewer) {
+		return "Peek: " + player.Role.Name
+	}
 	if playerRowCoupRoleKnownToViewer(room, player, viewer) {
 		return "Known: " + player.Role.Name
 	}
 	return "Revealed: " + player.Role.Name
+}
+
+func playerRowFaceDownRolePrivatelyVisibleToViewer(room *game.Room, player *game.Player, viewer *game.Player) bool {
+	return room != nil &&
+		room.State == game.StatePlaying &&
+		player != nil &&
+		player.Role != nil &&
+		!player.FaceUp &&
+		viewer != nil &&
+		viewer.ID != player.ID &&
+		viewer.Role != nil &&
+		viewer.Role.GetID() == 27 &&
+		viewer.FaceUp &&
+		viewer.AbilityState != nil &&
+		viewer.AbilityState.CanViewOthersFaceDown
 }
 
 func playerRowCoupRoleKnownToViewer(room *game.Room, player *game.Player, viewer *game.Player) bool {
