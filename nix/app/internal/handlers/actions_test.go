@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 	"treacherest/internal/game"
+	"treacherest/internal/testhelpers"
+	"treacherest/internal/views/pages"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -335,6 +338,114 @@ func TestHandler_StartGame(t *testing.T) {
 			t.Errorf("expected SSE error message for player not in room, got: %s", body)
 		}
 	})
+}
+
+func TestHandler_StartGame_RandomDistributionLeaderIsPublic(t *testing.T) {
+	tests := []struct {
+		name      string
+		configure func(*game.RoleConfiguration)
+	}{
+		{
+			name: "hidden distribution",
+			configure: func(roleConfig *game.RoleConfiguration) {
+				roleConfig.HideRoleDistribution = true
+			},
+		},
+		{
+			name: "fully random roles",
+			configure: func(roleConfig *game.RoleConfiguration) {
+				roleConfig.FullyRandomRoles = true
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newTestHandler()
+			room, err := h.store.CreateRoom()
+			if err != nil {
+				t.Fatalf("CreateRoom() error = %v", err)
+			}
+			tt.configure(room.RoleConfig)
+
+			host := game.NewPlayer("host", "Room Operator", "host-session")
+			host.IsHost = true
+			if err := room.AddPlayer(host); err != nil {
+				t.Fatalf("AddPlayer(host) error = %v", err)
+			}
+			for i := 1; i <= 8; i++ {
+				player := game.NewPlayer(fmt.Sprintf("p%d", i), fmt.Sprintf("Player %d", i), fmt.Sprintf("session-%d", i))
+				if err := room.AddPlayer(player); err != nil {
+					t.Fatalf("AddPlayer(%q) error = %v", player.ID, err)
+				}
+			}
+			markRoomOperatorForTest(room, host)
+			if err := h.store.UpdateRoom(room); err != nil {
+				t.Fatalf("UpdateRoom() error = %v", err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/room/"+room.Code+"/start", nil)
+			addPlayerSessionCookiesForTest(req, room, host)
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("code", room.Code)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+			w := httptest.NewRecorder()
+
+			h.StartGame(w, req)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("StartGame() status = %d, want %d; body = %s", w.Code, http.StatusOK, w.Body.String())
+			}
+			if !strings.Contains(w.Body.String(), "window.location.href = '/game/"+room.Code+"'") {
+				t.Fatalf("StartGame() did not start game; body = %s", w.Body.String())
+			}
+
+			updatedRoom, err := h.store.GetRoom(room.Code)
+			if err != nil {
+				t.Fatalf("GetRoom() error = %v", err)
+			}
+			var leaders, nonLeaders []*game.Player
+			for _, player := range updatedRoom.GetActivePlayers() {
+				if player.Role == nil {
+					t.Fatalf("player %q has no dealt role", player.ID)
+				}
+				if player.Role.GetRoleType() == game.RoleLeader {
+					leaders = append(leaders, player)
+					if !player.FaceUp || !player.RoleRevealed {
+						t.Errorf("dealt Leader %q face state = FaceUp %v, RoleRevealed %v; want both true", player.Name, player.FaceUp, player.RoleRevealed)
+					}
+					continue
+				}
+
+				nonLeaders = append(nonLeaders, player)
+				if player.FaceUp || player.RoleRevealed {
+					t.Errorf("dealt non-Leader %q face state = FaceUp %v, RoleRevealed %v; want both false", player.Name, player.FaceUp, player.RoleRevealed)
+				}
+			}
+			if len(leaders) == 0 {
+				t.Fatal("game started without a dealt Leader")
+			}
+			if len(nonLeaders) == 0 {
+				t.Fatal("test setup dealt no non-Leader roles")
+			}
+
+			// Exercise the Coup-only reveal affordance against the dealt Treachery state.
+			updatedRoom.RulesMode = game.RulesModeCoup
+			renderer := testhelpers.NewTemplateRenderer(t)
+			operatorHTML := renderer.Render(pages.HostDashboardPlaying(updatedRoom, host)).GetHTML()
+			for _, leader := range leaders {
+				operatorTile := renderedSectionByID(t, operatorHTML, "operator-tile-"+leader.ID, "</article>")
+				if !strings.Contains(operatorTile, "Revealed: "+leader.Role.Name) {
+					t.Errorf("dealt Leader operator tile missing revealed role in %s", operatorTile)
+				}
+				for _, forbidden := range []string{"Face Down", "Record Reveal"} {
+					if strings.Contains(operatorTile, forbidden) {
+						t.Errorf("dealt Leader operator tile contains %q in %s", forbidden, operatorTile)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestHandler_StartGame_CoupFivePlayerHappyPath(t *testing.T) {

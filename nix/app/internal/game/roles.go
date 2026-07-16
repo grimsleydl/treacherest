@@ -461,12 +461,10 @@ func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, r
 			card := shuffledCards[i%len(shuffledCards)]
 			shuffled[playerIndex].Role = card
 
-			// Set face state based on role type
-			// Leaders start face up, all other roles start face down
-			if card != nil && card.GetRoleType() == RoleLeader {
-				shuffled[playerIndex].FaceUp = true
-			} else {
+			// Leaders start face up and publicly revealed; all other roles start hidden.
+			if !forceLeaderFaceUp(shuffled[playerIndex]) {
 				shuffled[playerIndex].FaceUp = false
+				shuffled[playerIndex].RoleRevealed = false
 			}
 
 			log.Printf("Assigned %s to player %s", card.Name, shuffled[playerIndex].Name)
