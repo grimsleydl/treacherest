@@ -62,18 +62,24 @@ func LeaderCounterDefinitionForCard(cardID int) (LeaderCounterDefinition, bool) 
 }
 
 // NewDealtRoleCard creates the identity-card instance owned by a dealt role.
-// Counter Leaders are cloned and initialized here so mutable state never lands
-// on CardService's shared catalog card.
+// Every role is cloned here so identity-card state never lands on CardService's
+// shared catalog card. Counter Leaders also receive their initial pool.
 func NewDealtRoleCard(card *Card, playerCount int) *Card {
 	if card == nil {
 		return nil
 	}
-	definition, ok := LeaderCounterDefinitionForCard(card.ID)
-	if !ok {
-		return card
+	// Every dealt role is its own card instance because Debt Collector counters
+	// may later be placed on any identity card, including a face-down one.
+	dealt := *card
+	if card.ID == TheDebtCollectorCardID {
+		dealt.DebtCounters = &DebtCounterState{}
 	}
 
-	dealt := *card
+	definition, ok := LeaderCounterDefinitionForCard(card.ID)
+	if !ok {
+		return &dealt
+	}
+
 	initial := playerCount
 	if definition.HalfPlayers {
 		initial = playerCount / 2

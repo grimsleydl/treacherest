@@ -156,6 +156,7 @@ func (s *MemoryStore) RegisterRestoredRoom(room *game.Room) error {
 					// attached to this dealt identity-card instance.
 					refreshedRole := *freshCard
 					refreshedRole.LeaderCounterPool = player.Role.LeaderCounterPool
+					refreshedRole.DebtCounters = player.Role.DebtCounters
 					player.Role = &refreshedRole
 				}
 			}

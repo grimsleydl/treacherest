@@ -1,0 +1,83 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+templ DebtCounterBadge(card *game.Card) {
+	if count, ok := debtCounterCount(card); ok {
+		<span class="badge badge-error debt-counter-badge" data-debt-counter-badge={ fmt.Sprintf("%d", count) }>
+			Debt: { fmt.Sprintf("%d", count) }
+		</span>
+	}
+}
+
+templ DebtCounterPublicState(card *game.Card) {
+	if view, ok := buildDebtCounterPublicView(card); ok {
+		<section
+			class="debt-counter-public-state rounded-box border border-error/50 bg-error/10 p-3 text-sm"
+			data-debt-counter-count={ fmt.Sprintf("%d", view.Count) }
+		>
+			<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-error">Public identity counters</p>
+			<p class="debt-counter-count mt-1 font-semibold">{ view.CountText }</p>
+			if view.CurrentAdvisory != "" {
+				<p class="debt-counter-upkeep-current mt-1 text-xs text-base-content/70">{ view.CurrentAdvisory }</p>
+			}
+			if len(view.PlacementEvents) > 0 {
+				<ol class="debt-counter-events mt-2 space-y-1 text-xs" aria-label="Public debt counter placement history">
+					for _, event := range view.PlacementEvents {
+						<li>{ event }</li>
+					}
+				</ol>
+			}
+			if len(view.UpkeepAdvisories) > 0 {
+				<ol class="debt-counter-upkeep-events mt-2 space-y-1 text-xs" aria-label="Public debt counter upkeep advisories">
+					for _, event := range view.UpkeepAdvisories {
+						<li>{ event }</li>
+					}
+				</ol>
+			}
+			if len(view.LossAdvisories) > 0 {
+				<ol class="debt-counter-loss-events mt-2 space-y-1 text-xs" aria-label="Public debt counter loss advisories">
+					for _, event := range view.LossAdvisories {
+						<li>{ event }</li>
+					}
+				</ol>
+			}
+		</section>
+	}
+}
+
+templ DebtCollectorOwnerControls(room *game.Room, player *game.Player) {
+	if view, ok := buildDebtCollectorOwnerView(room, player); ok {
+		<section class="debt-collector-owner-controls card w-full max-w-md border border-error/50 bg-base-100 p-4">
+			<h3 class="font-semibold">The Debt Collector</h3>
+			<p class="mb-3 text-xs text-base-content/70">At your end step, choose another player after the table resolves their card draw. Record only the visible counter here.</p>
+			if len(view.Targets) == 0 {
+				<p class="text-sm text-base-content/70">No other active identity card is available.</p>
+			} else {
+				<div class="space-y-2">
+					for _, target := range view.Targets {
+						<button
+							class="btn btn-sm btn-outline btn-error w-full"
+							data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/debt-counter/place/%s')", room.Code, player.ID, target.PlayerID) }
+						>
+							Place on { target.PlayerName } ({ fmt.Sprintf("%d", target.Count) } now)
+						</button>
+					}
+				</div>
+			}
+			<div class="mt-4 border-t border-base-300 pt-4">
+				<p class="text-xs text-base-content/70">At upkeep, each affected player loses 1 life per debt counter and you gain that much life. Life totals stay at the table.</p>
+				<button
+					class="btn btn-sm btn-error mt-2 w-full"
+					disabled?={ view.TotalDebtCounters == 0 }
+					data-on:click={ fmt.Sprintf("@post('/room/%s/player/%s/debt-counter/upkeep')", room.Code, player.ID) }
+				>
+					Record upkeep advisory ({ fmt.Sprintf("%d", view.TotalDebtCounters) } total)
+				</button>
+			</div>
+		</section>
+	}
+}

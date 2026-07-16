@@ -51,6 +51,11 @@ type Card struct {
 	// instance. It intentionally lives on Card rather than Player so role
 	// movement carries the counters with the physical card it represents.
 	LeaderCounterPool *LeaderCounterPool `json:"leader_counter_pool,omitempty"`
+
+	// DebtCounters is public mutable state belonging to this dealt identity-card
+	// instance. It lives on Card so counters remain on the physical identity card
+	// through face changes, control changes, and backup restore.
+	DebtCounters *DebtCounterState `json:"debt_counters,omitempty"`
 }
 
 // CardCollection represents the full JSON structure

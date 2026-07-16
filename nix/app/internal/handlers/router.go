@@ -119,6 +119,8 @@ func SetupRouter(h *Handler, cfg *config.ServerConfig, opts *RouterOptions) *chi
 		// Public identity-card counter pools
 		r.Post("/room/{code}/player/{playerID}/leader-counter/activate", h.ActivateLeaderCounter)
 		r.Post("/room/{code}/player/{playerID}/leader-counter/reset-turn", h.ResetLeaderCounterTurn)
+		r.Post("/room/{code}/player/{playerID}/debt-counter/place/{targetID}", h.PlaceDebtCounter)
+		r.Post("/room/{code}/player/{playerID}/debt-counter/upkeep", h.RecordDebtCounterUpkeep)
 
 		// Metamorph ability endpoints
 		r.Post("/room/{code}/player/{playerID}/trigger-metamorph", h.TriggerMetamorphAbility)

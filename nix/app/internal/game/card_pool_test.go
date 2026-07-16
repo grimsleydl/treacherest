@@ -221,14 +221,15 @@ func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
 	pool := NewCardPool([]*Card{
 		{ID: 31, Name: "The Wearer of Masks", Types: CardTypes{Subtype: "Traitor"}},
 		{ID: 53, Name: "The Debt Collector", Types: CardTypes{Subtype: "Leader"}},
+		{ID: 54, Name: "The Gathering", Types: CardTypes{Subtype: "Leader"}},
 		{ID: 32, Name: "The Blood Empress", Types: CardTypes{Subtype: "Leader"}},
 		{ID: 1, Name: "The Ætherist", Types: CardTypes{Subtype: "Guardian"}},
 	})
 
 	assertOnlySupported := func(t *testing.T, cards []*Card) {
 		t.Helper()
-		if len(cards) != 3 {
-			t.Fatalf("expected 3 supported cards, got %d", len(cards))
+		if len(cards) != 4 {
+			t.Fatalf("expected 4 supported cards, got %d", len(cards))
 		}
 		for _, card := range cards {
 			if !IsCardSupported(card.ID) {
@@ -242,10 +243,15 @@ func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
 	assertOnlySupported(t, pool.GetRandomAvailableCards(10))
 
 	leaders := pool.FilterByRoleType(RoleLeader, false)
-	if len(leaders) != 1 || leaders[0].ID != 32 {
-		t.Errorf("expected only supported Leader 32, got %+v", leaders)
+	if len(leaders) != 2 {
+		t.Fatalf("expected two supported Leaders, got %+v", leaders)
 	}
-	if card := pool.GetCardByID(53); card == nil {
+	for _, leader := range leaders {
+		if leader.ID != 32 && leader.ID != TheDebtCollectorCardID {
+			t.Errorf("unexpected supported Leader %+v", leader)
+		}
+	}
+	if card := pool.GetCardByID(54); card == nil {
 		t.Error("unsupported cards should remain available for catalog lookup")
 	}
 }

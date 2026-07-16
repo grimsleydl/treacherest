@@ -579,6 +579,7 @@ func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 		targetPlayer.Role.GetRoleType() == game.RoleKing {
 		game.RecordCoupKingFall(room)
 	}
+	debtCounterLossAdvisories := room.RecordDebtCounterLossAdvisories(targetPlayer.ID)
 	targetPlayer.MarkEliminated()
 
 	h.store.UpdateRoom(room)
@@ -590,8 +591,9 @@ func (h *Handler) EliminatePlayer(w http.ResponseWriter, r *http.Request) {
 		Type:     "player_eliminated",
 		RoomCode: room.Code,
 		Data: map[string]interface{}{
-			"room":              room,
-			"eliminated_player": targetPlayer,
+			"room":                         room,
+			"eliminated_player":            targetPlayer,
+			"debt_counter_loss_advisories": debtCounterLossAdvisories,
 		},
 	})
 

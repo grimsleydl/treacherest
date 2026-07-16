@@ -804,7 +804,7 @@ func (h *Handler) StreamHost(w http.ResponseWriter, r *http.Request) {
 				}
 				sse.MarshalAndPatchSignals(signals)
 				log.Printf("🎮 Game playing - cleared countdown signal for host in room %s", roomCode)
-			case "role_revealed", "player_eliminated", "coup_win_prompt_rejected":
+			case "role_revealed", "player_eliminated", "coup_win_prompt_rejected", "debt_counter_placed", "debt_counter_upkeep_recorded":
 				room, _ = h.store.GetRoom(roomCode)
 				player = room.GetPlayer(player.ID)
 				if player == nil {

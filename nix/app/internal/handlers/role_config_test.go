@@ -145,9 +145,9 @@ func TestUpdateRolePreset(t *testing.T) {
 func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
 	h := newTestHandler()
 	h.cardService.Leaders = append(h.cardService.Leaders, &game.Card{
-		ID:         53,
-		Name:       "The Debt Collector",
-		NameAnchor: "the-debt-collector",
+		ID:         54,
+		Name:       "The Gathering",
+		NameAnchor: "the-gathering",
 		Types:      game.CardTypes{Subtype: "Leader"},
 	})
 
@@ -167,7 +167,7 @@ func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
 	req := httptest.NewRequest(
 		http.MethodPost,
 		"/room/"+room.Code+"/config/card-toggle-optimistic",
-		strings.NewReader(`{"roleType":"Leader","cardName":"The Debt Collector","enabled":true}`),
+		strings.NewReader(`{"roleType":"Leader","cardName":"The Gathering","enabled":true}`),
 	)
 	req.Header.Set("Content-Type", "application/json")
 	addPlayerSessionCookiesForTest(req, room, operator)
@@ -182,7 +182,7 @@ func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetRoom() error = %v", err)
 	}
-	if updatedRoom.RoleConfig.RoleTypes["Leader"].EnabledCards["The Debt Collector"] {
+	if updatedRoom.RoleConfig.RoleTypes["Leader"].EnabledCards["The Gathering"] {
 		t.Error("unsupported card was enabled in role configuration")
 	}
 }

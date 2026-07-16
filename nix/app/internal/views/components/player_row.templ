@@ -29,6 +29,7 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 						if player.IsEliminated {
 							@StateChip("eliminated", "Eliminated")
 						}
+						@DebtCounterBadge(player.Role)
 					</div>
 				</div>
 				<span class="btn btn-ghost btn-xs">Details</span>
@@ -39,6 +40,9 @@ templ PlayerRow(room *game.Room, player *game.Player, viewer *game.Player) {
 				} else {
 					<p class="text-base-content/60">Card is face down.</p>
 				}
+				<div class="mt-2">
+					@DebtCounterPublicState(player.Role)
+				</div>
 			</div>
 		</details>
 	</div>

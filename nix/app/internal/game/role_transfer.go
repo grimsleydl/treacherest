@@ -32,7 +32,7 @@ func (r *Room) TransferRole(from, to *Player, turnFaceDown bool) error {
 	}
 
 	// Transfer the identity-card pointer. Card-attached state, including Leader
-	// counters and activation history, moves with it.
+	// counter pools and debt counters, moves with it.
 	transferredRole := from.Role
 	from.Role = nil
 	from.FaceUp = false
