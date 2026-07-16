@@ -217,6 +217,39 @@ func TestGetRandomAvailableCards(t *testing.T) {
 	}
 }
 
+func TestCardPoolSelectionExcludesUnsupportedCards(t *testing.T) {
+	pool := NewCardPool([]*Card{
+		{ID: 31, Name: "The Wearer of Masks", Types: CardTypes{Subtype: "Traitor"}},
+		{ID: 53, Name: "The Debt Collector", Types: CardTypes{Subtype: "Leader"}},
+		{ID: 32, Name: "The Blood Empress", Types: CardTypes{Subtype: "Leader"}},
+		{ID: 1, Name: "The Ætherist", Types: CardTypes{Subtype: "Guardian"}},
+	})
+
+	assertOnlySupported := func(t *testing.T, cards []*Card) {
+		t.Helper()
+		if len(cards) != 2 {
+			t.Fatalf("expected 2 supported cards, got %d", len(cards))
+		}
+		for _, card := range cards {
+			if !IsCardSupported(card.ID) {
+				t.Errorf("selection included unsupported card %d (%s)", card.ID, card.Name)
+			}
+		}
+	}
+
+	assertOnlySupported(t, pool.GetAvailableCards())
+	assertOnlySupported(t, pool.GetRandomCards(10))
+	assertOnlySupported(t, pool.GetRandomAvailableCards(10))
+
+	leaders := pool.FilterByRoleType(RoleLeader, false)
+	if len(leaders) != 1 || leaders[0].ID != 32 {
+		t.Errorf("expected only supported Leader 32, got %+v", leaders)
+	}
+	if card := pool.GetCardByID(53); card == nil {
+		t.Error("unsupported cards should remain available for catalog lookup")
+	}
+}
+
 // TestGetCardByID tests card retrieval by ID
 func TestGetCardByID(t *testing.T) {
 	allCards := []*Card{

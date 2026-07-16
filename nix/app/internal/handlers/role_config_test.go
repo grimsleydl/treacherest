@@ -142,6 +142,51 @@ func TestUpdateRolePreset(t *testing.T) {
 	}
 }
 
+func TestOperatorCannotEnableUnsupportedRoleCard(t *testing.T) {
+	h := newTestHandler()
+	h.cardService.Leaders = append(h.cardService.Leaders, &game.Card{
+		ID:         53,
+		Name:       "The Debt Collector",
+		NameAnchor: "the-debt-collector",
+		Types:      game.CardTypes{Subtype: "Leader"},
+	})
+
+	room, err := h.store.CreateRoom()
+	if err != nil {
+		t.Fatalf("CreateRoom() error = %v", err)
+	}
+	operator := game.NewPlayer("operator", "Operator", "operator-session")
+	room.AddPlayer(operator)
+	markRoomOperatorForTest(room, operator)
+	h.store.UpdateRoom(room)
+
+	router := SetupRouter(h, h.config, &RouterOptions{
+		DisableRateLimiting:  true,
+		DisableRequestLogger: true,
+	})
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/room/"+room.Code+"/config/card-toggle-optimistic",
+		strings.NewReader(`{"roleType":"Leader","cardName":"The Debt Collector","enabled":true}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	addPlayerSessionCookiesForTest(req, room, operator)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected unsupported card enablement to be rejected with 400, got %d: %s", w.Code, w.Body.String())
+	}
+	updatedRoom, err := h.store.GetRoom(room.Code)
+	if err != nil {
+		t.Fatalf("GetRoom() error = %v", err)
+	}
+	if updatedRoom.RoleConfig.RoleTypes["Leader"].EnabledCards["The Debt Collector"] {
+		t.Error("unsupported card was enabled in role configuration")
+	}
+}
+
 func TestUpdateTreacheryPlayerCountPatchesVisibleCountImmediately(t *testing.T) {
 	h := newTestHandler()
 

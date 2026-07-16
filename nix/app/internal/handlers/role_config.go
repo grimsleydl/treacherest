@@ -496,6 +496,10 @@ func (h *Handler) ToggleRoleCardOptimistic(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Invalid role type", http.StatusBadRequest)
 		return
 	}
+	if !h.cardService.IsCardConfigurable(game.RoleType(body.RoleType), body.CardName) {
+		http.Error(w, "Card not available for role configuration", http.StatusBadRequest)
+		return
+	}
 
 	// Check if EnabledCards is nil and initialize if needed
 	if typeConfig.EnabledCards == nil {
@@ -522,13 +526,13 @@ func (h *Handler) ToggleRoleCardOptimistic(w http.ResponseWriter, r *http.Reques
 func (h *Handler) getCardsForRoleType(roleType string) []*game.Card {
 	switch roleType {
 	case "Leader":
-		return h.cardService.Leaders
+		return h.cardService.GetCardsForRoleType(game.RoleLeader)
 	case "Guardian":
-		return h.cardService.Guardians
+		return h.cardService.GetCardsForRoleType(game.RoleGuardian)
 	case "Assassin":
-		return h.cardService.Assassins
+		return h.cardService.GetCardsForRoleType(game.RoleAssassin)
 	case "Traitor":
-		return h.cardService.Traitors
+		return h.cardService.GetCardsForRoleType(game.RoleTraitor)
 	default:
 		return nil
 	}

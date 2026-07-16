@@ -2,6 +2,7 @@ package game
 
 import (
 	"testing"
+	"treacherest"
 	"treacherest/internal/config"
 )
 
@@ -138,6 +139,69 @@ func TestRoleConfigService_CreateFromPreset(t *testing.T) {
 				tt.checkConfig(t, result)
 			}
 		})
+	}
+}
+
+func TestDefaultRoleConfigExcludesUnsupportedCardsAndDealsLeader(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cardService, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("NewCardService() error = %v", err)
+	}
+
+	service := NewRoleConfigService(cfg)
+	service.SetCardService(cardService)
+	roleConfig, err := service.CreateFromPreset("standard", 5)
+	if err != nil {
+		t.Fatalf("CreateFromPreset() error = %v", err)
+	}
+
+	unsupportedNames := []string{
+		"The Wearer of Masks",
+		"The Debt Collector",
+		"The Gathering",
+		"Her Seedborn Highness",
+		"The Lich Queen",
+		"The Queen of Light",
+		"The Void Tyrant",
+	}
+	enabledCards := 0
+	for roleType, typeConfig := range roleConfig.RoleTypes {
+		for _, enabled := range typeConfig.EnabledCards {
+			if enabled {
+				enabledCards++
+			}
+		}
+		for _, name := range unsupportedNames {
+			if _, offered := typeConfig.EnabledCards[name]; offered {
+				t.Errorf("default %s config offered unsupported card %q", roleType, name)
+			}
+		}
+	}
+	if enabledCards != 55 {
+		t.Errorf("default config enabled %d supported cards, want 55", enabledCards)
+	}
+
+	players := make([]*Player, 5)
+	for i := range players {
+		players[i] = &Player{ID: string(rune('1' + i)), Name: "Player"}
+	}
+	AssignRolesWithConfig(players, cardService, roleConfig, service)
+
+	leaders := 0
+	for _, player := range players {
+		if player.Role == nil {
+			t.Fatal("default five-player deal left a player without a role")
+		}
+		if !IsCardSupported(player.Role.ID) {
+			t.Errorf("default deal assigned unsupported card %d (%s)", player.Role.ID, player.Role.Name)
+		}
+		if player.Role.GetRoleType() == RoleLeader {
+			leaders++
+		}
+	}
+	if leaders != 1 {
+		t.Errorf("default five-player deal assigned %d Leaders, want 1", leaders)
 	}
 }
 

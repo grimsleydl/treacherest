@@ -103,7 +103,7 @@ func TestRoleAssignmentOrder(t *testing.T) {
 			PresetName:          "custom",
 			AllowLeaderlessGame: false,
 			RoleTypes: map[string]*RoleTypeConfig{
-				"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Lich Queen": true}},
+				"Leader":   {Count: 1, EnabledCards: map[string]bool{"The Blood Empress": true}},
 				"Guardian": {Count: 2, EnabledCards: map[string]bool{"The Bodyguard": true, "The Cathar": true}},
 				"Traitor":  {Count: 1, EnabledCards: map[string]bool{"The Banisher": true}},
 			},

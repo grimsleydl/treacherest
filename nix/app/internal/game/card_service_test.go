@@ -33,10 +33,13 @@ func TestNewCardService(t *testing.T) {
 		})
 	}
 
-	// Verify total card count matches allCards
+	// Unsupported roles remain in the full catalog but not in dealable categories.
 	totalCards := len(service.Leaders) + len(service.Guardians) + len(service.Assassins) + len(service.Traitors)
-	if totalCards != len(service.allCards) {
-		t.Errorf("Total categorized cards (%d) doesn't match allCards count (%d)", totalCards, len(service.allCards))
+	if len(service.allCards) != 62 {
+		t.Errorf("Expected full 62-card catalog, got %d", len(service.allCards))
+	}
+	if totalCards != 55 {
+		t.Errorf("Expected 55 dealable cards, got %d", totalCards)
 	}
 
 	// Verify we have a reasonable distribution for gameplay
@@ -51,6 +54,30 @@ func TestNewCardService(t *testing.T) {
 	}
 	if len(service.Traitors) < 2 {
 		t.Error("Need at least 2 Traitor cards for max player games")
+	}
+}
+
+func TestCardServiceDealableCategoriesExcludeExactlyUnsupportedCards(t *testing.T) {
+	service, err := NewCardService(treacherest.TreacheryCardsJSON, treacherest.CardImagesFS)
+	if err != nil {
+		t.Fatalf("Failed to create CardService: %v", err)
+	}
+
+	dealable := make(map[int]bool)
+	for _, roleType := range []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor} {
+		for _, card := range service.GetCardsForRoleType(roleType) {
+			if !IsCardSupported(card.ID) {
+				t.Errorf("unsupported card %d (%s) was included in a dealable category", card.ID, card.Name)
+			}
+			dealable[card.ID] = true
+		}
+	}
+
+	for i := range service.allCards {
+		card := &service.allCards[i]
+		if got, want := dealable[card.ID], IsCardSupported(card.ID); got != want {
+			t.Errorf("card %d (%s) dealable = %v, want %v", card.ID, card.Name, got, want)
+		}
 	}
 }
 

@@ -55,6 +55,10 @@ func NewCardService(jsonData []byte, imagesFS embed.FS) (*CardService, error) {
 		// Keep image path for backward compatibility
 		card.ImagePath = fmt.Sprintf("/static/images/cards/%d.jpg", card.ID)
 
+		if !IsCardSupported(card.ID) {
+			continue
+		}
+
 		switch card.Types.Subtype {
 		case "Leader":
 			service.Leaders = append(service.Leaders, card)
@@ -72,34 +76,68 @@ func NewCardService(jsonData []byte, imagesFS embed.FS) (*CardService, error) {
 
 // GetRandomLeader returns a random Leader card
 func (cs *CardService) GetRandomLeader() *Card {
-	if len(cs.Leaders) == 0 {
+	leaders := cs.GetCardsForRoleType(RoleLeader)
+	if len(leaders) == 0 {
 		return nil
 	}
-	return cs.Leaders[rand.Intn(len(cs.Leaders))]
+	return leaders[rand.Intn(len(leaders))]
 }
 
 // GetRandomGuardian returns a random Guardian card
 func (cs *CardService) GetRandomGuardian() *Card {
-	if len(cs.Guardians) == 0 {
+	guardians := cs.GetCardsForRoleType(RoleGuardian)
+	if len(guardians) == 0 {
 		return nil
 	}
-	return cs.Guardians[rand.Intn(len(cs.Guardians))]
+	return guardians[rand.Intn(len(guardians))]
 }
 
 // GetRandomAssassin returns a random Assassin card
 func (cs *CardService) GetRandomAssassin() *Card {
-	if len(cs.Assassins) == 0 {
+	assassins := cs.GetCardsForRoleType(RoleAssassin)
+	if len(assassins) == 0 {
 		return nil
 	}
-	return cs.Assassins[rand.Intn(len(cs.Assassins))]
+	return assassins[rand.Intn(len(assassins))]
 }
 
 // GetRandomTraitor returns a random Traitor card
 func (cs *CardService) GetRandomTraitor() *Card {
-	if len(cs.Traitors) == 0 {
+	traitors := cs.GetCardsForRoleType(RoleTraitor)
+	if len(traitors) == 0 {
 		return nil
 	}
-	return cs.Traitors[rand.Intn(len(cs.Traitors))]
+	return traitors[rand.Intn(len(traitors))]
+}
+
+// GetCardsForRoleType returns supported cards in a dealable role category.
+func (cs *CardService) GetCardsForRoleType(cardType RoleType) []*Card {
+	var cards []*Card
+
+	switch cardType {
+	case RoleLeader:
+		cards = cs.Leaders
+	case RoleGuardian:
+		cards = cs.Guardians
+	case RoleAssassin:
+		cards = cs.Assassins
+	case RoleTraitor:
+		cards = cs.Traitors
+	default:
+		return nil
+	}
+
+	return filterSupportedCards(cards)
+}
+
+// IsCardConfigurable reports whether a named card can be enabled for a role type.
+func (cs *CardService) IsCardConfigurable(cardType RoleType, cardName string) bool {
+	for _, card := range cs.GetCardsForRoleType(cardType) {
+		if card.Name == cardName {
+			return true
+		}
+	}
+	return false
 }
 
 // GetAllCards returns all cards from the card service
@@ -114,20 +152,7 @@ func (cs *CardService) GetAllCards() []*Card {
 // GetRandomCards returns a specified number of random cards from a category
 // ensuring no duplicates
 func (cs *CardService) GetRandomCards(cardType RoleType, count int) []*Card {
-	var pool []*Card
-
-	switch cardType {
-	case RoleLeader:
-		pool = cs.Leaders
-	case RoleGuardian:
-		pool = cs.Guardians
-	case RoleAssassin:
-		pool = cs.Assassins
-	case RoleTraitor:
-		pool = cs.Traitors
-	default:
-		return nil
-	}
+	pool := cs.GetCardsForRoleType(cardType)
 
 	if count > len(pool) {
 		count = len(pool)

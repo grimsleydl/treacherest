@@ -89,10 +89,10 @@ func AssignRolesWithConfig(players []*Player, cardService *CardService, roleConf
 
 	// Map for getting cards by type
 	categoryToCards := map[RoleType][]*Card{
-		RoleLeader:   cardService.Leaders,
-		RoleGuardian: cardService.Guardians,
-		RoleAssassin: cardService.Assassins,
-		RoleTraitor:  cardService.Traitors,
+		RoleLeader:   cardService.GetCardsForRoleType(RoleLeader),
+		RoleGuardian: cardService.GetCardsForRoleType(RoleGuardian),
+		RoleAssassin: cardService.GetCardsForRoleType(RoleAssassin),
+		RoleTraitor:  cardService.GetCardsForRoleType(RoleTraitor),
 	}
 
 	// Create ordered list of role types to ensure consistent assignment order
@@ -411,10 +411,10 @@ func handleFullyRandomDistribution(shuffled []*Player, cardService *CardService,
 func assignRolesFromDistribution(shuffled []*Player, cardService *CardService, roleDistribution map[RoleType]int, roleConfig *RoleConfiguration) {
 	// Map role types to card categories
 	categoryToCards := map[RoleType][]*Card{
-		RoleLeader:   cardService.Leaders,
-		RoleGuardian: cardService.Guardians,
-		RoleAssassin: cardService.Assassins,
-		RoleTraitor:  cardService.Traitors,
+		RoleLeader:   cardService.GetCardsForRoleType(RoleLeader),
+		RoleGuardian: cardService.GetCardsForRoleType(RoleGuardian),
+		RoleAssassin: cardService.GetCardsForRoleType(RoleAssassin),
+		RoleTraitor:  cardService.GetCardsForRoleType(RoleTraitor),
 	}
 
 	// Create ordered list of role types

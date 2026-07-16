@@ -61,6 +61,9 @@ func (cp *CardPool) GetAvailableCards() []*Card {
 
 	available := make([]*Card, 0)
 	for _, card := range cp.AllCards {
+		if !IsCardSupported(card.ID) {
+			continue
+		}
 		if _, assigned := cp.AssignedCards[card.ID]; !assigned {
 			available = append(available, card)
 		}
@@ -76,6 +79,9 @@ func (cp *CardPool) FilterByRoleType(roleType RoleType, exclude bool) []*Card {
 
 	filtered := make([]*Card, 0)
 	for _, card := range cp.AllCards {
+		if !IsCardSupported(card.ID) {
+			continue
+		}
 		matches := card.GetRoleType() == roleType
 		if (matches && !exclude) || (!matches && exclude) {
 			filtered = append(filtered, card)
@@ -92,6 +98,9 @@ func (cp *CardPool) FilterAvailableByRoleType(roleType RoleType, exclude bool) [
 
 	filtered := make([]*Card, 0)
 	for _, card := range cp.AllCards {
+		if !IsCardSupported(card.ID) {
+			continue
+		}
 		// Skip if assigned
 		if _, assigned := cp.AssignedCards[card.ID]; assigned {
 			continue
@@ -109,15 +118,16 @@ func (cp *CardPool) FilterAvailableByRoleType(roleType RoleType, exclude bool) [
 func (cp *CardPool) GetRandomCards(count int) []*Card {
 	cp.mu.RLock()
 	defer cp.mu.RUnlock()
+	cards := filterSupportedCards(cp.AllCards)
 
 	if count <= 0 {
 		return []*Card{}
 	}
 
-	if count >= len(cp.AllCards) {
+	if count >= len(cards) {
 		// Return all cards in random order
-		result := make([]*Card, len(cp.AllCards))
-		copy(result, cp.AllCards)
+		result := make([]*Card, len(cards))
+		copy(result, cards)
 		rand.Shuffle(len(result), func(i, j int) {
 			result[i], result[j] = result[j], result[i]
 		})
@@ -125,10 +135,10 @@ func (cp *CardPool) GetRandomCards(count int) []*Card {
 	}
 
 	// Shuffle indices and take first 'count'
-	indices := rand.Perm(len(cp.AllCards))
+	indices := rand.Perm(len(cards))
 	result := make([]*Card, count)
 	for i := 0; i < count; i++ {
-		result[i] = cp.AllCards[indices[i]]
+		result[i] = cards[indices[i]]
 	}
 	return result
 }
@@ -202,6 +212,9 @@ func (cp *CardPool) findCardByID(cardID int) *Card {
 func (cp *CardPool) getAvailableCardsUnsafe() []*Card {
 	available := make([]*Card, 0)
 	for _, card := range cp.AllCards {
+		if !IsCardSupported(card.ID) {
+			continue
+		}
 		if _, assigned := cp.AssignedCards[card.ID]; !assigned {
 			available = append(available, card)
 		}
@@ -228,6 +241,9 @@ func (cp *CardPool) GetCardsByTypes(types ...string) []*Card {
 
 	filtered := make([]*Card, 0)
 	for _, card := range cp.AllCards {
+		if !IsCardSupported(card.ID) {
+			continue
+		}
 		// Skip if assigned
 		if _, assigned := cp.AssignedCards[card.ID]; assigned {
 			continue

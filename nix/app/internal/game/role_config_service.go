@@ -58,29 +58,7 @@ func (s *RoleConfigService) CreateFromPreset(presetName string, maxPlayers int) 
 		}
 	}
 
-	// Enable all cards for each type
-	if s.cardService != nil {
-		for _, card := range s.cardService.Leaders {
-			if roleConfig.RoleTypes["Leader"] != nil {
-				roleConfig.RoleTypes["Leader"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Guardians {
-			if roleConfig.RoleTypes["Guardian"] != nil {
-				roleConfig.RoleTypes["Guardian"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Assassins {
-			if roleConfig.RoleTypes["Assassin"] != nil {
-				roleConfig.RoleTypes["Assassin"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Traitors {
-			if roleConfig.RoleTypes["Traitor"] != nil {
-				roleConfig.RoleTypes["Traitor"].EnabledCards[card.Name] = true
-			}
-		}
-	}
+	s.enableSupportedCards(roleConfig)
 
 	// Set counts based on the preset's closest distribution
 	if dist, exists := preset.Distributions[maxPlayers]; exists {
@@ -115,31 +93,25 @@ func (s *RoleConfigService) CreateDefaultConfiguration() *RoleConfiguration {
 		}
 	}
 
-	// Enable all cards for each type
-	if s.cardService != nil {
-		for _, card := range s.cardService.Leaders {
-			if roleConfig.RoleTypes["Leader"] != nil {
-				roleConfig.RoleTypes["Leader"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Guardians {
-			if roleConfig.RoleTypes["Guardian"] != nil {
-				roleConfig.RoleTypes["Guardian"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Assassins {
-			if roleConfig.RoleTypes["Assassin"] != nil {
-				roleConfig.RoleTypes["Assassin"].EnabledCards[card.Name] = true
-			}
-		}
-		for _, card := range s.cardService.Traitors {
-			if roleConfig.RoleTypes["Traitor"] != nil {
-				roleConfig.RoleTypes["Traitor"].EnabledCards[card.Name] = true
-			}
-		}
-	}
+	s.enableSupportedCards(roleConfig)
 
 	return roleConfig
+}
+
+func (s *RoleConfigService) enableSupportedCards(roleConfig *RoleConfiguration) {
+	if s.cardService == nil {
+		return
+	}
+
+	for _, roleType := range []RoleType{RoleLeader, RoleGuardian, RoleAssassin, RoleTraitor} {
+		typeConfig := roleConfig.RoleTypes[string(roleType)]
+		if typeConfig == nil {
+			continue
+		}
+		for _, card := range s.cardService.GetCardsForRoleType(roleType) {
+			typeConfig.EnabledCards[card.Name] = true
+		}
+	}
 }
 
 // GetDistributionForPlayerCount returns the role distribution for a specific player count
