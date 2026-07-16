@@ -14,7 +14,63 @@ import (
 	datastar "github.com/starfederation/datastar-go/datastar"
 )
 
-func TestHandler_emitStateBackupUsesLocalOnlySignal(t *testing.T) {
+// streamGameBackupFixture builds a room with a recipient and a second player
+// whose role is hidden, then returns the recipient's game SSE body.
+func streamGameBackupFixture(t *testing.T, h *Handler) (string, *game.Player) {
+	t.Helper()
+
+	room, err := h.store.CreateRoom()
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	recipient := game.NewPlayer("p1", "Recipient", "session-1")
+	recipient.Role = mockGuardianCard()
+	if err := room.AddPlayer(recipient); err != nil {
+		t.Fatalf("add recipient: %v", err)
+	}
+	hiddenPlayer := game.NewPlayer("p2", "Hidden Player", "session-2")
+	hiddenPlayer.Role = &game.Card{ID: 90210, Name: "Other Player Secret Role"}
+	hiddenPlayer.RoleRevealed = false
+	hiddenPlayer.FaceUp = false
+	if err := room.AddPlayer(hiddenPlayer); err != nil {
+		t.Fatalf("add hidden player: %v", err)
+	}
+	room.State = game.StatePlaying
+	h.store.UpdateRoom(room)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	req := httptest.NewRequest("GET", "/sse/game/"+room.Code, nil).WithContext(ctx)
+	req.Header.Set("Accept", "text/event-stream")
+	req.AddCookie(&http.Cookie{
+		Name:  "player_" + room.Code,
+		Value: recipient.ID,
+	})
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("code", room.Code)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	w := httptest.NewRecorder()
+	done := make(chan bool)
+	go func() {
+		h.StreamGame(w, req)
+		done <- true
+	}()
+	select {
+	case <-done:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("StreamGame did not finish in time")
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "game-container") {
+		t.Fatalf("expected initial game render on stream, got %q", body)
+	}
+	return body, hiddenPlayer
+}
+
+func TestHandler_StreamGameDoesNotExposeHiddenRolesInPlaintextBackup(t *testing.T) {
 	h := newTestHandler()
 	backupService, err := game.NewBackupService("", false)
 	if err != nil {
@@ -22,27 +78,32 @@ func TestHandler_emitStateBackupUsesLocalOnlySignal(t *testing.T) {
 	}
 	h.backupService = backupService
 
-	room, err := h.store.CreateRoom()
+	body, hiddenPlayer := streamGameBackupFixture(t, h)
+	if strings.Contains(body, `"_stateBackup"`) {
+		t.Fatalf("plaintext state backup signal must not be delivered, got %q", body)
+	}
+	if strings.Contains(body, hiddenPlayer.Role.Name) {
+		t.Fatalf("game stream exposed another player's unrevealed role name %q", hiddenPlayer.Role.Name)
+	}
+	if strings.Contains(body, `\"id\":90210`) {
+		t.Fatal("game stream exposed another player's unrevealed role ID")
+	}
+}
+
+func TestHandler_StreamGameEmitsEncryptedStateBackup(t *testing.T) {
+	h := newTestHandler()
+	backupService, err := game.NewBackupService(strings.Repeat("ab", 32), true)
 	if err != nil {
-		t.Fatalf("create room: %v", err)
+		t.Fatalf("new backup service: %v", err)
 	}
-	player := game.NewPlayer("p1", "Player 1", "session-1")
-	if err := room.AddPlayer(player); err != nil {
-		t.Fatalf("add player: %v", err)
-	}
+	h.backupService = backupService
 
-	req := httptest.NewRequest("GET", "/sse/lobby/"+room.Code, nil)
-	w := httptest.NewRecorder()
-	sse := datastar.NewSSE(w, req)
-
-	h.emitStateBackup(sse, room)
-
-	body := w.Body.String()
+	body, hiddenPlayer := streamGameBackupFixture(t, h)
 	if !strings.Contains(body, `"_stateBackup"`) {
-		t.Fatalf("expected local-only state backup signal, got %q", body)
+		t.Fatalf("expected encrypted state backup signal on game stream, got %q", body)
 	}
-	if strings.Contains(body, `"stateBackup"`) {
-		t.Fatalf("state backup signal should not be server-visible, got %q", body)
+	if strings.Contains(body, hiddenPlayer.Role.Name) {
+		t.Fatalf("encrypted backup stream exposed another player's unrevealed role name %q", hiddenPlayer.Role.Name)
 	}
 }
 

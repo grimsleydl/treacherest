@@ -19,6 +19,7 @@ type Handler struct {
 	config            *config.ServerConfig
 	roleConfigService *game.RoleConfigService
 	backupService     *game.BackupService
+	backupWarningOnce sync.Once
 }
 
 // New creates a new handler

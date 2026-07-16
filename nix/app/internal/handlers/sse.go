@@ -591,11 +591,17 @@ func renderToString(component templ.Component) string {
 	return buf.String()
 }
 
-// emitStateBackup sends an encrypted state backup to the client for localStorage storage
-// This is used for recovering game state after Cloud Run instance replacement
+// emitStateBackup sends an encrypted state backup to the client for localStorage storage.
+// This is used for recovering game state after Cloud Run instance replacement.
 func (h *Handler) emitStateBackup(sse *datastar.ServerSentEventGenerator, room *game.Room) {
 	if h.backupService == nil {
 		return // Backup service not configured
+	}
+	if !h.backupService.IsEnabled() {
+		h.backupWarningOnce.Do(func() {
+			log.Printf("⚠️ Client state backups are disabled because backup encryption is disabled; automatic browser restore will be unavailable")
+		})
+		return
 	}
 
 	backup, err := h.backupService.CreateBackup(room)
