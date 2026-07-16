@@ -1,0 +1,43 @@
+package components
+
+import (
+	"fmt"
+	"treacherest/internal/game"
+)
+
+templ undercoverUnveilModal(room *game.Room, player *game.Player, advisory templ.Component) {
+	<div id="undercover-unveil-modal" class="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="undercover-unveil-title">
+		<div class="modal-box">
+			<section id="undercover-unveil-flow">
+				<h3 id="undercover-unveil-title" class="font-bold text-lg">Unveil { player.Role.Name }</h3>
+				<div class="py-4">
+					@advisory
+					<p class="text-sm text-base-content/80">Confirm that you are unveiling your identity.</p>
+				</div>
+				<div class="modal-action">
+					<button class="btn btn-ghost" data-on:click="evt.target.closest('.modal')?.remove()">Cancel</button>
+					<button
+						id="undercover-unveil-confirm"
+						class="btn btn-primary"
+						data-on:click={ fmt.Sprintf("@post('/room/%s/unveil/%s')", room.Code, player.ID) }
+					>
+						Confirm Unveil
+					</button>
+				</div>
+			</section>
+		</div>
+		<div class="modal-backdrop bg-base-300/50" data-on:click="evt.target.closest('.modal')?.remove()"></div>
+	</div>
+}
+
+templ undercoverUnveilAdvisory() {
+	<section id="undercover-unveil-advisory" class="notice-card alert alert-warning mb-4 flex items-start">
+		<div class="min-w-0">
+			<p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] opacity-70">ADVISORY - NOT A RULING</p>
+			<h4 class="font-bold">Undercover condition</h4>
+			<p class="mt-1 text-sm">
+				No other identity has been unveiled yet. You may still unveil if another player attacked the Leader this game (table-adjudicated). The app can only verify the unveiled-identity condition.
+			</p>
+		</div>
+	</section>
+}

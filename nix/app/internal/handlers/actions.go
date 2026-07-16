@@ -788,7 +788,8 @@ func (h *Handler) UnveilPlayer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// GetUnveilModal returns the X input modal for cards that need it
+// GetUnveilModal returns the owner-only flow for cards with unveil input or an
+// advisory-only unveil condition.
 func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 	roomCode := chi.URLParam(r, "code")
 	playerID := chi.URLParam(r, "playerID")
@@ -855,10 +856,17 @@ func (h *Handler) GetUnveilModal(w http.ResponseWriter, r *http.Request) {
 		maxAvailableCards = 10 // Fallback
 	}
 
-	// Render the modal
+	// Render the card's unveil flow. Undercover remains advisory-only: the
+	// confirm action always points to the ordinary, non-blocking unveil action.
 	var buf bytes.Buffer
-	if err := components.XInputModal(room, target, req, maxAvailableCards).Render(r.Context(), &buf); err != nil {
-		log.Printf("❌ Failed to render X input modal: %v", err)
+	var renderErr error
+	if req.AdvisoryType == ability.UndercoverUnveilAdvisory {
+		renderErr = components.UndercoverUnveilModal(room, target).Render(r.Context(), &buf)
+	} else {
+		renderErr = components.XInputModal(room, target, req, maxAvailableCards).Render(r.Context(), &buf)
+	}
+	if renderErr != nil {
+		log.Printf("❌ Failed to render unveil modal: %v", renderErr)
 		http.Error(w, "Failed to render modal", http.StatusInternalServerError)
 		return
 	}

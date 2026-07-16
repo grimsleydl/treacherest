@@ -3,6 +3,9 @@ package ability
 // UnveilRequirementType defines the type of input needed before unveiling
 type UnveilRequirementType string
 
+// UnveilAdvisoryType identifies an advisory-only unveil condition.
+type UnveilAdvisoryType string
+
 const (
 	// NoInput - card unveils immediately with no player input
 	NoInput UnveilRequirementType = "no_input"
@@ -10,12 +13,21 @@ const (
 	NumericInput UnveilRequirementType = "numeric_input"
 	// ChoiceInput - player must make a selection from options
 	ChoiceInput UnveilRequirementType = "choice_input"
+
+	// NoUnveilAdvisory means the unveil flow has no advisory-only condition.
+	NoUnveilAdvisory UnveilAdvisoryType = ""
+	// UndercoverUnveilAdvisory reminds the owner about the table-adjudicated
+	// Undercover condition without preventing them from unveiling.
+	UndercoverUnveilAdvisory UnveilAdvisoryType = "undercover"
 )
 
 // UnveilRequirements defines what a card needs when being unveiled
 type UnveilRequirements struct {
-	// CardID is the card this requirement applies to
+	// CardID is the card this requirement applies to.
 	CardID int
+
+	// CardIDs are used when multiple cards share the same requirement entry.
+	CardIDs []int
 
 	// RequiresLeaderConfirmation - Leader must confirm physical card reveal
 	// before the player sees ability options (prevents peeking)
@@ -30,6 +42,9 @@ type UnveilRequirements struct {
 	// InputDescription provides context for the input
 	InputDescription string
 
+	// AdvisoryType identifies a non-blocking advisory shown in the unveil flow.
+	AdvisoryType UnveilAdvisoryType
+
 	// MinValue for numeric inputs
 	MinValue int
 
@@ -43,15 +58,27 @@ type UnveilRequirements struct {
 	SetsFaceUp bool
 }
 
-// unveilRequirements is the registry of all card unveil requirements
-var unveilRequirements = map[int]*UnveilRequirements{
+// unveilRequirementEntries defines each distinct unveil requirement once. Cards
+// with the same mechanic share one entry and only add another ID to CardIDs.
+var unveilRequirementEntries = []*UnveilRequirements{
+	// The Supplier (ID 17) and The Warlock (ID 18)
+	// "Undercover" permits unveiling after another identity has been unveiled or
+	// another player attacked the Leader. The app can observe only the first half,
+	// so this requirement is advisory-only and remains NoInput.
+	{
+		CardIDs:      []int{17, 18},
+		InputType:    NoInput,
+		AdvisoryType: UndercoverUnveilAdvisory,
+		SetsFaceUp:   true,
+	},
+
 	// The Metamorph (ID 25)
 	// "Identity — Traitor
 	// Unveil—Pay 8 life, Discard a card.
 	// When The Metamorph is unveiled, until end of turn, as an opponent loses the game,
 	// you may remove The Metamorph from the game. If you do, gain control of that player's
 	// identity card and turn it face down if it isn't a Leader."
-	25: {
+	{
 		CardID:                     25,
 		RequiresLeaderConfirmation: true,
 		InputType:                  NoInput,
@@ -65,7 +92,7 @@ var unveilRequirements = map[int]*UnveilRequirements{
 	// of other identity cards. Then turn face down each of those cards that isn't a Leader.
 	// You may look at face-down identity cards you don't control any time.
 	// At the beginning of your end step, draw two cards."
-	27: {
+	{
 		CardID:                     27,
 		RequiresLeaderConfirmation: true,
 		InputType:                  ChoiceInput,
@@ -77,7 +104,7 @@ var unveilRequirements = map[int]*UnveilRequirements{
 	// The Wearer of Masks (ID 31)
 	// "Unveil {X}: As The Wearer of Masks is unveiled, reveal up to X non-Leader
 	// identity cards at random from outside the game..."
-	31: {
+	{
 		CardID:                     31,
 		RequiresLeaderConfirmation: true,
 		InputType:                  NumericInput,
@@ -88,9 +115,22 @@ var unveilRequirements = map[int]*UnveilRequirements{
 		DefaultValue:               3,
 		SetsFaceUp:                 true,
 	},
+}
 
-	// Default behavior for most cards will be handled by GetUnveilRequirements
-	// returning a default struct
+// unveilRequirements indexes the shared entries by every card ID they cover.
+var unveilRequirements = indexUnveilRequirements(unveilRequirementEntries)
+
+func indexUnveilRequirements(entries []*UnveilRequirements) map[int]*UnveilRequirements {
+	indexed := make(map[int]*UnveilRequirements)
+	for _, requirement := range entries {
+		if requirement.CardID != 0 {
+			indexed[requirement.CardID] = requirement
+		}
+		for _, cardID := range requirement.CardIDs {
+			indexed[cardID] = requirement
+		}
+	}
+	return indexed
 }
 
 // GetUnveilRequirements returns the unveil requirements for a card
